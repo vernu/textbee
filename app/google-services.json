@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "14326313838",
+    "project_id": "vernu-sms",
+    "storage_bucket": "vernu-sms.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:14326313838:android:4ea4380d88b057e9eb877f",
+        "android_client_info": {
+          "package_name": "com.vernu.sms"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "14326313838-0kmpefogqk8h5ntf2mth4e9cht9pbfai.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDNZP2HeVPZ6_V9oq2UTYWmJ4FfenrRBIQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "14326313838-0kmpefogqk8h5ntf2mth4e9cht9pbfai.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
