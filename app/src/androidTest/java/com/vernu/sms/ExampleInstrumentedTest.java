@@ -1,4 +1,4 @@
-package com.vernu.smsgateway;
+package com.vernu.sms;
 
 import android.content.Context;
 

@@ -6,7 +6,7 @@ android {
     compileSdk 32
 
     defaultConfig {
-        applicationId "com.vernu.smsgateway"
+        applicationId "com.vernu.sms"
         minSdk 21
         targetSdk 32
         versionCode 1
