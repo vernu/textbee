@@ -18,7 +18,7 @@ import com.google.android.material.snackbar.Snackbar;
 
 public class MainActivity extends AppCompatActivity {
 
-    private Switch gatewaySwich;
+    private Switch gatewaySwitch;
     private EditText gatewayKeyEditText;
     private Button updateKeyButton, grantSMSPermissionBtn;
 
@@ -28,7 +28,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        gatewaySwich = findViewById(R.id.gatewaySwitch);
+        gatewaySwitch = findViewById(R.id.gatewaySwitch);
         gatewayKeyEditText = findViewById(R.id.gatewayKeyEditText);
         updateKeyButton = findViewById(R.id.updateKeyButton);
         grantSMSPermissionBtn = findViewById(R.id.grantSMSPermissionBtn);
