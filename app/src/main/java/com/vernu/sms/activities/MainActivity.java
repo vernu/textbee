@@ -16,6 +16,7 @@ import android.widget.Toast;
 
 import com.google.android.material.snackbar.Snackbar;
 import com.vernu.sms.R;
+import com.vernu.sms.helpers.SharedPreferenceHelper;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -49,8 +50,17 @@ public class MainActivity extends AppCompatActivity {
                     handleSMSRequestPermission(view);
                 }
             });
-
         }
+
+        gatewayKeyEditText.setText(SharedPreferenceHelper.getSharedPreferenceString(mContext, "GATEWAY_KEY", ""));
+
+        updateKeyButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                String newKey = gatewayKeyEditText.getText().toString();
+                SharedPreferenceHelper.setSharedPreferenceString(mContext, "GATEWAY_KEY", newKey);
+            }
+        });
 
 
     }
