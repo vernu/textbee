@@ -1,5 +1,6 @@
 package com.vernu.sms.activities;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -14,7 +15,10 @@ import android.widget.EditText;
 import android.widget.Switch;
 import android.widget.Toast;
 
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 import com.google.android.material.snackbar.Snackbar;
+import com.google.firebase.messaging.FirebaseMessaging;
 import com.vernu.sms.R;
 import com.vernu.sms.helpers.SharedPreferenceHelper;
 
@@ -23,7 +27,7 @@ public class MainActivity extends AppCompatActivity {
     private Context mContext;
 
     private Switch gatewaySwitch;
-    private EditText gatewayKeyEditText;
+    private EditText gatewayKeyEditText, fcmTokenEditText;
     private Button updateKeyButton, grantSMSPermissionBtn;
 
     private static final int SEND_SMS_PERMISSION_REQUEST_CODE = 0;
@@ -37,6 +41,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         gatewaySwitch = findViewById(R.id.gatewaySwitch);
         gatewayKeyEditText = findViewById(R.id.gatewayKeyEditText);
+        fcmTokenEditText = findViewById(R.id.fcmTokenEditText);
         updateKeyButton = findViewById(R.id.updateKeyButton);
         grantSMSPermissionBtn = findViewById(R.id.grantSMSPermissionBtn);
 
@@ -59,6 +64,19 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 String newKey = gatewayKeyEditText.getText().toString();
                 SharedPreferenceHelper.setSharedPreferenceString(mContext, "GATEWAY_KEY", newKey);
+
+                FirebaseMessaging.getInstance().getToken()
+                        .addOnCompleteListener(new OnCompleteListener<String>() {
+                            @Override
+                            public void onComplete(@NonNull Task<String> task) {
+                                if (!task.isSuccessful()) {
+                                    return;
+                                }
+                                String token = task.getResult();
+                                Toast.makeText(MainActivity.this, token, Toast.LENGTH_SHORT).show();
+                                fcmTokenEditText.setText(token);
+                            }
+                        });
             }
         });
 
