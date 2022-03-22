@@ -1,4 +1,4 @@
-package com.vernu.sms;
+package com.vernu.sms.activities;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -15,6 +15,7 @@ import android.widget.Switch;
 import android.widget.Toast;
 
 import com.google.android.material.snackbar.Snackbar;
+import com.vernu.sms.R;
 
 public class MainActivity extends AppCompatActivity {
 

@@ -9,8 +9,13 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.SMSGateway">
+        <service
+            android:name=".services.FCMService"
+            android:exported="false"
+            android:directBootAware="true">
+        </service>
         <activity
-            android:name="com.vernu.sms.MainActivity"
+            android:name="com.vernu.sms.activities.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
