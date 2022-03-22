@@ -19,6 +19,8 @@ import com.vernu.sms.R;
 
 public class MainActivity extends AppCompatActivity {
 
+    private Context mContext;
+
     private Switch gatewaySwitch;
     private EditText gatewayKeyEditText;
     private Button updateKeyButton, grantSMSPermissionBtn;
@@ -28,13 +30,16 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        mContext = getApplicationContext();
+
         setContentView(R.layout.activity_main);
         gatewaySwitch = findViewById(R.id.gatewaySwitch);
         gatewayKeyEditText = findViewById(R.id.gatewayKeyEditText);
         updateKeyButton = findViewById(R.id.updateKeyButton);
         grantSMSPermissionBtn = findViewById(R.id.grantSMSPermissionBtn);
 
-        if (isSMSPermissionGranted(getApplicationContext())) {
+        if (isSMSPermissionGranted(mContext)) {
             grantSMSPermissionBtn.setEnabled(false);
             grantSMSPermissionBtn.setText("SMS Permission Granted");
         } else {
@@ -56,11 +61,9 @@ public class MainActivity extends AppCompatActivity {
         switch (requestCode) {
             case SEND_SMS_PERMISSION_REQUEST_CODE: {
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    Toast.makeText(getApplicationContext(), "Yay!   .",
-                            Toast.LENGTH_LONG).show();
+                    Toast.makeText(mContext, "Yay!  Permission Granted.", Toast.LENGTH_LONG).show();
                 } else {
-                    Toast.makeText(getApplicationContext(),
-                            "Permission Denied :(", Toast.LENGTH_LONG).show();
+                    Toast.makeText(mContext, "Permission Denied :(", Toast.LENGTH_LONG).show();
                     return;
                 }
             }
@@ -69,11 +72,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void handleSMSRequestPermission(View view) {
-        if (isSMSPermissionGranted(view.getContext())) {
+        if (isSMSPermissionGranted(mContext)) {
             Snackbar.make(view, "Already got permissions", Snackbar.LENGTH_SHORT).show();
         } else {
-            if (ActivityCompat.shouldShowRequestPermissionRationale(MainActivity.this,
-                    Manifest.permission.SEND_SMS)) {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(MainActivity.this, Manifest.permission.SEND_SMS)) {
                 Snackbar.make(view, "PERMISSION DENIED, Pls grant SMS Permission in app settings", Snackbar.LENGTH_SHORT).show();
             } else {
                 Snackbar.make(view, "Grant SMS Permissions to continue", Snackbar.LENGTH_SHORT).show();
