@@ -7,28 +7,28 @@ public class SharedPreferenceHelper {
     private final static String PREF_FILE = "PREF";
 
 
-    static void setSharedPreferenceString(Context context, String key, String value){
+    public static void setSharedPreferenceString(Context context, String key, String value){
         SharedPreferences settings = context.getSharedPreferences(PREF_FILE, 0);
         SharedPreferences.Editor editor = settings.edit();
         editor.putString(key, value);
         editor.apply();
     }
 
-    static void setSharedPreferenceInt(Context context, String key, int value){
+    public static void setSharedPreferenceInt(Context context, String key, int value){
         SharedPreferences settings = context.getSharedPreferences(PREF_FILE, 0);
         SharedPreferences.Editor editor = settings.edit();
         editor.putInt(key, value);
         editor.apply();
     }
 
-    static void setSharedPreferenceBoolean(Context context, String key, boolean value){
+    public static void setSharedPreferenceBoolean(Context context, String key, boolean value){
         SharedPreferences settings = context.getSharedPreferences(PREF_FILE, 0);
         SharedPreferences.Editor editor = settings.edit();
         editor.putBoolean(key, value);
         editor.apply();
     }
 
-    static String getSharedPreferenceString(Context context, String key, String defValue){
+    public static String getSharedPreferenceString(Context context, String key, String defValue){
         SharedPreferences settings = context.getSharedPreferences(PREF_FILE, 0);
         return settings.getString(key, defValue);
     }
