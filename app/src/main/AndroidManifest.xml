@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.vernu.sms">
+
     <uses-permission android:name="android.permission.SEND_SMS" />
     <application
         android:allowBackup="true"
@@ -13,6 +14,9 @@
             android:name=".services.FCMService"
             android:exported="false"
             android:directBootAware="true">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
         </service>
         <activity
             android:name="com.vernu.sms.activities.MainActivity"

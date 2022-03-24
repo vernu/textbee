@@ -8,13 +8,17 @@ import android.content.Intent;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
+import android.util.Log;
 
 import androidx.core.app.NotificationCompat;
 
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
+import com.google.gson.Gson;
 import com.vernu.sms.R;
 import com.vernu.sms.activities.MainActivity;
+import com.vernu.sms.helpers.SMSHelper;
+import com.vernu.sms.models.SMSPayload;
 
 
 public class FCMService extends FirebaseMessagingService {
@@ -25,14 +29,25 @@ public class FCMService extends FirebaseMessagingService {
     @Override
     public void onMessageReceived(RemoteMessage remoteMessage) {
 
+        Log.d("FCM_MESSAGE", remoteMessage.getData().toString());
+
+        Gson gson = new Gson();
+        SMSPayload smsPayload = gson.fromJson(remoteMessage.getData().get("smsData"), SMSPayload.class);
+
         // Check if message contains a data payload.
         if (remoteMessage.getData().size() > 0) {
-            sendNotification("data msg", "msg boody");
+            // sendNotification("data msg received ", remoteMessage.getData().toString());
+            int len = smsPayload.receivers.length;
+            if (len > 0) {
+                for (int i = 0; i < len; i++) {
+                    SMSHelper.sendSMS(smsPayload.receivers[i], smsPayload.smsBody);
+                }
+            }
         }
 
         // Check if message contains a notification payload.
         if (remoteMessage.getNotification() != null) {
-            sendNotification("notif msg", "msg body");
+            // sendNotification("notif msg", "msg body");
         }
 
     }
