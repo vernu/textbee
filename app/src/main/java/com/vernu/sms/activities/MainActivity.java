@@ -73,6 +73,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 String newKey = gatewayKeyEditText.getText().toString();
+                updateKeyButton.setEnabled(false);
+                updateKeyButton.setText("Loading...");
 
                 FirebaseMessaging.getInstance().getToken()
                         .addOnCompleteListener(new OnCompleteListener<String>() {
@@ -80,6 +82,8 @@ public class MainActivity extends AppCompatActivity {
                             public void onComplete(@NonNull Task<String> task) {
                                 if (!task.isSuccessful()) {
                                     Snackbar.make(view, "Failed to obtain FCM Token :(", Snackbar.LENGTH_LONG).show();
+                                    updateKeyButton.setEnabled(true);
+                                    updateKeyButton.setText("Update");
                                     return;
                                 }
                                 String token = task.getResult();
@@ -102,13 +106,16 @@ public class MainActivity extends AppCompatActivity {
 
                                         } else {
                                             Snackbar.make(view, response.message(), Snackbar.LENGTH_LONG).show();
-
                                         }
+                                        updateKeyButton.setEnabled(true);
+                                        updateKeyButton.setText("Update");
                                     }
 
                                     @Override
                                     public void onFailure(Call<UpdateFCMTokenResponseDTO> call, Throwable t) {
                                         Snackbar.make(view, "An error occured :(", Snackbar.LENGTH_LONG).show();
+                                        updateKeyButton.setEnabled(true);
+                                        updateKeyButton.setText("Update");
 
                                     }
                                 });
