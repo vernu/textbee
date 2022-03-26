@@ -9,6 +9,7 @@ import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -19,8 +20,17 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.messaging.FirebaseMessaging;
+import com.vernu.sms.GatewayApiService;
 import com.vernu.sms.R;
+import com.vernu.sms.dtos.UpdateFCMTokenInputDTO;
+import com.vernu.sms.dtos.UpdateFCMTokenResponseDTO;
 import com.vernu.sms.helpers.SharedPreferenceHelper;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -63,20 +73,49 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 String newKey = gatewayKeyEditText.getText().toString();
-                SharedPreferenceHelper.setSharedPreferenceString(mContext, "GATEWAY_KEY", newKey);
 
                 FirebaseMessaging.getInstance().getToken()
                         .addOnCompleteListener(new OnCompleteListener<String>() {
                             @Override
                             public void onComplete(@NonNull Task<String> task) {
                                 if (!task.isSuccessful()) {
+                                    Snackbar.make(view, "Failed to obtain FCM Token :(", Snackbar.LENGTH_LONG).show();
                                     return;
                                 }
                                 String token = task.getResult();
-                                Toast.makeText(MainActivity.this, token, Toast.LENGTH_SHORT).show();
                                 fcmTokenEditText.setText(token);
+                                Retrofit retrofit = new Retrofit.Builder()
+                                        .baseUrl("https://vernu-sms.herokuapp.com/api/v1/")
+                                        .addConverterFactory(GsonConverterFactory.create())
+                                        .build();
+
+                                GatewayApiService service = retrofit.create(GatewayApiService.class);
+                                Call<UpdateFCMTokenResponseDTO> apiCall = service.updateFCMToken(newKey, new UpdateFCMTokenInputDTO(token));
+                                apiCall.enqueue(new Callback<UpdateFCMTokenResponseDTO>() {
+                                    @Override
+                                    public void onResponse(Call<UpdateFCMTokenResponseDTO> call, Response<UpdateFCMTokenResponseDTO> response) {
+
+                                        if (response.isSuccessful()) {
+                                            SharedPreferenceHelper.setSharedPreferenceString(mContext, "GATEWAY_KEY", newKey);
+                                            Log.e("API_RESP", response.toString());
+                                            Snackbar.make(view, "DONE :)", Snackbar.LENGTH_LONG).show();
+
+                                        } else {
+                                            Snackbar.make(view, response.message(), Snackbar.LENGTH_LONG).show();
+
+                                        }
+                                    }
+
+                                    @Override
+                                    public void onFailure(Call<UpdateFCMTokenResponseDTO> call, Throwable t) {
+                                        Snackbar.make(view, "An error occured :(", Snackbar.LENGTH_LONG).show();
+
+                                    }
+                                });
                             }
                         });
+
+
             }
         });
 
