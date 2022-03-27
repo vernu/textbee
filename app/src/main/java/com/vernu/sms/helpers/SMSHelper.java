@@ -2,9 +2,19 @@ package com.vernu.sms.helpers;
 
 import android.telephony.SmsManager;
 
+import java.util.ArrayList;
+
 public class SMSHelper {
     public static void sendSMS(String phoneNo, String message) {
         SmsManager smsManager = SmsManager.getDefault();
-        smsManager.sendTextMessage(phoneNo, null, message, null, null);
+
+        //for sms with more than 160 chars
+        ArrayList<String> parts = smsManager.divideMessage(message);
+        if (parts.size() > 1) {
+            smsManager.sendMultipartTextMessage(phoneNo, null, parts, null, null);
+        } else {
+            smsManager.sendTextMessage(phoneNo, null, message, null, null);
+        }
+
     }
 }
