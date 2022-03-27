@@ -139,9 +139,9 @@ public class MainActivity extends AppCompatActivity {
                                 String token = task.getResult();
                                 fcmTokenEditText.setText(token);
 
-
                                 UpdateDeviceInputDTO updateDeviceInput = new UpdateDeviceInputDTO();
                                 updateDeviceInput.setEnabled(true);
+                                updateDeviceInput.setFcmToken(token);
                                 updateDeviceInput.setBrand(Build.BRAND);
                                 updateDeviceInput.setManufacturer(Build.MANUFACTURER);
                                 updateDeviceInput.setModel(Build.MODEL);
