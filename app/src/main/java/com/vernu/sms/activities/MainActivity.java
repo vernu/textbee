@@ -8,6 +8,7 @@ import androidx.core.content.ContextCompat;
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -22,8 +23,8 @@ import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.vernu.sms.GatewayApiService;
 import com.vernu.sms.R;
-import com.vernu.sms.dtos.UpdateFCMTokenInputDTO;
-import com.vernu.sms.dtos.UpdateFCMTokenResponseDTO;
+import com.vernu.sms.dtos.UpdateDeviceInputDTO;
+import com.vernu.sms.dtos.UpdateDeviceResponseDTO;
 import com.vernu.sms.helpers.SharedPreferenceHelper;
 
 import retrofit2.Call;
@@ -94,10 +95,21 @@ public class MainActivity extends AppCompatActivity {
                                         .build();
 
                                 GatewayApiService service = retrofit.create(GatewayApiService.class);
-                                Call<UpdateFCMTokenResponseDTO> apiCall = service.updateFCMToken(newKey, new UpdateFCMTokenInputDTO(token));
-                                apiCall.enqueue(new Callback<UpdateFCMTokenResponseDTO>() {
+
+
+                                UpdateDeviceInputDTO updateDeviceInput = new UpdateDeviceInputDTO();
+                                updateDeviceInput.setEnabled(true);
+                                updateDeviceInput.setBrand(Build.BRAND);
+                                updateDeviceInput.setManufacturer(Build.MANUFACTURER);
+                                updateDeviceInput.setModel(Build.MODEL);
+                                updateDeviceInput.setBuildId(Build.ID);
+                                updateDeviceInput.setOs(Build.VERSION.BASE_OS);
+
+
+                                Call<UpdateDeviceResponseDTO> apiCall = service.updateFCMToken(newKey, updateDeviceInput);
+                                apiCall.enqueue(new Callback<UpdateDeviceResponseDTO>() {
                                     @Override
-                                    public void onResponse(Call<UpdateFCMTokenResponseDTO> call, Response<UpdateFCMTokenResponseDTO> response) {
+                                    public void onResponse(Call<UpdateDeviceResponseDTO> call, Response<UpdateDeviceResponseDTO> response) {
 
                                         if (response.isSuccessful()) {
                                             SharedPreferenceHelper.setSharedPreferenceString(mContext, "GATEWAY_KEY", newKey);
@@ -112,7 +124,7 @@ public class MainActivity extends AppCompatActivity {
                                     }
 
                                     @Override
-                                    public void onFailure(Call<UpdateFCMTokenResponseDTO> call, Throwable t) {
+                                    public void onFailure(Call<UpdateDeviceResponseDTO> call, Throwable t) {
                                         Snackbar.make(view, "An error occured :(", Snackbar.LENGTH_LONG).show();
                                         updateKeyButton.setEnabled(true);
                                         updateKeyButton.setText("Update");

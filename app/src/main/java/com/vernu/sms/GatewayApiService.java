@@ -1,14 +1,14 @@
 package com.vernu.sms;
 
-import com.vernu.sms.dtos.UpdateFCMTokenInputDTO;
-import com.vernu.sms.dtos.UpdateFCMTokenResponseDTO;
+import com.vernu.sms.dtos.UpdateDeviceInputDTO;
+import com.vernu.sms.dtos.UpdateDeviceResponseDTO;
 
 import retrofit2.Call;
 import retrofit2.http.Body;
-import retrofit2.http.POST;
+import retrofit2.http.PATCH;
 import retrofit2.http.Path;
 
 public interface GatewayApiService {
-    @POST("gateway/devices/{deviceId}/updateFCMToken")
-    Call<UpdateFCMTokenResponseDTO> updateFCMToken(@Path("deviceId") String deviceId, @Body() UpdateFCMTokenInputDTO body);
+    @PATCH("gateway/devices/{deviceId}")
+    Call<UpdateDeviceResponseDTO> updateFCMToken(@Path("deviceId") String deviceId, @Body() UpdateDeviceInputDTO body);
 }
