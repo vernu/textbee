@@ -98,7 +98,7 @@ public class MainActivity extends AppCompatActivity {
 
                         if (response.isSuccessful()) {
                             SharedPreferenceHelper.setSharedPreferenceBoolean(mContext, "GATEWAY_ENABLED", isCheked);
-                            Snackbar.make(view, "DONE :)", Snackbar.LENGTH_LONG).show();
+                            Snackbar.make(view, "Gateway " + (isCheked ? "enabled" : "disabled"), Snackbar.LENGTH_LONG).show();
 
                         } else {
                             Snackbar.make(view, response.message(), Snackbar.LENGTH_LONG).show();
@@ -110,7 +110,6 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onFailure(Call<UpdateDeviceResponseDTO> call, Throwable t) {
                         Snackbar.make(view, "An error occured :(", Snackbar.LENGTH_LONG).show();
-                        Log.d("ERR", t.toString());
                         compoundButton.setEnabled(true);
 
                     }
