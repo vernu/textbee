@@ -22,6 +22,7 @@
         android:ems="10"
         android:hint="key"
         android:inputType="text"
+        android:textIsSelectable="true"
         app:layout_constraintEnd_toStartOf="@+id/updateKeyButton"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/gatewaySwitch" />
