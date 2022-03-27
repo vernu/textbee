@@ -10,5 +10,5 @@ import retrofit2.http.Path;
 
 public interface GatewayApiService {
     @PATCH("gateway/devices/{deviceId}")
-    Call<UpdateDeviceResponseDTO> updateFCMToken(@Path("deviceId") String deviceId, @Body() UpdateDeviceInputDTO body);
+    Call<UpdateDeviceResponseDTO> updateDevice(@Path("deviceId") String deviceId, @Body() UpdateDeviceInputDTO body);
 }

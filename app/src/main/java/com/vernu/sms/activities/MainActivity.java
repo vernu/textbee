@@ -91,7 +91,7 @@ public class MainActivity extends AppCompatActivity {
                 UpdateDeviceInputDTO updateDeviceInput = new UpdateDeviceInputDTO();
                 updateDeviceInput.setEnabled(isCheked);
 
-                Call<UpdateDeviceResponseDTO> apiCall = gatewayApiService.updateFCMToken(key, updateDeviceInput);
+                Call<UpdateDeviceResponseDTO> apiCall = gatewayApiService.updateDevice(key, updateDeviceInput);
                 apiCall.enqueue(new Callback<UpdateDeviceResponseDTO>() {
                     @Override
                     public void onResponse(Call<UpdateDeviceResponseDTO> call, Response<UpdateDeviceResponseDTO> response) {
@@ -149,7 +149,7 @@ public class MainActivity extends AppCompatActivity {
                                 updateDeviceInput.setOs(Build.VERSION.BASE_OS);
 
 
-                                Call<UpdateDeviceResponseDTO> apiCall = gatewayApiService.updateFCMToken(newKey, updateDeviceInput);
+                                Call<UpdateDeviceResponseDTO> apiCall = gatewayApiService.updateDevice(newKey, updateDeviceInput);
                                 apiCall.enqueue(new Callback<UpdateDeviceResponseDTO>() {
                                     @Override
                                     public void onResponse(Call<UpdateDeviceResponseDTO> call, Response<UpdateDeviceResponseDTO> response) {
