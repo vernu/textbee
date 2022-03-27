@@ -52,6 +52,7 @@
         android:gravity="start|top"
         android:inputType="textMultiLine"
         android:enabled="false"
+        android:visibility="gone"
         android:hint="FCM Token"
         app:layout_constraintEnd_toEndOf="@+id/gatewayKeyEditText"
         app:layout_constraintStart_toStartOf="@+id/gatewayKeyEditText"
