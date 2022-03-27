@@ -13,6 +13,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.Switch;
 import android.widget.Toast;
@@ -36,6 +37,8 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public class MainActivity extends AppCompatActivity {
 
     private Context mContext;
+    private Retrofit retrofit;
+    private GatewayApiService gatewayApiService;
 
     private Switch gatewaySwitch;
     private EditText gatewayKeyEditText, fcmTokenEditText;
@@ -48,6 +51,11 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         mContext = getApplicationContext();
+        retrofit = new Retrofit.Builder()
+                .baseUrl("https://vernu-sms.herokuapp.com/api/v1/")
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+        gatewayApiService = retrofit.create(GatewayApiService.class);
 
         setContentView(R.layout.activity_main);
         gatewaySwitch = findViewById(R.id.gatewaySwitch);
@@ -68,7 +76,49 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
+
         gatewayKeyEditText.setText(SharedPreferenceHelper.getSharedPreferenceString(mContext, "GATEWAY_KEY", ""));
+
+        gatewaySwitch.setChecked(SharedPreferenceHelper.getSharedPreferenceBoolean(mContext, "GATEWAY_ENABLED", false));
+        gatewaySwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean isCheked) {
+                View view = compoundButton.getRootView();
+                compoundButton.setEnabled(false);
+                String key = gatewayKeyEditText.getText().toString();
+
+
+                UpdateDeviceInputDTO updateDeviceInput = new UpdateDeviceInputDTO();
+                updateDeviceInput.setEnabled(isCheked);
+
+                Call<UpdateDeviceResponseDTO> apiCall = gatewayApiService.updateFCMToken(key, updateDeviceInput);
+                apiCall.enqueue(new Callback<UpdateDeviceResponseDTO>() {
+                    @Override
+                    public void onResponse(Call<UpdateDeviceResponseDTO> call, Response<UpdateDeviceResponseDTO> response) {
+
+                        if (response.isSuccessful()) {
+                            SharedPreferenceHelper.setSharedPreferenceBoolean(mContext, "GATEWAY_ENABLED", isCheked);
+                            Snackbar.make(view, "DONE :)", Snackbar.LENGTH_LONG).show();
+
+                        } else {
+                            Snackbar.make(view, response.message(), Snackbar.LENGTH_LONG).show();
+                        }
+
+                        compoundButton.setEnabled(true);
+                    }
+
+                    @Override
+                    public void onFailure(Call<UpdateDeviceResponseDTO> call, Throwable t) {
+                        Snackbar.make(view, "An error occured :(", Snackbar.LENGTH_LONG).show();
+                        Log.d("ERR", t.toString());
+                        compoundButton.setEnabled(true);
+
+                    }
+                });
+
+
+            }
+        });
 
         updateKeyButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -89,12 +139,6 @@ public class MainActivity extends AppCompatActivity {
                                 }
                                 String token = task.getResult();
                                 fcmTokenEditText.setText(token);
-                                Retrofit retrofit = new Retrofit.Builder()
-                                        .baseUrl("https://vernu-sms.herokuapp.com/api/v1/")
-                                        .addConverterFactory(GsonConverterFactory.create())
-                                        .build();
-
-                                GatewayApiService service = retrofit.create(GatewayApiService.class);
 
 
                                 UpdateDeviceInputDTO updateDeviceInput = new UpdateDeviceInputDTO();
@@ -106,7 +150,7 @@ public class MainActivity extends AppCompatActivity {
                                 updateDeviceInput.setOs(Build.VERSION.BASE_OS);
 
 
-                                Call<UpdateDeviceResponseDTO> apiCall = service.updateFCMToken(newKey, updateDeviceInput);
+                                Call<UpdateDeviceResponseDTO> apiCall = gatewayApiService.updateFCMToken(newKey, updateDeviceInput);
                                 apiCall.enqueue(new Callback<UpdateDeviceResponseDTO>() {
                                     @Override
                                     public void onResponse(Call<UpdateDeviceResponseDTO> call, Response<UpdateDeviceResponseDTO> response) {
