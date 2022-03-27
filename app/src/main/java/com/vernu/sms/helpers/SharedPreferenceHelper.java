@@ -34,13 +34,13 @@ public class SharedPreferenceHelper {
     }
 
 
-    static int getSharedPreferenceInt(Context context, String key, int defValue) {
+    public static int getSharedPreferenceInt(Context context, String key, int defValue) {
         SharedPreferences settings = context.getSharedPreferences(PREF_FILE, 0);
         return settings.getInt(key, defValue);
     }
 
 
-    static boolean getSharedPreferenceBoolean(Context context, String key, boolean defValue) {
+    public static boolean getSharedPreferenceBoolean(Context context, String key, boolean defValue) {
         SharedPreferences settings = context.getSharedPreferences(PREF_FILE, 0);
         return settings.getBoolean(key, defValue);
     }
