@@ -10,30 +10,32 @@
         android:id="@+id/gatewaySwitch"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:minHeight="32dp"
         android:text="Status"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
     <EditText
-        android:id="@+id/gatewayKeyEditText"
+        android:id="@+id/apiKeyEditText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:ems="10"
         android:hint="key"
         android:inputType="text"
+        android:minHeight="48dp"
         android:textIsSelectable="true"
-        app:layout_constraintEnd_toStartOf="@+id/updateKeyButton"
+        app:layout_constraintEnd_toStartOf="@+id/registerDeviceBtn"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/gatewaySwitch" />
 
     <Button
-        android:id="@+id/updateKeyButton"
+        android:id="@+id/registerDeviceBtn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Update"
+        android:text="Register Device"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/gatewayKeyEditText"
+        app:layout_constraintStart_toEndOf="@+id/apiKeyEditText"
         app:layout_constraintTop_toBottomOf="@+id/gatewaySwitch" />
 
     <Button
@@ -50,27 +52,41 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:ems="10"
-        android:gravity="start|top"
-        android:inputType="textMultiLine"
         android:enabled="false"
-        android:visibility="gone"
+        android:gravity="start|top"
         android:hint="FCM Token"
-        app:layout_constraintEnd_toEndOf="@+id/gatewayKeyEditText"
-        app:layout_constraintStart_toStartOf="@+id/gatewayKeyEditText"
-        app:layout_constraintTop_toBottomOf="@+id/gatewayKeyEditText" />
+        android:inputType="textMultiLine"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="@+id/apiKeyEditText"
+        app:layout_constraintStart_toStartOf="@+id/apiKeyEditText"
+        app:layout_constraintTop_toBottomOf="@+id/apiKeyEditText" />
+
+    <Button
+        android:id="@+id/scanQRButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="or Scan QR"
+        app:layout_constraintEnd_toEndOf="@+id/registerDeviceBtn"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/registerDeviceBtn" />
 
     <ScrollView
+        android:id="@+id/scrollView2"
         android:layout_width="409dp"
         android:layout_height="606dp"
         app:layout_constraintBottom_toTopOf="@+id/grantSMSPermissionBtn"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/fcmTokenEditText">
+        app:layout_constraintTop_toBottomOf="@+id/scanQRButton"
+        app:layout_constraintVertical_bias="0.0">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"></LinearLayout>
+            android:orientation="vertical">
+
+        </LinearLayout>
     </ScrollView>
 
 

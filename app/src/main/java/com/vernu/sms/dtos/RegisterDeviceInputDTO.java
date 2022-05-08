@@ -1,6 +1,6 @@
 package com.vernu.sms.dtos;
 
-public class UpdateDeviceInputDTO {
+public class RegisterDeviceInputDTO {
     private String fcmToken;
     private boolean enabled;
     private String brand;
@@ -13,10 +13,10 @@ public class UpdateDeviceInputDTO {
     private String appVersionName;
     private String appVersionCode;
 
-    public UpdateDeviceInputDTO() {
+    public RegisterDeviceInputDTO() {
     }
 
-    public UpdateDeviceInputDTO(String fcmToken) {
+    public RegisterDeviceInputDTO(String fcmToken) {
         this.fcmToken = fcmToken;
     }
 
