@@ -7,6 +7,8 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import android.Manifest;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -17,7 +19,9 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.Switch;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnCompleteListener;
@@ -47,6 +51,8 @@ public class MainActivity extends AppCompatActivity {
     private Switch gatewaySwitch;
     private EditText apiKeyEditText, fcmTokenEditText;
     private Button registerDeviceBtn, grantSMSPermissionBtn, scanQRBtn;
+    private ImageButton copyDeviceIdImgBtn;
+    private TextView deviceBrandAndModelTxt, deviceIdTxt;
 
     private static final int SEND_SMS_PERMISSION_REQUEST_CODE = 0;
     private static final int SCAN_QR_REQUEST_CODE = 49374;
@@ -78,6 +84,15 @@ public class MainActivity extends AppCompatActivity {
         grantSMSPermissionBtn = findViewById(R.id.grantSMSPermissionBtn);
         scanQRBtn = findViewById(R.id.scanQRButton);
 
+
+        deviceBrandAndModelTxt = findViewById(R.id.deviceBrandAndModelTxt);
+        deviceIdTxt = findViewById(R.id.deviceIdTxt);
+
+        copyDeviceIdImgBtn = findViewById(R.id.copyDeviceIdImgBtn);
+
+        deviceIdTxt.setText(deviceId);
+        deviceBrandAndModelTxt.setText(Build.BRAND + " " + Build.MODEL);
+
         if (isSMSPermissionGranted(mContext)) {
             grantSMSPermissionBtn.setEnabled(false);
             grantSMSPermissionBtn.setText("SMS Permission Granted");
@@ -90,6 +105,15 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
+        copyDeviceIdImgBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+                ClipData clip = ClipData.newPlainText("Device ID", deviceId);
+                clipboard.setPrimaryClip(clip);
+                Snackbar.make(view, "Copied", Snackbar.LENGTH_LONG).show();
+            }
+        });
 
         apiKeyEditText.setText(SharedPreferenceHelper.getSharedPreferenceString(mContext, "API_KEY", ""));
 
