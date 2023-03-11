@@ -6,6 +6,7 @@ import {
   Post,
   UseGuards,
   Request,
+  Get,
 } from '@nestjs/common'
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger'
 import { AuthGuard } from 'src/auth/auth.guard'
@@ -28,6 +29,19 @@ export class GatewayController {
   @Post('/devices')
   async registerDevice(@Body() input: RegisterDeviceInputDTO, @Request() req) {
     const data = await this.gatewayService.registerDevice(input, req.user)
+    return { data }
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'List of registered devices' })
+  @ApiQuery({
+    name: 'apiKey',
+    required: false,
+    description: 'Required if jwt bearer token not provided',
+  })
+  @Get('/devices')
+  async getDevices(@Body() input: RegisterDeviceInputDTO, @Request() req) {
+    const data = await this.gatewayService.getDevicesForUser(req.user)
     return { data }
   }
 

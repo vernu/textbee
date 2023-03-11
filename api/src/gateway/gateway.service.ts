@@ -15,7 +15,21 @@ export class GatewayService {
     input: RegisterDeviceInputDTO,
     user: User,
   ): Promise<any> {
-    return await this.deviceModel.create({ ...input, user })
+    const device = await this.deviceModel.findOne({
+      user: user._id,
+      model: input.model,
+      buildId: input.buildId,
+    })
+
+    if (device) {
+      return await this.updateDevice(device._id, { ...input, enabled: true })
+    } else {
+      return await this.deviceModel.create({ ...input, user })
+    }
+  }
+
+  async getDevicesForUser(user: User): Promise<any> {
+    return await this.deviceModel.find({ user: user._id })
   }
 
   async updateDevice(
