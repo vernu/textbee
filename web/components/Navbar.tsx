@@ -18,7 +18,7 @@ import Link from 'next/link'
 import { MoonIcon, SunIcon } from '@chakra-ui/icons'
 import Router from 'next/router'
 import { useDispatch, useSelector } from 'react-redux'
-import { logout, selectAuth } from '../store/authSlice'
+import { logout, selectAuth } from '../store/authReducer'
 
 export default function Navbar() {
   const dispatch = useDispatch()

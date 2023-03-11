@@ -33,7 +33,7 @@ export const login = createAsyncThunk(
       const res = await loginRequest(payload)
       const { accessToken, user } = res
       saveUserAndToken(user, accessToken)
-      Router.push('/dashboard')
+      Router.push('/')
       return res
     } catch (e) {
       toast({
@@ -52,7 +52,7 @@ export const register = createAsyncThunk(
       const res = await registerRequest(payload)
       const { accessToken, user } = res
       saveUserAndToken(user, accessToken)
-      Router.push('/dashboard')
+      Router.push('/')
       return res
     } catch (e) {
       toast({

@@ -1,9 +1,13 @@
 import { configureStore } from '@reduxjs/toolkit'
-import authSlice from './authSlice'
+import apiKeyListReducer from './apiKeyListReducer'
+import authReducer from './authReducer'
+import deviceListReducer from './deviceListReducer'
 
 export const store = configureStore({
   reducer: {
-    auth: authSlice,
+    auth: authReducer,
+    apiKeyList: apiKeyListReducer,
+    deviceList: deviceListReducer,
   },
   enhancers: [],
 })

@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 import { useSelector } from 'react-redux'
 import FeaturesSection from '../components/home/FeaturesSection'
 import IntroSection from '../components/home/IntroSection'
-import { selectAuth } from '../store/authSlice'
+import { selectAuth } from '../store/authReducer'
 
 export default function HomePage() {
   const { accessToken, user } = useSelector(selectAuth)

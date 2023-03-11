@@ -1,7 +1,7 @@
 import { Box, SimpleGrid, chakra } from '@chakra-ui/react'
 import React from 'react'
 import { useSelector } from 'react-redux'
-import { selectAuth } from '../../store/authSlice'
+import { selectAuth } from '../../store/authReducer'
 import UserStatsCard from './UserStatsCard'
 
 const UserStats = () => {

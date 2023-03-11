@@ -35,3 +35,24 @@ export interface LoginResponse extends BaseResponse {
 }
 
 export type RegisterResponse = LoginResponse
+
+export interface SendSMSRequestPayload {
+  receivers: string[]
+  smsBody: string
+}
+
+export interface ApiKeyEntity {
+  _id: string
+  apiKey: string
+  user: UserEntity
+}
+
+export interface DeviceEntity {
+  _id: string
+  user: UserEntity
+  enabled: boolean
+  fcmToken: string
+  brand: string
+  manufacturer: string
+  model: string
+}

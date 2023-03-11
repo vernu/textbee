@@ -1,5 +1,6 @@
 import { DeleteIcon } from '@chakra-ui/icons'
 import {
+  Spinner,
   Table,
   TableContainer,
   Tbody,
@@ -11,29 +12,33 @@ import {
   useToast,
 } from '@chakra-ui/react'
 import { useEffect, useState } from 'react'
-import { useSelector } from 'react-redux'
-import { deleteApiKeyRequest, getApiKeyListRequest } from '../../services'
-import { selectAuth } from '../../store/authSlice'
+import { useDispatch, useSelector } from 'react-redux'
+import { deleteApiKeyRequest } from '../../services'
+import {
+  fetchApiKeyList,
+  selectApiKeyList,
+} from '../../store/apiKeyListReducer'
+import { selectAuth } from '../../store/authReducer'
 
 const ApiKeyList = () => {
-  const [apiKeyList, setApiKeyList] = useState([])
   const toast = useToast()
+  const dispatch = useDispatch()
+  const { data, loading } = useSelector(selectApiKeyList)
 
   const { user, accessToken } = useSelector(selectAuth)
   useEffect(() => {
     if (user && accessToken) {
-      getApiKeyListRequest().then((apiKeys) => {
-        setApiKeyList(apiKeys)
-      })
+      dispatch(fetchApiKeyList())
     }
-  }, [user, accessToken])
+  }, [dispatch, user, accessToken])
 
   const onDelete = (apiKeyId: string) => {
     deleteApiKeyRequest(apiKeyId)
-    setApiKeyList(apiKeyList.filter((apiKey) => apiKey._id !== apiKeyId))
+    dispatch(fetchApiKeyList())
     toast({
       title: 'Success',
       description: 'API Key deleted',
+      isClosable: true,
     })
   }
 
@@ -48,21 +53,37 @@ const ApiKeyList = () => {
           </Tr>
         </Thead>
         <Tbody>
-          {apiKeyList.map((apiKey) => (
-            <Tr key={apiKey}>
-              <Td>{apiKey.apiKey}</Td>
-              <Td>{apiKey.status}</Td>
-              <Td>
-                <Tooltip label='Double Click to delete'>
-                  <DeleteIcon
-                    onDoubleClick={(e) => {
-                      onDelete(apiKey._id)
-                    }}
-                  />
-                </Tooltip>
+          {loading ? (
+            <Tr>
+              <Td colSpan={3} textAlign='center'>
+                <Spinner size='lg' />
               </Td>
             </Tr>
-          ))}
+          ) : (
+            <>
+              {data.length == 0 ? (
+                <Td colSpan={3} textAlign='center'>
+                  No API Keys
+                </Td>
+              ) : (
+                data.map(({ _id, apiKey, status }) => (
+                  <Tr key={_id}>
+                    <Td>{apiKey}</Td>
+                    <Td>{status}</Td>
+                    <Td>
+                      <Tooltip label='Double Click to delete'>
+                        <DeleteIcon
+                          onDoubleClick={(e) => {
+                            onDelete(_id)
+                          }}
+                        />
+                      </Tooltip>
+                    </Td>
+                  </Tr>
+                ))
+              )}
+            </>
+          )}
         </Tbody>
       </Table>
     </TableContainer>

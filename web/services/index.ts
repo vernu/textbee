@@ -1,16 +1,18 @@
 import axios from 'axios'
+import { LOCAL_STORAGE_KEY } from '../shared/constants'
 import {
   LoginRequestPayload,
   LoginResponse,
   RegisterRequestPayload,
   RegisterResponse,
+  SendSMSRequestPayload,
 } from './types'
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL
 
 if (typeof localStorage !== 'undefined')
   axios.defaults.headers.common[
     'Authorization'
-  ] = `Bearer ${localStorage.accessToken}`
+  ] = `Bearer ${localStorage.getItem(LOCAL_STORAGE_KEY.TOKEN)}`
 
 export const loginRequest = async (
   payload: LoginRequestPayload
@@ -38,5 +40,21 @@ export const getApiKeyListRequest = async () => {
 
 export const deleteApiKeyRequest = async (id: string) => {
   const res = await axios.delete(`${BASE_URL}/auth/api-keys/${id}`)
+  return res.data.data
+}
+
+export const getDeviceListRequest = async () => {
+  const res = await axios.get(`${BASE_URL}/gateway/devices`)
+  return res.data.data
+}
+
+export const sendSMSRequest = async (
+  deviceId: string,
+  payload: SendSMSRequestPayload
+) => {
+  const res = await axios.post(
+    `${BASE_URL}/gateway/devices/${deviceId}/sendSMS`,
+    payload
+  )
   return res.data.data
 }

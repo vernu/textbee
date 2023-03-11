@@ -17,7 +17,7 @@ import {
 import Link from 'next/link'
 import { useState } from 'react'
 import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons'
-import { login, selectAuth } from '../store/authSlice'
+import { login, selectAuth } from '../store/authReducer'
 import { useDispatch, useSelector } from 'react-redux'
 import { LoginRequestPayload } from '../services/types'
 

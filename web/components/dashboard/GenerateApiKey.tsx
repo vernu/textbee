@@ -43,7 +43,10 @@ const NewApiKeyGeneratedModal = ({
                 Open the SMS Gateway App and scan this QR to get started
               </chakra.h1>
 
-              <Flex justifyContent='center'>
+              <Flex
+                justifyContent='center'
+                style={{ backgroundColor: '#fff', padding: '5px' }}
+              >
                 <QRCode value={generatedApiKey} />{' '}
               </Flex>
             </>
