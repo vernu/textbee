@@ -1,6 +1,5 @@
 package com.vernu.sms.activities;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -17,19 +16,17 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
+import com.vernu.sms.BuildConfig;
 import com.vernu.sms.services.GatewayApiService;
 import com.vernu.sms.R;
 import com.vernu.sms.dtos.RegisterDeviceInputDTO;
@@ -57,8 +54,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int SEND_SMS_PERMISSION_REQUEST_CODE = 0;
     private static final int SCAN_QR_REQUEST_CODE = 49374;
 
-    private static final String API_BASE_URL = "https://api.sms.real.et/api/v1/";
-
+    private static final String API_BASE_URL = BuildConfig.DEBUG ? "http://192.168.1.100:3006/api/v1/" : "https://api.sms.real.et/api/v1/";
     private String deviceId = null;
 
 
@@ -97,82 +93,61 @@ public class MainActivity extends AppCompatActivity {
             grantSMSPermissionBtn.setEnabled(false);
             grantSMSPermissionBtn.setText("SMS Permission Granted");
         } else {
-            grantSMSPermissionBtn.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    handleSMSRequestPermission(view);
-                }
-            });
+            grantSMSPermissionBtn.setOnClickListener(view -> handleSMSRequestPermission(view));
         }
 
-        copyDeviceIdImgBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-                ClipData clip = ClipData.newPlainText("Device ID", deviceId);
-                clipboard.setPrimaryClip(clip);
-                Snackbar.make(view, "Copied", Snackbar.LENGTH_LONG).show();
-            }
+        copyDeviceIdImgBtn.setOnClickListener(view -> {
+            ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+            ClipData clip = ClipData.newPlainText("Device ID", deviceId);
+            clipboard.setPrimaryClip(clip);
+            Snackbar.make(view, "Copied", Snackbar.LENGTH_LONG).show();
         });
 
         apiKeyEditText.setText(SharedPreferenceHelper.getSharedPreferenceString(mContext, "API_KEY", ""));
 
         gatewaySwitch.setChecked(SharedPreferenceHelper.getSharedPreferenceBoolean(mContext, "GATEWAY_ENABLED", false));
-        gatewaySwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton compoundButton, boolean isCheked) {
-                View view = compoundButton.getRootView();
-                compoundButton.setEnabled(false);
-                String key = apiKeyEditText.getText().toString();
+        gatewaySwitch.setOnCheckedChangeListener((compoundButton, isCheked) -> {
+            View view = compoundButton.getRootView();
+            compoundButton.setEnabled(false);
+            String key = apiKeyEditText.getText().toString();
 
 
-                RegisterDeviceInputDTO registerDeviceInput = new RegisterDeviceInputDTO();
-                registerDeviceInput.setEnabled(isCheked);
+            RegisterDeviceInputDTO registerDeviceInput = new RegisterDeviceInputDTO();
+            registerDeviceInput.setEnabled(isCheked);
 
-                Call<RegisterDeviceResponseDTO> apiCall = gatewayApiService.updateDevice(deviceId, key, registerDeviceInput);
-                apiCall.enqueue(new Callback<RegisterDeviceResponseDTO>() {
-                    @Override
-                    public void onResponse(Call<RegisterDeviceResponseDTO> call, Response<RegisterDeviceResponseDTO> response) {
+            Call<RegisterDeviceResponseDTO> apiCall = gatewayApiService.updateDevice(deviceId, key, registerDeviceInput);
+            apiCall.enqueue(new Callback<RegisterDeviceResponseDTO>() {
+                @Override
+                public void onResponse(Call<RegisterDeviceResponseDTO> call, Response<RegisterDeviceResponseDTO> response) {
 
-                        if (response.isSuccessful()) {
-                            SharedPreferenceHelper.setSharedPreferenceBoolean(mContext, "GATEWAY_ENABLED", isCheked);
-                            Snackbar.make(view, "Gateway " + (isCheked ? "enabled" : "disabled"), Snackbar.LENGTH_LONG).show();
-
-                        } else {
-                            Snackbar.make(view, response.message(), Snackbar.LENGTH_LONG).show();
-                        }
-
-                        compoundButton.setEnabled(true);
+                    if (response.isSuccessful()) {
+                        Snackbar.make(view, "Gateway " + (isCheked ? "enabled" : "disabled"), Snackbar.LENGTH_LONG).show();
+                        SharedPreferenceHelper.setSharedPreferenceBoolean(mContext, "GATEWAY_ENABLED", isCheked);
+                        compoundButton.setChecked(Boolean.TRUE.equals(response.body().data.get("enabled")));
+                    } else {
+                        Snackbar.make(view, response.message(), Snackbar.LENGTH_LONG).show();
                     }
+                    compoundButton.setEnabled(true);
+                }
 
-                    @Override
-                    public void onFailure(Call<RegisterDeviceResponseDTO> call, Throwable t) {
-                        Snackbar.make(view, "An error occured :(", Snackbar.LENGTH_LONG).show();
-                        compoundButton.setEnabled(true);
+                @Override
+                public void onFailure(Call<RegisterDeviceResponseDTO> call, Throwable t) {
+                    Snackbar.make(view, "An error occured :(", Snackbar.LENGTH_LONG).show();
+                    compoundButton.setEnabled(true);
 
-                    }
-                });
+                }
+            });
 
 
-            }
         });
 
-        registerDeviceBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                handleRegisterDevice();
+        registerDeviceBtn.setOnClickListener(view -> handleRegisterDevice());
 
-            }
-        });
-
-        scanQRBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                IntentIntegrator intentIntegrator = new IntentIntegrator(MainActivity.this);
-                intentIntegrator.setPrompt("Go to vernu-sms.vercel.app/dashboard and click Register Device to generate QR Code");
-                intentIntegrator.setRequestCode(SCAN_QR_REQUEST_CODE);
-                intentIntegrator.initiateScan();
-            }
+        scanQRBtn.setOnClickListener(view -> {
+            IntentIntegrator intentIntegrator = new IntentIntegrator(MainActivity.this);
+            intentIntegrator.setPrompt("Go to vernu-sms.vercel.app/dashboard and click Register Device to generate QR Code");
+            intentIntegrator.setRequestCode(SCAN_QR_REQUEST_CODE);
+            intentIntegrator.initiateScan();
         });
 
 
@@ -202,55 +177,54 @@ public class MainActivity extends AppCompatActivity {
         View view = findViewById(R.id.registerDeviceBtn);
 
         FirebaseMessaging.getInstance().getToken()
-                .addOnCompleteListener(new OnCompleteListener<String>() {
-                    @Override
-                    public void onComplete(@NonNull Task<String> task) {
-                        if (!task.isSuccessful()) {
-                            Snackbar.make(view, "Failed to obtain FCM Token :(", Snackbar.LENGTH_LONG).show();
+                .addOnCompleteListener(task -> {
+                    if (!task.isSuccessful()) {
+                        Snackbar.make(view, "Failed to obtain FCM Token :(", Snackbar.LENGTH_LONG).show();
+                        registerDeviceBtn.setEnabled(true);
+                        registerDeviceBtn.setText("Update");
+                        return;
+                    }
+                    String token = task.getResult();
+                    fcmTokenEditText.setText(token);
+
+                    RegisterDeviceInputDTO registerDeviceInput = new RegisterDeviceInputDTO();
+                    registerDeviceInput.setEnabled(true);
+                    registerDeviceInput.setFcmToken(token);
+                    registerDeviceInput.setBrand(Build.BRAND);
+                    registerDeviceInput.setManufacturer(Build.MANUFACTURER);
+                    registerDeviceInput.setModel(Build.MODEL);
+                    registerDeviceInput.setBuildId(Build.ID);
+                    registerDeviceInput.setOs(Build.VERSION.BASE_OS);
+
+
+                    Call<RegisterDeviceResponseDTO> apiCall = gatewayApiService.registerDevice(newKey, registerDeviceInput);
+                    apiCall.enqueue(new Callback<RegisterDeviceResponseDTO>() {
+                        @Override
+                        public void onResponse(Call<RegisterDeviceResponseDTO> call, Response<RegisterDeviceResponseDTO> response) {
+
+                            if (response.isSuccessful()) {
+                                SharedPreferenceHelper.setSharedPreferenceString(mContext, "API_KEY", newKey);
+                                Log.e("API_RESP", response.toString());
+                                Snackbar.make(view, "Device Registration Successful :)", Snackbar.LENGTH_LONG).show();
+                                deviceId = response.body().data.get("_id").toString();
+                                deviceIdTxt.setText(deviceId);
+                                SharedPreferenceHelper.setSharedPreferenceString(mContext, "DEVICE_ID", deviceId);
+
+                            } else {
+                                Snackbar.make(view, response.message(), Snackbar.LENGTH_LONG).show();
+                            }
                             registerDeviceBtn.setEnabled(true);
                             registerDeviceBtn.setText("Update");
-                            return;
                         }
-                        String token = task.getResult();
-                        fcmTokenEditText.setText(token);
 
-                        RegisterDeviceInputDTO registerDeviceInput = new RegisterDeviceInputDTO();
-                        registerDeviceInput.setEnabled(true);
-                        registerDeviceInput.setFcmToken(token);
-                        registerDeviceInput.setBrand(Build.BRAND);
-                        registerDeviceInput.setManufacturer(Build.MANUFACTURER);
-                        registerDeviceInput.setModel(Build.MODEL);
-                        registerDeviceInput.setBuildId(Build.ID);
-                        registerDeviceInput.setOs(Build.VERSION.BASE_OS);
+                        @Override
+                        public void onFailure(Call<RegisterDeviceResponseDTO> call, Throwable t) {
+                            Snackbar.make(view, "An error occured :(", Snackbar.LENGTH_LONG).show();
+                            registerDeviceBtn.setEnabled(true);
+                            registerDeviceBtn.setText("Update");
 
-
-                        Call<RegisterDeviceResponseDTO> apiCall = gatewayApiService.registerDevice(newKey, registerDeviceInput);
-                        apiCall.enqueue(new Callback<RegisterDeviceResponseDTO>() {
-                            @Override
-                            public void onResponse(Call<RegisterDeviceResponseDTO> call, Response<RegisterDeviceResponseDTO> response) {
-
-                                if (response.isSuccessful()) {
-                                    SharedPreferenceHelper.setSharedPreferenceString(mContext, "API_KEY", newKey);
-                                    Log.e("API_RESP", response.toString());
-                                    Snackbar.make(view, "Device Registration Successful :)", Snackbar.LENGTH_LONG).show();
-                                    SharedPreferenceHelper.setSharedPreferenceString(mContext, "DEVICE_ID", response.body().data.get("_id").toString());
-
-                                } else {
-                                    Snackbar.make(view, response.message(), Snackbar.LENGTH_LONG).show();
-                                }
-                                registerDeviceBtn.setEnabled(true);
-                                registerDeviceBtn.setText("Update");
-                            }
-
-                            @Override
-                            public void onFailure(Call<RegisterDeviceResponseDTO> call, Throwable t) {
-                                Snackbar.make(view, "An error occured :(", Snackbar.LENGTH_LONG).show();
-                                registerDeviceBtn.setEnabled(true);
-                                registerDeviceBtn.setText("Update");
-
-                            }
-                        });
-                    }
+                        }
+                    });
                 });
     }
 
