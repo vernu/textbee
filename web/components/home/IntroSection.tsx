@@ -49,10 +49,8 @@ export default function IntroSection() {
             </Text>
           </Heading>
           <Text color={'gray.500'}>
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Nostrum
-            recusandae optio rem iste earum ullam, omnis iusto mollitia
-            laudantium necessitatibus ipsa quae suscipit at architecto illo vel,
-            cum, nesciunt ex?
+            Unlock the power of messaging with our open-source Android SMS
+            Gateway.
           </Text>
           <Stack
             spacing={{ base: 4, sm: 6 }}
