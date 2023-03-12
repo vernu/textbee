@@ -93,6 +93,7 @@ public class MainActivity extends AppCompatActivity {
             grantSMSPermissionBtn.setEnabled(false);
             grantSMSPermissionBtn.setText("SMS Permission Granted");
         } else {
+            grantSMSPermissionBtn.setEnabled(true);
             grantSMSPermissionBtn.setOnClickListener(view -> handleSMSRequestPermission(view));
         }
 
