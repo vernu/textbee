@@ -3,6 +3,7 @@ import Router from 'next/router'
 import { useEffect } from 'react'
 import { useSelector } from 'react-redux'
 import FeaturesSection from '../components/home/FeaturesSection'
+import HowItWorksSection from '../components/home/HowItWorksSection'
 import IntroSection from '../components/home/IntroSection'
 import { selectAuth } from '../store/authReducer'
 
@@ -18,6 +19,7 @@ export default function HomePage() {
     <Container maxW={'7xl'}>
       <IntroSection />
       <FeaturesSection />
+      <HowItWorksSection />
     </Container>
   )
 }

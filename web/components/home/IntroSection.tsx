@@ -10,6 +10,7 @@ import {
   IconButton,
   createIcon,
 } from '@chakra-ui/react'
+import Link from 'next/link'
 import Router from 'next/router'
 
 export default function IntroSection() {
@@ -70,15 +71,17 @@ export default function IntroSection() {
             >
               Get Started
             </Button>
-            <Button
-              rounded={'full'}
-              size={'lg'}
-              fontWeight={'normal'}
-              px={6}
-              leftIcon={<PlayIcon h={4} w={4} color={'gray.300'} />}
-            >
-              How It Works
-            </Button>
+            <Link href={'#how-it-works'} passHref>
+              <Button
+                rounded={'full'}
+                size={'lg'}
+                fontWeight={'normal'}
+                px={6}
+                leftIcon={<PlayIcon h={4} w={4} color={'gray.300'} />}
+              >
+                How It Works
+              </Button>
+            </Link>
           </Stack>
         </Stack>
         <Flex
