@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { LOCAL_STORAGE_KEY } from '../shared/constants'
 import {
+  GoogleLoginRequestPayload,
   LoginRequestPayload,
   LoginResponse,
   RegisterRequestPayload,
@@ -18,6 +19,13 @@ export const loginRequest = async (
   payload: LoginRequestPayload
 ): Promise<LoginResponse> => {
   const res = await axios.post(`${BASE_URL}/auth/login`, payload)
+  return res.data.data
+}
+
+export const loginWithGoogleRequest = async (
+  payload: GoogleLoginRequestPayload
+): Promise<LoginResponse> => {
+  const res = await axios.post(`${BASE_URL}/auth/google-login`, payload)
   return res.data.data
 }
 

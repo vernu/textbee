@@ -14,10 +14,16 @@ export class User {
   @Prop({ type: String, required: true, unique: true, lowercase: true })
   email: string
 
+  @Prop({ type: String, unique: true })
+  googleId?: string
+
+  @Prop({ type: String })
+  avatar?: string
+
   @Prop({ type: String, trim: true })
   primaryPhone: string
 
-  @Prop({ type: String, required: true })
+  @Prop({ type: String })
   password: string
 
   @Prop({ type: String, default: UserRole.REGULAR })

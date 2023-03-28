@@ -8,6 +8,7 @@ export interface UserEntity {
   name: string
   email: string
   role: UserRole
+  avatar?: string
 }
 export interface AuthState {
   loading: boolean
@@ -18,6 +19,10 @@ export interface AuthState {
 export interface LoginRequestPayload {
   email: string
   password: string
+}
+
+export interface GoogleLoginRequestPayload {
+  idToken: string
 }
 
 export interface RegisterRequestPayload extends LoginRequestPayload {

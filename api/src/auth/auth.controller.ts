@@ -27,6 +27,13 @@ export class AuthController {
     return { data }
   }
 
+  @ApiOperation({ summary: 'Login With Google' })
+  @Post('/google-login')
+  async googleLogin(@Body() input: any) {
+    const data = await this.authService.loginWithGoogle(input.idToken)
+    return { data }
+  }
+
   @ApiOperation({ summary: 'Register' })
   @Post('/register')
   async register(@Body() input: RegisterInputDTO) {

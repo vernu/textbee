@@ -1,16 +1,22 @@
 import { createAsyncThunk, createSlice, isAnyOf } from '@reduxjs/toolkit'
 import type { PayloadAction } from '@reduxjs/toolkit'
-import { loginRequest, registerRequest } from '../services'
+import {
+  loginRequest,
+  loginWithGoogleRequest,
+  registerRequest,
+} from '../services'
 import { createStandaloneToast } from '@chakra-ui/react'
 import Router from 'next/router'
 import { RootState } from './store'
 import {
   AuthState,
+  GoogleLoginRequestPayload,
   LoginRequestPayload,
   RegisterRequestPayload,
 } from '../services/types'
 import { removeUserAndToken, saveUserAndToken } from '../shared/utils'
 import { LOCAL_STORAGE_KEY } from '../shared/constants'
+import { googleLogout } from '@react-oauth/google'
 
 const toast = createStandaloneToast()
 
@@ -31,6 +37,25 @@ export const login = createAsyncThunk(
   async (payload: LoginRequestPayload, thunkAPI) => {
     try {
       const res = await loginRequest(payload)
+      const { accessToken, user } = res
+      saveUserAndToken(user, accessToken)
+      Router.push('/')
+      return res
+    } catch (e) {
+      toast({
+        title: e.response.data.error || 'Login failed',
+        status: 'error',
+      })
+      return thunkAPI.rejectWithValue(e.response.data)
+    }
+  }
+)
+
+export const loginWithGoogle = createAsyncThunk(
+  'auth/google-login',
+  async (payload: GoogleLoginRequestPayload, thunkAPI) => {
+    try {
+      const res = await loginWithGoogleRequest(payload)
       const { accessToken, user } = res
       saveUserAndToken(user, accessToken)
       Router.push('/')
@@ -70,6 +95,7 @@ export const authSlice = createSlice({
   reducers: {
     logout: (state) => {
       removeUserAndToken()
+      googleLogout()
       state.accessToken = null
       state.user = null
       Router.push('/login')
@@ -78,7 +104,7 @@ export const authSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addMatcher(
-        isAnyOf(login.fulfilled, register.fulfilled),
+        isAnyOf(login.fulfilled, register.fulfilled, loginWithGoogle.fulfilled),
         (state, action: PayloadAction<any>) => {
           state.loading = false
           state.user = action.payload.user

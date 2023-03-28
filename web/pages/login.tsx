@@ -17,9 +17,10 @@ import {
 import Link from 'next/link'
 import { useState } from 'react'
 import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons'
-import { login, selectAuth } from '../store/authReducer'
+import { login, loginWithGoogle, selectAuth } from '../store/authReducer'
 import { useDispatch, useSelector } from 'react-redux'
 import { LoginRequestPayload } from '../services/types'
+import { GoogleLogin } from '@react-oauth/google'
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState<boolean>(false)
@@ -112,6 +113,20 @@ export default function LoginPage() {
                 {authState.loading ? 'Please Wait...' : 'Login'}
               </Button>
             </Stack>
+            <GoogleLogin
+              onSuccess={({ credential: idToken }) => {
+                dispatch(loginWithGoogle({ idToken }))
+              }}
+              onError={() => {
+                toast({
+                  title: 'Error',
+                  description: 'Something went wrong',
+                  status: 'error',
+                })
+              }}
+              useOneTap={true}
+              width='100%'
+            />
             <Stack pt={6}>
               <Text align={'center'}>
                 Don&apos;t have an account?{' '}
