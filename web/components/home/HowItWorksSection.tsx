@@ -19,7 +19,7 @@ export default function HowItWorksSection() {
     <Box p={4}>
       <Stack spacing={4} as={Container} maxW={'6xl'}>
         <a id='#how-it-works'>
-          <Heading fontSize={'3xl'} textAlign={'center'}>
+          <Heading fontSize={'3xl'} textAlign={'center'} pt={16}>
             How It Works
           </Heading>
         </a>
@@ -31,7 +31,7 @@ export default function HowItWorksSection() {
         </Text>
       </Stack>
 
-      <Container maxW={'6xl'} mt={10}>
+      <Container maxW={'6xl'} mt={10} pt={8}>
         <Accordion allowMultiple defaultIndex={[]}>
           {howItWorksContent.map(({ title, description }) => (
             <AccordionItem key={title}>

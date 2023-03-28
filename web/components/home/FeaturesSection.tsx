@@ -17,7 +17,7 @@ const FeaturesSection = () => {
   return (
     <Box p={4}>
       <Stack spacing={4} as={Container} maxW={'6xl'}>
-        <Heading fontSize={'3xl'} textAlign={'center'}>
+        <Heading fontSize={'3xl'} textAlign={'center'} pt={16}>
           Features
         </Heading>
         <Text color={'gray.600'} fontSize={'lg'} textAlign={'justify'}>
@@ -30,9 +30,9 @@ const FeaturesSection = () => {
       </Stack>
 
       <Container maxW={'6xl'} mt={10}>
-        <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={10}>
+        <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={10} pt={16}>
           {featuresContent.map((feature, i) => (
-            <HStack key={i} align={'top'}>
+            <HStack key={i} align={'top'} borderWidth="1px" borderRadius="lg" p={2} shadow='lg' >
               <Box color={'green.400'} px={2}>
                 <Icon as={CheckIcon} />
               </Box>
