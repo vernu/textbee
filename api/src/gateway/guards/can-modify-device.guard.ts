@@ -5,6 +5,7 @@ import {
   HttpStatus,
   Injectable,
 } from '@nestjs/common'
+import mongoose from 'mongoose'
 import { UserRole } from 'src/users/user-roles.enum'
 import { GatewayService } from '../gateway.service'
 
@@ -17,6 +18,14 @@ export class CanModifyDevice implements CanActivate {
 
     const deviceId = request.params.id
     const userId = request.user?.id
+
+    const isValidId = mongoose.Types.ObjectId.isValid(deviceId)
+    if (!isValidId) {
+      throw new HttpException(
+        { error: 'Invalid device id' },
+        HttpStatus.BAD_REQUEST,
+      )
+    }
 
     const device = await this.gatewayService.getDeviceById(deviceId)
     if (

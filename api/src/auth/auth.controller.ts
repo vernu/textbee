@@ -69,6 +69,7 @@ export class AuthController {
     return { data }
   }
 
+  // TODO: Add a guard to check if the user is the owner of the api key
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Generate Api Key' })
   @ApiBearerAuth()
