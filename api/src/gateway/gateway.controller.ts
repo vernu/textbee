@@ -12,6 +12,7 @@ import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger'
 import { AuthGuard } from 'src/auth/auth.guard'
 import { RegisterDeviceInputDTO, SendSMSInputDTO } from './gateway.dto'
 import { GatewayService } from './gateway.service'
+import { CanModifyDevice } from './guards/can-modify-device.guard'
 
 @ApiTags('gateway')
 @ApiBearerAuth()
@@ -40,7 +41,7 @@ export class GatewayController {
     description: 'Required if jwt bearer token not provided',
   })
   @Get('/devices')
-  async getDevices(@Body() input: RegisterDeviceInputDTO, @Request() req) {
+  async getDevices(@Request() req) {
     const data = await this.gatewayService.getDevicesForUser(req.user)
     return { data }
   }
@@ -51,6 +52,7 @@ export class GatewayController {
     required: false,
     description: 'Required if jwt bearer token not provided',
   })
+  @UseGuards(AuthGuard, CanModifyDevice)
   @Patch('/devices/:id')
   async updateDevice(
     @Param('id') deviceId: string,
@@ -66,6 +68,7 @@ export class GatewayController {
     required: false,
     description: 'Required if jwt bearer token not provided',
   })
+  @UseGuards(AuthGuard, CanModifyDevice)
   @Post('/devices/:id/sendSMS')
   async sendSMS(
     @Param('id') deviceId: string,

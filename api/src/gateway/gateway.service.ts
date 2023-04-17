@@ -32,6 +32,10 @@ export class GatewayService {
     return await this.deviceModel.find({ user: user._id })
   }
 
+  async getDeviceById(deviceId: string): Promise<any> {
+    return await this.deviceModel.findById(deviceId)
+  }
+
   async updateDevice(
     deviceId: string,
     input: RegisterDeviceInputDTO,
