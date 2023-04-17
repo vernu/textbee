@@ -25,8 +25,10 @@ export interface GoogleLoginRequestPayload {
   idToken: string
 }
 
-export interface RegisterRequestPayload extends LoginRequestPayload {
+export interface RegisterRequestPayload {
   name: string
+  email: string
+  password: string
 }
 
 export interface BaseResponse {

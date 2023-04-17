@@ -27,6 +27,7 @@ export default function HomePage() {
       )
     },
     onError: () => {},
+    disabled: !!user,
   })
 
   return (

@@ -124,7 +124,7 @@ export default function LoginPage() {
                   status: 'error',
                 })
               }}
-              useOneTap={true}
+              useOneTap={!authState.user}
               width='100%'
             />
             <Stack pt={6}>
