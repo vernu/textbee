@@ -9,7 +9,7 @@ import {
   Get,
 } from '@nestjs/common'
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger'
-import { AuthGuard } from 'src/auth/auth.guard'
+import { AuthGuard } from 'src/auth/guards/auth.guard'
 import { RegisterDeviceInputDTO, SendSMSInputDTO } from './gateway.dto'
 import { GatewayService } from './gateway.service'
 import { CanModifyDevice } from './guards/can-modify-device.guard'

@@ -12,8 +12,9 @@ import {
 } from '@nestjs/common'
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger'
 import { LoginInputDTO, RegisterInputDTO } from './auth.dto'
-import { AuthGuard } from './auth.guard'
+import { AuthGuard } from './guards/auth.guard'
 import { AuthService } from './auth.service'
+import { CanModifyApiKey } from './guards/can-modify-api-key.guard'
 
 @ApiTags('auth')
 @Controller('auth')
@@ -69,8 +70,7 @@ export class AuthController {
     return { data }
   }
 
-  // TODO: Add a guard to check if the user is the owner of the api key
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, CanModifyApiKey)
   @ApiOperation({ summary: 'Generate Api Key' })
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)

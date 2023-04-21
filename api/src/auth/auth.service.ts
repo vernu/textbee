@@ -115,8 +115,12 @@ export class AuthService {
     return this.apiKeyModel.find({ user: currentUser._id })
   }
 
-  async findApiKeys(params) {
+  async findApiKey(params) {
     return this.apiKeyModel.findOne(params)
+  }
+
+  async findApiKeyById(apiKeyId: string) {
+    return this.apiKeyModel.findById(apiKeyId)
   }
 
   async deleteApiKey(apiKeyId: string) {

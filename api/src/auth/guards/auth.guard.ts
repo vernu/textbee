@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { UsersService } from 'src/users/users.service'
-import { AuthService } from './auth.service'
+import { AuthService } from '../auth.service'
 import * as bcrypt from 'bcryptjs'
 
 @Injectable()
@@ -34,7 +34,7 @@ export class AuthGuard implements CanActivate {
       const apiKeyStr = request.query.apiKey
       if (apiKeyStr) {
         var regex = new RegExp(`^${apiKeyStr.substr(0, 17)}`, 'g')
-        const apiKey = await this.authService.findApiKeys({
+        const apiKey = await this.authService.findApiKey({
           apiKey: { $regex: regex },
         })
 
