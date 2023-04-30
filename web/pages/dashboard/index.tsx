@@ -9,6 +9,7 @@ import { selectAuth } from '../../store/authReducer'
 import Router from 'next/router'
 import { useEffect } from 'react'
 import SendSMS from '../../components/dashboard/SendSMS'
+import ErrorBoundary from '../../components/ErrorBoundary'
 
 export default function Dashboard() {
   const { user: currentUser } = useSelector(selectAuth)
@@ -27,7 +28,7 @@ export default function Dashboard() {
     <>
       <UserStats />
       <Box maxW='7xl' mx={'auto'} pt={5} px={{ base: 2, sm: 12, md: 17 }}>
-        <Flex justifyContent='space-evenly' >
+        <Flex justifyContent='space-evenly'>
           <GenerateApiKey />
           <SendSMS />
         </Flex>
@@ -35,10 +36,14 @@ export default function Dashboard() {
         <br />
         <SimpleGrid columns={{ base: 1, md: 2 }} spacing={{ base: 5, lg: 8 }}>
           <Box backdropBlur='2xl' borderWidth='1px' borderRadius='lg'>
-            <ApiKeyList />
+            <ErrorBoundary>
+              <ApiKeyList />
+            </ErrorBoundary>
           </Box>
           <Box backdropBlur='2xl' borderWidth='1px' borderRadius='lg'>
-            <DeviceList />
+            <ErrorBoundary>
+              <DeviceList />
+            </ErrorBoundary>
           </Box>
         </SimpleGrid>
       </Box>

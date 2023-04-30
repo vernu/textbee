@@ -6,19 +6,24 @@ import { ChakraProvider } from '@chakra-ui/react'
 import Navbar from '../components/Navbar'
 import Meta from '../components/meta/Meta'
 import { GoogleOAuthProvider } from '@react-oauth/google'
+import ErrorBoundary from '../components/ErrorBoundary'
 function MyApp({ Component, pageProps }: AppProps) {
   return (
-    <Provider store={store}>
-      <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID }>
-        <ChakraProvider>
-          <Meta />
-          <Navbar />
-          <Wrapper>
-            <Component {...pageProps} />
-          </Wrapper>
-        </ChakraProvider>
-      </GoogleOAuthProvider>
-    </Provider>
+    <ErrorBoundary>
+      <Provider store={store}>
+        <GoogleOAuthProvider
+          clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID}
+        >
+          <ChakraProvider>
+            <Meta />
+            <Navbar />
+            <Wrapper>
+              <Component {...pageProps} />
+            </Wrapper>
+          </ChakraProvider>
+        </GoogleOAuthProvider>
+      </Provider>
+    </ErrorBoundary>
   )
 }
 
