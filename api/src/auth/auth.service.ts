@@ -16,14 +16,6 @@ export class AuthService {
     @InjectModel(ApiKey.name) private apiKeyModel: Model<ApiKeyDocument>,
   ) {}
 
-  async validateUser(_id: string): Promise<User | null> {
-    const user = await this.usersService.findOne({ _id })
-    if (user) {
-      return user
-    }
-    return null
-  }
-
   async login(userData: any) {
     const user = await this.usersService.findOne({ email: userData.email })
     if (!user) {
@@ -101,7 +93,7 @@ export class AuthService {
     const hashedApiKey = await bcrypt.hash(apiKey, 10)
 
     const newApiKey = new this.apiKeyModel({
-      apiKey: apiKey.substr(0, 17) + '******************',
+      apiKey: apiKey.substr(0, 17) + '*'.repeat(18),
       hashedApiKey,
       user: currentUser._id,
     })

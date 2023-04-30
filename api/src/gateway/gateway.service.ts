@@ -61,30 +61,17 @@ export class GatewayService {
   async sendSMS(deviceId: string, smsData: SendSMSInputDTO): Promise<any> {
     const device = await this.deviceModel.findById(deviceId)
 
-    if (!device) {
-      throw new HttpException(
-        {
-          error: 'Device not found',
-        },
-        HttpStatus.NOT_FOUND,
-      )
-    }
-
-    if (!device.enabled) {
+    if (!device?.enabled) {
       throw new HttpException(
         {
           success: false,
-          error: 'Device is disabled',
+          error: 'Device does not exist or is not enabled',
         },
         HttpStatus.BAD_REQUEST,
       )
     }
 
     const payload: any = {
-      // notification: {
-      //   title: 'SMS',
-      //   body: 'message',
-      // },
       data: {
         smsData: JSON.stringify(smsData),
       },
