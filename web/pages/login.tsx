@@ -55,17 +55,16 @@ export default function LoginPage() {
 
   return (
     <Flex
-      minH={'100vh'}
+      minH={'90vh'}
       align={'center'}
       justify={'center'}
       bg={useColorModeValue('gray.50', 'gray.800')}
     >
       <Stack spacing={8} mx={'auto'} maxW={'lg'} py={12} px={6}>
         <Stack align={'center'}>
-          <Heading fontSize={'4xl'} textAlign={'center'}>
-            Login
+          <Heading fontSize={'2xl'} textAlign={'center'}>
+            Login to access your dashboard
           </Heading>
-          <Text fontSize={'lg'} color={'gray.600'}></Text>
         </Stack>
         <Box
           rounded={'lg'}
@@ -113,20 +112,28 @@ export default function LoginPage() {
                 {authState.loading ? 'Please Wait...' : 'Login'}
               </Button>
             </Stack>
-            <GoogleLogin
-              onSuccess={({ credential: idToken }) => {
-                dispatch(loginWithGoogle({ idToken }))
-              }}
-              onError={() => {
-                toast({
-                  title: 'Error',
-                  description: 'Something went wrong',
-                  status: 'error',
-                })
-              }}
-              useOneTap={!authState.user}
-              width='100%'
-            />
+
+            <Box display='flex' justifyContent='center'>
+              <GoogleLogin
+                onSuccess={({ credential: idToken }) => {
+                  dispatch(loginWithGoogle({ idToken }))
+                }}
+                onError={() => {
+                  toast({
+                    title: 'Error',
+                    description: 'Something went wrong',
+                    status: 'error',
+                  })
+                }}
+                useOneTap={!authState.user}
+                width='300'
+                size='large'
+                shape='pill'
+                locale='en'
+                theme='outline'
+                text='continue_with'
+              />
+            </Box>
             <Stack pt={6}>
               <Text align={'center'}>
                 Don&apos;t have an account?{' '}

@@ -27,7 +27,7 @@ export default function Navbar() {
 
   return (
     <>
-      <Box bg={useColorModeValue('gray.100', 'gray.900')} px={4}>
+      <Box bg={useColorModeValue('gray.100', 'gray.700')} px={4} shadow='lg' mb={1}>
         <Flex h={16} alignItems={'center'} justifyContent={'space-between'}>
           <Link href='/' passHref>
             <Flex alignItems={'center'}>

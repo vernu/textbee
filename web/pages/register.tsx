@@ -53,19 +53,16 @@ export default function RegisterPage() {
 
   return (
     <Flex
-      minH={'100vh'}
+      minH={'90vh'}
       align={'center'}
       justify={'center'}
       bg={useColorModeValue('gray.50', 'gray.800')}
     >
       <Stack spacing={8} mx={'auto'} maxW={'lg'} py={12} px={6}>
         <Stack align={'center'}>
-          <Heading fontSize={'4xl'} textAlign={'center'}>
-            Register
+          <Heading fontSize={'2xl'} textAlign={'center'}>
+            Register now and start using your android device as an SMS Gateway
           </Heading>
-          <Text fontSize={'lg'} color={'gray.600'}>
-            and start using ur phone as an SMS Gateway
-          </Text>
         </Stack>
         <Box
           rounded={'lg'}
@@ -117,20 +114,31 @@ export default function RegisterPage() {
                 {authState.loading ? 'Please wait...' : 'Register'}
               </Button>
             </Stack>
-            <GoogleLogin
-              onSuccess={({ credential: idToken }) => {
-                dispatch(loginWithGoogle({ idToken }))
-              }}
-              onError={() => {
-                toast({
-                  title: 'Error',
-                  description: 'Something went wrong',
-                  status: 'error',
-                })
-              }}
-              useOneTap={true}
-              width='100%'
-            />
+
+            <Heading fontSize={'md'} textAlign={'center'}>
+              OR
+            </Heading>
+            <Box display='flex' justifyContent='center'>
+              <GoogleLogin
+                onSuccess={({ credential: idToken }) => {
+                  dispatch(loginWithGoogle({ idToken }))
+                }}
+                onError={() => {
+                  toast({
+                    title: 'Error',
+                    description: 'Something went wrong',
+                    status: 'error',
+                  })
+                }}
+                useOneTap={!authState.user}
+                width='300'
+                size='large'
+                shape='pill'
+                locale='en'
+                theme='outline'
+                text='continue_with'
+              />
+            </Box>
             <Stack pt={6}>
               <Text align={'center'}>
                 Already a user? <Link href='/login'>Login</Link>
