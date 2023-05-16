@@ -19,7 +19,7 @@ export default function HowItWorksSection() {
     <Box p={4}>
       <Stack spacing={4} as={Container} maxW={'6xl'}>
         <a id='#how-it-works'>
-          <Heading fontSize={'3xl'} textAlign={'center'} pt={16}>
+          <Heading fontSize={'3xl'} textAlign={'center'} py={8}>
             How It Works
           </Heading>
         </a>

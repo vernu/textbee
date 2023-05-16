@@ -1,7 +1,7 @@
 export const featuresContent = [
   {
     title: 'Send SMS',
-    description: 'Send SMS to any number from your dashboard or via API.',
+    description: 'Send SMS to any number from your dashboard or via REST API.',
   },
   {
     title: 'Bulk SMS',
