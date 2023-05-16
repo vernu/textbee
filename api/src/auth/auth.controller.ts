@@ -42,6 +42,19 @@ export class AuthController {
     return { data }
   }
 
+  @ApiOperation({ summary: 'Get current logged in user' })
+  @ApiQuery({
+    name: 'apiKey',
+    required: false,
+    description: 'Required if jwt bearer token not provided',
+  })
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
+  @Get('/who-am-i')
+  async whoAmI(@Request() req) {
+    return { data: req.user }
+  }
+
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Generate Api Key' })
   @ApiQuery({

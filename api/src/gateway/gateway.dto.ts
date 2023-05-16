@@ -35,7 +35,7 @@ export class RegisterDeviceInputDTO {
   appVersionCode?: number
 }
 
-export class ISMSData {
+export class SMSData {
   @ApiProperty({
     type: String,
     required: true,
@@ -51,4 +51,4 @@ export class ISMSData {
   })
   receivers: string[]
 }
-export class SendSMSInputDTO extends ISMSData {}
+export class SendSMSInputDTO extends SMSData {}
