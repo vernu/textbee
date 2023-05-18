@@ -8,10 +8,11 @@ import FeaturesSection from '../components/home/FeaturesSection'
 import HowItWorksSection from '../components/home/HowItWorksSection'
 import IntroSection from '../components/home/IntroSection'
 import { loginWithGoogle, selectAuth } from '../store/authReducer'
+import wageSvg from '../public/images/wave.svg'
 
 const Wave = ({ rotate }: { rotate?: boolean }) => (
   <Box transform={rotate ? 'rotate(180deg)' : ''}>
-    <img src={'/images/wave.svg'} alt={'wave'} />
+    <Image src={wageSvg} alt={'wave'} />
   </Box>
 )
 
