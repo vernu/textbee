@@ -43,6 +43,10 @@ export interface LoginResponse extends BaseResponse {
 
 export type RegisterResponse = LoginResponse
 
+export interface CurrentUserResponse extends BaseResponse {
+  data: UserEntity
+}
+
 export interface SendSMSRequestPayload {
   receivers: string[]
   smsBody: string

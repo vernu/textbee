@@ -1,6 +1,7 @@
 import {
   Box,
   Button,
+  Flex,
   FormLabel,
   Input,
   Modal,
@@ -53,7 +54,11 @@ export default function SendSMS() {
 
   return (
     <>
-      <Button onClick={onOpen}>Start Sending</Button>
+      <Flex justifyContent='flex-end' marginBottom={20}>
+        <Button bg={'blue.400'} color={'white'} onClick={onOpen}>
+          Send SMS
+        </Button>
+      </Flex>
 
       <Modal isOpen={isOpen} onClose={onClose}>
         <ModalOverlay />

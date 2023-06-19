@@ -27,7 +27,12 @@ export default function Navbar() {
 
   return (
     <>
-      <Box bg={useColorModeValue('gray.100', 'gray.700')} px={4} shadow='lg' mb={1}>
+      <Box
+        bg={useColorModeValue('gray.100', 'blue.600')}
+        px={4}
+        shadow='lg'
+        mb={1}
+      >
         <Flex h={16} alignItems={'center'} justifyContent={'space-between'}>
           <Link href='/' passHref>
             <Flex alignItems={'center'}>
@@ -37,9 +42,10 @@ export default function Navbar() {
                 w={'30px'}
                 h={'30px'}
                 src={'/images/sms-gateway-logo.png'}
+                borderRadius='full'
               />
               <Box style={{ cursor: 'pointer', marginLeft: '5px' }}>
-                VERNU SMS
+                TextBee
               </Box>
             </Flex>
           </Link>
@@ -49,6 +55,12 @@ export default function Navbar() {
               <Button onClick={toggleColorMode}>
                 {colorMode === 'light' ? <MoonIcon /> : <SunIcon />}
               </Button>
+
+              <Menu>
+                <Link href='https://github.com/vernu/textbee' passHref>
+                  <MenuButton>Github</MenuButton>
+                </Link>
+              </Menu>
 
               {!user ? (
                 <>
@@ -102,7 +114,6 @@ export default function Navbar() {
                     >
                       Dashboard
                     </MenuItem>
-                    <MenuItem>Account Settings</MenuItem>
                     <MenuItem
                       onClick={() => {
                         dispatch(logout())
