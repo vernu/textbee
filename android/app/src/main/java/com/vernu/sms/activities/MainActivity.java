@@ -54,7 +54,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int SEND_SMS_PERMISSION_REQUEST_CODE = 0;
     private static final int SCAN_QR_REQUEST_CODE = 49374;
 
-    private static final String API_BASE_URL = "https://api.sms.vernu.dev/api/v1/";
+    private static final String API_BASE_URL = "https://api.textbee.vernu.dev/api/v1/";
     private String deviceId = null;
 
 
@@ -88,6 +88,12 @@ public class MainActivity extends AppCompatActivity {
 
         deviceIdTxt.setText(deviceId);
         deviceBrandAndModelTxt.setText(Build.BRAND + " " + Build.MODEL);
+
+        if(deviceId == null || deviceId.isEmpty()) {
+            registerDeviceBtn.setText("Register");
+        } else {
+            registerDeviceBtn.setText("Update");
+        }
 
         if (isSMSPermissionGranted(mContext)) {
             grantSMSPermissionBtn.setEnabled(false);
@@ -146,7 +152,7 @@ public class MainActivity extends AppCompatActivity {
 
         scanQRBtn.setOnClickListener(view -> {
             IntentIntegrator intentIntegrator = new IntentIntegrator(MainActivity.this);
-            intentIntegrator.setPrompt("Go to sms.vernu.dev/dashboard and click Register Device to generate QR Code");
+            intentIntegrator.setPrompt("Go to textbee.vernu.dev/dashboard and click Register Device to generate QR Code");
             intentIntegrator.setRequestCode(SCAN_QR_REQUEST_CODE);
             intentIntegrator.initiateScan();
         });

@@ -28,19 +28,18 @@ export default function Dashboard() {
     <>
       <UserStats />
       <Box maxW='7xl' mx={'auto'} pt={5} px={{ base: 2, sm: 12, md: 17 }}>
-        <Flex justifyContent='space-evenly'>
-          <GenerateApiKey />
-          <SendSMS />
-        </Flex>
+        <Flex justifyContent='space-eve nly'></Flex>
 
         <br />
         <SimpleGrid columns={{ base: 1, md: 2 }} spacing={{ base: 5, lg: 8 }}>
-          <Box backdropBlur='2xl' borderWidth='1px' borderRadius='lg'>
+          <Box backdropBlur='2xl' borderWidth='0px' borderRadius='lg'>
+            <GenerateApiKey />
             <ErrorBoundary>
               <ApiKeyList />
             </ErrorBoundary>
           </Box>
-          <Box backdropBlur='2xl' borderWidth='1px' borderRadius='lg'>
+          <Box backdropBlur='2xl' borderWidth='0px' borderRadius='lg'>
+            <SendSMS />
             <ErrorBoundary>
               <DeviceList />
             </ErrorBoundary>
