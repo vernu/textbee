@@ -27,7 +27,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Go to sms.vernu.dev/dashboard and click register device, then copy and paste the api key generated or scan the QR code" />
+            android:text="Go to textbee.vernu.dev/dashboard and click register device, then copy and paste the api key generated or scan the QR code" />
 
         <Button
             android:id="@+id/grantSMSPermissionBtn"
