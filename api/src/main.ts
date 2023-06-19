@@ -16,8 +16,8 @@ async function bootstrap() {
   })
 
   const config = new DocumentBuilder()
-    .setTitle('VERNU SMS Gateway api docs')
-    .setDescription('api docs')
+    .setTitle('TextBee API Docs')
+    .setDescription('TextBee - Android SMS Gateway API Docs')
     .setVersion('1.0')
     .addBearerAuth()
     .build()

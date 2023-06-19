@@ -1,28 +1,17 @@
-import { Box, Container } from '@chakra-ui/react'
+import { Container } from '@chakra-ui/react'
 import { useGoogleOneTapLogin } from '@react-oauth/google'
-import Image from 'next/image'
-import Router from 'next/router'
-import { useEffect } from 'react'
+
 import { useDispatch, useSelector } from 'react-redux'
 import FeaturesSection from '../components/home/FeaturesSection'
 import HowItWorksSection from '../components/home/HowItWorksSection'
 import IntroSection from '../components/home/IntroSection'
 import { loginWithGoogle, selectAuth } from '../store/authReducer'
-import wageSvg from '../public/images/wave.svg'
 
-const Wave = ({ rotate }: { rotate?: boolean }) => (
-  <Box transform={rotate ? 'rotate(180deg)' : ''}>
-    <Image src={wageSvg} alt={'wave'} />
-  </Box>
-)
+import DownloadAppSection from '../components/home/DownloadAppSection'
+import CodeSnippetSection from '../components/home/CodeSnippetSection'
 
 export default function HomePage() {
-  const { accessToken, user } = useSelector(selectAuth)
-  useEffect(() => {
-    if (accessToken && user) {
-      Router.push('/dashboard')
-    }
-  }, [accessToken, user])
+  const { user } = useSelector(selectAuth)
 
   const dispatch = useDispatch()
 
@@ -41,11 +30,10 @@ export default function HomePage() {
   return (
     <Container maxW={'7xl'}>
       <IntroSection />
-      <Wave rotate />
       <FeaturesSection />
-      <Wave />
       <HowItWorksSection />
-      <Wave />
+      <DownloadAppSection />
+      <CodeSnippetSection />
     </Container>
   )
 }

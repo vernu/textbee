@@ -16,11 +16,14 @@ export default function UserStatsCard({ ...props }) {
       border={'1px solid'}
       borderColor={useColorModeValue('gray.800', 'gray.500')}
       rounded={'lg'}
+      style={{
+        height: '90px'
+      }}
     >
       <StatLabel fontWeight={'medium'} isTruncated>
         {title}
       </StatLabel>
-      <StatNumber fontSize={'2xl'} fontWeight={'medium'}>
+      <StatNumber fontSize={'md'} fontWeight={'bold'}>
         {stat}
       </StatNumber>
     </Stat>

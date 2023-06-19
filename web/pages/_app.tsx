@@ -2,11 +2,12 @@ import '../styles/globals.css'
 import type { AppProps } from 'next/app'
 import { Provider } from 'react-redux'
 import { store } from '../store/store'
-import { ChakraProvider } from '@chakra-ui/react'
+import { Box, ChakraProvider } from '@chakra-ui/react'
 import Navbar from '../components/Navbar'
 import Meta from '../components/meta/Meta'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import ErrorBoundary from '../components/ErrorBoundary'
+import Footer from '../components/Footer'
 function MyApp({ Component, pageProps }: AppProps) {
   return (
     <ErrorBoundary>
@@ -20,6 +21,7 @@ function MyApp({ Component, pageProps }: AppProps) {
             <Wrapper>
               <Component {...pageProps} />
             </Wrapper>
+            <Footer />
           </ChakraProvider>
         </GoogleOAuthProvider>
       </Provider>
@@ -28,7 +30,7 @@ function MyApp({ Component, pageProps }: AppProps) {
 }
 
 const Wrapper = ({ children }) => {
-  return <>{children}</>
+  return <Box minH='75vh'>{children}</Box>
 }
 
 export default MyApp

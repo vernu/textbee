@@ -64,20 +64,13 @@ const DeviceList = () => {
                   <Tr key={_id}>
                     <Td>{`${brand}/ ${model}`}</Td>
                     <Td>{enabled ? 'enabled' : 'disabled'}</Td>
-                    <Td>
-                      <EmailIcon onDoubleClick={(e) => {}} />
-                    </Td>
+                    <Td>{/* <EmailIcon onDoubleClick={(e) => {}} /> */}</Td>
                     <Td>
                       <Tooltip label='Double Click to delete'>
                         <IconButton
                           aria-label='Delete'
                           icon={<DeleteIcon />}
-                          onDoubleClick={(e) => {
-                            sendSMSRequest(_id, {
-                              receivers: ['+251912657519'],
-                              smsBody: 'Hello World',
-                            })
-                          }}
+                          onDoubleClick={(e) => {}}
                         />
                       </Tooltip>
                     </Td>

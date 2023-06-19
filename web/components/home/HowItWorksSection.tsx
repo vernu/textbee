@@ -2,13 +2,11 @@ import { AddIcon, MinusIcon } from '@chakra-ui/icons'
 import {
   Accordion,
   AccordionButton,
-  AccordionIcon,
   AccordionItem,
   AccordionPanel,
   Box,
   Container,
   Heading,
-  Stack,
   Text,
 } from '@chakra-ui/react'
 import React from 'react'
@@ -16,22 +14,20 @@ import { howItWorksContent } from './howItWorksContent'
 
 export default function HowItWorksSection() {
   return (
-    <Box p={4}>
-      <Stack spacing={4} as={Container} maxW={'6xl'}>
-        <a id='#how-it-works'>
-          <Heading fontSize={'3xl'} textAlign={'center'} py={8}>
-            How It Works
-          </Heading>
-        </a>
-        <Text color={'gray.600'} fontSize={'lg'} textAlign={'justify'}>
-          Lorem ipsum dolor sit, amet consectetur adipisicing elit. Illo
-          exercitationem quo quibusdam, fugit quaerat odio quisquam commodi ut?
-          Aliquid ab sapiente, expedita quas neque amet consectetur quisquam
-          reprehenderit voluptas commodi?
-        </Text>
-      </Stack>
+    <Box px={4} my={24} maxW={'6xl'}>
+      {/* @ts-ignore */}
+      <a name='how-it-works'>
+        <Heading fontSize={'3xl'} textAlign={'center'}>
+          How It Works
+        </Heading>
+      </a>
+      <Text color={'gray.600'} fontSize={'lg'} textAlign={'center'}>
+        How it works is simple. You install the app on your Android device, and
+        it will turn your device into a SMS Gateway. You can then use the API to
+        send SMS messages from your own applications.
+      </Text>
 
-      <Container maxW={'6xl'} mt={10} pt={8}>
+      <Container maxW={'6xl'} mt={10} pt={0}>
         <Accordion allowMultiple defaultIndex={[]}>
           {howItWorksContent.map(({ title, description }) => (
             <AccordionItem key={title}>

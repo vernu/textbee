@@ -7,15 +7,27 @@ import {
   Text,
   Button,
   Image,
-  IconButton,
   createIcon,
 } from '@chakra-ui/react'
 import Link from 'next/link'
 import Router from 'next/router'
+import { selectAuth } from '../../store/authReducer'
+import { useSelector } from 'react-redux'
+import { ChatIcon } from '@chakra-ui/icons'
 
 export default function IntroSection() {
+  const { currentUser } = useSelector(selectAuth)
+
+  const handleGetStarted = () => {
+    if (!currentUser) {
+      Router.push('/register')
+    } else {
+      Router.push('/dashboard')
+    }
+  }
+
   return (
-    <Container maxW={'7xl'}>
+    <Container maxW={'7xl'} py={8}>
       <Stack
         align={'center'}
         spacing={{ base: 8, md: 10 }}
@@ -28,28 +40,21 @@ export default function IntroSection() {
             fontWeight={600}
             fontSize={{ base: '3xl', sm: '4xl', lg: '5xl' }}
           >
-            <Text
-              as={'span'}
-              position={'relative'}
-              _after={{
-                content: "''",
-                width: 'full',
-                height: '30%',
-                position: 'absolute',
-                bottom: 1,
-                left: 0,
-                bg: 'blue.400',
-                zIndex: -1,
-              }}
-            >
-              VERNU SMS Gateway,
+            <Text as={'span'} position={'relative'} fontWeight={600}>
+              <ChatIcon /> Text
+              <Text as={'span'} color={'blue.400'} decoration='underline'>
+                Bee
+              </Text>
             </Text>
             <br />
-            <Text as={'span'} color={'blue.400'}>
+            <Text as={'span'} color={'blue.400'} fontWeight={300}>
               Make your android device a portable SMS Gateway!
             </Text>
           </Heading>
-          <Text color={'gray.500'}>
+          <Text
+            color={'gray.500'}
+            fontSize={{ base: 'md', sm: 'lg', lg: 'xl' }}
+          >
             Unlock the power of messaging with our open-source Android SMS
             Gateway.
           </Text>
@@ -65,9 +70,7 @@ export default function IntroSection() {
               colorScheme={'blue'}
               bg={'blue.400'}
               _hover={{ bg: 'blue.500' }}
-              onClick={() => {
-                Router.push('/register')
-              }}
+              onClick={handleGetStarted}
             >
               Get Started
             </Button>
@@ -95,29 +98,17 @@ export default function IntroSection() {
             position={'relative'}
             height={'400px'}
             rounded={'2xl'}
-            boxShadow={'2xl'}
+            boxShadow={'xs'}
             width={'full'}
             overflow={'hidden'}
           >
-            <IconButton
-              aria-label={'Play Button'}
-              variant={'ghost'}
-              _hover={{ bg: 'transparent' }}
-              icon={<PlayIcon w={12} h={12} />}
-              size={'lg'}
-              color={'white'}
-              position={'absolute'}
-              left={'50%'}
-              top={'50%'}
-              transform={'translateX(-50%) translateY(-50%)'}
-            />
             <Image
               alt={'Hero Image'}
               fit={'cover'}
               align={'center'}
-              w={'100%'}
-              h={'100%'}
-              src={'/images/landing-img1.jpeg'}
+              // w={'100%'}
+              // h={'100%'}
+              src={'/images/smsgatewayandroid.png'}
             />
           </Box>
         </Flex>

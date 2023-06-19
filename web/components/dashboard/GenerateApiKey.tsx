@@ -1,4 +1,5 @@
 import {
+  Box,
   Button,
   chakra,
   Flex,
@@ -112,32 +113,40 @@ export default function GenerateApiKey() {
   }
   return (
     <>
-      {' '}
-      <Flex justifyContent='center'>
-        <Button
-          /* flex={1} */
-          px={4}
-          fontSize={'sm'}
-          rounded={'full'}
-          bg={'blue.400'}
-          color={'white'}
-          boxShadow={
-            '0px 1px 25px -5px rgb(66 153 225 / 48%), 0 10px 10px -5px rgb(66 153 225 / 43%)'
-          }
-          _hover={{
-            bg: 'blue.500',
-          }}
-          _focus={{
-            bg: 'blue.500',
-          }}
-          onClick={generateApiKey}
-          disabled={generatingApiKey}
-        >
-          {generatingApiKey
-            ? 'generating... '
-            : 'Generate Api Key/ Register Device'}
-        </Button>
-      </Flex>
+      <Box padding={5} border='1px solid gray' marginBottom={10} borderRadius='2xl'>
+        <Flex direction='row' justifyContent='space-between'>
+          {' '}
+          <chakra.h1
+            fontSize='md'
+            fontWeight='bold'
+            mt={2}
+            color={useColorModeValue('gray.800', 'white')}
+          >
+            Generate Api Key and Register Device
+          </chakra.h1>
+          <Button
+            /* flex={1} */
+            px={4}
+            fontSize={'sm'}
+            rounded={'full'}
+            bg={'blue.400'}
+            color={'white'}
+            boxShadow={
+              '0px 1px 25px -5px rgb(66 153 225 / 48%), 0 10px 10px -5px rgb(66 153 225 / 43%)'
+            }
+            _hover={{
+              bg: 'blue.500',
+            }}
+            _focus={{
+              bg: 'blue.500',
+            }}
+            onClick={generateApiKey}
+            disabled={generatingApiKey}
+          >
+            {generatingApiKey ? 'loading... ' : 'Get Started'}
+          </Button>
+        </Flex>{' '}
+      </Box>
       {generatedApiKey && (
         <>
           {
