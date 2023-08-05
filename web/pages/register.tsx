@@ -131,7 +131,7 @@ export default function RegisterPage() {
                   })
                 }}
                 useOneTap={!authState.user}
-                width='300'
+                width={300}
                 size='large'
                 shape='pill'
                 locale='en'
