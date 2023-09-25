@@ -31,7 +31,7 @@ export default function CodeSnippetSection() {
             align={'center'}
             // h={'100%'}
             src={
-              'https://ik.imagekit.io/vernu/textbee/Screenshot_2023-06-18_at_11.30.25_AM.png?updatedAt=1687077054749'
+              'https://ik.imagekit.io/vernu/textbee/Screenshot%202023-09-25%20at%2011.13.30%20AM.png?updatedAt=1695629672884'
             }
             borderRadius={'lg'}
           />
