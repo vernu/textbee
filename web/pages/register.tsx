@@ -16,7 +16,12 @@ import {
 import Link from 'next/link'
 import { useState } from 'react'
 import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons'
-import { loginWithGoogle, register, selectAuth } from '../store/authReducer'
+import {
+  loginWithGoogle,
+  register,
+  selectAuthUser,
+  selectAuthLoading,
+} from '../store/authSlice'
 import { useDispatch, useSelector } from 'react-redux'
 import { RegisterRequestPayload } from '../services/types'
 import { GoogleLogin } from '@react-oauth/google'
@@ -30,7 +35,8 @@ export default function RegisterPage() {
   })
   const toast = useToast()
   const dispatch = useDispatch()
-  const authState = useSelector(selectAuth)
+  const authUser = useSelector(selectAuthUser)
+  const loading = useSelector(selectAuthLoading)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -109,9 +115,9 @@ export default function RegisterPage() {
                   bg: 'blue.500',
                 }}
                 onClick={handleSubmit}
-                disabled={authState.loading}
+                disabled={loading}
               >
-                {authState.loading ? 'Please wait...' : 'Register'}
+                {loading ? 'Please wait...' : 'Register'}
               </Button>
             </Stack>
 
@@ -130,7 +136,7 @@ export default function RegisterPage() {
                     status: 'error',
                   })
                 }}
-                useOneTap={!authState.user}
+                useOneTap={!authUser}
                 width={300}
                 size='large'
                 shape='pill'

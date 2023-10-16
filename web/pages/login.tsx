@@ -17,7 +17,7 @@ import {
 import Link from 'next/link'
 import { useState } from 'react'
 import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons'
-import { login, loginWithGoogle, selectAuth } from '../store/authReducer'
+import { login, loginWithGoogle, selectAuthLoading, selectAuthUser } from '../store/authSlice'
 import { useDispatch, useSelector } from 'react-redux'
 import { LoginRequestPayload } from '../services/types'
 import { GoogleLogin } from '@react-oauth/google'
@@ -32,7 +32,8 @@ export default function LoginPage() {
 
   const dispatch = useDispatch()
   const toast = useToast()
-  const authState = useSelector(selectAuth)
+  const authUser = useSelector(selectAuthUser)
+  const loading = useSelector(selectAuthLoading)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -107,9 +108,9 @@ export default function LoginPage() {
                   bg: 'blue.500',
                 }}
                 onClick={handleSubmit}
-                disabled={authState.loading}
+                disabled={loading}
               >
-                {authState.loading ? 'Please Wait...' : 'Login'}
+                {loading ? 'Please Wait...' : 'Login'}
               </Button>
             </Stack>
 
@@ -125,7 +126,7 @@ export default function LoginPage() {
                     status: 'error',
                   })
                 }}
-                useOneTap={!authState.user}
+                useOneTap={!authUser}
                 width={300}
                 size='large'
                 shape='pill'

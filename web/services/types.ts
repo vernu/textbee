@@ -36,12 +36,14 @@ export interface BaseResponse {
   error?: string
   message?: string
 }
-export interface LoginResponse extends BaseResponse {
+
+export interface BaseAuthResponse extends BaseResponse {
   accessToken: string
   user: UserEntity
 }
+export interface LoginResponse extends BaseAuthResponse {}
 
-export type RegisterResponse = LoginResponse
+export interface RegisterResponse extends BaseAuthResponse {}
 
 export interface CurrentUserResponse extends BaseResponse {
   data: UserEntity
