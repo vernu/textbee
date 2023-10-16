@@ -12,19 +12,68 @@ import {
   ModalHeader,
   ModalOverlay,
   Select,
+  Spinner,
   Textarea,
   useDisclosure,
   useToast,
 } from '@chakra-ui/react'
 import { useState } from 'react'
-import { useSelector } from 'react-redux'
-import { sendSMSRequest } from '../../services'
-import { selectDeviceList } from '../../store/deviceListReducer'
+import { useSelector, useDispatch } from 'react-redux'
+import {
+  selectDeviceList,
+  selectSendingSMS,
+  sendSMS,
+} from '../../store/deviceSlice'
+
+export const SendSMSForm = ({ deviceList, formData, handleChange }) => {
+  return (
+    <>
+      <Box>
+        <FormLabel htmlFor='device'>Select Device</FormLabel>
+        <Select
+          id='device'
+          name='device'
+          placeholder='Select Device'
+          onChange={handleChange}
+          value={formData.device}
+        >
+          {deviceList.map((device) => (
+            <option key={device._id} value={device._id}>
+              {device.model}
+            </option>
+          ))}
+        </Select>
+      </Box>
+      <Box>
+        <FormLabel htmlFor='receivers'>Receiver</FormLabel>
+        <Input
+          placeholder='receiver'
+          name='receivers'
+          onChange={handleChange}
+          value={formData.receivers}
+          type='tel'
+        />
+      </Box>
+      <Box>
+        <FormLabel htmlFor='smsBody'>SMS Body</FormLabel>
+        <Textarea
+          id='smsBody'
+          name='smsBody'
+          onChange={handleChange}
+          value={formData.smsBody}
+        />
+      </Box>
+    </>
+  )
+}
 
 export default function SendSMS() {
   const { isOpen, onOpen, onClose } = useDisclosure()
   const deviceList = useSelector(selectDeviceList)
   const toast = useToast()
+  const dispatch = useDispatch()
+
+  const sendingSMS = useSelector(selectSendingSMS)
 
   const [formData, setFormData] = useState({
     device: '',
@@ -34,15 +83,30 @@ export default function SendSMS() {
 
   const handSend = (e) => {
     e.preventDefault()
-    sendSMSRequest(formData.device, {
-      receivers: formData.receivers.replace(' ', '').split(','),
-      smsBody: formData.smsBody,
-    })
+    const { device: deviceId, receivers, smsBody } = formData
+    const receiversArray = receivers.replace(' ', '').split(',')
 
-    toast({
-      title: 'Sending SMS...',
-    })
-    onClose()
+    if (!deviceId || !receivers || !smsBody) {
+      toast({
+        title: 'Please fill all fields',
+        status: 'error',
+      })
+      return
+    }
+
+    for (let receiver of receiversArray) {
+      // TODO: validate phone numbers
+    }
+
+    dispatch(
+      sendSMS({
+        deviceId,
+        payload: {
+          receivers: receiversArray,
+          smsBody,
+        },
+      })
+    )
   }
 
   const handleChange = (e) => {
@@ -66,48 +130,23 @@ export default function SendSMS() {
           <ModalHeader>Send SMS</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
-            <Box>
-              <FormLabel htmlFor='device'>Select Device</FormLabel>
-              <Select
-                id='device'
-                name='device'
-                placeholder='Select Device'
-                onChange={handleChange}
-                value={formData.smsBody}
-              >
-                {deviceList.data.map((device) => (
-                  <option key={device._id} value={device._id}>
-                    {device.model}
-                  </option>
-                ))}
-              </Select>
-            </Box>
-            <Box>
-              <FormLabel htmlFor='receivers'>Receiver</FormLabel>
-              <Input
-                placeholder='receiver'
-                name='receivers'
-                onChange={handleChange}
-                value={formData.receivers}
-                type='tel'
-              />
-            </Box>
-            <Box>
-              <FormLabel htmlFor='smsBody'>SMS Body</FormLabel>
-              <Textarea
-                id='smsBody'
-                name='smsBody'
-                onChange={handleChange}
-                value={formData.smsBody}
-              />
-            </Box>
+            <SendSMSForm
+              deviceList={deviceList}
+              formData={formData}
+              handleChange={handleChange}
+            />
           </ModalBody>
           <ModalFooter>
             <Button variant='ghost' mr={3} onClick={onClose}>
               Close
             </Button>
-            <Button variant='outline' colorScheme='blue' onClick={handSend}>
-              Send
+            <Button
+              variant='outline'
+              colorScheme='blue'
+              onClick={handSend}
+              disabled={sendingSMS}
+            >
+              {sendingSMS ? <Spinner size='md' /> : 'Send'}
             </Button>
           </ModalFooter>
         </ModalContent>

@@ -1,4 +1,3 @@
-import '../styles/globals.css'
 import type { AppProps } from 'next/app'
 import { Provider } from 'react-redux'
 import { store } from '../store/store'
@@ -8,10 +7,13 @@ import Meta from '../components/meta/Meta'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import ErrorBoundary from '../components/ErrorBoundary'
 import Footer from '../components/Footer'
+import Analytics from '../components/analytics/Analytics'
+
 function MyApp({ Component, pageProps }: AppProps) {
   return (
     <ErrorBoundary>
       <Provider store={store}>
+        <Analytics />
         <GoogleOAuthProvider
           clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID}
         >

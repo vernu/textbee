@@ -11,19 +11,19 @@ import {
   useColorModeValue,
   Stack,
   useColorMode,
-  Center,
   Image,
+  SimpleGrid,
 } from '@chakra-ui/react'
 import Link from 'next/link'
 import { MoonIcon, SunIcon } from '@chakra-ui/icons'
 import Router from 'next/router'
 import { useDispatch, useSelector } from 'react-redux'
-import { logout, selectAuth } from '../store/authReducer'
+import { logout, selectAuthUser } from '../store/authSlice'
 
 export default function Navbar() {
   const dispatch = useDispatch()
   const { colorMode, toggleColorMode } = useColorMode()
-  const { user } = useSelector(selectAuth)
+  const authUser = useSelector(selectAuthUser)
 
   return (
     <>
@@ -62,18 +62,18 @@ export default function Navbar() {
                 </Link>
               </Menu>
 
-              {!user ? (
-                <>
-                  <Menu>
-                    <Link href='/login' passHref>
-                      <MenuButton>Login</MenuButton>
-                    </Link>
-                    <Link href='/register' passHref>
-                      <MenuButton>Register</MenuButton>
-                    </Link>
-                  </Menu>
-                </>
-              ) : (
+              {!authUser && (
+                <Menu>
+                  <Link href='/login' passHref>
+                    <MenuButton>Login</MenuButton>
+                  </Link>
+                  <Link href='/register' passHref>
+                    <MenuButton>Register</MenuButton>
+                  </Link>
+                </Menu>
+              )}
+
+              {authUser && (
                 <Menu>
                   <MenuButton
                     as={Button}
@@ -84,28 +84,22 @@ export default function Navbar() {
                   >
                     <Avatar
                       size={'sm'}
-                      src={
-                        user?.avatar ??
-                        'https://avatars.dicebear.com/api/male/username.svg'
-                      }
+                      name={authUser.name}
+                      src={authUser?.avatar}
                     />
                   </MenuButton>
                   <MenuList alignItems={'center'}>
-                    <br />
-                    <Center>
-                      <Avatar
-                        size={'xl'}
-                        src={
-                          user?.avatar ??
-                          'https://avatars.dicebear.com/api/male/username.svg'
-                        }
-                      />
-                    </Center>
-                    <br />
-                    <Center>
-                      <p>{user?.name}</p>
-                    </Center>
-                    <br />
+                    <MenuItem>
+                      <SimpleGrid columns={2} spacing={3}>
+                        <Avatar
+                          size={'sm'}
+                          name={authUser.name}
+                          src={authUser?.avatar}
+                        />
+                        {authUser?.name}
+                      </SimpleGrid>
+                    </MenuItem>
+
                     <MenuDivider />
                     <MenuItem
                       onClick={() => {

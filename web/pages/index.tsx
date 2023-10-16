@@ -2,16 +2,16 @@ import { Container } from '@chakra-ui/react'
 import { useGoogleOneTapLogin } from '@react-oauth/google'
 
 import { useDispatch, useSelector } from 'react-redux'
-import FeaturesSection from '../components/home/FeaturesSection'
-import HowItWorksSection from '../components/home/HowItWorksSection'
-import IntroSection from '../components/home/IntroSection'
-import { loginWithGoogle, selectAuth } from '../store/authReducer'
+import FeaturesSection from '../components/landing/FeaturesSection'
+import HowItWorksSection from '../components/landing/HowItWorksSection'
+import IntroSection from '../components/landing/IntroSection'
+import { loginWithGoogle, selectAuthUser } from '../store/authSlice'
 
-import DownloadAppSection from '../components/home/DownloadAppSection'
-import CodeSnippetSection from '../components/home/CodeSnippetSection'
+import DownloadAppSection from '../components/landing/DownloadAppSection'
+import CodeSnippetSection from '../components/landing/CodeSnippetSection'
 
 export default function HomePage() {
-  const { user } = useSelector(selectAuth)
+  const authUser = useSelector(selectAuthUser)
 
   const dispatch = useDispatch()
 
@@ -24,7 +24,7 @@ export default function HomePage() {
       )
     },
     onError: () => {},
-    disabled: !!user,
+    disabled: !!authUser,
   })
 
   return (

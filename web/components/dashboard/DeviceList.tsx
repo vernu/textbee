@@ -1,4 +1,4 @@
-import { DeleteIcon, EmailIcon } from '@chakra-ui/icons'
+import { DeleteIcon } from '@chakra-ui/icons'
 import {
   IconButton,
   Spinner,
@@ -13,24 +13,41 @@ import {
 } from '@chakra-ui/react'
 import { useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { sendSMSRequest } from '../../services'
-import { selectAuth } from '../../store/authReducer'
-import {
-  fetchDeviceList,
-  selectDeviceList,
-} from '../../store/deviceListReducer'
+import { selectAuthUser } from '../../store/authSlice'
+import { fetchDevices, selectDeviceList, selectDeviceLoading } from '../../store/deviceSlice'
+
+const DeviceRow = ({ device }: any) => {
+  const { enabled, model, brand, _id, createdAt } = device
+  return (
+    <Tr>
+      <Td>{`${brand}/ ${model}`}</Td>
+      <Td>{enabled ? 'enabled' : 'disabled'}</Td>
+      <Td>{/* <EmailIcon onDoubleClick={(e) => {}} /> */}</Td>
+      <Td>
+        <Tooltip label='Double Click to delete'>
+          <IconButton
+            aria-label='Delete'
+            icon={<DeleteIcon />}
+            onDoubleClick={(e) => {}}
+          />
+        </Tooltip>
+      </Td>
+    </Tr>
+  )
+}
 
 const DeviceList = () => {
   const dispatch = useDispatch()
 
-  const { user, accessToken } = useSelector(selectAuth)
+  const authUser = useSelector(selectAuthUser)
   useEffect(() => {
-    if (user && accessToken) {
-      dispatch(fetchDeviceList())
+    if (authUser) {
+      dispatch(fetchDevices())
     }
-  }, [user, accessToken, dispatch])
+  }, [authUser, dispatch])
 
-  const { data, loading } = useSelector(selectDeviceList)
+  const deviceList = useSelector(selectDeviceList)
+  const loading = useSelector(selectDeviceLoading)
 
   const onDelete = (apiKeyId: string) => {}
 
@@ -45,40 +62,27 @@ const DeviceList = () => {
           </Tr>
         </Thead>
         <Tbody>
-          {loading ? (
+          {loading && (
             <Tr>
               <Td colSpan={3} textAlign='center'>
                 <Spinner size='lg' />
               </Td>
             </Tr>
-          ) : (
-            <>
-              {data.length === 0 ? (
-                <Tr>
-                  <Td colSpan={3} textAlign='center'>
-                    No Devices
-                  </Td>
-                </Tr>
-              ) : (
-                data.map(({ _id, brand, model, enabled, createdAt }) => (
-                  <Tr key={_id}>
-                    <Td>{`${brand}/ ${model}`}</Td>
-                    <Td>{enabled ? 'enabled' : 'disabled'}</Td>
-                    <Td>{/* <EmailIcon onDoubleClick={(e) => {}} /> */}</Td>
-                    <Td>
-                      <Tooltip label='Double Click to delete'>
-                        <IconButton
-                          aria-label='Delete'
-                          icon={<DeleteIcon />}
-                          onDoubleClick={(e) => {}}
-                        />
-                      </Tooltip>
-                    </Td>
-                  </Tr>
-                ))
-              )}
-            </>
           )}
+
+          {!loading && deviceList.length === 0 && (
+            <Tr>
+              <Td colSpan={3} textAlign='center'>
+                No Devices
+              </Td>
+            </Tr>
+          )}
+
+          {!loading &&
+            deviceList.length > 0 &&
+            deviceList.map((device) => (
+              <DeviceRow key={device._id} device={device} />
+            ))}
         </Tbody>
       </Table>
     </TableContainer>
