@@ -20,7 +20,7 @@ import { ApiKey, ApiKeySchema } from './schemas/api-key.schema'
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET,
-      signOptions: { expiresIn: '30d' },
+      signOptions: { expiresIn: '180d' },
     }),
   ],
   controllers: [AuthController],
