@@ -4,7 +4,7 @@ import { Device, DeviceDocument } from './schemas/device.schema'
 import { Model } from 'mongoose'
 import * as firebaseAdmin from 'firebase-admin'
 import { RegisterDeviceInputDTO, SendSMSInputDTO } from './gateway.dto'
-import { User } from 'src/users/schemas/user.schema'
+import { User } from '../users/schemas/user.schema'
 @Injectable()
 export class GatewayService {
   constructor(

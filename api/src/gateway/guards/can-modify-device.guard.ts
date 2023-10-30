@@ -6,7 +6,7 @@ import {
   Injectable,
 } from '@nestjs/common'
 import mongoose from 'mongoose'
-import { UserRole } from 'src/users/user-roles.enum'
+import { UserRole } from '../../users/user-roles.enum'
 import { GatewayService } from '../gateway.service'
 
 @Injectable()

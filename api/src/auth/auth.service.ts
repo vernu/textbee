@@ -1,12 +1,12 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common'
-import { UsersService } from 'src/users/users.service'
+import { UsersService } from '../users/users.service'
 import { JwtService } from '@nestjs/jwt'
 import * as bcrypt from 'bcryptjs'
 import { v4 as uuidv4 } from 'uuid'
 import { InjectModel } from '@nestjs/mongoose'
 import { ApiKey, ApiKeyDocument } from './schemas/api-key.schema'
 import { Model } from 'mongoose'
-import { User } from 'src/users/schemas/user.schema'
+import { User } from '../users/schemas/user.schema'
 import axios from 'axios'
 @Injectable()
 export class AuthService {

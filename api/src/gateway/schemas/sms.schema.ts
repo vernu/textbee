@@ -1,7 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose'
 import { Document, Types } from 'mongoose'
-import { ApiKey } from 'src/auth/schemas/api-key.schema'
-import { User } from 'src/users/schemas/user.schema'
 import { Device } from './device.schema'
 
 export type SMSDocument = SMS & Document
