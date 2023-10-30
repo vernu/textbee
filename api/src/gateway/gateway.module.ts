@@ -3,8 +3,8 @@ import { MongooseModule } from '@nestjs/mongoose'
 import { Device, DeviceSchema } from './schemas/device.schema'
 import { GatewayController } from './gateway.controller'
 import { GatewayService } from './gateway.service'
-import { AuthModule } from 'src/auth/auth.module'
-import { UsersModule } from 'src/users/users.module'
+import { AuthModule } from '../auth/auth.module'
+import { UsersModule } from '../users/users.module'
 
 @Module({
   imports: [
