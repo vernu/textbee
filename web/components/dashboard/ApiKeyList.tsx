@@ -11,7 +11,7 @@ import {
   Tr,
 } from '@chakra-ui/react'
 import { useEffect } from 'react'
-import { useDispatch, useSelector } from 'react-redux'
+import { useSelector } from 'react-redux'
 import {
   deleteApiKey,
   fetchApiKeys,
@@ -19,9 +19,10 @@ import {
   selectApiKeyLoading,
 } from '../../store/apiKeySlice'
 import { selectAuthUser } from '../../store/authSlice'
+import { useAppDispatch } from '../../store/hooks'
 
 const ApiKeyRow = ({ apiKey }: any) => {
-  const dispatch = useDispatch()
+  const dispatch = useAppDispatch()
 
   const handleDelete = async () => {
     dispatch(deleteApiKey(apiKey._id))
@@ -41,7 +42,7 @@ const ApiKeyRow = ({ apiKey }: any) => {
 }
 
 const ApiKeyList = () => {
-  const dispatch = useDispatch()
+  const dispatch = useAppDispatch()
   const loading = useSelector(selectApiKeyLoading)
   const apiKeyList = useSelector(selectApiKeyList)
 

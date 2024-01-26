@@ -2,14 +2,19 @@ import type { AppProps } from 'next/app'
 import { Provider } from 'react-redux'
 import { store } from '../store/store'
 import { Box, ChakraProvider } from '@chakra-ui/react'
-import Navbar from '../components/Navbar'
 import Meta from '../components/meta/Meta'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import ErrorBoundary from '../components/ErrorBoundary'
 import Footer from '../components/Footer'
 import Analytics from '../components/analytics/Analytics'
+import dynamic from 'next/dynamic'
 
 function MyApp({ Component, pageProps }: AppProps) {
+  
+  const NoSSRNavbar = dynamic(() => import('../components/Navbar'), {
+    ssr: false,
+  })
+
   return (
     <ErrorBoundary>
       <Provider store={store}>
@@ -19,7 +24,7 @@ function MyApp({ Component, pageProps }: AppProps) {
         >
           <ChakraProvider>
             <Meta />
-            <Navbar />
+            <NoSSRNavbar />
             <Wrapper>
               <Component {...pageProps} />
             </Wrapper>

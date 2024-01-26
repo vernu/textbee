@@ -9,7 +9,6 @@ export const store = configureStore({
     apiKey: apiKeyReducer,
     device: deviceReducer,
   },
-  enhancers: [],
 })
 
 export type RootState = ReturnType<typeof store.getState>

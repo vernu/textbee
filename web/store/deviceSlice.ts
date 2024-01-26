@@ -4,7 +4,7 @@ import { createStandaloneToast } from '@chakra-ui/react'
 import { RootState } from './store'
 import { gatewayService } from '../services/gatewayService'
 
-const toast = createStandaloneToast()
+const { toast } = createStandaloneToast()
 
 const initialState = {
   loading: false,
@@ -25,6 +25,27 @@ export const fetchDevices = createAsyncThunk(
         status: 'error',
       })
       return rejectWithValue(e.response.data)
+    }
+  }
+)
+
+export const deleteDevice = createAsyncThunk(
+  'device/deleteDevice',
+  async (id: string, { rejectWithValue, dispatch }) => {
+    try {
+      const res = await gatewayService.deleteDevice(id)
+      dispatch(fetchDevices())
+      toast({
+        title: 'Device deleted successfully',
+        status: 'success',
+      })
+      return res
+    } catch (e) {
+      toast({
+        title: e.response?.data?.error || 'Failed to delete device',
+        status: 'error',
+      })
+      return rejectWithValue(e.response?.data)
     }
   }
 )

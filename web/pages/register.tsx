@@ -22,9 +22,10 @@ import {
   selectAuthUser,
   selectAuthLoading,
 } from '../store/authSlice'
-import { useDispatch, useSelector } from 'react-redux'
+import { useSelector } from 'react-redux'
 import { RegisterRequestPayload } from '../services/types'
 import { GoogleLogin } from '@react-oauth/google'
+import { useAppDispatch } from '../store/hooks'
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -34,7 +35,7 @@ export default function RegisterPage() {
     password: '',
   })
   const toast = useToast()
-  const dispatch = useDispatch()
+  const dispatch = useAppDispatch()
   const authUser = useSelector(selectAuthUser)
   const loading = useSelector(selectAuthLoading)
 

@@ -22,6 +22,11 @@ class GatewayService {
     return res.data.data
   }
 
+  async deleteDevice(id: string) {
+    const res = await httpClient.delete(`/gateway/devices/${id}`)
+    return res.data.data
+  }
+
   async sendSMS(deviceId: string, payload: SendSMSRequestPayload) {
     const res = await httpClient.post(
       `/gateway/devices/${deviceId}/sendSMS`,

@@ -13,7 +13,7 @@ import { removeUserAndToken, saveUserAndToken } from '../shared/utils'
 import { LOCAL_STORAGE_KEY } from '../shared/constants'
 import { googleLogout } from '@react-oauth/google'
 import { authService } from '../services/authService'
-const toast = createStandaloneToast()
+const { toast } = createStandaloneToast()
 
 const initialState: AuthState = {
   loading: false,
