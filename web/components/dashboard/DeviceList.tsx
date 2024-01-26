@@ -12,11 +12,12 @@ import {
   Tr,
 } from '@chakra-ui/react'
 import { useEffect } from 'react'
-import { useDispatch, useSelector } from 'react-redux'
+import { useSelector } from 'react-redux'
 import { selectAuthUser } from '../../store/authSlice'
-import { fetchDevices, selectDeviceList, selectDeviceLoading } from '../../store/deviceSlice'
+import { deleteDevice, fetchDevices, selectDeviceList, selectDeviceLoading } from '../../store/deviceSlice'
+import { useAppDispatch } from '../../store/hooks'
 
-const DeviceRow = ({ device }: any) => {
+const DeviceRow = ({ device, onDelete }: any) => {
   const { enabled, model, brand, _id, createdAt } = device
   return (
     <Tr>
@@ -28,7 +29,7 @@ const DeviceRow = ({ device }: any) => {
           <IconButton
             aria-label='Delete'
             icon={<DeleteIcon />}
-            onDoubleClick={(e) => {}}
+            onDoubleClick={onDelete}
           />
         </Tooltip>
       </Td>
@@ -37,7 +38,7 @@ const DeviceRow = ({ device }: any) => {
 }
 
 const DeviceList = () => {
-  const dispatch = useDispatch()
+  const dispatch = useAppDispatch()
 
   const authUser = useSelector(selectAuthUser)
   useEffect(() => {
@@ -49,7 +50,9 @@ const DeviceList = () => {
   const deviceList = useSelector(selectDeviceList)
   const loading = useSelector(selectDeviceLoading)
 
-  const onDelete = (apiKeyId: string) => {}
+  const onDelete = (apiKeyId: string) => {
+    dispatch(deleteDevice(apiKeyId))
+  }
 
   return (
     <TableContainer>
@@ -81,7 +84,7 @@ const DeviceList = () => {
           {!loading &&
             deviceList.length > 0 &&
             deviceList.map((device) => (
-              <DeviceRow key={device._id} device={device} />
+              <DeviceRow key={device._id} device={device} onDelete={() => onDelete(device._id)} />
             ))}
         </Tbody>
       </Table>

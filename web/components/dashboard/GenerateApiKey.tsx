@@ -14,10 +14,10 @@ import {
   useToast,
 } from '@chakra-ui/react'
 import { useState } from 'react'
-import { useDispatch } from 'react-redux'
 import QRCode from 'react-qr-code'
 import { fetchApiKeys } from '../../store/apiKeySlice'
 import { gatewayService } from '../../services/gatewayService'
+import { useAppDispatch } from '../../store/hooks'
 
 const NewApiKeyGeneratedModal = ({
   isOpen = false,
@@ -105,7 +105,7 @@ export default function GenerateApiKey() {
   const [showGeneratedApiKeyModal, setShowGeneratedApiKeyModal] =
     useState(false)
 
-  const dispatch = useDispatch()
+  const dispatch = useAppDispatch()
 
   const generateApiKey = async () => {
     setGeneratingApiKey(true)

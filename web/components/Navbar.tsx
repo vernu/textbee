@@ -11,7 +11,6 @@ import {
   useColorModeValue,
   Stack,
   useColorMode,
-  Image,
   SimpleGrid,
 } from '@chakra-ui/react'
 import Link from 'next/link'
@@ -19,6 +18,7 @@ import { MoonIcon, SunIcon } from '@chakra-ui/icons'
 import Router from 'next/router'
 import { useDispatch, useSelector } from 'react-redux'
 import { logout, selectAuthUser } from '../store/authSlice'
+import Image from 'next/image'
 
 export default function Navbar() {
   const dispatch = useDispatch()
@@ -38,11 +38,10 @@ export default function Navbar() {
             <Flex alignItems={'center'}>
               <Image
                 alt={'Hero Image'}
-                fit={'cover'}
-                w={'30px'}
-                h={'30px'}
+                width={30}
+                height={30}
                 src={'/images/sms-gateway-logo.png'}
-                borderRadius='full'
+                style={{ borderRadius: '50%' }}
               />
               <Box style={{ cursor: 'pointer', marginLeft: '5px' }}>
                 TextBee
@@ -50,76 +49,74 @@ export default function Navbar() {
             </Flex>
           </Link>
 
-          <Flex alignItems={'center'}>
-            <Stack direction={'row'} spacing={7}>
-              <Button onClick={toggleColorMode}>
-                {colorMode === 'light' ? <MoonIcon /> : <SunIcon />}
-              </Button>
+          <Stack alignItems='center' direction='row' spacing={5}>
+            <Button onClick={toggleColorMode} aria-label={'Toggle Color Mode'}>
+              {colorMode === 'light' ? <MoonIcon /> : <SunIcon />}
+            </Button>
 
+            <Menu>
+              <Link href='https://github.com/vernu/textbee' passHref>
+                <MenuButton>Github</MenuButton>
+              </Link>
+            </Menu>
+
+            {!authUser && (
               <Menu>
-                <Link href='https://github.com/vernu/textbee' passHref>
-                  <MenuButton>Github</MenuButton>
+                <Link href='/login' passHref>
+                  <MenuButton>Login</MenuButton>
+                </Link>
+                <Link href='/register' passHref>
+                  <MenuButton>Register</MenuButton>
                 </Link>
               </Menu>
+            )}
 
-              {!authUser && (
-                <Menu>
-                  <Link href='/login' passHref>
-                    <MenuButton>Login</MenuButton>
-                  </Link>
-                  <Link href='/register' passHref>
-                    <MenuButton>Register</MenuButton>
-                  </Link>
-                </Menu>
-              )}
+            {authUser && (
+              <Menu>
+                <MenuButton
+                  as={Button}
+                  rounded={'full'}
+                  variant={'link'}
+                  cursor={'pointer'}
+                  minW={0}
+                >
+                  <Avatar
+                    size={'sm'}
+                    name={authUser.name}
+                    src={authUser?.avatar}
+                  />
+                </MenuButton>
+                <MenuList alignItems={'center'}>
+                  <MenuItem>
+                    <SimpleGrid columns={2} spacing={3}>
+                      <Avatar
+                        size={'sm'}
+                        name={authUser.name}
+                        src={authUser?.avatar}
+                      />
+                      {authUser?.name}
+                    </SimpleGrid>
+                  </MenuItem>
 
-              {authUser && (
-                <Menu>
-                  <MenuButton
-                    as={Button}
-                    rounded={'full'}
-                    variant={'link'}
-                    cursor={'pointer'}
-                    minW={0}
+                  <MenuDivider />
+                  <MenuItem
+                    onClick={() => {
+                      Router.push('/dashboard')
+                    }}
                   >
-                    <Avatar
-                      size={'sm'}
-                      name={authUser.name}
-                      src={authUser?.avatar}
-                    />
-                  </MenuButton>
-                  <MenuList alignItems={'center'}>
-                    <MenuItem>
-                      <SimpleGrid columns={2} spacing={3}>
-                        <Avatar
-                          size={'sm'}
-                          name={authUser.name}
-                          src={authUser?.avatar}
-                        />
-                        {authUser?.name}
-                      </SimpleGrid>
-                    </MenuItem>
-
-                    <MenuDivider />
-                    <MenuItem
-                      onClick={() => {
-                        Router.push('/dashboard')
-                      }}
-                    >
-                      Dashboard
-                    </MenuItem>
-                    <MenuItem
-                      onClick={() => {
-                        dispatch(logout())
-                      }}
-                    >
-                      Logout
-                    </MenuItem>
-                  </MenuList>
-                </Menu>
-              )}
-            </Stack>
-          </Flex>
+                    Dashboard
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() => {
+                      dispatch(logout())
+                    }}
+                  >
+                    Logout
+                  </MenuItem>
+                </MenuList>
+              </Menu>
+            )}
+          </Stack>
         </Flex>
       </Box>
     </>

@@ -4,7 +4,7 @@ import { createStandaloneToast } from '@chakra-ui/react'
 import { RootState } from './store'
 import { gatewayService } from '../services/gatewayService'
 
-const toast = createStandaloneToast()
+const { toast } = createStandaloneToast()
 
 const initialState = {
   loading: false,

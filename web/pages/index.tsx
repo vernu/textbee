@@ -18,6 +18,7 @@ export default function HomePage() {
   useGoogleOneTapLogin({
     onSuccess: ({ credential: idToken }) => {
       dispatch(
+        // @ts-ignore
         loginWithGoogle({
           idToken,
         })

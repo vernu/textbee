@@ -18,9 +18,10 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons'
 import { login, loginWithGoogle, selectAuthLoading, selectAuthUser } from '../store/authSlice'
-import { useDispatch, useSelector } from 'react-redux'
+import { useSelector } from 'react-redux'
 import { LoginRequestPayload } from '../services/types'
 import { GoogleLogin } from '@react-oauth/google'
+import { useAppDispatch } from '../store/hooks'
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState<boolean>(false)
@@ -30,7 +31,7 @@ export default function LoginPage() {
     password: '',
   })
 
-  const dispatch = useDispatch()
+  const dispatch = useAppDispatch()
   const toast = useToast()
   const authUser = useSelector(selectAuthUser)
   const loading = useSelector(selectAuthLoading)

@@ -18,12 +18,13 @@ import {
   useToast,
 } from '@chakra-ui/react'
 import { useState } from 'react'
-import { useSelector, useDispatch } from 'react-redux'
+import { useSelector } from 'react-redux'
 import {
   selectDeviceList,
   selectSendingSMS,
   sendSMS,
 } from '../../store/deviceSlice'
+import { useAppDispatch } from '../../store/hooks'
 
 export const SendSMSForm = ({ deviceList, formData, handleChange }) => {
   return (
@@ -71,7 +72,7 @@ export default function SendSMS() {
   const { isOpen, onOpen, onClose } = useDisclosure()
   const deviceList = useSelector(selectDeviceList)
   const toast = useToast()
-  const dispatch = useDispatch()
+  const dispatch = useAppDispatch()
 
   const sendingSMS = useSelector(selectSendingSMS)
 
@@ -98,6 +99,7 @@ export default function SendSMS() {
       // TODO: validate phone numbers
     }
 
+    
     dispatch(
       sendSMS({
         deviceId,
