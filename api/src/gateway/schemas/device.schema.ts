@@ -43,6 +43,9 @@ export class Device {
 
   @Prop({ type: Number })
   appVersionCode: number
+
+  @Prop({ type: Number, default: 0 })
+  sentSMSCount: number
 }
 
 export const DeviceSchema = SchemaFactory.createForClass(Device)

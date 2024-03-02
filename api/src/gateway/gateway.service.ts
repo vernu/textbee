@@ -95,6 +95,12 @@ export class GatewayService {
       const response = await firebaseAdmin
         .messaging()
         .sendToDevice(device.fcmToken, payload, { priority: 'high' })
+
+      this.deviceModel.findByIdAndUpdate(
+        deviceId,
+        { $inc: { sentSMSCount: 1 } },
+        { new: true },
+      )
       return response
     } catch (e) {
       throw new HttpException(
