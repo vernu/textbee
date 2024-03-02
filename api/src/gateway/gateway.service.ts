@@ -58,6 +58,21 @@ export class GatewayService {
     )
   }
 
+  async deleteDevice(deviceId: string): Promise<any> {
+    const device = await this.deviceModel.findById(deviceId)
+
+    if (!device) {
+      throw new HttpException(
+        {
+          error: 'Device not found',
+        },
+        HttpStatus.NOT_FOUND,
+      )
+    }
+
+    return await this.deviceModel.findByIdAndDelete(deviceId)
+  }
+
   async sendSMS(deviceId: string, smsData: SendSMSInputDTO): Promise<any> {
     const device = await this.deviceModel.findById(deviceId)
 
