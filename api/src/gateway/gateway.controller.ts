@@ -22,6 +22,13 @@ export class GatewayController {
   constructor(private readonly gatewayService: GatewayService) {}
 
   @UseGuards(AuthGuard)
+  @Get('/stats')
+  async getStats(@Request() req) {
+    const data = await this.gatewayService.getStatsForUser(req.user)
+    return { data }
+  }
+
+  @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Register device' })
   @ApiQuery({
     name: 'apiKey',

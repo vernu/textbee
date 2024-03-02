@@ -5,10 +5,12 @@ import { Model } from 'mongoose'
 import * as firebaseAdmin from 'firebase-admin'
 import { RegisterDeviceInputDTO, SendSMSInputDTO } from './gateway.dto'
 import { User } from '../users/schemas/user.schema'
+import { AuthService } from 'src/auth/auth.service'
 @Injectable()
 export class GatewayService {
   constructor(
     @InjectModel(Device.name) private deviceModel: Model<DeviceDocument>,
+    private authService: AuthService,
   ) {}
 
   async registerDevice(
@@ -109,6 +111,24 @@ export class GatewayService {
         },
         HttpStatus.BAD_REQUEST,
       )
+    }
+  }
+
+  async getStatsForUser(user: User) {
+    const devices = await this.deviceModel.find({ user: user._id })
+    const apiKeys = await this.authService.getUserApiKeys(user)
+
+    const totalSMSCount = devices.reduce((acc, device) => {
+      return acc + (device.sentSMSCount || 0)
+    }, 0)
+
+    const totalDeviceCount = devices.length
+    const totalApiKeyCount = apiKeys.length
+
+    return {
+      totalSMSCount,
+      totalDeviceCount,
+      totalApiKeyCount,
     }
   }
 }
