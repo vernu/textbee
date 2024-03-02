@@ -1,15 +1,27 @@
 import { Box, SimpleGrid, chakra } from '@chakra-ui/react'
-import React from 'react'
+import React, { useEffect } from 'react'
 import { useSelector } from 'react-redux'
-import { selectApiKeyList } from '../../store/apiKeySlice'
 import { selectAuthUser } from '../../store/authSlice'
-import { selectDeviceList } from '../../store/deviceSlice'
 import UserStatsCard from './UserStatsCard'
+import {
+  fetchStats,
+  selectStatsData,
+  selectStatsLoading,
+} from '../../store/statsSlice'
+import { useAppDispatch, useAppSelector } from '../../store/hooks'
 
 const UserStats = () => {
   const authUser = useSelector(selectAuthUser)
-  const deviceList = useSelector(selectDeviceList)
-  const apiKeyList = useSelector(selectApiKeyList)
+
+  const { totalApiKeyCount, totalDeviceCount, totalSMSCount } =
+    useAppSelector(selectStatsData)
+  const statsLoading = useAppSelector(selectStatsLoading)
+
+  const dispatch = useAppDispatch()
+
+  useEffect(() => {
+    dispatch(fetchStats())
+  }, [dispatch])
 
   return (
     <>
@@ -26,13 +38,16 @@ const UserStats = () => {
           <SimpleGrid columns={{ base: 3 }} spacing={{ base: 5, lg: 8 }}>
             <UserStatsCard
               title={'Registered '}
-              stat={`${deviceList?.length || '-:-'} Devices`}
+              stat={`${statsLoading ? '-:-' : totalDeviceCount} Devices`}
             />
             <UserStatsCard
               title={'Generated'}
-              stat={`${apiKeyList?.length || '-:-'} API Keys`}
+              stat={`${statsLoading ? '-:-' : totalApiKeyCount} API Keys`}
             />
-            <UserStatsCard title={'Sent'} stat={'-:- SMS'} />
+            <UserStatsCard
+              title={'Sent'}
+              stat={`${statsLoading ? '-:-' : totalSMSCount} SMS Sent`}
+            />
           </SimpleGrid>
         </SimpleGrid>
       </Box>
