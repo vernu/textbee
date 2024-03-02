@@ -7,6 +7,7 @@ import {
   UseGuards,
   Request,
   Get,
+  Delete,
 } from '@nestjs/common'
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger'
 import { AuthGuard } from '../auth/guards/auth.guard'
@@ -59,6 +60,19 @@ export class GatewayController {
     @Body() input: RegisterDeviceInputDTO,
   ) {
     const data = await this.gatewayService.updateDevice(deviceId, input)
+    return { data }
+  }
+
+  @ApiOperation({ summary: 'Delete device' })
+  @ApiQuery({
+    name: 'apiKey',
+    required: false,
+    description: 'Required if jwt bearer token not provided',
+  })
+  @UseGuards(AuthGuard, CanModifyDevice)
+  @Delete('/devices/:id')
+  async deleteDevice(@Param('id') deviceId: string) {
+    const data = await this.gatewayService.deleteDevice(deviceId)
     return { data }
   }
 
