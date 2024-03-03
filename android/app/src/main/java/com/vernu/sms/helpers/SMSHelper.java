@@ -17,4 +17,9 @@ public class SMSHelper {
         }
 
     }
+
+    public static void sendSMSFromSpecificSim(String phoneNo, String message, int simSlot) {
+        SmsManager smsManager = SmsManager.getSmsManagerForSubscriptionId(simSlot);
+        smsManager.sendMultipartTextMessage(phoneNo, null, smsManager.divideMessage(message), null, null);
+    }
 }
