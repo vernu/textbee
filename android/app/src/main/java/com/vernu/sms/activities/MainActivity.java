@@ -13,11 +13,15 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.telephony.SubscriptionInfo;
+import android.telephony.SubscriptionManager;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -32,6 +36,9 @@ import com.vernu.sms.R;
 import com.vernu.sms.dtos.RegisterDeviceInputDTO;
 import com.vernu.sms.dtos.RegisterDeviceResponseDTO;
 import com.vernu.sms.helpers.SharedPreferenceHelper;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -50,6 +57,8 @@ public class MainActivity extends AppCompatActivity {
     private Button registerDeviceBtn, grantSMSPermissionBtn, scanQRBtn;
     private ImageButton copyDeviceIdImgBtn;
     private TextView deviceBrandAndModelTxt, deviceIdTxt;
+
+    private RadioGroup defaultSimSlotRadioGroup;
 
     private static final int SEND_SMS_PERMISSION_REQUEST_CODE = 0;
     private static final int SCAN_QR_REQUEST_CODE = 49374;
@@ -86,16 +95,29 @@ public class MainActivity extends AppCompatActivity {
 
         copyDeviceIdImgBtn = findViewById(R.id.copyDeviceIdImgBtn);
 
+        defaultSimSlotRadioGroup = findViewById(R.id.defaultSimSlotRadioGroup);
+
+        getAvailableSimSlots().forEach(subscriptionInfo -> {
+            RadioButton radioButton = new RadioButton(mContext);
+            radioButton.setText(subscriptionInfo.getDisplayName().toString());
+            radioButton.setId(subscriptionInfo.getSubscriptionId());
+            radioButton.setOnClickListener(view -> {
+                SharedPreferenceHelper.setSharedPreferenceInt(mContext, "PREFERED_SIM", subscriptionInfo.getSubscriptionId());
+            });
+            radioButton.setChecked(subscriptionInfo.getSubscriptionId() == SharedPreferenceHelper.getSharedPreferenceInt(mContext, "PREFERED_SIM", 0));
+            defaultSimSlotRadioGroup.addView(radioButton);
+        });
+
         deviceIdTxt.setText(deviceId);
         deviceBrandAndModelTxt.setText(Build.BRAND + " " + Build.MODEL);
 
-        if(deviceId == null || deviceId.isEmpty()) {
+        if (deviceId == null || deviceId.isEmpty()) {
             registerDeviceBtn.setText("Register");
         } else {
             registerDeviceBtn.setText("Update");
         }
 
-        if (isSMSPermissionGranted(mContext)) {
+        if (isSMSPermissionGranted(mContext) && isReadPhoneStatePermissionGranted(mContext)) {
             grantSMSPermissionBtn.setEnabled(false);
             grantSMSPermissionBtn.setText("SMS Permission Granted");
         } else {
@@ -157,6 +179,7 @@ public class MainActivity extends AppCompatActivity {
             intentIntegrator.initiateScan();
         });
 
+        getAvailableSimSlots();
 
     }
 
@@ -236,17 +259,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void handleSMSRequestPermission(View view) {
-        if (isSMSPermissionGranted(mContext)) {
+        if (isSMSPermissionGranted(mContext) && isReadPhoneStatePermissionGranted(mContext)) {
             Snackbar.make(view, "Already got permissions", Snackbar.LENGTH_SHORT).show();
         } else {
-            if (ActivityCompat.shouldShowRequestPermissionRationale(MainActivity.this, Manifest.permission.SEND_SMS)) {
-                Snackbar.make(view, "PERMISSION DENIED, Pls grant SMS Permission in app settings", Snackbar.LENGTH_SHORT).show();
-            } else {
-                Snackbar.make(view, "Grant SMS Permissions to continue", Snackbar.LENGTH_SHORT).show();
-                ActivityCompat.requestPermissions(MainActivity.this,
-                        new String[]{Manifest.permission.SEND_SMS},
-                        SEND_SMS_PERMISSION_REQUEST_CODE);
-            }
+            Snackbar.make(view, "Grant SMS Permissions to continue", Snackbar.LENGTH_SHORT).show();
+            ActivityCompat.requestPermissions(MainActivity.this,
+                    new String[]{Manifest.permission.SEND_SMS, Manifest.permission.READ_PHONE_STATE
+                    }, SEND_SMS_PERMISSION_REQUEST_CODE);
+
         }
     }
 
@@ -271,5 +291,20 @@ public class MainActivity extends AppCompatActivity {
 
     private boolean isSMSPermissionGranted(Context context) {
         return ContextCompat.checkSelfPermission(context, Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    private boolean isReadPhoneStatePermissionGranted(Context context) {
+        return ContextCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    private List<SubscriptionInfo>  getAvailableSimSlots() {
+
+        SubscriptionManager subscriptionManager = SubscriptionManager.from(mContext);
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
+            return new ArrayList<>();
+        }
+
+        return subscriptionManager.getActiveSubscriptionInfoList();
+
     }
 }
