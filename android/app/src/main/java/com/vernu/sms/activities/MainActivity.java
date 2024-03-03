@@ -30,7 +30,6 @@ import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
-import com.vernu.sms.BuildConfig;
 import com.vernu.sms.services.GatewayApiService;
 import com.vernu.sms.R;
 import com.vernu.sms.dtos.RegisterDeviceInputDTO;
@@ -98,14 +97,19 @@ public class MainActivity extends AppCompatActivity {
         defaultSimSlotRadioGroup = findViewById(R.id.defaultSimSlotRadioGroup);
 
         getAvailableSimSlots().forEach(subscriptionInfo -> {
-            RadioButton radioButton = new RadioButton(mContext);
-            radioButton.setText(subscriptionInfo.getDisplayName().toString());
-            radioButton.setId(subscriptionInfo.getSubscriptionId());
-            radioButton.setOnClickListener(view -> {
-                SharedPreferenceHelper.setSharedPreferenceInt(mContext, "PREFERED_SIM", subscriptionInfo.getSubscriptionId());
-            });
-            radioButton.setChecked(subscriptionInfo.getSubscriptionId() == SharedPreferenceHelper.getSharedPreferenceInt(mContext, "PREFERED_SIM", 0));
-            defaultSimSlotRadioGroup.addView(radioButton);
+            try{
+                RadioButton radioButton = new RadioButton(mContext);
+                radioButton.setText(subscriptionInfo.getDisplayName().toString());
+                radioButton.setId(subscriptionInfo.getSubscriptionId());
+                radioButton.setOnClickListener(view -> {
+                    SharedPreferenceHelper.setSharedPreferenceInt(mContext, "PREFERED_SIM", subscriptionInfo.getSubscriptionId());
+                });
+                radioButton.setChecked(subscriptionInfo.getSubscriptionId() == SharedPreferenceHelper.getSharedPreferenceInt(mContext, "PREFERED_SIM", 0));
+                defaultSimSlotRadioGroup.addView(radioButton);
+            } catch (Exception e) {
+                Snackbar.make(defaultSimSlotRadioGroup.getRootView(), "Error: " + e.getMessage(), Snackbar.LENGTH_LONG).show();
+                Log.e("SIM_SLOT_ERROR", e.getMessage());
+            }
         });
 
         deviceIdTxt.setText(deviceId);
@@ -179,7 +183,6 @@ public class MainActivity extends AppCompatActivity {
             intentIntegrator.initiateScan();
         });
 
-        getAvailableSimSlots();
 
     }
 
