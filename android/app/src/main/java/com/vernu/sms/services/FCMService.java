@@ -18,6 +18,7 @@ import com.google.gson.Gson;
 import com.vernu.sms.R;
 import com.vernu.sms.activities.MainActivity;
 import com.vernu.sms.helpers.SMSHelper;
+import com.vernu.sms.helpers.SharedPreferenceHelper;
 import com.vernu.sms.models.SMSPayload;
 
 
@@ -36,16 +37,19 @@ public class FCMService extends FirebaseMessagingService {
 
         // Check if message contains a data payload.
         if (remoteMessage.getData().size() > 0) {
-            // sendNotification("data msg received ", remoteMessage.getData().toString());
-            int len = smsPayload.receivers.length;
-            if (len > 0) {
-                for (int i = 0; i < len; i++) {
-                    SMSHelper.sendSMS(smsPayload.receivers[i], smsPayload.smsBody);
+
+            for (String receiver : smsPayload.getReceivers()) {
+                int preferedSim = SharedPreferenceHelper.getSharedPreferenceInt(this, "PREFERED_SIM", 0);
+                try {
+                    SMSHelper.sendSMSFromSpecificSim(receiver, smsPayload.getSmsBody(), preferedSim);
+                } catch(Exception e) {
+                    Log.d("SMS_SEND_ERROR", e.getMessage());
+                    SMSHelper.sendSMS(receiver, smsPayload.getSmsBody());
                 }
             }
         }
 
-        // Check if message contains a notification payload.
+        // TODO: Handle FCM Notification Messages
         if (remoteMessage.getNotification() != null) {
             // sendNotification("notif msg", "msg body");
         }

@@ -35,6 +35,24 @@
             android:layout_height="wrap_content"
             android:text="Grant SMS Permission"
             android:visibility="visible" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="vertical">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Default SIM"
+                android:textStyle="bold" />
+            <RadioGroup
+                android:id="@+id/defaultSimSlotRadioGroup"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+            </RadioGroup>
+        </LinearLayout>
     </LinearLayout>
 
 
