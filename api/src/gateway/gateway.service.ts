@@ -98,11 +98,13 @@ export class GatewayService {
         .messaging()
         .sendToDevice(device.fcmToken, payload, { priority: 'high' })
 
-      this.deviceModel.findByIdAndUpdate(
-        deviceId,
-        { $inc: { sentSMSCount: 1 } },
-        { new: true },
-      )
+      this.deviceModel
+        .findByIdAndUpdate(deviceId, { $inc: { sentSMSCount: 1 } })
+        .exec()
+        .catch((e) => {
+          console.log('Failed to update sentSMSCount')
+          console.log(e)
+        })
       return response
     } catch (e) {
       throw new HttpException(
