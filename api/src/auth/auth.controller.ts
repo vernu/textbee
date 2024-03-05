@@ -84,7 +84,7 @@ export class AuthController {
   }
 
   @UseGuards(AuthGuard, CanModifyApiKey)
-  @ApiOperation({ summary: 'Generate Api Key' })
+  @ApiOperation({ summary: 'Delete Api Key' })
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   @Delete('/api-keys/:id')
