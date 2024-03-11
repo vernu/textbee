@@ -1,6 +1,6 @@
 export const howItWorksContent = [
   {
-    title: 'Step 1: Download The Android App from textbee.vernu.dev/android',
+    title: 'Step 1: Download The Android App from textbee.dev/android',
     description:
       '',
   },
@@ -18,6 +18,6 @@ export const howItWorksContent = [
   {
     title: 'Step 4: Start sending',
     description:
-      'You can now send SMS from the dashboard. or visit the API docs at https://api.textbee.vernu.dev to send SMS programatically',
+      'You can now send SMS from the dashboard. or visit the API docs at https://api.textbee.dev to send SMS programatically',
   },
 ]
