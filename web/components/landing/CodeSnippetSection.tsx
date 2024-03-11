@@ -1,8 +1,22 @@
-import { Box, Flex, Heading, Image, Text } from '@chakra-ui/react'
+import { Box, Flex, Heading, Text } from '@chakra-ui/react'
 import React from 'react'
 import AnimatedScrollWrapper from '../AnimatedScrollWrapper'
+import SyntaxHighlighter from 'react-syntax-highlighter'
 
 export default function CodeSnippetSection() {
+  const codeString = `
+
+  const BASE_URL = 'https://api.textbee.vernu.dev/api/v1'
+  const API_KEY = 'YOUR_API_KEY'
+  const DEVICE_ID = 'YOUR_DEVICE_ID'
+  
+  await axios.post(\`\$\{BASE_URL\}/gateway/devices/\$\{DEVICE_ID}/sendSMS?apiKey=\$\{API_KEY\}\`, {
+    receivers: [ '+251912345678' ],
+    smsBody: 'Hello World!',
+  })
+  
+  `
+
   return (
     <AnimatedScrollWrapper>
       <Box m={{ base: 0, md: 8 }} p={{ base: 0, md: 8 }}>
@@ -25,18 +39,11 @@ export default function CodeSnippetSection() {
             borderRadius={'lg'}
             padding={{ base: 0, md: 8 }}
             border={'1px solid #E2E8F0'}
-            w={{ base: '100%', md: '70%' }}
+            w={{ base: '100%', md: '90%' }}
           >
-            <Image
-              alt={'Hero Image'}
-              fit={'cover'}
-              align={'center'}
-              // h={'100%'}
-              src={
-                'https://ik.imagekit.io/vernu/textbee/Screenshot%202023-09-25%20at%2011.13.30%20AM.png?updatedAt=1695629672884'
-              }
-              borderRadius={'lg'}
-            />
+            <SyntaxHighlighter language='javascript'>
+              {codeString}
+            </SyntaxHighlighter>
           </Box>
         </Flex>
       </Box>
