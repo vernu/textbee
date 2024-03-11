@@ -4,7 +4,6 @@ A simple SMS gateway that allows users to send SMS messages from a web interface
 from their application via a REST API. It utilizes android phones as SMS gateways.
 
 - **Technology stack**: React, Next.js, Node.js, NestJs, MongoDB, Android, Java
-- **Status**: MVP in development, not ready for production use yet
 - **Link**: [https://textbee.dev](https://textbee.dev/)
 
 ![](https://ik.imagekit.io/vernu/textbee/texbee-landing-light.png?updatedAt=1687076964687)
