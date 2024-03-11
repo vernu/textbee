@@ -6,7 +6,7 @@ import SyntaxHighlighter from 'react-syntax-highlighter'
 export default function CodeSnippetSection() {
   const codeString = `
 
-  const BASE_URL = 'https://api.textbee.vernu.dev/api/v1'
+  const BASE_URL = 'https://api.textbee.dev/api/v1'
   const API_KEY = 'YOUR_API_KEY'
   const DEVICE_ID = 'YOUR_DEVICE_ID'
   
