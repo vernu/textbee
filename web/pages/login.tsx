@@ -17,7 +17,12 @@ import {
 import Link from 'next/link'
 import { useState } from 'react'
 import { ViewIcon, ViewOffIcon } from '@chakra-ui/icons'
-import { login, loginWithGoogle, selectAuthLoading, selectAuthUser } from '../store/authSlice'
+import {
+  login,
+  loginWithGoogle,
+  selectAuthLoading,
+  selectAuthUser,
+} from '../store/authSlice'
 import { useSelector } from 'react-redux'
 import { LoginRequestPayload } from '../services/types'
 import { GoogleLogin } from '@react-oauth/google'
@@ -99,6 +104,12 @@ export default function LoginPage() {
                 </InputRightElement>
               </InputGroup>
             </FormControl>
+            <Stack pt={2}>
+              <Text align={'center'}>
+                Forgot your password?{' '}
+                <Link href='/reset-password'>Reset Password</Link>
+              </Text>
+            </Stack>
             <Stack spacing={10} pt={2}>
               <Button
                 loadingText='Submitting'

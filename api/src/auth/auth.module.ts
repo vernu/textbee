@@ -7,6 +7,11 @@ import { AuthController } from './auth.controller'
 import { AuthService } from './auth.service'
 import { JwtStrategy } from './jwt.strategy'
 import { ApiKey, ApiKeySchema } from './schemas/api-key.schema'
+import { MailModule } from 'src/mail/mail.module'
+import {
+  PasswordReset,
+  PasswordResetSchema,
+} from './schemas/password-reset.schema'
 
 @Module({
   imports: [
@@ -15,6 +20,10 @@ import { ApiKey, ApiKeySchema } from './schemas/api-key.schema'
         name: ApiKey.name,
         schema: ApiKeySchema,
       },
+      {
+        name: PasswordReset.name,
+        schema: PasswordResetSchema,
+      },
     ]),
     UsersModule,
     PassportModule,
@@ -22,6 +31,7 @@ import { ApiKey, ApiKeySchema } from './schemas/api-key.schema'
       secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: '180d' },
     }),
+    MailModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, MongooseModule],

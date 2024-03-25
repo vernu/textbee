@@ -8,12 +8,21 @@ import { ApiKey, ApiKeyDocument } from './schemas/api-key.schema'
 import { Model } from 'mongoose'
 import { User } from '../users/schemas/user.schema'
 import axios from 'axios'
+import {
+  PasswordReset,
+  PasswordResetDocument,
+} from './schemas/password-reset.schema'
+import { MailService } from 'src/mail/mail.service'
+import { RequestResetPasswordInputDTO, ResetPasswordInputDTO } from './auth.dto'
 @Injectable()
 export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
     @InjectModel(ApiKey.name) private apiKeyModel: Model<ApiKeyDocument>,
+    @InjectModel(PasswordReset.name)
+    private passwordResetModel: Model<PasswordResetDocument>,
+    private readonly mailService: MailService,
   ) {}
 
   async login(userData: any) {
@@ -86,6 +95,65 @@ export class AuthService {
       accessToken: this.jwtService.sign(payload),
       user,
     }
+  }
+
+  async requestResetPassword({ email }: RequestResetPasswordInputDTO) {
+    const user = await this.usersService.findOne({ email })
+    if (!user) {
+      throw new HttpException({ error: 'User not found' }, HttpStatus.NOT_FOUND)
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString()
+    const expiresAt = new Date(Date.now() + 20 * 60 * 1000)
+
+    const hashedOtp = await bcrypt.hash(otp, 10)
+    const passwordReset = new this.passwordResetModel({
+      user: user._id,
+      otp: hashedOtp,
+      expiresAt,
+    })
+    passwordReset.save()
+
+    await this.mailService.sendEmailFromTemplate({
+      to: user.email,
+      subject: 'Password Reset',
+      template: 'password-reset-request',
+      context: { name: user.name, otp },
+    })
+
+    return { message: 'Password reset email sent' }
+  }
+
+  async resetPassword({ email, otp, newPassword }: ResetPasswordInputDTO) {
+    const user = await this.usersService.findOne({ email })
+    if (!user) {
+      throw new HttpException({ error: 'User not found' }, HttpStatus.NOT_FOUND)
+    }
+    const passwordReset = await this.passwordResetModel.findOne(
+      {
+        user: user._id,
+        expiresAt: { $gt: new Date() },
+      },
+      null,
+      { sort: { createdAt: -1 } },
+    )
+
+    if (!passwordReset || !(await bcrypt.compare(otp, passwordReset.otp))) {
+      throw new HttpException({ error: 'Invalid OTP' }, HttpStatus.BAD_REQUEST)
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10)
+    user.password = hashedPassword
+    await user.save()
+
+    this.mailService.sendEmailFromTemplate({
+      to: user.email,
+      subject: 'Password Reset',
+      template: 'password-reset-success',
+      context: { name: user.name },
+    })
+
+    return { message: 'Password reset successfully' }
   }
 
   async generateApiKey(currentUser: User) {
