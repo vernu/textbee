@@ -29,6 +29,22 @@ class AuthService {
     const res = await httpClient.get(`/auth/who-am-i`)
     return res.data.data
   }
+
+  async requestPasswordReset({ email }) {
+    const res = await httpClient.post(`/auth/request-password-reset`, {
+      email,
+    })
+    return res.data.data
+  }
+
+  async resetPassword({ email, otp, newPassword }) {
+    const res = await httpClient.post(`/auth/reset-password`, {
+      email,
+      otp,
+      newPassword,
+    })
+    return res.data.data
+  }
 }
 
 export const authService = new AuthService()

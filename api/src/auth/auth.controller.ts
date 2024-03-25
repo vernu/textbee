@@ -11,7 +11,12 @@ import {
   UseGuards,
 } from '@nestjs/common'
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger'
-import { LoginInputDTO, RegisterInputDTO } from './auth.dto'
+import {
+  LoginInputDTO,
+  RegisterInputDTO,
+  RequestResetPasswordInputDTO,
+  ResetPasswordInputDTO,
+} from './auth.dto'
 import { AuthGuard } from './guards/auth.guard'
 import { AuthService } from './auth.service'
 import { CanModifyApiKey } from './guards/can-modify-api-key.guard'
@@ -91,5 +96,19 @@ export class AuthController {
   async deleteApiKey(@Param() params) {
     await this.authService.deleteApiKey(params.id)
     return { message: 'API Key Deleted' }
+  }
+
+  @ApiOperation({ summary: 'Request Password Reset' })
+  @HttpCode(HttpStatus.OK)
+  @Post('/request-password-reset')
+  async requestPasswordReset(@Body() input: RequestResetPasswordInputDTO) {
+    return await this.authService.requestResetPassword(input)
+  }
+
+  @ApiOperation({ summary: 'Reset Password' })
+  @HttpCode(HttpStatus.OK)
+  @Post('/reset-password')
+  async resetPassword(@Body() input: ResetPasswordInputDTO) {
+    return await this.authService.resetPassword(input)
   }
 }
