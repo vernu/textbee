@@ -25,13 +25,13 @@ const DeviceRow = ({ device, onDelete }: any) => {
       <Td>{enabled ? 'enabled' : 'disabled'}</Td>
       <Td>{/* <EmailIcon onDoubleClick={(e) => {}} /> */}</Td>
       <Td>
-        <Tooltip label='Double Click to delete'>
+        {/* <Tooltip label='Double Click to delete'>
           <IconButton
             aria-label='Delete'
             icon={<DeleteIcon />}
             // onDoubleClick={onDelete}
           />
-        </Tooltip>
+        </Tooltip> */}
       </Td>
     </Tr>
   )

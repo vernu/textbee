@@ -33,11 +33,11 @@ const ApiKeyRow = ({ apiKey }: any) => {
       <Td>{apiKey.apiKey}</Td>
       <Td>{apiKey.status}</Td>
       <Td>
-        <Tooltip label='Double Click to delete'>
+        {/* <Tooltip label='Double Click to delete'>
           <DeleteIcon
             // onDoubleClick={handleDelete}
           />
-        </Tooltip>
+        </Tooltip> */}
       </Td>
     </Tr>
   )
