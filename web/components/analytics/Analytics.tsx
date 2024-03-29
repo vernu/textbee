@@ -7,7 +7,7 @@ const Analytics = () => {
       <Script
         id='gtag1'
         strategy='afterInteractive'
-        src={`https:www.googletagmanager.com/gtag/js?id=G-MLD1JPRQZ`}
+        src={`https://www.googletagmanager.com/gtag/js?id=G-MLD1JPRQZ`}
       />
       <Script
         id='gtag2'
