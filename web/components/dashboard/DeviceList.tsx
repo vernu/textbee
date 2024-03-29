@@ -30,6 +30,7 @@ const DeviceRow = ({ device, onDelete }: any) => {
             aria-label='Delete'
             icon={<DeleteIcon />}
             onDoubleClick={onDelete}
+            disabled
           />
         </Tooltip>
       </Td>
