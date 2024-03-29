@@ -29,8 +29,7 @@ const DeviceRow = ({ device, onDelete }: any) => {
           <IconButton
             aria-label='Delete'
             icon={<DeleteIcon />}
-            onDoubleClick={onDelete}
-            disabled
+            // onDoubleClick={onDelete}
           />
         </Tooltip>
       </Td>

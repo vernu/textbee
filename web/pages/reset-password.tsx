@@ -92,6 +92,8 @@ export default function LoginPage() {
     })
   }
 
+  const colorModeValue = useColorModeValue('gray.50', 'gray.800')
+
   if (resetSuccess) {
     return (
       <>
@@ -99,7 +101,7 @@ export default function LoginPage() {
           minH={'90vh'}
           align={'center'}
           justify={'center'}
-          bg={useColorModeValue('gray.50', 'gray.800')}
+          bg={colorModeValue}
         >
           <Stack pt={6}>
             <Text align={'center'}>Password reset successfully</Text>
@@ -117,7 +119,7 @@ export default function LoginPage() {
       minH={'90vh'}
       align={'center'}
       justify={'center'}
-      bg={useColorModeValue('gray.50', 'gray.800')}
+      bg={colorModeValue}
     >
       <Stack spacing={8} mx={'auto'} maxW={'lg'} py={12} px={6}>
         <Stack align={'center'}>
@@ -127,7 +129,7 @@ export default function LoginPage() {
         </Stack>
         <Box
           rounded={'lg'}
-          bg={useColorModeValue('white', 'gray.700')}
+          bg={colorModeValue}
           boxShadow={'lg'}
           p={8}
         >
