@@ -28,6 +28,7 @@
     "@nestjs/passport": "^8.2.2",
     "@nestjs/platform-express": "^8.4.7",
     "@nestjs/swagger": "^5.2.1",
+    "@nestjs/throttler": "^5.1.2",
     "axios": "^1.4.0",
     "bcryptjs": "^2.4.3",
     "dotenv": "^16.0.3",

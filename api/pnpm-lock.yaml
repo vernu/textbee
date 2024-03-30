@@ -29,6 +29,9 @@ dependencies:
   '@nestjs/swagger':
     specifier: ^5.2.1
     version: 5.2.1(@nestjs/common@8.4.7)(@nestjs/core@8.4.7)(reflect-metadata@0.1.13)(swagger-ui-express@4.6.3)
+  '@nestjs/throttler':
+    specifier: ^5.1.2
+    version: 5.1.2(@nestjs/common@8.4.7)(@nestjs/core@8.4.7)(reflect-metadata@0.1.13)
   axios:
     specifier: ^1.4.0
     version: 1.4.0
@@ -2202,6 +2205,18 @@ packages:
       '@nestjs/platform-express': 8.4.7(@nestjs/common@8.4.7)(@nestjs/core@8.4.7)
       tslib: 2.4.0
     dev: true
+
+  /@nestjs/throttler@5.1.2(@nestjs/common@8.4.7)(@nestjs/core@8.4.7)(reflect-metadata@0.1.13):
+    resolution: {integrity: sha512-60MqhSLYUqWOgc38P6C6f76JIpf6mVjly7gpuPBCKtVd0p5e8Fq855j7bJuO4/v25vgaOo1OdVs0U1qtgYioGw==}
+    peerDependencies:
+      '@nestjs/common': ^7.0.0 || ^8.0.0 || ^9.0.0 || ^10.0.0
+      '@nestjs/core': ^7.0.0 || ^8.0.0 || ^9.0.0 || ^10.0.0
+      reflect-metadata: ^0.1.13 || ^0.2.0
+    dependencies:
+      '@nestjs/common': 8.4.7(reflect-metadata@0.1.13)(rxjs@7.8.1)
+      '@nestjs/core': 8.4.7(@nestjs/common@8.4.7)(@nestjs/platform-express@8.4.7)(reflect-metadata@0.1.13)(rxjs@7.8.1)
+      reflect-metadata: 0.1.13
+    dev: false
 
   /@nodelib/fs.scandir@2.1.5:
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
