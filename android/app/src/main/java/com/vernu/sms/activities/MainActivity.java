@@ -96,21 +96,23 @@ public class MainActivity extends AppCompatActivity {
 
         defaultSimSlotRadioGroup = findViewById(R.id.defaultSimSlotRadioGroup);
 
-        getAvailableSimSlots().forEach(subscriptionInfo -> {
-            try{
-                RadioButton radioButton = new RadioButton(mContext);
-                radioButton.setText(subscriptionInfo.getDisplayName().toString());
-                radioButton.setId(subscriptionInfo.getSubscriptionId());
-                radioButton.setOnClickListener(view -> {
-                    SharedPreferenceHelper.setSharedPreferenceInt(mContext, "PREFERED_SIM", subscriptionInfo.getSubscriptionId());
+
+            try {
+                getAvailableSimSlots().forEach(subscriptionInfo -> {
+                    RadioButton radioButton = new RadioButton(mContext);
+                    radioButton.setText(subscriptionInfo.getDisplayName().toString());
+                    radioButton.setId(subscriptionInfo.getSubscriptionId());
+                    radioButton.setOnClickListener(view -> {
+                        SharedPreferenceHelper.setSharedPreferenceInt(mContext, "PREFERED_SIM", subscriptionInfo.getSubscriptionId());
+                    });
+                    radioButton.setChecked(subscriptionInfo.getSubscriptionId() == SharedPreferenceHelper.getSharedPreferenceInt(mContext, "PREFERED_SIM", 0));
+                    defaultSimSlotRadioGroup.addView(radioButton);
                 });
-                radioButton.setChecked(subscriptionInfo.getSubscriptionId() == SharedPreferenceHelper.getSharedPreferenceInt(mContext, "PREFERED_SIM", 0));
-                defaultSimSlotRadioGroup.addView(radioButton);
             } catch (Exception e) {
                 Snackbar.make(defaultSimSlotRadioGroup.getRootView(), "Error: " + e.getMessage(), Snackbar.LENGTH_LONG).show();
                 Log.e("SIM_SLOT_ERROR", e.getMessage());
             }
-        });
+
 
         deviceIdTxt.setText(deviceId);
         deviceBrandAndModelTxt.setText(Build.BRAND + " " + Build.MODEL);
@@ -302,11 +304,11 @@ public class MainActivity extends AppCompatActivity {
 
     private List<SubscriptionInfo>  getAvailableSimSlots() {
 
-        SubscriptionManager subscriptionManager = SubscriptionManager.from(mContext);
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
             return new ArrayList<>();
         }
 
+        SubscriptionManager subscriptionManager = SubscriptionManager.from(mContext);
         return subscriptionManager.getActiveSubscriptionInfoList();
 
     }
