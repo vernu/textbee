@@ -37,14 +37,16 @@ public class FCMService extends FirebaseMessagingService {
 
         // Check if message contains a data payload.
         if (remoteMessage.getData().size() > 0) {
-
+            int preferedSim = SharedPreferenceHelper.getSharedPreferenceInt(this, "PREFERED_SIM", -1);
             for (String receiver : smsPayload.getReceivers()) {
-                int preferedSim = SharedPreferenceHelper.getSharedPreferenceInt(this, "PREFERED_SIM", 0);
+                if(preferedSim == -1) {
+                    SMSHelper.sendSMS(receiver, smsPayload.getSmsBody());
+                    continue;
+                }
                 try {
                     SMSHelper.sendSMSFromSpecificSim(receiver, smsPayload.getSmsBody(), preferedSim);
                 } catch(Exception e) {
                     Log.d("SMS_SEND_ERROR", e.getMessage());
-                    SMSHelper.sendSMS(receiver, smsPayload.getSmsBody());
                 }
             }
         }
