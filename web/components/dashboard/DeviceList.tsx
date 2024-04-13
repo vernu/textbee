@@ -1,4 +1,4 @@
-import { DeleteIcon } from '@chakra-ui/icons'
+import { CopyIcon, DeleteIcon } from '@chakra-ui/icons'
 import {
   IconButton,
   Spinner,
@@ -10,6 +10,7 @@ import {
   Thead,
   Tooltip,
   Tr,
+  useToast,
 } from '@chakra-ui/react'
 import { useEffect } from 'react'
 import { useSelector } from 'react-redux'
@@ -19,9 +20,28 @@ import { useAppDispatch } from '../../store/hooks'
 
 const DeviceRow = ({ device, onDelete }: any) => {
   const { enabled, model, brand, _id, createdAt } = device
+
+  const toast = useToast();
+
   return (
     <Tr>
       <Td>{`${brand}/ ${model}`}</Td>
+      <Td>
+        {_id}
+        <IconButton
+          variant='ghost'
+          icon={<CopyIcon />}
+          onClick={() => {
+            navigator.clipboard.writeText(_id)
+            toast({
+              title: 'Copied to clipboard',
+              status: 'success',
+            })
+          } } aria-label={''}   >
+            Copy to Clipboard
+          </IconButton>
+
+      </Td>
       <Td>{enabled ? 'enabled' : 'disabled'}</Td>
       <Td>{/* <EmailIcon onDoubleClick={(e) => {}} /> */}</Td>
       <Td>
@@ -60,6 +80,7 @@ const DeviceList = () => {
         <Thead>
           <Tr>
             <Th>Your Devices</Th>
+            <Th>Device ID</Th>
             <Th>Status</Th>
             <Th colSpan={2}>Actions</Th>
           </Tr>
