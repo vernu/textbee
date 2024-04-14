@@ -6,10 +6,13 @@ import * as firebaseAdmin from 'firebase-admin'
 import { RegisterDeviceInputDTO, SendSMSInputDTO } from './gateway.dto'
 import { User } from '../users/schemas/user.schema'
 import { AuthService } from 'src/auth/auth.service'
+import { SMS } from './schemas/sms.schema'
+
 @Injectable()
 export class GatewayService {
   constructor(
     @InjectModel(Device.name) private deviceModel: Model<DeviceDocument>,
+    @InjectModel(SMS.name) private smsModel: Model<SMS>,
     private authService: AuthService,
   ) {}
 
@@ -76,6 +79,14 @@ export class GatewayService {
   }
 
   async sendSMS(deviceId: string, smsData: SendSMSInputDTO): Promise<any> {
+    const updatedSMSData = {
+      message: smsData.message || smsData.smsBody,
+      recipients: smsData.recipients || smsData.receivers,
+
+      // Legacy fields to be removed in the future
+      smsBody: smsData.message || smsData.smsBody,
+      receivers: smsData.recipients || smsData.receivers,
+    }
     const device = await this.deviceModel.findById(deviceId)
 
     if (!device?.enabled) {
@@ -88,11 +99,15 @@ export class GatewayService {
       )
     }
 
+    const stringifiedSMSData = JSON.stringify(updatedSMSData)
     const payload: any = {
       data: {
-        smsData: JSON.stringify(smsData),
+        smsData: stringifiedSMSData,
       },
     }
+
+    // TODO: Save SMS and Implement a queue to send the SMS if recipients are too many
+
     try {
       const response = await firebaseAdmin
         .messaging()
@@ -100,7 +115,7 @@ export class GatewayService {
 
       this.deviceModel
         .findByIdAndUpdate(deviceId, {
-          $inc: { sentSMSCount: smsData.receivers.length },
+          $inc: { sentSMSCount: updatedSMSData.recipients.length },
         })
         .exec()
         .catch((e) => {
