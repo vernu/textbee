@@ -196,4 +196,18 @@ export class AuthService {
 
     await this.apiKeyModel.deleteOne({ _id: apiKeyId })
   }
+
+  async trackApiKeyUsage(apiKeyId: string) {
+    this.apiKeyModel
+      .findByIdAndUpdate(
+        apiKeyId,
+        { $inc: { usageCount: 1 }, lastUsedAt: new Date() },
+        { new: true },
+      )
+      .exec()
+      .catch((e) => {
+        console.log('Failed to track api key usage')
+        console.log(e)
+      })
+  }
 }
