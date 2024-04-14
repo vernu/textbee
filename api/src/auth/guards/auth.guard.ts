@@ -46,6 +46,9 @@ export class AuthGuard implements CanActivate {
       const user = await this.usersService.findOne({ _id: userId })
       if (user) {
         request.user = user
+        if (request.query.apiKey) {
+          this.authService.trackApiKeyUsage(user._id)
+        }
         return true
       }
     }
