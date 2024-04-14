@@ -19,11 +19,29 @@ import Router from 'next/router'
 import { useDispatch, useSelector } from 'react-redux'
 import { logout, selectAuthUser } from '../store/authSlice'
 import Image from 'next/image'
+import { useEffect } from 'react'
+import { authService } from '../services/authService'
 
 export default function Navbar() {
   const dispatch = useDispatch()
   const { colorMode, toggleColorMode } = useColorMode()
   const authUser = useSelector(selectAuthUser)
+
+  useEffect(() => {
+    const timout = setTimeout(async () => {
+      if (authUser) {
+        authService
+          .whoAmI()
+          .catch((e) => {
+            if (e.response.status === 401) {
+              dispatch(logout())
+            }
+          })
+          .then((res) => {})
+      }
+    }, 5000)
+    return () => clearTimeout(timout)
+  }, [authUser, dispatch])
 
   return (
     <>
