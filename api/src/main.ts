@@ -20,6 +20,11 @@ async function bootstrap() {
     .setDescription('TextBee - Android SMS Gateway API Docs')
     .setVersion('1.0')
     .addBearerAuth()
+    .addApiKey({
+      type: 'apiKey',
+      name: 'x-api-key',
+      in: 'header',
+    })
     .build()
   const document = SwaggerModule.createDocument(app, config)
   SwaggerModule.setup('', app, document, {

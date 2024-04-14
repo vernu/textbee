@@ -20,25 +20,29 @@ export class AuthGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    var userId
-
     const request = context.switchToHttp().getRequest()
+    let userId
+    const apiKeyString = request.headers['x-api-key'] || request.query.apiKey
     if (request.headers.authorization?.startsWith('Bearer ')) {
       const bearerToken = request.headers.authorization.split(' ')[1]
-      const payload = this.jwtService.verify(bearerToken)
-      userId = payload.sub
-    }
-
-    // check apiKey in query params
-    else if (request.query.apiKey) {
-      const apiKeyStr = request.query.apiKey
-      const regex = new RegExp(`^${apiKeyStr.substr(0, 17)}`, 'g')
+      try {
+        const payload = this.jwtService.verify(bearerToken)
+        userId = payload.sub
+      } catch (e) {
+        throw new HttpException(
+          { error: 'Unauthorized' },
+          HttpStatus.UNAUTHORIZED,
+        )
+      }
+    } else if (apiKeyString) {
+      const regex = new RegExp(`^${apiKeyString.substr(0, 17)}`, 'g')
       const apiKey = await this.authService.findApiKey({
         apiKey: { $regex: regex },
       })
 
-      if (apiKey && bcrypt.compareSync(apiKeyStr, apiKey.hashedApiKey)) {
+      if (apiKey && bcrypt.compareSync(apiKeyString, apiKey.hashedApiKey)) {
         userId = apiKey.user
+        this.authService.trackApiKeyUsage(apiKey._id)
       }
     }
 
@@ -46,9 +50,6 @@ export class AuthGuard implements CanActivate {
       const user = await this.usersService.findOne({ _id: userId })
       if (user) {
         request.user = user
-        if (request.query.apiKey) {
-          this.authService.trackApiKeyUsage(user._id)
-        }
         return true
       }
     }
