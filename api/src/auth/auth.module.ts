@@ -29,7 +29,7 @@ import {
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET,
-      signOptions: { expiresIn: '180d' },
+      signOptions: { expiresIn: process.env.JWT_EXPIRATION || '60d' },
     }),
     MailModule,
   ],
