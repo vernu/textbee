@@ -11,7 +11,7 @@ public class RegisterDeviceInputDTO {
     private String os;
     private String osVersion;
     private String appVersionName;
-    private String appVersionCode;
+    private int appVersionCode;
 
     public RegisterDeviceInputDTO() {
     }
@@ -100,11 +100,11 @@ public class RegisterDeviceInputDTO {
         this.appVersionName = appVersionName;
     }
 
-    public String getAppVersionCode() {
+    public int getAppVersionCode() {
         return appVersionCode;
     }
 
-    public void setAppVersionCode(String appVersionCode) {
+    public void setAppVersionCode(int appVersionCode) {
         this.appVersionCode = appVersionCode;
     }
 }
