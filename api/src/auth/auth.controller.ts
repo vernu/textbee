@@ -27,6 +27,7 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   @ApiOperation({ summary: 'Login' })
+  @HttpCode(HttpStatus.OK)
   @Post('/login')
   async login(@Body() input: LoginInputDTO) {
     const data = await this.authService.login(input)
@@ -34,6 +35,7 @@ export class AuthController {
   }
 
   @ApiOperation({ summary: 'Login With Google' })
+  @HttpCode(HttpStatus.OK)
   @Post('/google-login')
   async googleLogin(@Body() input: any) {
     const data = await this.authService.loginWithGoogle(input.idToken)
