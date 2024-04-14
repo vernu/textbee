@@ -1,27 +1,30 @@
 package com.vernu.sms.models;
 
 public class SMSPayload {
+
+    private String[] recipients;
+    private String message;
+
+    // Legacy fields that are no longer used
     private String[] receivers;
     private String smsBody;
 
-    public SMSPayload(String[] receivers, String smsBody) {
-        this.receivers = receivers;
-        this.smsBody = smsBody;
+    public SMSPayload() {
     }
 
-    public String[] getReceivers() {
-        return receivers;
+    public String[] getRecipients() {
+        return recipients;
     }
 
-    public void setReceivers(String[] receivers) {
-        this.receivers = receivers;
+    public void setRecipients(String[] recipients) {
+        this.recipients = recipients;
     }
 
-    public String getSmsBody() {
-        return smsBody;
+    public String getMessage() {
+        return message;
     }
 
-    public void setSmsBody(String smsBody) {
-        this.smsBody = smsBody;
+    public void setMessage(String message) {
+        this.message = message;
     }
 }

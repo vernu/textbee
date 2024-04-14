@@ -9,42 +9,40 @@ import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
 import android.util.Log;
-
 import androidx.core.app.NotificationCompat;
-
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 import com.google.gson.Gson;
+import com.vernu.sms.AppConstants;
 import com.vernu.sms.R;
 import com.vernu.sms.activities.MainActivity;
 import com.vernu.sms.helpers.SMSHelper;
 import com.vernu.sms.helpers.SharedPreferenceHelper;
 import com.vernu.sms.models.SMSPayload;
 
-
 public class FCMService extends FirebaseMessagingService {
 
-    private static final String TAG = "MyFirebaseMsgService";
+    private static final String TAG = "FirebaseMessagingService";
     private static final String DEFAULT_NOTIFICATION_CHANNEL_ID = "N1";
 
     @Override
     public void onMessageReceived(RemoteMessage remoteMessage) {
 
-        Log.d("FCM_MESSAGE", remoteMessage.getData().toString());
+        Log.d(TAG, remoteMessage.getData().toString());
 
         Gson gson = new Gson();
         SMSPayload smsPayload = gson.fromJson(remoteMessage.getData().get("smsData"), SMSPayload.class);
 
         // Check if message contains a data payload.
         if (remoteMessage.getData().size() > 0) {
-            int preferedSim = SharedPreferenceHelper.getSharedPreferenceInt(this, "PREFERED_SIM", -1);
-            for (String receiver : smsPayload.getReceivers()) {
+            int preferedSim = SharedPreferenceHelper.getSharedPreferenceInt(this, AppConstants.SHARED_PREFS_PREFERRED_SIM_KEY, -1);
+            for (String receiver : smsPayload.getRecipients()) {
                 if(preferedSim == -1) {
-                    SMSHelper.sendSMS(receiver, smsPayload.getSmsBody());
+                    SMSHelper.sendSMS(receiver, smsPayload.getMessage());
                     continue;
                 }
                 try {
-                    SMSHelper.sendSMSFromSpecificSim(receiver, smsPayload.getSmsBody(), preferedSim);
+                    SMSHelper.sendSMSFromSpecificSim(receiver, smsPayload.getMessage(), preferedSim);
                 } catch(Exception e) {
                     Log.d("SMS_SEND_ERROR", e.getMessage());
                 }
