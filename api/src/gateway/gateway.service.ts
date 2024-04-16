@@ -3,11 +3,15 @@ import { InjectModel } from '@nestjs/mongoose'
 import { Device, DeviceDocument } from './schemas/device.schema'
 import { Model } from 'mongoose'
 import * as firebaseAdmin from 'firebase-admin'
-import { RegisterDeviceInputDTO, SendSMSInputDTO } from './gateway.dto'
+import {
+  ReceivedSMSDTO,
+  RegisterDeviceInputDTO,
+  SendSMSInputDTO,
+} from './gateway.dto'
 import { User } from '../users/schemas/user.schema'
 import { AuthService } from 'src/auth/auth.service'
 import { SMS } from './schemas/sms.schema'
-
+import { SMSType } from './sms-type.enum'
 @Injectable()
 export class GatewayService {
   constructor(
@@ -131,6 +135,42 @@ export class GatewayService {
         HttpStatus.BAD_REQUEST,
       )
     }
+  }
+
+  async receivedSMS(deviceId: string, dto: ReceivedSMSDTO): Promise<any> {
+    const device = await this.deviceModel.findById(deviceId)
+
+    if (!device) {
+      throw new HttpException(
+        {
+          success: false,
+          error: 'Device does not exist',
+        },
+        HttpStatus.BAD_REQUEST,
+      )
+    }
+
+    if (!dto.receivedAt || !dto.sender || !dto.message) {
+      throw new HttpException(
+        {
+          success: false,
+          error: 'Invalid received SMS data',
+        },
+        HttpStatus.BAD_REQUEST,
+      )
+    }
+
+    const sms = await this.smsModel.create({
+      device: device._id,
+      message: dto.message,
+      type: SMSType.RECEIVED,
+      sender: dto.sender,
+      receivedAt: dto.receivedAt,
+    })
+
+    // TODO: Implement webhook to forward received SMS to user's callback URL
+
+    return sms
   }
 
   async getStatsForUser(user: User) {
