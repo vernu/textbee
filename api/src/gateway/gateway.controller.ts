@@ -8,10 +8,16 @@ import {
   Request,
   Get,
   Delete,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common'
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger'
 import { AuthGuard } from '../auth/guards/auth.guard'
-import { RegisterDeviceInputDTO, SendSMSInputDTO } from './gateway.dto'
+import {
+  ReceivedSMSDTO,
+  RegisterDeviceInputDTO,
+  SendSMSInputDTO,
+} from './gateway.dto'
 import { GatewayService } from './gateway.service'
 import { CanModifyDevice } from './guards/can-modify-device.guard'
 
@@ -96,6 +102,23 @@ export class GatewayController {
     @Body() smsData: SendSMSInputDTO,
   ) {
     const data = await this.gatewayService.sendSMS(deviceId, smsData)
+    return { data }
+  }
+
+  @ApiOperation({ summary: 'Received SMS from a device' })
+  @ApiQuery({
+    name: 'apiKey',
+    required: false,
+    description: 'Required if jwt bearer token not provided',
+  })
+  @HttpCode(HttpStatus.OK)
+  @Post('/devices/:id/receivedSMS')
+  @UseGuards(AuthGuard, CanModifyDevice)
+  async receivedSMS(
+    @Param('id') deviceId: string,
+    @Body() dto: ReceivedSMSDTO,
+  ) {
+    const data = await this.gatewayService.receivedSMS(deviceId, dto)
     return { data }
   }
 }
