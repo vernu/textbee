@@ -27,16 +27,12 @@ import com.vernu.sms.ApiManager;
 import com.vernu.sms.AppConstants;
 import com.vernu.sms.BuildConfig;
 import com.vernu.sms.TextBeeUtils;
-import com.vernu.sms.database.local.AppDatabase;
-import com.vernu.sms.database.local.SMS;
 import com.vernu.sms.R;
 import com.vernu.sms.dtos.RegisterDeviceInputDTO;
 import com.vernu.sms.dtos.RegisterDeviceResponseDTO;
 import com.vernu.sms.helpers.SharedPreferenceHelper;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.Executors;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -44,7 +40,7 @@ import retrofit2.Response;
 public class MainActivity extends AppCompatActivity {
 
     private Context mContext;
-    private Switch gatewaySwitch;
+    private Switch gatewaySwitch, receiveSMSSwitch;
     private EditText apiKeyEditText, fcmTokenEditText;
     private Button registerDeviceBtn, grantSMSPermissionBtn, scanQRBtn;
     private ImageButton copyDeviceIdImgBtn;
@@ -63,6 +59,7 @@ public class MainActivity extends AppCompatActivity {
         deviceId = SharedPreferenceHelper.getSharedPreferenceString(mContext, AppConstants.SHARED_PREFS_DEVICE_ID_KEY, "");
         setContentView(R.layout.activity_main);
         gatewaySwitch = findViewById(R.id.gatewaySwitch);
+        receiveSMSSwitch = findViewById(R.id.receiveSMSSwitch);
         apiKeyEditText = findViewById(R.id.apiKeyEditText);
         fcmTokenEditText = findViewById(R.id.fcmTokenEditText);
         registerDeviceBtn = findViewById(R.id.registerDeviceBtn);
@@ -85,7 +82,7 @@ public class MainActivity extends AppCompatActivity {
         String[] missingPermissions = Arrays.stream(AppConstants.requiredPermissions).filter(permission -> !TextBeeUtils.isPermissionGranted(mContext, permission)).toArray(String[]::new);
         if (missingPermissions.length == 0) {
             grantSMSPermissionBtn.setEnabled(false);
-            grantSMSPermissionBtn.setText("SMS Permission Granted");
+            grantSMSPermissionBtn.setText("Permission Granted");
             renderAvailableSimOptions();
         } else {
             Snackbar.make(grantSMSPermissionBtn, "Please Grant Required Permissions to continue: " + Arrays.toString(missingPermissions), Snackbar.LENGTH_SHORT).show();
@@ -142,6 +139,15 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
         });
+
+        receiveSMSSwitch.setChecked(SharedPreferenceHelper.getSharedPreferenceBoolean(mContext, AppConstants.SHARED_PREFS_RECEIVE_SMS_ENABLED_KEY, false));
+        receiveSMSSwitch.setOnCheckedChangeListener((compoundButton, isCheked) -> {
+            View view = compoundButton.getRootView();
+            SharedPreferenceHelper.setSharedPreferenceBoolean(mContext, AppConstants.SHARED_PREFS_RECEIVE_SMS_ENABLED_KEY, isCheked);
+            compoundButton.setChecked(isCheked);
+            Snackbar.make(view, "Receive SMS " + (isCheked ? "enabled" : "disabled"), Snackbar.LENGTH_LONG).show();
+        });
+
         // TODO: check gateway status/api key/device validity and update UI accordingly
         registerDeviceBtn.setOnClickListener(view -> handleRegisterDevice());
         scanQRBtn.setOnClickListener(view -> {
