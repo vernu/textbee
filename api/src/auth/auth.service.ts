@@ -14,6 +14,7 @@ import {
 } from './schemas/password-reset.schema'
 import { MailService } from 'src/mail/mail.service'
 import { RequestResetPasswordInputDTO, ResetPasswordInputDTO } from './auth.dto'
+import { AccessLog } from './schemas/access-log.schema'
 @Injectable()
 export class AuthService {
   constructor(
@@ -22,6 +23,7 @@ export class AuthService {
     @InjectModel(ApiKey.name) private apiKeyModel: Model<ApiKeyDocument>,
     @InjectModel(PasswordReset.name)
     private passwordResetModel: Model<PasswordResetDocument>,
+    @InjectModel(AccessLog.name) private accessLogModel: Model<AccessLog>,
     private readonly mailService: MailService,
   ) {}
 
@@ -197,16 +199,35 @@ export class AuthService {
     await this.apiKeyModel.deleteOne({ _id: apiKeyId })
   }
 
-  async trackApiKeyUsage(apiKeyId: string) {
-    this.apiKeyModel
-      .findByIdAndUpdate(
-        apiKeyId,
-        { $inc: { usageCount: 1 }, lastUsedAt: new Date() },
-        { new: true },
-      )
-      .exec()
+  async trackAccessLog({ request }) {
+    const { apiKey, user, method, url, ip, headers } = request
+    const userAgent = headers['user-agent']
+
+    if (request.apiKey) {
+      this.apiKeyModel
+        .findByIdAndUpdate(
+          apiKey._id,
+          { $inc: { usageCount: 1 }, lastUsedAt: new Date() },
+          { new: true },
+        )
+        .exec()
+        .catch((e) => {
+          console.log('Failed to update api key usage count')
+          console.log(e)
+        })
+    }
+
+    this.accessLogModel
+      .create({
+        apiKey,
+        user,
+        method,
+        url: url.split('?')[0],
+        ip,
+        userAgent,
+      })
       .catch((e) => {
-        console.log('Failed to track api key usage')
+        console.log('Failed to track access log')
         console.log(e)
       })
   }

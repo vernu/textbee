@@ -42,7 +42,7 @@ export class AuthGuard implements CanActivate {
 
       if (apiKey && bcrypt.compareSync(apiKeyString, apiKey.hashedApiKey)) {
         userId = apiKey.user
-        this.authService.trackApiKeyUsage(apiKey._id)
+        request.apiKey = apiKey
       }
     }
 
@@ -50,6 +50,7 @@ export class AuthGuard implements CanActivate {
       const user = await this.usersService.findOne({ _id: userId })
       if (user) {
         request.user = user
+        this.authService.trackAccessLog({ request })
         return true
       }
     }
