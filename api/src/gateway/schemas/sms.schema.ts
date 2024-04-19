@@ -1,7 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose'
 import { Document, Types } from 'mongoose'
 import { Device } from './device.schema'
-import { SMSType } from '../sms-type.enum'
 
 export type SMSDocument = SMS & Document
 
@@ -12,8 +11,14 @@ export class SMS {
   @Prop({ type: Types.ObjectId, ref: Device.name, required: true })
   device: Device
 
-  @Prop({ type: String, required: true })
+  @Prop({ type: String })
   message: string
+
+  @Prop({ type: Boolean, default: false })
+  encrypted: boolean
+
+  @Prop({ type: String })
+  encryptedMessage: string
 
   @Prop({ type: String, required: true })
   type: string
@@ -22,14 +27,14 @@ export class SMS {
   @Prop({ type: String })
   sender: string
 
-  @Prop({ type: Date, default: Date.now })
+  @Prop({ type: Date })
   receivedAt: Date
 
   // fields for outgoing messages
   @Prop({ type: String })
   recipient: string
 
-  @Prop({ type: Date, default: Date.now })
+  @Prop({ type: Date })
   requestedAt: Date
 
   @Prop({ type: Date })

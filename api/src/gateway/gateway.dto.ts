@@ -100,3 +100,83 @@ export class ReceivedSMSDTO {
   })
   receivedAt: Date
 }
+
+export class DeviceDTO {
+  @ApiProperty({ type: String })
+  _id: string
+
+  @ApiProperty({ type: Boolean })
+  enabled: boolean
+
+  @ApiProperty({ type: String })
+  brand: string
+
+  @ApiProperty({ type: String })
+  manufacturer: string
+
+  @ApiProperty({ type: String })
+  model: string
+
+  @ApiProperty({ type: String })
+  buildId: string
+}
+
+export class RetrieveSMSDTO {
+  @ApiProperty({
+    type: String,
+    required: true,
+    description: 'The id of the received SMS',
+  })
+  _id: string
+
+  @ApiProperty({
+    type: String,
+    required: true,
+    description: 'The message received',
+  })
+  message: string
+
+  @ApiProperty({
+    type: DeviceDTO,
+    required: true,
+    description: 'The device that received the message',
+  })
+  device: DeviceDTO
+
+  @ApiProperty({
+    type: String,
+    required: true,
+    description: 'The phone number of the sender',
+  })
+  sender: string
+
+  @ApiProperty({
+    type: Date,
+    required: true,
+    description: 'The time the message was received',
+  })
+  receivedAt: Date
+
+  @ApiProperty({
+    type: Date,
+    required: true,
+    description: 'The time the message was created',
+  })
+  createdAt: Date
+
+  @ApiProperty({
+    type: Date,
+    required: true,
+    description: 'The time the message was last updated',
+  })
+  updatedAt: Date
+}
+
+export class RetrieveSMSResponseDTO {
+  @ApiProperty({
+    type: [RetrieveSMSDTO],
+    required: true,
+    description: 'The received SMS data',
+  })
+  data: RetrieveSMSDTO[]
+}
