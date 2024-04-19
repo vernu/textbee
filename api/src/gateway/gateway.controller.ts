@@ -11,11 +11,18 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common'
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger'
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger'
 import { AuthGuard } from '../auth/guards/auth.guard'
 import {
   ReceivedSMSDTO,
   RegisterDeviceInputDTO,
+  RetrieveSMSResponseDTO,
   SendSMSInputDTO,
 } from './gateway.dto'
 import { GatewayService } from './gateway.service'
@@ -112,13 +119,26 @@ export class GatewayController {
     description: 'Required if jwt bearer token not provided',
   })
   @HttpCode(HttpStatus.OK)
-  @Post('/devices/:id/receivedSMS')
+  @Post('/devices/:id/receiveSMS')
   @UseGuards(AuthGuard, CanModifyDevice)
-  async receivedSMS(
+  async receiveSMS(@Param('id') deviceId: string, @Body() dto: ReceivedSMSDTO) {
+    const data = await this.gatewayService.receiveSMS(deviceId, dto)
+    return { data }
+  }
+
+  @ApiOperation({ summary: 'Get received SMS from a device' })
+  @ApiQuery({
+    name: 'apiKey',
+    required: false,
+    description: 'Required if jwt bearer token not provided',
+  })
+  @ApiResponse({ status: 200, type: RetrieveSMSResponseDTO })
+  @UseGuards(AuthGuard, CanModifyDevice)
+  @Get('/devices/:id/getReceivedSMS')
+  async getReceivedSMS(
     @Param('id') deviceId: string,
-    @Body() dto: ReceivedSMSDTO,
-  ) {
-    const data = await this.gatewayService.receivedSMS(deviceId, dto)
+  ): Promise<RetrieveSMSResponseDTO> {
+    const data = await this.gatewayService.getReceivedSMS(deviceId)
     return { data }
   }
 }

@@ -6,6 +6,7 @@ import * as firebaseAdmin from 'firebase-admin'
 import {
   ReceivedSMSDTO,
   RegisterDeviceInputDTO,
+  RetrieveSMSDTO,
   SendSMSInputDTO,
 } from './gateway.dto'
 import { User } from '../users/schemas/user.schema'
@@ -137,7 +138,7 @@ export class GatewayService {
     }
   }
 
-  async receivedSMS(deviceId: string, dto: ReceivedSMSDTO): Promise<any> {
+  async receiveSMS(deviceId: string, dto: ReceivedSMSDTO): Promise<any> {
     const device = await this.deviceModel.findById(deviceId)
 
     if (!device) {
@@ -171,6 +172,34 @@ export class GatewayService {
     // TODO: Implement webhook to forward received SMS to user's callback URL
 
     return sms
+  }
+
+  async getReceivedSMS(deviceId: string): Promise<RetrieveSMSDTO[]> {
+    const device = await this.deviceModel.findById(deviceId)
+
+    if (!device) {
+      throw new HttpException(
+        {
+          success: false,
+          error: 'Device does not exist',
+        },
+        HttpStatus.BAD_REQUEST,
+      )
+    }
+
+    return await this.smsModel
+      .find(
+        {
+          device: device._id,
+          type: SMSType.RECEIVED,
+        },
+        null,
+        { sort: { receivedAt: -1 }, limit: 200 },
+      )
+      .populate({
+        path: 'device',
+        select: '_id brand model buildId enabled',
+      })
   }
 
   async getStatsForUser(user: User) {
