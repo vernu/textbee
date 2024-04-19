@@ -12,6 +12,7 @@ import {
   PasswordReset,
   PasswordResetSchema,
 } from './schemas/password-reset.schema'
+import { AccessLog, AccessLogSchema } from './schemas/access-log.schema'
 
 @Module({
   imports: [
@@ -23,6 +24,10 @@ import {
       {
         name: PasswordReset.name,
         schema: PasswordResetSchema,
+      },
+      {
+        name: AccessLog.name,
+        schema: AccessLogSchema,
       },
     ]),
     UsersModule,
