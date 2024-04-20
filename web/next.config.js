@@ -10,7 +10,7 @@ const nextConfig = {
     return [
       {
         source: '/android',
-        destination: 'https://appdistribution.firebase.dev/i/1439f7af2d1e8e8e',
+        destination: 'https://dl.textbee.dev',
         permanent: false,
       },
     ]

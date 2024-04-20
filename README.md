@@ -11,7 +11,7 @@ from their application via a REST API. It utilizes android phones as SMS gateway
 ## Usage
 
 1. Go to [textbee.dev](https://textbee.dev) and register or login with your account
-2. Install the app on your android phone from [textbee.dev/android](https://textbee.dev/android)
+2. Install the app on your android phone from [dl.textbee.dev](https://dl.textbee.dev)
 3. Open the app and grant the permissions for SMS
 4. Go to [textbee.dev/dashboard](https://textbee.dev/dashboard) and click register device/ generate API Key
 5. Scan the QR code with the app or enter the API key manually
