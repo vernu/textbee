@@ -57,7 +57,7 @@ const ApiKeyList = () => {
 
   return (
     <TableContainer>
-      <Table variant='simple'>
+      <Table variant='striped'>
         <Thead>
           <Tr>
             <Th>Your API Keys</Th>

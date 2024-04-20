@@ -4,6 +4,7 @@ import {
   FormLabel,
   Input,
   Select,
+  SimpleGrid,
   Spinner,
   Textarea,
   useToast,
@@ -113,23 +114,26 @@ export default function SendSMS() {
 
   return (
     <>
-      <Box maxW='xl' mx={'auto'} pt={5} px={{ base: 2, sm: 12, md: 17 }}>
-        <SendSMSForm
-          deviceList={deviceList}
-          formData={formData}
-          handleChange={handleChange}
-        />
+      <SimpleGrid columns={{ base: 1, md: 2 }} spacing={{ base: 5, lg: 8 }}>
+        <Box backdropBlur='2xl' borderWidth='0px' borderRadius='lg'>
+          <SendSMSForm
+            deviceList={deviceList}
+            formData={formData}
+            handleChange={handleChange}
+          />
 
-        <Button
-          variant='outline'
-          colorScheme='blue'
-          onClick={handSend}
-          disabled={sendingSMS}
-          marginTop={3}
-        >
-          {sendingSMS ? <Spinner size='md' /> : 'Send'}
-        </Button>
-      </Box>
+          <Button
+            variant='outline'
+            colorScheme='blue'
+            onClick={handSend}
+            disabled={sendingSMS}
+            marginTop={3}
+          >
+            {sendingSMS ? <Spinner size='md' /> : 'Send'}
+          </Button>
+        </Box>
+        <Box backdropBlur='2xl' borderWidth='0px' borderRadius='lg'></Box>
+      </SimpleGrid>
     </>
   )
 }
