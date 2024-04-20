@@ -8,15 +8,12 @@ import android.telephony.SmsMessage;
 import android.util.Log;
 import com.vernu.sms.ApiManager;
 import com.vernu.sms.AppConstants;
-import com.vernu.sms.database.local.AppDatabase;
-import com.vernu.sms.database.local.SMS;
 import com.vernu.sms.dtos.SMSDTO;
 import com.vernu.sms.dtos.SMSForwardResponseDTO;
 import com.vernu.sms.helpers.SharedPreferenceHelper;
 
 import java.util.Date;
 import java.util.Objects;
-import java.util.concurrent.Executors;
 
 import retrofit2.Call;
 import retrofit2.Response;
@@ -48,52 +45,57 @@ public class SMSBroadcastReceiver extends BroadcastReceiver {
             return;
         }
 
-        SMS localReceivedSMS = new SMS();
-        localReceivedSMS.setType("RECEIVED");
-        for (SmsMessage message : messages) {
-            localReceivedSMS.setMessage(localReceivedSMS.getMessage() + message.getMessageBody());
-            localReceivedSMS.setSender(message.getOriginatingAddress());
-            localReceivedSMS.setReceivedAt(new Date(message.getTimestampMillis()));
-        }
+//        SMS receivedSMS = new SMS();
+//        receivedSMS.setType("RECEIVED");
+//        for (SmsMessage message : messages) {
+//            receivedSMS.setMessage(receivedSMS.getMessage() + message.getMessageBody());
+//            receivedSMS.setSender(message.getOriginatingAddress());
+//            receivedSMS.setReceivedAt(new Date(message.getTimestampMillis()));
+//        }
 
         SMSDTO receivedSMSDTO = new SMSDTO();
-        receivedSMSDTO.setSender(localReceivedSMS.getSender());
-        receivedSMSDTO.setMessage(localReceivedSMS.getMessage());
-        receivedSMSDTO.setReceivedAt(localReceivedSMS.getReceivedAt());
+
+        for (SmsMessage message : messages) {
+            receivedSMSDTO.setMessage(receivedSMSDTO.getMessage() + message.getMessageBody());
+            receivedSMSDTO.setSender(message.getOriginatingAddress());
+            receivedSMSDTO.setReceivedAt(new Date(message.getTimestampMillis()));
+        }
+//        receivedSMSDTO.setSender(receivedSMS.getSender());
+//        receivedSMSDTO.setMessage(receivedSMS.getMessage());
+//        receivedSMSDTO.setReceivedAt(receivedSMS.getReceivedAt());
 
         Call<SMSForwardResponseDTO> apiCall = ApiManager.getApiService().sendReceivedSMS(deviceId, apiKey, receivedSMSDTO);
         apiCall.enqueue(new retrofit2.Callback<SMSForwardResponseDTO>() {
             @Override
             public void onResponse(Call<SMSForwardResponseDTO> call, Response<SMSForwardResponseDTO> response) {
-                Date now = new Date();
+//                Date now = new Date();
                 if (response.isSuccessful()) {
                     Log.d(TAG, "SMS sent to server successfully");
-                    localReceivedSMS.setLastAcknowledgedRequestAt(now);
-                    localReceivedSMS.setServerAcknowledgedAt(now);
-                    updateLocalReceivedSMS(localReceivedSMS, context);
+//                    receivedSMS.setLastAcknowledgedRequestAt(now);
+//                    receivedSMS.setServerAcknowledgedAt(now);
+//                    updateLocalReceivedSMS(receivedSMS, context);
                 } else {
                     Log.e(TAG, "Failed to send SMS to server");
-                    localReceivedSMS.setServerAcknowledgedAt(null);
-                    localReceivedSMS.setLastAcknowledgedRequestAt(now);
-                    // localReceivedSMS.setRetryCount(localReceivedSMS.getRetryCount() + 1);
-                    updateLocalReceivedSMS(localReceivedSMS, context);
+//                    receivedSMS.setServerAcknowledgedAt(null);
+//                    receivedSMS.setLastAcknowledgedRequestAt(now);
+//                    receivedSMS.setRetryCount(localReceivedSMS.getRetryCount() + 1);
+//                    updateLocalReceivedSMS(receivedSMS, context);
                 }
             }
             @Override
             public void onFailure(Call<SMSForwardResponseDTO> call, Throwable t) {
                 Log.e(TAG, "Failed to send SMS to server", t);
-                localReceivedSMS.setServerAcknowledgedAt(null);
-                localReceivedSMS.setLastAcknowledgedRequestAt(new Date());
-                updateLocalReceivedSMS(localReceivedSMS, context);
+//                receivedSMS.setServerAcknowledgedAt(null);
+//                receivedSMS.setLastAcknowledgedRequestAt(new Date());
+//                updateLocalReceivedSMS(receivedSMS, context);
             }
         });
     }
 
-    private void updateLocalReceivedSMS(SMS localReceivedSMS, Context context) {
-        Executors.newSingleThreadExecutor().execute(() -> {
-            AppDatabase appDatabase = AppDatabase.getInstance(context);
-            appDatabase.localReceivedSMSDao().insertAll(localReceivedSMS);
-        });
-
-    }
+//    private void updateLocalReceivedSMS(SMS localReceivedSMS, Context context) {
+//        Executors.newSingleThreadExecutor().execute(() -> {
+//            AppDatabase appDatabase = AppDatabase.getInstance(context);
+//            appDatabase.localReceivedSMSDao().insertAll(localReceivedSMS);
+//        });
+//    }
 }

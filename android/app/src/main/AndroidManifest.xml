@@ -45,7 +45,7 @@
         </receiver>
 
         <receiver android:enabled="true"
-            android:name=".receivers.BootReceiver"
+            android:name=".receivers.BootCompletedReceiver"
             android:exported="true"
             android:permission="android.permission.RECEIVE_BOOT_COMPLETED">
             <intent-filter>
