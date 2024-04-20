@@ -3,13 +3,21 @@ import { InjectModel } from '@nestjs/mongoose'
 import { Device, DeviceDocument } from './schemas/device.schema'
 import { Model } from 'mongoose'
 import * as firebaseAdmin from 'firebase-admin'
-import { RegisterDeviceInputDTO, SendSMSInputDTO } from './gateway.dto'
+import {
+  ReceivedSMSDTO,
+  RegisterDeviceInputDTO,
+  RetrieveSMSDTO,
+  SendSMSInputDTO,
+} from './gateway.dto'
 import { User } from '../users/schemas/user.schema'
 import { AuthService } from 'src/auth/auth.service'
+import { SMS } from './schemas/sms.schema'
+import { SMSType } from './sms-type.enum'
 @Injectable()
 export class GatewayService {
   constructor(
     @InjectModel(Device.name) private deviceModel: Model<DeviceDocument>,
+    @InjectModel(SMS.name) private smsModel: Model<SMS>,
     private authService: AuthService,
   ) {}
 
@@ -72,10 +80,19 @@ export class GatewayService {
       )
     }
 
-    return await this.deviceModel.findByIdAndDelete(deviceId)
+    return {}
+    // return await this.deviceModel.findByIdAndDelete(deviceId)
   }
 
   async sendSMS(deviceId: string, smsData: SendSMSInputDTO): Promise<any> {
+    const updatedSMSData = {
+      message: smsData.message || smsData.smsBody,
+      recipients: smsData.recipients || smsData.receivers,
+
+      // Legacy fields to be removed in the future
+      smsBody: smsData.message || smsData.smsBody,
+      receivers: smsData.recipients || smsData.receivers,
+    }
     const device = await this.deviceModel.findById(deviceId)
 
     if (!device?.enabled) {
@@ -88,11 +105,15 @@ export class GatewayService {
       )
     }
 
+    const stringifiedSMSData = JSON.stringify(updatedSMSData)
     const payload: any = {
       data: {
-        smsData: JSON.stringify(smsData),
+        smsData: stringifiedSMSData,
       },
     }
+
+    // TODO: Save SMS and Implement a queue to send the SMS if recipients are too many
+
     try {
       const response = await firebaseAdmin
         .messaging()
@@ -100,7 +121,7 @@ export class GatewayService {
 
       this.deviceModel
         .findByIdAndUpdate(deviceId, {
-          $inc: { sentSMSCount: smsData.receivers.length },
+          $inc: { sentSMSCount: updatedSMSData.recipients.length },
         })
         .exec()
         .catch((e) => {
@@ -118,19 +139,98 @@ export class GatewayService {
     }
   }
 
+  async receiveSMS(deviceId: string, dto: ReceivedSMSDTO): Promise<any> {
+    const device = await this.deviceModel.findById(deviceId)
+
+    if (!device) {
+      throw new HttpException(
+        {
+          success: false,
+          error: 'Device does not exist',
+        },
+        HttpStatus.BAD_REQUEST,
+      )
+    }
+
+    if (!dto.receivedAt || !dto.sender || !dto.message) {
+      throw new HttpException(
+        {
+          success: false,
+          error: 'Invalid received SMS data',
+        },
+        HttpStatus.BAD_REQUEST,
+      )
+    }
+
+    const sms = await this.smsModel.create({
+      device: device._id,
+      message: dto.message,
+      type: SMSType.RECEIVED,
+      sender: dto.sender,
+      receivedAt: dto.receivedAt,
+    })
+
+    this.deviceModel
+      .findByIdAndUpdate(deviceId, {
+        $inc: { receivedSMSCount: 1 },
+      })
+      .exec()
+      .catch((e) => {
+        console.log('Failed to update receivedSMSCount')
+        console.log(e)
+      })
+
+    // TODO: Implement webhook to forward received SMS to user's callback URL
+
+    return sms
+  }
+
+  async getReceivedSMS(deviceId: string): Promise<RetrieveSMSDTO[]> {
+    const device = await this.deviceModel.findById(deviceId)
+
+    if (!device) {
+      throw new HttpException(
+        {
+          success: false,
+          error: 'Device does not exist',
+        },
+        HttpStatus.BAD_REQUEST,
+      )
+    }
+
+    return await this.smsModel
+      .find(
+        {
+          device: device._id,
+          type: SMSType.RECEIVED,
+        },
+        null,
+        { sort: { receivedAt: -1 }, limit: 200 },
+      )
+      .populate({
+        path: 'device',
+        select: '_id brand model buildId enabled',
+      })
+  }
+
   async getStatsForUser(user: User) {
     const devices = await this.deviceModel.find({ user: user._id })
     const apiKeys = await this.authService.getUserApiKeys(user)
 
-    const totalSMSCount = devices.reduce((acc, device) => {
+    const totalSentSMSCount = devices.reduce((acc, device) => {
       return acc + (device.sentSMSCount || 0)
+    }, 0)
+
+    const totalReceivedSMSCount = devices.reduce((acc, device) => {
+      return acc + (device.receivedSMSCount || 0)
     }, 0)
 
     const totalDeviceCount = devices.length
     const totalApiKeyCount = apiKeys.length
 
     return {
-      totalSMSCount,
+      totalSentSMSCount,
+      totalReceivedSMSCount,
       totalDeviceCount,
       totalApiKeyCount,
     }

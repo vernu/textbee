@@ -27,6 +27,7 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   @ApiOperation({ summary: 'Login' })
+  @HttpCode(HttpStatus.OK)
   @Post('/login')
   async login(@Body() input: LoginInputDTO) {
     const data = await this.authService.login(input)
@@ -34,6 +35,7 @@ export class AuthController {
   }
 
   @ApiOperation({ summary: 'Login With Google' })
+  @HttpCode(HttpStatus.OK)
   @Post('/google-login')
   async googleLogin(@Body() input: any) {
     const data = await this.authService.loginWithGoogle(input.idToken)
@@ -48,11 +50,6 @@ export class AuthController {
   }
 
   @ApiOperation({ summary: 'Get current logged in user' })
-  @ApiQuery({
-    name: 'apiKey',
-    required: false,
-    description: 'Required if jwt bearer token not provided',
-  })
   @ApiBearerAuth()
   @UseGuards(AuthGuard)
   @Get('/who-am-i')
@@ -62,11 +59,6 @@ export class AuthController {
 
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Generate Api Key' })
-  @ApiQuery({
-    name: 'apiKey',
-    required: false,
-    description: 'Required if jwt bearer token not provided',
-  })
   @ApiBearerAuth()
   @Post('/api-keys')
   async generateApiKey(@Request() req) {
@@ -76,11 +68,6 @@ export class AuthController {
 
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Get Api Key List (masked***)' })
-  @ApiQuery({
-    name: 'apiKey',
-    required: false,
-    description: 'Required if jwt bearer token not provided',
-  })
   @ApiBearerAuth()
   @Get('/api-keys')
   async getApiKey(@Request() req) {

@@ -16,6 +16,12 @@ export class ApiKey {
 
   @Prop({ type: Types.ObjectId, ref: User.name })
   user: User
+
+  @Prop({ type: Number, default: 0 })
+  usageCount: number
+
+  @Prop({ type: Date })
+  lastUsedAt: Date
 }
 
 export const ApiKeySchema = SchemaFactory.createForClass(ApiKey)

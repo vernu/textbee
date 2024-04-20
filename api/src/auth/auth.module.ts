@@ -12,6 +12,7 @@ import {
   PasswordReset,
   PasswordResetSchema,
 } from './schemas/password-reset.schema'
+import { AccessLog, AccessLogSchema } from './schemas/access-log.schema'
 
 @Module({
   imports: [
@@ -24,12 +25,16 @@ import {
         name: PasswordReset.name,
         schema: PasswordResetSchema,
       },
+      {
+        name: AccessLog.name,
+        schema: AccessLogSchema,
+      },
     ]),
     UsersModule,
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET,
-      signOptions: { expiresIn: '180d' },
+      signOptions: { expiresIn: process.env.JWT_EXPIRATION || '60d' },
     }),
     MailModule,
   ],

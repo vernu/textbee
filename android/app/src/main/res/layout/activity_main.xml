@@ -1,82 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".activities.MainActivity">
 
-    <LinearLayout
-        android:id="@+id/bottom"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="#ccccccee"
-        android:orientation="vertical"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        android:padding="12dp">
-
-        <TextView
-
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="How To Use"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Go to textbee.dev/dashboard and click register device, then copy and paste the api key generated or scan the QR code" />
-
-        <Button
-            android:id="@+id/grantSMSPermissionBtn"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Grant SMS Permission"
-            android:visibility="visible" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:orientation="vertical">
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Default SIM"
-                android:textStyle="bold" />
-            <RadioGroup
-                android:id="@+id/defaultSimSlotRadioGroup"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
-            </RadioGroup>
-        </LinearLayout>
-    </LinearLayout>
-
 
     <ScrollView
         android:id="@+id/scrollView2"
         android:layout_width="match_parent"
-        android:layout_height="606dp"
-        app:layout_constraintBottom_toTopOf="@+id/bottom"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="1.0"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.0">
+        android:layout_height="match_parent">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Enter your API key or scan the QR code below to get started"
+                android:textSize="20dp"
+                android:layout_margin="5dp"
+                android:textAlignment="center"
+                android:layout_gravity="center" />
 
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="#ccccccee"
+                android:layout_margin="5dp"
                 android:orientation="horizontal">
 
                 <LinearLayout
@@ -91,7 +46,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:ems="10"
-                        android:hint="key"
+                        android:hint="API Key"
                         android:inputType="text"
                         android:minHeight="48dp"
                         android:textIsSelectable="true" />
@@ -137,6 +92,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center"
+                android:layout_margin="5dp"
                 android:orientation="horizontal">
 
                 <LinearLayout
@@ -229,9 +185,119 @@
                 </LinearLayout>
             </LinearLayout>
 
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="30dp"
+                android:orientation="vertical"
+                android:padding="10px">
 
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Configuration"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="2dp"
+                    android:background="#000000" />
+
+                <Button
+                    android:id="@+id/grantSMSPermissionBtn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Grant Permissions"
+                    android:visibility="visible" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="TextBee will only work if you grant SMS Permissions"
+                    android:textSize="14dp"
+                    android:textStyle="italic" />
+
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#000000" />
+
+                <Switch
+                    android:id="@+id/receiveSMSSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="5dp"
+                    android:minHeight="32dp"
+                    android:text="Receive SMS" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Toggle this if you want to receive SMS"
+                    android:textSize="14dp"
+                    android:textStyle="italic" />
+
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#000000" />
+
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Default SIM"
+                        android:textStyle="bold" />
+
+                    <RadioGroup
+                        android:id="@+id/defaultSimSlotRadioGroup"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"></RadioGroup>
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Select your preferred SIM for sending SMS"
+                    android:textSize="14dp"
+                    android:textStyle="italic" />
+
+            </LinearLayout>
+
+
+            <LinearLayout
+                android:id="@+id/bottom"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#ccccccee"
+                android:orientation="vertical"
+                android:layout_marginTop="30dp"
+                android:padding="12dp">
+
+                <TextView
+
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="How To Use"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Go to textbee.dev/dashboard and click `generate API Key / Get started`, then copy and paste the API key generated or scan the QR code" />
+
+            </LinearLayout>
         </LinearLayout>
     </ScrollView>
 
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+</LinearLayout>

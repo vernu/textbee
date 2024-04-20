@@ -76,7 +76,7 @@ const DeviceList = () => {
 
   return (
     <TableContainer>
-      <Table variant='simple'>
+      <Table variant='striped'>
         <Thead>
           <Tr>
             <Th>Your Devices</Th>

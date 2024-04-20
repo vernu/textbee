@@ -25,7 +25,7 @@ export default function Footer() {
         <Stack direction={'row'} spacing={6}>
           <Link href='/'>Home</Link>
           <Link href='/dashboard'>Dashboard</Link>
-          <Link href='/android'>Download App</Link>
+          <Link href='https://dl.textbee.dev' target='_blank'> Download App</Link>
           <Link href='https://github.com/vernu/textbee'>Github</Link>
         </Stack>
       </Container>

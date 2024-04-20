@@ -8,10 +8,23 @@ import {
   Request,
   Get,
   Delete,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common'
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger'
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger'
 import { AuthGuard } from '../auth/guards/auth.guard'
-import { RegisterDeviceInputDTO, SendSMSInputDTO } from './gateway.dto'
+import {
+  ReceivedSMSDTO,
+  RegisterDeviceInputDTO,
+  RetrieveSMSResponseDTO,
+  SendSMSInputDTO,
+} from './gateway.dto'
 import { GatewayService } from './gateway.service'
 import { CanModifyDevice } from './guards/can-modify-device.guard'
 
@@ -30,11 +43,6 @@ export class GatewayController {
 
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Register device' })
-  @ApiQuery({
-    name: 'apiKey',
-    required: false,
-    description: 'Required if jwt bearer token not provided',
-  })
   @Post('/devices')
   async registerDevice(@Body() input: RegisterDeviceInputDTO, @Request() req) {
     const data = await this.gatewayService.registerDevice(input, req.user)
@@ -43,11 +51,6 @@ export class GatewayController {
 
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'List of registered devices' })
-  @ApiQuery({
-    name: 'apiKey',
-    required: false,
-    description: 'Required if jwt bearer token not provided',
-  })
   @Get('/devices')
   async getDevices(@Request() req) {
     const data = await this.gatewayService.getDevicesForUser(req.user)
@@ -55,11 +58,6 @@ export class GatewayController {
   }
 
   @ApiOperation({ summary: 'Update device' })
-  @ApiQuery({
-    name: 'apiKey',
-    required: false,
-    description: 'Required if jwt bearer token not provided',
-  })
   @UseGuards(AuthGuard, CanModifyDevice)
   @Patch('/devices/:id')
   async updateDevice(
@@ -71,11 +69,6 @@ export class GatewayController {
   }
 
   @ApiOperation({ summary: 'Delete device' })
-  @ApiQuery({
-    name: 'apiKey',
-    required: false,
-    description: 'Required if jwt bearer token not provided',
-  })
   @UseGuards(AuthGuard, CanModifyDevice)
   @Delete('/devices/:id')
   async deleteDevice(@Param('id') deviceId: string) {
@@ -84,11 +77,6 @@ export class GatewayController {
   }
 
   @ApiOperation({ summary: 'Send SMS to a device' })
-  @ApiQuery({
-    name: 'apiKey',
-    required: false,
-    description: 'Required if jwt bearer token not provided',
-  })
   @UseGuards(AuthGuard, CanModifyDevice)
   @Post('/devices/:id/sendSMS')
   async sendSMS(
@@ -96,6 +84,26 @@ export class GatewayController {
     @Body() smsData: SendSMSInputDTO,
   ) {
     const data = await this.gatewayService.sendSMS(deviceId, smsData)
+    return { data }
+  }
+
+  @ApiOperation({ summary: 'Received SMS from a device' })
+  @HttpCode(HttpStatus.OK)
+  @Post('/devices/:id/receiveSMS')
+  @UseGuards(AuthGuard, CanModifyDevice)
+  async receiveSMS(@Param('id') deviceId: string, @Body() dto: ReceivedSMSDTO) {
+    const data = await this.gatewayService.receiveSMS(deviceId, dto)
+    return { data }
+  }
+
+  @ApiOperation({ summary: 'Get received SMS from a device' })
+  @ApiResponse({ status: 200, type: RetrieveSMSResponseDTO })
+  @UseGuards(AuthGuard, CanModifyDevice)
+  @Get('/devices/:id/getReceivedSMS')
+  async getReceivedSMS(
+    @Param('id') deviceId: string,
+  ): Promise<RetrieveSMSResponseDTO> {
+    const data = await this.gatewayService.getReceivedSMS(deviceId)
     return { data }
   }
 }
