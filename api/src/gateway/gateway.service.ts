@@ -80,7 +80,8 @@ export class GatewayService {
       )
     }
 
-    return await this.deviceModel.findByIdAndDelete(deviceId)
+    return {}
+    // return await this.deviceModel.findByIdAndDelete(deviceId)
   }
 
   async sendSMS(deviceId: string, smsData: SendSMSInputDTO): Promise<any> {

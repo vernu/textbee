@@ -196,7 +196,7 @@ export class AuthService {
       )
     }
 
-    await this.apiKeyModel.deleteOne({ _id: apiKeyId })
+    // await this.apiKeyModel.deleteOne({ _id: apiKeyId })
   }
 
   async trackAccessLog({ request }) {
