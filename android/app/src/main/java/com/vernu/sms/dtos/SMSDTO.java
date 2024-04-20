@@ -4,7 +4,7 @@ import java.util.Date;
 
 public class SMSDTO {
     private String sender;
-    private String message;
+    private String message = "";
     private Date receivedAt;
 
     public SMSDTO() {
