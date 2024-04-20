@@ -85,7 +85,7 @@ const ReceivedSMSList = () => {
   }, [tabIndex, deviceList])
 
   useEffect(() => {
-    if (authUser) {
+    if (authUser && activeDeviceId) {
       dispatch(fetchReceivedSMSList(activeDeviceId))
     }
   }, [dispatch, authUser, activeDeviceId])
