@@ -34,6 +34,11 @@ class GatewayService {
     )
     return res.data.data
   }
+
+  async getReceivedSMSList(deviceId: string) {
+    const res = await httpClient.get(`/gateway/devices/${deviceId}/getReceivedSMS`)
+    return res.data.data
+  }
 }
 
 export const gatewayService = new GatewayService()
