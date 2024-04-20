@@ -170,6 +170,16 @@ export class GatewayService {
       receivedAt: dto.receivedAt,
     })
 
+    this.deviceModel
+      .findByIdAndUpdate(deviceId, {
+        $inc: { receivedSMSCount: 1 },
+      })
+      .exec()
+      .catch((e) => {
+        console.log('Failed to update receivedSMSCount')
+        console.log(e)
+      })
+
     // TODO: Implement webhook to forward received SMS to user's callback URL
 
     return sms
@@ -207,15 +217,20 @@ export class GatewayService {
     const devices = await this.deviceModel.find({ user: user._id })
     const apiKeys = await this.authService.getUserApiKeys(user)
 
-    const totalSMSCount = devices.reduce((acc, device) => {
+    const totalSentSMSCount = devices.reduce((acc, device) => {
       return acc + (device.sentSMSCount || 0)
+    }, 0)
+
+    const totalReceivedSMSCount = devices.reduce((acc, device) => {
+      return acc + (device.receivedSMSCount || 0)
     }, 0)
 
     const totalDeviceCount = devices.length
     const totalApiKeyCount = apiKeys.length
 
     return {
-      totalSMSCount,
+      totalSentSMSCount,
+      totalReceivedSMSCount,
       totalDeviceCount,
       totalApiKeyCount,
     }
