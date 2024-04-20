@@ -54,13 +54,11 @@ const DashboardTabView = () => {
     <Box maxW='7xl' mx={'auto'} pt={5} px={{ base: 2, sm: 12, md: 17 }}>
       <Tabs isLazy={false} index={tabIndex} onChange={setTabIndex}>
         <TabList>
-          {/* <Tab>Get Started</Tab> */}
           <Tab>API Key and Devices</Tab>
           <Tab>Send SMS</Tab>
           <Tab>Receive SMS</Tab>
         </TabList>
         <TabPanels>
-          {/* <TabPanel>Get Started</TabPanel> */}
           <TabPanel>
             <APIKeyAndDevices />
           </TabPanel>

@@ -11,6 +11,10 @@ const initialState = {
   item: null,
   list: [],
   sendingSMS: false,
+  receivedSMSList: {
+    loading: false,
+    data: [],
+  },
 }
 
 export const fetchDevices = createAsyncThunk(
@@ -22,6 +26,22 @@ export const fetchDevices = createAsyncThunk(
     } catch (e) {
       toast({
         title: e.response.data.error || 'Failed to Fetch devices',
+        status: 'error',
+      })
+      return rejectWithValue(e.response.data)
+    }
+  }
+)
+
+export const fetchReceivedSMSList = createAsyncThunk(
+  'device/fetchReceivedSMSList',
+  async (id: string, { rejectWithValue }) => {
+    try {
+      const res = await gatewayService.getReceivedSMSList(id)
+      return res
+    } catch (e) {
+      toast({
+        title: e.response.data.error || 'Failed to Fetch received sms list',
         status: 'error',
       })
       return rejectWithValue(e.response.data)
@@ -100,6 +120,19 @@ export const deviceSlice = createSlice({
       .addCase(sendSMS.rejected, (state) => {
         state.sendingSMS = false
       })
+      .addCase(fetchReceivedSMSList.pending, (state) => {
+        state.receivedSMSList.loading = true
+      })
+      .addCase(
+        fetchReceivedSMSList.fulfilled,
+        (state, action: PayloadAction<any>) => {
+          state.receivedSMSList.loading = false
+          state.receivedSMSList.data = action.payload
+        }
+      )
+      .addCase(fetchReceivedSMSList.rejected, (state) => {
+        state.receivedSMSList.loading = false
+      })
   },
 })
 
@@ -109,5 +142,7 @@ export const selectDeviceList = (state: RootState) => state.device.list
 export const selectDeviceItem = (state: RootState) => state.device.item
 export const selectDeviceLoading = (state: RootState) => state.device.loading
 export const selectSendingSMS = (state: RootState) => state.device.sendingSMS
+export const selectReceivedSMSList = (state: RootState) =>
+  state.device.receivedSMSList
 
 export default deviceSlice.reducer
