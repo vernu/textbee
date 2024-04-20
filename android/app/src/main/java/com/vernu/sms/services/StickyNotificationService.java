@@ -33,13 +33,13 @@ public class StickyNotificationService extends Service {
         Log.i(TAG, "Service Started");
 
 
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(Telephony.Sms.Intents.SMS_RECEIVED_ACTION);
-        filter.addAction(android.telephony.TelephonyManager.ACTION_PHONE_STATE_CHANGED);
-        registerReceiver(receiver, filter);
-
-        Notification notification = createNotification();
-        startForeground(1, notification);
+//        IntentFilter filter = new IntentFilter();
+//        filter.addAction(Telephony.Sms.Intents.SMS_RECEIVED_ACTION);
+//        filter.addAction(android.telephony.TelephonyManager.ACTION_PHONE_STATE_CHANGED);
+//        registerReceiver(receiver, filter);
+//
+//        Notification notification = createNotification();
+//        startForeground(1, notification);
 
     }
 
@@ -54,7 +54,7 @@ public class StickyNotificationService extends Service {
         super.onDestroy();
 //        unregisterReceiver(receiver);
         Log.i(TAG, "StickyNotificationService destroyed");
-        Toast.makeText(this, "Service destroyed", Toast.LENGTH_SHORT).show();
+//        Toast.makeText(this, "Service destroyed", Toast.LENGTH_SHORT).show();
     }
 
     private Notification createNotification() {

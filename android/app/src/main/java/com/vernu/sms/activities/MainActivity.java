@@ -90,7 +90,7 @@ public class MainActivity extends AppCompatActivity {
             grantSMSPermissionBtn.setOnClickListener(this::handleRequestPermissions);
         }
 
-        TextBeeUtils.startStickyNotificationService(mContext);
+//        TextBeeUtils.startStickyNotificationService(mContext);
 
         copyDeviceIdImgBtn.setOnClickListener(view -> {
             ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
@@ -125,11 +125,11 @@ public class MainActivity extends AppCompatActivity {
                     SharedPreferenceHelper.setSharedPreferenceBoolean(mContext, AppConstants.SHARED_PREFS_GATEWAY_ENABLED_KEY, isCheked);
                     boolean enabled = Boolean.TRUE.equals(Objects.requireNonNull(response.body()).data.get("enabled"));
                     compoundButton.setChecked(enabled);
-                    if (enabled) {
-                        TextBeeUtils.startStickyNotificationService(mContext);
-                    } else {
-                        TextBeeUtils.stopStickyNotificationService(mContext);
-                    }
+//                    if (enabled) {
+//                        TextBeeUtils.startStickyNotificationService(mContext);
+//                    } else {
+//                        TextBeeUtils.stopStickyNotificationService(mContext);
+//                    }
                     compoundButton.setEnabled(true);
                 }
                 @Override
