@@ -11,7 +11,8 @@ const initialState = {
   data: {
     totalApiKeyCount: 0,
     totalDeviceCount: 0,
-    totalSMSCount: 0,
+    totalReceivedSMSCount: 0,
+    totalSentSMSCount: 0,
   },
 }
 
