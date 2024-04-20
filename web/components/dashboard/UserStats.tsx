@@ -28,8 +28,8 @@ const UserStats = () => {
       <Box maxW='7xl' mx={'auto'} pt={5} px={{ base: 2, sm: 12, md: 17 }}>
         <SimpleGrid columns={{ base: 1, md: 2 }}>
           <chakra.h1
-            textAlign={'center'}
-            fontSize={'4xl'}
+            // textAlign={'center'}
+            fontSize={'2xl'}
             py={10}
             fontWeight={'bold'}
           >

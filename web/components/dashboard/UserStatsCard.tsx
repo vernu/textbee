@@ -10,20 +10,21 @@ export default function UserStatsCard({ ...props }) {
   const { title, stat } = props
   return (
     <Stat
-      px={{ base: 4, md: 8 }}
-      py={'5'}
+      px={{ base: 2, md: 4 }}
+      py={'3'}
       shadow={'xl'}
       border={'1px solid'}
       borderColor={useColorModeValue('gray.800', 'gray.500')}
       rounded={'lg'}
       style={{
-        height: '90px'
+        height: '90px',
       }}
+      alignContent={'center'}
     >
       <StatLabel fontWeight={'medium'} isTruncated>
         {title}
       </StatLabel>
-      <StatNumber fontSize={'md'} fontWeight={'bold'}>
+      <StatNumber fontSize={'md'} fontWeight={'medium'}>
         {stat}
       </StatNumber>
     </Stat>
