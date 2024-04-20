@@ -1,20 +1,11 @@
 import {
   Box,
   Button,
-  Flex,
   FormLabel,
   Input,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
   Select,
   Spinner,
   Textarea,
-  useDisclosure,
   useToast,
 } from '@chakra-ui/react'
 import { useState } from 'react'
@@ -50,22 +41,22 @@ export const SendSMSForm = ({ deviceList, formData, handleChange }) => {
         </Select>
       </Box>
       <Box>
-        <FormLabel htmlFor='receivers'>Receiver</FormLabel>
+        <FormLabel htmlFor='recipient'>Recipient</FormLabel>
         <Input
-          placeholder='receiver'
-          name='receivers'
+          placeholder='recipient'
+          name='recipients'
           onChange={handleChange}
-          value={formData.receivers}
+          value={formData.recipients}
           type='tel'
         />
       </Box>
       <Box>
-        <FormLabel htmlFor='smsBody'>SMS Body</FormLabel>
+        <FormLabel htmlFor='message'>Message</FormLabel>
         <Textarea
-          id='smsBody'
-          name='smsBody'
+          id='message'
+          name='message'
           onChange={handleChange}
-          value={formData.smsBody}
+          value={formData.message}
         />
       </Box>
     </>
@@ -73,7 +64,6 @@ export const SendSMSForm = ({ deviceList, formData, handleChange }) => {
 }
 
 export default function SendSMS() {
-  const { isOpen, onOpen, onClose } = useDisclosure()
   const deviceList = useSelector(selectDeviceList)
   const toast = useToast()
   const dispatch = useAppDispatch()
@@ -82,16 +72,16 @@ export default function SendSMS() {
 
   const [formData, setFormData] = useState({
     device: '',
-    receivers: '',
-    smsBody: '',
+    recipients: '',
+    message: '',
   })
 
   const handSend = (e) => {
     e.preventDefault()
-    const { device: deviceId, receivers, smsBody } = formData
-    const receiversArray = receivers.replace(' ', '').split(',')
+    const { device: deviceId, recipients, message } = formData
+    const recipientsArray = recipients.replace(' ', '').split(',')
 
-    if (!deviceId || !receivers || !smsBody) {
+    if (!deviceId || !recipients || !message) {
       toast({
         title: 'Please fill all fields',
         status: 'error',
@@ -99,7 +89,7 @@ export default function SendSMS() {
       return
     }
 
-    for (let receiver of receiversArray) {
+    for (let recipient of recipientsArray) {
       // TODO: validate phone numbers
     }
 
@@ -107,8 +97,8 @@ export default function SendSMS() {
       sendSMS({
         deviceId,
         payload: {
-          receivers: receiversArray,
-          smsBody,
+          recipients: recipientsArray,
+          message,
         },
       })
     )
@@ -123,39 +113,23 @@ export default function SendSMS() {
 
   return (
     <>
-      <Flex justifyContent='flex-end' marginBottom={20}>
-        <Button bg={'blue.400'} color={'white'} onClick={onOpen}>
-          Send SMS
-        </Button>
-      </Flex>
+      <Box maxW='xl' mx={'auto'} pt={5} px={{ base: 2, sm: 12, md: 17 }}>
+        <SendSMSForm
+          deviceList={deviceList}
+          formData={formData}
+          handleChange={handleChange}
+        />
 
-      <Modal isOpen={isOpen} onClose={onClose}>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Send SMS</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <SendSMSForm
-              deviceList={deviceList}
-              formData={formData}
-              handleChange={handleChange}
-            />
-          </ModalBody>
-          <ModalFooter>
-            <Button variant='ghost' mr={3} onClick={onClose}>
-              Close
-            </Button>
-            <Button
-              variant='outline'
-              colorScheme='blue'
-              onClick={handSend}
-              disabled={sendingSMS}
-            >
-              {sendingSMS ? <Spinner size='md' /> : 'Send'}
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+        <Button
+          variant='outline'
+          colorScheme='blue'
+          onClick={handSend}
+          disabled={sendingSMS}
+          marginTop={3}
+        >
+          {sendingSMS ? <Spinner size='md' /> : 'Send'}
+        </Button>
+      </Box>
     </>
   )
 }

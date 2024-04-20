@@ -50,8 +50,8 @@ export interface CurrentUserResponse extends BaseResponse {
 }
 
 export interface SendSMSRequestPayload {
-  receivers: string[]
-  smsBody: string
+  recipients: string[]
+  message: string
 }
 
 export interface ApiKeyEntity {
