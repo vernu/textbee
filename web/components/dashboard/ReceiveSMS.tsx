@@ -115,14 +115,14 @@ const ReceivedSMSList = () => {
                   <Thead>
                     <Tr>
                       <Th>sender</Th>
-                      <Th>message</Th>
+                      <Th colSpan={4}>message</Th>
                       <Th>received at</Th>
                     </Tr>
                   </Thead>
                   <Tbody>
                     {receivedSMSListLoading && (
                       <Tr>
-                        <Td colSpan={3} textAlign='center'>
+                        <Td colSpan={6} textAlign='center'>
                           <Spinner size='lg' />
                         </Td>
                       </Tr>
@@ -130,7 +130,7 @@ const ReceivedSMSList = () => {
 
                     {!receivedSMSListLoading &&
                       receivedSMSListData.length == 0 && (
-                        <Td colSpan={3} textAlign='center'>
+                        <Td colSpan={6} textAlign='center'>
                           No SMS received
                         </Td>
                       )}
@@ -141,7 +141,7 @@ const ReceivedSMSList = () => {
                         ({ _id, sender, message, receivedAt }) => (
                           <Tr key={_id}>
                             <Td>{sender}</Td>
-                            <Td whiteSpace='pre-wrap' maxW='300px'>
+                            <Td whiteSpace='pre-wrap' colSpan={4}>
                               {message}
                             </Td>
                             <Td>
