@@ -23,10 +23,14 @@ from their application via a REST API. It utilizes android phones as SMS gateway
 const API_KEY = 'YOUR_API_KEY';
 const DEVICE_ID = 'YOUR_DEVICE_ID';
 
-await axios.post(`https://api.textbee.dev/api/v1/gateway/devices/${DEVICE_ID}/sendSMS?apiKey=${API_KEY}`, {
-  receivers: [ '+251912345678' ],
-  smsBody: 'Hello World!',
-})
+await axios.post(`https://api.textbee.dev/api/v1/gateway/devices/${DEVICE_ID}/sendSMS`, {
+  recipients: [ '+251912345678' ],
+  message: 'Hello World!',
+}, {
+  headers: {
+    'x-api-key': API_KEY,
+  },
+});
 
 ```
 
