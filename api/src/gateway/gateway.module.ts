@@ -5,6 +5,7 @@ import { GatewayController } from './gateway.controller'
 import { GatewayService } from './gateway.service'
 import { AuthModule } from '../auth/auth.module'
 import { UsersModule } from '../users/users.module'
+import { SMS, SMSSchema } from './schemas/sms.schema'
 
 @Module({
   imports: [
@@ -12,6 +13,10 @@ import { UsersModule } from '../users/users.module'
       {
         name: Device.name,
         schema: DeviceSchema,
+      },
+      {
+        name: SMS.name,
+        schema: SMSSchema,
       },
     ]),
     AuthModule,

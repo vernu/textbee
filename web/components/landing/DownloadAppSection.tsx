@@ -60,7 +60,7 @@ export default function DownloadAppSection() {
                   Unlock the power of messaging with our open-source Android SMS
                   Gateway.
                 </chakra.p>
-                <a href='/android' target='_blank'>
+                <a href='https://dl.textbee.dev' target='_blank'>
                   <Button
                     /* flex={1} */
                     px={4}

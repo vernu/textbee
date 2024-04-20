@@ -1,15 +1,21 @@
-import { Box, SimpleGrid, useToast } from '@chakra-ui/react'
-import ApiKeyList from '../components/dashboard/ApiKeyList'
+import {
+  Box,
+  Tab,
+  TabList,
+  TabPanel,
+  TabPanels,
+  Tabs,
+  useToast,
+} from '@chakra-ui/react'
 import UserStats from '../components/dashboard/UserStats'
-import GenerateApiKey from '../components/dashboard/GenerateApiKey'
-import DeviceList from '../components/dashboard/DeviceList'
 import { useSelector } from 'react-redux'
 import { selectAuthUser } from '../store/authSlice'
 import Router from 'next/router'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import SendSMS from '../components/dashboard/SendSMS'
-import ErrorBoundary from '../components/ErrorBoundary'
 import dynamic from 'next/dynamic'
+import ReceiveSMS from '../components/dashboard/ReceiveSMS'
+import APIKeyAndDevices from '../components/dashboard/APIKeyAndDevices'
 
 export default function Dashboard() {
   const NoSSRAnimatedWrapper = dynamic(
@@ -31,25 +37,39 @@ export default function Dashboard() {
       Router.push('/login')
     }
   }, [authUser, toast])
+
   return (
-    <NoSSRAnimatedWrapper>
-      <UserStats />
-      <Box maxW='7xl' mx={'auto'} pt={5} px={{ base: 2, sm: 12, md: 17 }}>
-        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={{ base: 5, lg: 8 }}>
-          <Box backdropBlur='2xl' borderWidth='0px' borderRadius='lg'>
-            <GenerateApiKey />
-            <ErrorBoundary>
-              <ApiKeyList />
-            </ErrorBoundary>
-          </Box>
-          <Box backdropBlur='2xl' borderWidth='0px' borderRadius='lg'>
+    <>
+      <NoSSRAnimatedWrapper>
+        <UserStats />
+        <DashboardTabView />
+      </NoSSRAnimatedWrapper>
+    </>
+  )
+}
+
+const DashboardTabView = () => {
+  const [tabIndex, setTabIndex] = useState(0)
+  return (
+    <Box maxW='7xl' mx={'auto'} pt={5} px={{ base: 2, sm: 12, md: 17 }}>
+      <Tabs isLazy={false} index={tabIndex} onChange={setTabIndex}>
+        <TabList>
+          <Tab>API Key and Devices</Tab>
+          <Tab>Send SMS</Tab>
+          <Tab>Receive SMS</Tab>
+        </TabList>
+        <TabPanels>
+          <TabPanel>
+            <APIKeyAndDevices />
+          </TabPanel>
+          <TabPanel>
             <SendSMS />
-            <ErrorBoundary>
-              <DeviceList />
-            </ErrorBoundary>
-          </Box>
-        </SimpleGrid>
-      </Box>
-    </NoSSRAnimatedWrapper>
+          </TabPanel>
+          <TabPanel>
+            <ReceiveSMS />
+          </TabPanel>
+        </TabPanels>
+      </Tabs>
+    </Box>
   )
 }

@@ -1,6 +1,6 @@
 export const howItWorksContent = [
   {
-    title: 'Step 1: Download The Android App from textbee.dev/android',
+    title: 'Step 1: Download The Android App from dl.textbee.dev',
     description:
       '',
   },

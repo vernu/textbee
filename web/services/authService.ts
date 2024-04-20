@@ -45,6 +45,11 @@ class AuthService {
     })
     return res.data.data
   }
+
+  async whoAmI() {
+    const res = await httpClient.get(`/auth/who-am-i`)
+    return res.data.data
+  }
 }
 
 export const authService = new AuthService()
