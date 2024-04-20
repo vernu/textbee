@@ -39,7 +39,11 @@ export const SendSMSForm = ({ deviceList, formData, handleChange }) => {
           value={formData.device}
         >
           {deviceList.map((device) => (
-            <option key={device._id} value={device._id}>
+            <option
+              key={device._id}
+              value={device._id}
+              disabled={!device.enabled}
+            >
               {device.model}
             </option>
           ))}
@@ -99,7 +103,6 @@ export default function SendSMS() {
       // TODO: validate phone numbers
     }
 
-    
     dispatch(
       sendSMS({
         deviceId,
