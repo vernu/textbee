@@ -43,11 +43,6 @@ export class GatewayController {
 
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Register device' })
-  @ApiQuery({
-    name: 'apiKey',
-    required: false,
-    description: 'Required if jwt bearer token not provided',
-  })
   @Post('/devices')
   async registerDevice(@Body() input: RegisterDeviceInputDTO, @Request() req) {
     const data = await this.gatewayService.registerDevice(input, req.user)
@@ -56,11 +51,6 @@ export class GatewayController {
 
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'List of registered devices' })
-  @ApiQuery({
-    name: 'apiKey',
-    required: false,
-    description: 'Required if jwt bearer token not provided',
-  })
   @Get('/devices')
   async getDevices(@Request() req) {
     const data = await this.gatewayService.getDevicesForUser(req.user)
@@ -68,11 +58,6 @@ export class GatewayController {
   }
 
   @ApiOperation({ summary: 'Update device' })
-  @ApiQuery({
-    name: 'apiKey',
-    required: false,
-    description: 'Required if jwt bearer token not provided',
-  })
   @UseGuards(AuthGuard, CanModifyDevice)
   @Patch('/devices/:id')
   async updateDevice(
@@ -84,11 +69,6 @@ export class GatewayController {
   }
 
   @ApiOperation({ summary: 'Delete device' })
-  @ApiQuery({
-    name: 'apiKey',
-    required: false,
-    description: 'Required if jwt bearer token not provided',
-  })
   @UseGuards(AuthGuard, CanModifyDevice)
   @Delete('/devices/:id')
   async deleteDevice(@Param('id') deviceId: string) {
@@ -97,11 +77,6 @@ export class GatewayController {
   }
 
   @ApiOperation({ summary: 'Send SMS to a device' })
-  @ApiQuery({
-    name: 'apiKey',
-    required: false,
-    description: 'Required if jwt bearer token not provided',
-  })
   @UseGuards(AuthGuard, CanModifyDevice)
   @Post('/devices/:id/sendSMS')
   async sendSMS(
@@ -113,11 +88,6 @@ export class GatewayController {
   }
 
   @ApiOperation({ summary: 'Received SMS from a device' })
-  @ApiQuery({
-    name: 'apiKey',
-    required: false,
-    description: 'Required if jwt bearer token not provided',
-  })
   @HttpCode(HttpStatus.OK)
   @Post('/devices/:id/receiveSMS')
   @UseGuards(AuthGuard, CanModifyDevice)
@@ -127,11 +97,6 @@ export class GatewayController {
   }
 
   @ApiOperation({ summary: 'Get received SMS from a device' })
-  @ApiQuery({
-    name: 'apiKey',
-    required: false,
-    description: 'Required if jwt bearer token not provided',
-  })
   @ApiResponse({ status: 200, type: RetrieveSMSResponseDTO })
   @UseGuards(AuthGuard, CanModifyDevice)
   @Get('/devices/:id/getReceivedSMS')

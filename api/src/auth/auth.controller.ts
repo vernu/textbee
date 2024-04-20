@@ -50,11 +50,6 @@ export class AuthController {
   }
 
   @ApiOperation({ summary: 'Get current logged in user' })
-  @ApiQuery({
-    name: 'apiKey',
-    required: false,
-    description: 'Required if jwt bearer token not provided',
-  })
   @ApiBearerAuth()
   @UseGuards(AuthGuard)
   @Get('/who-am-i')
@@ -64,11 +59,6 @@ export class AuthController {
 
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Generate Api Key' })
-  @ApiQuery({
-    name: 'apiKey',
-    required: false,
-    description: 'Required if jwt bearer token not provided',
-  })
   @ApiBearerAuth()
   @Post('/api-keys')
   async generateApiKey(@Request() req) {
@@ -78,11 +68,6 @@ export class AuthController {
 
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Get Api Key List (masked***)' })
-  @ApiQuery({
-    name: 'apiKey',
-    required: false,
-    description: 'Required if jwt bearer token not provided',
-  })
   @ApiBearerAuth()
   @Get('/api-keys')
   async getApiKey(@Request() req) {
