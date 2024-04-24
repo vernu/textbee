@@ -43,6 +43,9 @@ export class AuthService {
       )
     }
 
+    user.lastLoginAt = new Date()
+    await user.save()
+
     const payload = { email: user.email, sub: user._id }
     return {
       accessToken: this.jwtService.sign(payload),
@@ -64,6 +67,7 @@ export class AuthService {
         email,
         googleId,
         avatar: picture,
+        lastLoginAt: new Date(),
       })
     } else {
       user.googleId = googleId
@@ -74,6 +78,7 @@ export class AuthService {
       if (!user.avatar) {
         user.avatar = picture
       }
+      user.lastLoginAt = new Date()
       await user.save()
     }
 
@@ -89,6 +94,7 @@ export class AuthService {
     const user = await this.usersService.create({
       ...userData,
       password: hashedPassword,
+      lastLoginAt: new Date(),
     })
 
     const payload = { email: user.email, sub: user._id }
@@ -223,7 +229,10 @@ export class AuthService {
         user,
         method,
         url: url.split('?')[0],
-        ip,
+        ip:
+          request.headers['x-forwarded-for'] ||
+          request.connection.remoteAddress ||
+          ip,
         userAgent,
       })
       .catch((e) => {

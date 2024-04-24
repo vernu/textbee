@@ -28,6 +28,9 @@ export class User {
 
   @Prop({ type: String, default: UserRole.REGULAR })
   role: string
+
+  @Prop({ type: Date })
+  lastLoginAt: Date
 }
 
 export const UserSchema = SchemaFactory.createForClass(User)
