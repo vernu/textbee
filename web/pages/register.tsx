@@ -47,6 +47,18 @@ export default function RegisterPage() {
         description: 'Please fill in all fields',
         status: 'warning',
       })
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(credentials.email)) {
+      toast({
+        title: 'Error',
+        description: 'Invalid email address',
+        status: 'warning',
+      })
+    } else if (credentials.password.length < 6) {
+      toast({
+        title: 'Error',
+        description: 'Password must be at least 6 characters',
+        status: 'warning',
+      })
     } else {
       dispatch(register(credentials))
     }

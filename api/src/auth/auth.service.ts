@@ -90,6 +90,19 @@ export class AuthService {
   }
 
   async register(userData: any) {
+    const existingUser = await this.usersService.findOne({
+      email: userData.email,
+    })
+    if (existingUser) {
+      throw new HttpException(
+        { error: 'User already exists, please login instead' },
+        HttpStatus.BAD_REQUEST,
+      )
+    }
+
+    this.validateEmail(userData.email)
+    this.validatePassword(userData.password)
+
     const hashedPassword = await bcrypt.hash(userData.password, 10)
     const user = await this.usersService.create({
       ...userData,
@@ -239,5 +252,23 @@ export class AuthService {
         console.log('Failed to track access log')
         console.log(e)
       })
+  }
+
+  async validateEmail(email: string) {
+    const re = /\S+@\S+\.\S+/
+    if (!re.test(email)) {
+      throw new HttpException(
+        { error: 'Invalid email' },
+        HttpStatus.BAD_REQUEST,
+      )
+    }
+  }
+  async validatePassword(password: string) {
+    if (password.length < 6) {
+      throw new HttpException(
+        { error: 'Password must be at least 6 characters' },
+        HttpStatus.BAD_REQUEST,
+      )
+    }
   }
 }
