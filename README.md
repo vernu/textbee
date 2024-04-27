@@ -42,3 +42,9 @@ Contributions are welcome!
 2. Create a feature or bugfix branch from `main` branch.
 3. Make sure your commit messages and PR comment summaries are descriptive.
 4. Create a pull request to the `main` branch.
+
+## Bug Reporting and Feature Requests
+
+Please feel free to [create an issue](https://github.com/vernu/textbee/issues/new) in the repository for any bug reports or feature requests. Make sure to provide a detailed description of the issue or feature you are requesting and properly label whether it is a bug or a feature request.
+
+Please note that if you discover any vulnerability or security issue, we kindly request that you refrain from creating a public issue. Instead, send an email detailing the vulnerability to textbee.dev@gmail.com.
