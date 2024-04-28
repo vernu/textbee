@@ -6,6 +6,7 @@ import { GatewayService } from './gateway.service'
 import { AuthModule } from '../auth/auth.module'
 import { UsersModule } from '../users/users.module'
 import { SMS, SMSSchema } from './schemas/sms.schema'
+import { SMSBatch, SMSBatchSchema } from './schemas/sms-batch.schema'
 
 @Module({
   imports: [
@@ -17,6 +18,10 @@ import { SMS, SMSSchema } from './schemas/sms.schema'
       {
         name: SMS.name,
         schema: SMSSchema,
+      },
+      {
+        name: SMSBatch.name,
+        schema: SMSBatchSchema,
       },
     ]),
     AuthModule,

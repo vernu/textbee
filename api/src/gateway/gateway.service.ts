@@ -13,11 +13,14 @@ import { User } from '../users/schemas/user.schema'
 import { AuthService } from 'src/auth/auth.service'
 import { SMS } from './schemas/sms.schema'
 import { SMSType } from './sms-type.enum'
+import { SMSBatch } from './schemas/sms-batch.schema'
+import { Message } from 'firebase-admin/lib/messaging/messaging-api'
 @Injectable()
 export class GatewayService {
   constructor(
     @InjectModel(Device.name) private deviceModel: Model<DeviceDocument>,
     @InjectModel(SMS.name) private smsModel: Model<SMS>,
+    @InjectModel(SMSBatch.name) private smsBatchModel: Model<SMSBatch>,
     private authService: AuthService,
   ) {}
 
@@ -85,14 +88,6 @@ export class GatewayService {
   }
 
   async sendSMS(deviceId: string, smsData: SendSMSInputDTO): Promise<any> {
-    const updatedSMSData = {
-      message: smsData.message || smsData.smsBody,
-      recipients: smsData.recipients || smsData.receivers,
-
-      // Legacy fields to be removed in the future
-      smsBody: smsData.message || smsData.smsBody,
-      receivers: smsData.recipients || smsData.receivers,
-    }
     const device = await this.deviceModel.findById(deviceId)
 
     if (!device?.enabled) {
@@ -105,23 +100,76 @@ export class GatewayService {
       )
     }
 
-    const stringifiedSMSData = JSON.stringify(updatedSMSData)
-    const payload: any = {
-      data: {
-        smsData: stringifiedSMSData,
-      },
-    }
+    const message = smsData.message || smsData.smsBody
+    const recipients = smsData.recipients || smsData.receivers
 
-    // TODO: Save SMS and Implement a queue to send the SMS if recipients are too many
+    // TODO: Implement a queue to send the SMS if recipients are too many
+
+    let smsBatch: SMSBatch
 
     try {
-      const response = await firebaseAdmin
-        .messaging()
-        .sendToDevice(device.fcmToken, payload, { priority: 'high' })
+      smsBatch = await this.smsBatchModel.create({
+        device: device._id,
+        message,
+        metadata: {
+          recipientCount: recipients.length,
+          recipientPreview: this.getRecipientsPreview(recipients),
+        },
+      })
+    } catch (e) {
+      throw new HttpException(
+        {
+          success: false,
+          error: 'Failed to create SMS batch',
+          additionalInfo: e,
+        },
+        HttpStatus.BAD_REQUEST,
+      )
+    }
+
+    const fcmMessages: Message[] = []
+
+    for (const recipient of recipients) {
+      const sms = await this.smsModel.create({
+        device: device._id,
+        smsBatch: smsBatch._id,
+        message: message,
+        type: SMSType.SENT,
+        recipient,
+        requestedAt: new Date(),
+      })
+      const updatedSMSData = {
+        smsId: sms._id,
+        smsBatchId: smsBatch._id,
+        message,
+        recipients: [recipient],
+
+        // Legacy fields to be removed in the future
+        smsBody: message,
+        receivers: [recipient],
+      }
+      const stringifiedSMSData = JSON.stringify(updatedSMSData)
+
+      const fcmMessage: Message = {
+        data: {
+          smsData: stringifiedSMSData,
+        },
+        token: device.fcmToken,
+        android: {
+          priority: 'high',
+        },
+      }
+      fcmMessages.push(fcmMessage)
+    }
+
+    try {
+      const response = await firebaseAdmin.messaging().sendAll(fcmMessages)
+
+      console.log(response)
 
       this.deviceModel
         .findByIdAndUpdate(deviceId, {
-          $inc: { sentSMSCount: updatedSMSData.recipients.length },
+          $inc: { sentSMSCount: recipients.length },
         })
         .exec()
         .catch((e) => {
@@ -132,7 +180,9 @@ export class GatewayService {
     } catch (e) {
       throw new HttpException(
         {
+          success: false,
           error: 'Failed to send SMS',
+          additionalInfo: e,
         },
         HttpStatus.BAD_REQUEST,
       )
@@ -233,6 +283,22 @@ export class GatewayService {
       totalReceivedSMSCount,
       totalDeviceCount,
       totalApiKeyCount,
+    }
+  }
+
+  private getRecipientsPreview(recipients: string[]): string {
+    if (recipients.length === 0) {
+      return null
+    } else if (recipients.length === 1) {
+      return recipients[0]
+    } else if (recipients.length === 2) {
+      return `${recipients[0]} and ${recipients[1]}`
+    } else if (recipients.length === 3) {
+      return `${recipients[0]}, ${recipients[1]}, and ${recipients[2]}`
+    } else {
+      return `${recipients[0]}, ${recipients[1]}, and ${
+        recipients.length - 2
+      } others`
     }
   }
 }
