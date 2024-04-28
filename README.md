@@ -38,7 +38,7 @@ await axios.post(`https://api.textbee.dev/api/v1/gateway/devices/${DEVICE_ID}/se
 
 Contributions are welcome!
 
-1. Fork the project.
+1. [Fork](https://github.com/vernu/textbee/fork) the project.
 2. Create a feature or bugfix branch from `main` branch.
 3. Make sure your commit messages and PR comment summaries are descriptive.
 4. Create a pull request to the `main` branch.
