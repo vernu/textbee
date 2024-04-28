@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose'
 import { Document, Types } from 'mongoose'
 import { Device } from './device.schema'
+import { SMSBatch } from './sms-batch.schema'
 
 export type SMSDocument = SMS & Document
 
@@ -10,6 +11,9 @@ export class SMS {
 
   @Prop({ type: Types.ObjectId, ref: Device.name, required: true })
   device: Device
+
+  @Prop({ type: Types.ObjectId, ref: SMSBatch.name, required: true })
+  smsBatch: SMSBatch
 
   @Prop({ type: String })
   message: string
