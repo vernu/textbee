@@ -111,10 +111,8 @@ export class GatewayService {
       smsBatch = await this.smsBatchModel.create({
         device: device._id,
         message,
-        metadata: {
-          recipientCount: recipients.length,
-          recipientPreview: this.getRecipientsPreview(recipients),
-        },
+        recipientCount: recipients.length,
+        recipientPreview: this.getRecipientsPreview(recipients),
       })
     } catch (e) {
       throw new HttpException(

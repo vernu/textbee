@@ -14,6 +14,18 @@ export class SMSBatch {
   @Prop({ type: String })
   message: string
 
+  @Prop({ type: Boolean, default: false })
+  encrypted: boolean
+
+  @Prop({ type: String })
+  encryptedMessage: string
+
+  @Prop({ type: Number })
+  recipientCount: number
+
+  @Prop({ type: String })
+  recipientPreview: string
+
   // misc metadata for debugging
   @Prop({ type: Object })
   metadata: Record<string, any>
