@@ -12,7 +12,7 @@ export class SMS {
   @Prop({ type: Types.ObjectId, ref: Device.name, required: true })
   device: Device
 
-  @Prop({ type: Types.ObjectId, ref: SMSBatch.name, required: true })
+  @Prop({ type: Types.ObjectId, ref: SMSBatch.name })
   smsBatch: SMSBatch
 
   @Prop({ type: String })
