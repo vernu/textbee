@@ -65,22 +65,23 @@ export class AuthService {
       user = await this.usersService.create({
         name,
         email,
-        googleId,
-        avatar: picture,
-        lastLoginAt: new Date(),
       })
-    } else {
-      user.googleId = googleId
-
-      if (!user.name) {
-        user.name = name
-      }
-      if (!user.avatar) {
-        user.avatar = picture
-      }
-      user.lastLoginAt = new Date()
-      await user.save()
     }
+
+    if (user.googleId !== googleId) {
+      user.googleId = googleId
+    }
+
+    if (user.name !== name) {
+      user.name = name
+    }
+
+    if (user.avatar !== picture) {
+      user.avatar = picture
+    }
+
+    user.lastLoginAt = new Date()
+    await user.save()
 
     const payload = { email: user.email, sub: user._id }
     return {
@@ -107,8 +108,10 @@ export class AuthService {
     const user = await this.usersService.create({
       ...userData,
       password: hashedPassword,
-      lastLoginAt: new Date(),
     })
+
+    user.lastLoginAt = new Date()
+    await user.save()
 
     const payload = { email: user.email, sub: user._id }
 

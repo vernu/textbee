@@ -15,8 +15,15 @@ export class UsersService {
     return await this.userModel.find()
   }
 
-  async create(userData: any) {
-    const { name, email, password } = userData
+  async create({
+    name,
+    email,
+    password,
+  }: {
+    name: string
+    email: string
+    password?: string
+  }) {
     if (await this.findOne({ email })) {
       throw new HttpException(
         {
