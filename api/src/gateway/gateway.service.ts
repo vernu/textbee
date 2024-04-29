@@ -201,6 +201,7 @@ export class GatewayService {
     }
 
     if (!dto.receivedAt || !dto.sender || !dto.message) {
+      console.log('Invalid received SMS data')
       throw new HttpException(
         {
           success: false,
