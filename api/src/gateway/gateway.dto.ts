@@ -98,7 +98,14 @@ export class ReceivedSMSDTO {
     required: true,
     description: 'The time the message was received',
   })
-  receivedAt: Date
+  receivedAt?: Date
+
+  @ApiProperty({
+    type: Number,
+    required: true,
+    description: 'The time the message was created',
+  })
+  receivedAtInMillis?: number
 }
 
 export class DeviceDTO {

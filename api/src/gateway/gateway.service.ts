@@ -200,7 +200,11 @@ export class GatewayService {
       )
     }
 
-    if (!dto.receivedAt || !dto.sender || !dto.message) {
+    if (
+      (!dto.receivedAt && !dto.receivedAtInMillis) ||
+      !dto.sender ||
+      !dto.message
+    ) {
       console.log('Invalid received SMS data')
       throw new HttpException(
         {
@@ -211,12 +215,16 @@ export class GatewayService {
       )
     }
 
+    const receivedAt = dto.receivedAtInMillis
+      ? new Date(dto.receivedAtInMillis)
+      : dto.receivedAt
+
     const sms = await this.smsModel.create({
       device: device._id,
       message: dto.message,
       type: SMSType.RECEIVED,
       sender: dto.sender,
-      receivedAt: dto.receivedAt,
+      receivedAt,
     })
 
     this.deviceModel
