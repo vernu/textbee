@@ -5,16 +5,11 @@ import java.util.Date;
 public class SMSDTO {
     private String sender;
     private String message = "";
-    private Date receivedAt;
+    private long receivedAtInMillis;
 
     public SMSDTO() {
     }
 
-    public SMSDTO(String sender, String message, Date receivedAt) {
-        this.sender = sender;
-        this.message = message;
-        this.receivedAt = receivedAt;
-    }
 
     public String getSender() {
         return sender;
@@ -32,11 +27,11 @@ public class SMSDTO {
         this.message = message;
     }
 
-    public Date getReceivedAt() {
-        return receivedAt;
+    public long getReceivedAtInMillis() {
+        return receivedAtInMillis;
     }
 
-    public void setReceivedAt(Date receivedAt) {
-        this.receivedAt = receivedAt;
+    public void setReceivedAtInMillis(long receivedAtInMillis) {
+        this.receivedAtInMillis = receivedAtInMillis;
     }
 }

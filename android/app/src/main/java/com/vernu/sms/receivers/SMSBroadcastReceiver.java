@@ -58,7 +58,7 @@ public class SMSBroadcastReceiver extends BroadcastReceiver {
         for (SmsMessage message : messages) {
             receivedSMSDTO.setMessage(receivedSMSDTO.getMessage() + message.getMessageBody());
             receivedSMSDTO.setSender(message.getOriginatingAddress());
-            receivedSMSDTO.setReceivedAt(new Date(message.getTimestampMillis()));
+            receivedSMSDTO.setReceivedAtInMillis(message.getTimestampMillis());
         }
 //        receivedSMSDTO.setSender(receivedSMS.getSender());
 //        receivedSMSDTO.setMessage(receivedSMS.getMessage());
