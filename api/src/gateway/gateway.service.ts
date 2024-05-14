@@ -103,6 +103,26 @@ export class GatewayService {
     const message = smsData.message || smsData.smsBody
     const recipients = smsData.recipients || smsData.receivers
 
+    if (!message) {
+      throw new HttpException(
+        {
+          success: false,
+          error: 'Invalid message',
+        },
+        HttpStatus.BAD_REQUEST,
+      )
+    }
+
+    if (!Array.isArray(recipients) || recipients.length === 0) {
+      throw new HttpException(
+        {
+          success: false,
+          error: 'Invalid recipients',
+        },
+        HttpStatus.BAD_REQUEST,
+      )
+    }
+
     // TODO: Implement a queue to send the SMS if recipients are too many
 
     let smsBatch: SMSBatch
