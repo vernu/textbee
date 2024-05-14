@@ -107,7 +107,7 @@ export class GatewayService {
       throw new HttpException(
         {
           success: false,
-          error: 'Invalid message',
+          error: 'Message cannot be blank',
         },
         HttpStatus.BAD_REQUEST,
       )
