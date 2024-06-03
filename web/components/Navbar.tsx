@@ -81,11 +81,11 @@ export default function Navbar() {
               </Link>
             </Menu>
 
-            <Menu>
+            {/* <Menu>
               <Link href='https://github.com/vernu/textbee' passHref>
                 <MenuButton>Github</MenuButton>
               </Link>
-            </Menu>
+            </Menu> */}
 
             {!authUser && (
               <Menu>
