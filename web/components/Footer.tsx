@@ -30,7 +30,14 @@ export default function Footer() {
         justify={'center'}
         align={'center'}
       >
-        <Stack direction={'row'} spacing={6}>
+        <Stack
+          direction={{
+            base: 'column',
+            sm: 'column',
+            md: 'row',
+          }}
+          spacing={6}
+        >
           <Link href='/'>Home</Link>
           <Link href='/dashboard'>Dashboard</Link>
           <NoSSRAnimatedWrapper>
