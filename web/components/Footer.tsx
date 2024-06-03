@@ -6,9 +6,17 @@ import {
   Text,
   useColorModeValue,
 } from '@chakra-ui/react'
+import dynamic from 'next/dynamic'
 import Link from 'next/link'
 
 export default function Footer() {
+  const NoSSRAnimatedWrapper = dynamic(
+    () => import('../components/AnimatedScrollWrapper'),
+    {
+      ssr: false,
+    }
+  )
+
   return (
     <Box
       bg={useColorModeValue('gray.50', 'gray.900')}
@@ -25,7 +33,22 @@ export default function Footer() {
         <Stack direction={'row'} spacing={6}>
           <Link href='/'>Home</Link>
           <Link href='/dashboard'>Dashboard</Link>
-          <Link href='https://dl.textbee.dev' target='_blank'> Download App</Link>
+          <NoSSRAnimatedWrapper>
+            <a
+              href='https://www.patreon.com/bePatron?u=124342375'
+              data-patreon-widget-type='become-patron-button'
+            >
+              Become a Patron!
+            </a>
+            <script
+              async
+              src='https://c6.patreon.com/becomePatronButton.bundle.js'
+            ></script>
+          </NoSSRAnimatedWrapper>
+          <Link href='https://dl.textbee.dev' target='_blank'>
+            {' '}
+            Download App
+          </Link>
           <Link href='https://github.com/vernu/textbee'>Github</Link>
         </Stack>
       </Container>

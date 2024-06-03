@@ -73,6 +73,15 @@ export default function Navbar() {
             </Button>
 
             <Menu>
+              <Link
+                href='https://www.patreon.com/bePatron?u=124342375'
+                passHref
+              >
+                <MenuButton>Support</MenuButton>
+              </Link>
+            </Menu>
+
+            <Menu>
               <Link href='https://github.com/vernu/textbee' passHref>
                 <MenuButton>Github</MenuButton>
               </Link>

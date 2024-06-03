@@ -9,6 +9,8 @@ import { loginWithGoogle, selectAuthUser } from '../store/authSlice'
 
 import DownloadAppSection from '../components/landing/DownloadAppSection'
 import CodeSnippetSection from '../components/landing/CodeSnippetSection'
+import SupportTheProject from '../components/landing/SupportTheProject'
+import Customization from '../components/landing/Customization'
 
 export default function HomePage() {
   const authUser = useSelector(selectAuthUser)
@@ -34,7 +36,9 @@ export default function HomePage() {
       <FeaturesSection />
       <HowItWorksSection />
       <DownloadAppSection />
+      <Customization />
       <CodeSnippetSection />
+      <SupportTheProject />
     </Container>
   )
 }
