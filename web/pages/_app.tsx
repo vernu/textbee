@@ -8,9 +8,9 @@ import ErrorBoundary from '../components/ErrorBoundary'
 import Footer from '../components/Footer'
 import Analytics from '../components/analytics/Analytics'
 import dynamic from 'next/dynamic'
+import LiveChat from '../components/livechat/LiveChat'
 
 function MyApp({ Component, pageProps }: AppProps) {
-  
   const NoSSRNavbar = dynamic(() => import('../components/Navbar'), {
     ssr: false,
   })
@@ -19,6 +19,7 @@ function MyApp({ Component, pageProps }: AppProps) {
     <ErrorBoundary>
       <Provider store={store}>
         <Analytics />
+        <LiveChat />
         <GoogleOAuthProvider
           clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID}
         >
