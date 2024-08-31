@@ -72,20 +72,20 @@ export default function Navbar() {
               {colorMode === 'light' ? <MoonIcon /> : <SunIcon />}
             </Button>
 
-            <Menu>
+            {/* <Menu>
               <Link
                 href='https://www.patreon.com/bePatron?u=124342375'
                 passHref
               >
                 <MenuButton>Support</MenuButton>
               </Link>
-            </Menu>
+            </Menu> */}
 
-            {/* <Menu>
+            <Menu>
               <Link href='https://github.com/vernu/textbee' passHref>
                 <MenuButton>Github</MenuButton>
               </Link>
-            </Menu> */}
+            </Menu>
 
             {!authUser && (
               <Menu>
