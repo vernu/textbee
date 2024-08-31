@@ -66,6 +66,12 @@ export class AuthService {
         name,
         email,
       })
+      this.mailService.sendEmailFromTemplate({
+        to: user.email,
+        subject: 'Welcome to TextBee - Lets get started!',
+        template: 'welcome-1',
+        context: { name: user.name },
+      })
     }
 
     if (user.googleId !== googleId) {
@@ -112,6 +118,13 @@ export class AuthService {
 
     user.lastLoginAt = new Date()
     await user.save()
+
+    this.mailService.sendEmailFromTemplate({
+      to: user.email,
+      subject: 'Welcome to TextBee - Lets get started!',
+      template: 'welcome-1',
+      context: { name: user.name },
+    })
 
     const payload = { email: user.email, sub: user._id }
 
