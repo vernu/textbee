@@ -1,6 +1,11 @@
 import Script from 'next/script'
+import { useSelector } from 'react-redux'
+import { selectAuthUser } from '../../store/authSlice'
 
 const Analytics = () => {
+
+  const authUser = useSelector(selectAuthUser)
+
   return (
     <>
       {/* Global Site Tag (gtag.js) - Google Analytics  */}
@@ -32,6 +37,7 @@ const Analytics = () => {
             c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
             t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
             y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+            clarity('set', 'userId', '${authUser?._id || ''}');
         })(window, document, "clarity", "script", "iacr7j4ozh");
      `,
         }}
