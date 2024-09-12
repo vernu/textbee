@@ -32,7 +32,7 @@
     "axios": "^1.4.0",
     "bcryptjs": "^2.4.3",
     "dotenv": "^16.0.3",
-    "firebase-admin": "^10.3.0",
+    "firebase-admin": "^12.5.0",
     "handlebars": "^4.7.8",
     "mongoose": "^6.11.1",
     "nodemailer": "^6.9.13",

@@ -181,7 +181,7 @@ export class GatewayService {
     }
 
     try {
-      const response = await firebaseAdmin.messaging().sendAll(fcmMessages)
+      const response = await firebaseAdmin.messaging().sendEach(fcmMessages)
 
       console.log(response)
 
