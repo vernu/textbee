@@ -6,16 +6,36 @@ export class MailService {
   constructor(private readonly mailerService: MailerService) {}
 
   async sendEmail({ to, subject, html }) {
+    const sendMailOptions = {
+      to,
+      subject,
+      html,
+    }
+
+    if (process.env.MAIL_REPLY_TO) {
+      sendMailOptions['replyTo'] = process.env.MAIL_REPLY_TO
+    }
     try {
-      await this.mailerService.sendMail({ to, subject, html })
+      await this.mailerService.sendMail(sendMailOptions)
     } catch (e) {
       console.log(e)
     }
   }
 
   async sendEmailFromTemplate({ to, subject, template, context }) {
+    const sendMailOptions = {
+      to,
+      subject,
+      template,
+      context,
+    }
+
+    if (process.env.MAIL_REPLY_TO) {
+      sendMailOptions['replyTo'] = process.env.MAIL_REPLY_TO
+    }
+
     try {
-      await this.mailerService.sendMail({ to, subject, template, context })
+      await this.mailerService.sendMail(sendMailOptions)
     } catch (e) {
       console.log(e)
     }
