@@ -9,7 +9,7 @@ import { MailService } from './mail.service'
     MailerModule.forRoot({
       transport: mailTransportConfig,
       defaults: {
-        from: `No Reply ${process.env.MAIL_FROM}`,
+        from: `${process.env.MAIL_FROM}`,
       },
       template: {
         dir: join(__dirname, 'templates'),
