@@ -34,6 +34,43 @@ await axios.post(`https://api.textbee.dev/api/v1/gateway/devices/${DEVICE_ID}/se
 
 ```
 
+**Code Snippet**: Curl command to send an SMS message via the REST API
+
+```bash
+curl -X POST" https://api.textbee.dev/api/v1/gateway/devices/YOUR_DEVICE_ID/sendSMS" \
+  -H 'x-api-key: YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "recipients": [ "+251912345678" ],
+    "message": "Hello World!"
+  }'
+```
+
+### Receiving SMS Messages
+
+To receive SMS messages, you can enable the feature from the mobile app. You can then fetch the received SMS messages via the REST API or view them in the dashboard. (Webhook notifications are coming soon)
+
+**Code Snippet**: Few lines of code showing how to fetch received SMS messages via the REST API
+
+```javascript
+const API_KEY = 'YOUR_API_KEY';
+const DEVICE_ID = 'YOUR_DEVICE_ID';
+
+await axios.get(`https://api.textbee.dev/api/v1/gateway/devices/${DEVICE_ID}/getReceivedSMS`, {
+  headers: {
+    'x-api-key': API_KEY,
+  },
+});
+
+```
+
+**Code Snippet**: Curl command to fetch received SMS messages
+
+```bash
+curl -X GET "https://api.textbee.dev/api/v1/gateway/devices/YOUR_DEVICE_ID/getReceivedSMS"\
+  -H "x-api-key: YOUR_API_KEY"
+```
+
 ## Contributing
 
 Contributions are welcome!
