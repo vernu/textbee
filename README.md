@@ -85,3 +85,7 @@ Contributions are welcome!
 Please feel free to [create an issue](https://github.com/vernu/textbee/issues/new) in the repository for any bug reports or feature requests. Make sure to provide a detailed description of the issue or feature you are requesting and properly label whether it is a bug or a feature request.
 
 Please note that if you discover any vulnerability or security issue, we kindly request that you refrain from creating a public issue. Instead, send an email detailing the vulnerability to textbee.dev@gmail.com.
+
+
+## For support, feedback, and questions
+Feel free to reach out to us at textbee.dev@gmail.com or [Join our Discord server](https://discord.gg/d7vyfBpWbQ)
