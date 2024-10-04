@@ -37,7 +37,7 @@ await axios.post(`https://api.textbee.dev/api/v1/gateway/devices/${DEVICE_ID}/se
 **Code Snippet**: Curl command to send an SMS message via the REST API
 
 ```bash
-curl -X POST" https://api.textbee.dev/api/v1/gateway/devices/YOUR_DEVICE_ID/sendSMS" \
+curl -X POST "https://api.textbee.dev/api/v1/gateway/devices/YOUR_DEVICE_ID/sendSMS" \
   -H 'x-api-key: YOUR_API_KEY' \
   -H 'Content-Type: application/json' \
   -d '{
