@@ -185,9 +185,20 @@ export class GatewayService {
 
       console.log(response)
 
+      if (response.successCount === 0) {
+        throw new HttpException(
+          {
+            success: false,
+            error: 'Failed to send SMS',
+            additionalInfo: response,
+          },
+          HttpStatus.BAD_REQUEST,
+        )
+      }
+
       this.deviceModel
         .findByIdAndUpdate(deviceId, {
-          $inc: { sentSMSCount: recipients.length },
+          $inc: { sentSMSCount: response.successCount },
         })
         .exec()
         .catch((e) => {
