@@ -122,17 +122,17 @@ const DashboardTabView = () => {
     {
       title: 'Enjoying our project? Show your support.',
       actionButton: 'Star Us on GitHub',
-      link: 'https://github/vernu/textbee',
+      link: 'https://github.com/vernu/textbee',
     },
     {
       title: 'Support us by starring on GitHub.',
       actionButton: 'Give us a star',
-      link: 'https://github/vernu/textbee',
+      link: 'https://github.com/vernu/textbee',
     },
     {
       title: 'Help us grow on GitHub.',
       actionButton: 'Give a star',
-      link: 'https://github/vernu/textbee',
+      link: 'https://github.com/vernu/textbee',
     },
   ]
 
