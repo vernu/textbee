@@ -71,6 +71,7 @@ export class AuthService {
         subject: 'Welcome to TextBee - Lets get started!',
         template: 'welcome-1',
         context: { name: user.name },
+        from: 'vernu vernu@textbee.dev',
       })
     }
 
@@ -124,6 +125,7 @@ export class AuthService {
       subject: 'Welcome to TextBee - Lets get started!',
       template: 'welcome-1',
       context: { name: user.name },
+      from: 'vernu vernu@textbee.dev',
     })
 
     const payload = { email: user.email, sub: user._id }
