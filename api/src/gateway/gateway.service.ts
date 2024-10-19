@@ -35,7 +35,7 @@ export class GatewayService {
     })
 
     if (device) {
-      return await this.updateDevice(device._id, { ...input, enabled: true })
+      return await this.updateDevice(device._id.toString(), { ...input, enabled: true })
     } else {
       return await this.deviceModel.create({ ...input, user })
     }
@@ -286,6 +286,7 @@ export class GatewayService {
       )
     }
 
+    // @ts-ignore
     return await this.smsModel
       .find(
         {
