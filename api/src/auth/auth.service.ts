@@ -31,7 +31,7 @@ export class AuthService {
     const user = await this.usersService.findOne({ email: userData.email })
     if (!user) {
       throw new HttpException(
-        { error: 'User not found' },
+        { error: 'Invalid credentials' },
         HttpStatus.UNAUTHORIZED,
       )
     }
@@ -139,7 +139,9 @@ export class AuthService {
   async requestResetPassword({ email }: RequestResetPasswordInputDTO) {
     const user = await this.usersService.findOne({ email })
     if (!user) {
-      throw new HttpException({ error: 'User not found' }, HttpStatus.NOT_FOUND)
+      return {
+        message: 'If email is found you will receive a password reset email',
+      }
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString()
