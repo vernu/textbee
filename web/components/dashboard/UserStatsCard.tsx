@@ -14,7 +14,7 @@ export default function UserStatsCard({ ...props }) {
       py={'3'}
       shadow={'xl'}
       border={'1px solid'}
-      borderColor={useColorModeValue('gray.800', 'gray.500')}
+      borderColor={useColorModeValue('gray.300', 'gray.700')}
       rounded={'lg'}
       style={{
         height: '90px',

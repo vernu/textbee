@@ -119,7 +119,7 @@ export default function GenerateApiKey() {
     <>
       <Box
         padding={5}
-        border='1px solid gray'
+        border='1px solid #ccc'
         marginBottom={10}
         borderRadius='2xl'
       >
@@ -155,6 +155,10 @@ export default function GenerateApiKey() {
             {generatingApiKey ? 'loading... ' : 'Get Started'}
           </Button>
         </Flex>{' '}
+        <Flex>
+          Start sending SMS by clicking &quot;Get Started&quot; and scan the QR code or
+          paste the API Key in the TextBee Mobile App
+        </Flex>
       </Box>
       {generatedApiKey && (
         <>

@@ -1,7 +1,7 @@
 import type { AppProps } from 'next/app'
 import { Provider } from 'react-redux'
 import { store } from '../store/store'
-import { Box, ChakraProvider } from '@chakra-ui/react'
+import { Box, Button, ChakraProvider } from '@chakra-ui/react'
 import Meta from '../components/meta/Meta'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import ErrorBoundary from '../components/ErrorBoundary'
@@ -29,6 +29,25 @@ function MyApp({ Component, pageProps }: AppProps) {
             <Wrapper>
               <Component {...pageProps} />
             </Wrapper>
+
+            <div>
+              <a href='/customer-support'>
+                <Button
+                  style={{
+                    position: 'fixed',
+                    bottom: 1,
+                    right: 1,
+                    height: '80px',
+                    borderRadius: '100%',
+                    border: '1px solid red',
+                    color: 'red',
+                  }}
+                >
+                  Customer <br />
+                  Support
+                </Button>
+              </a>
+            </div>
             <Footer />
           </ChakraProvider>
         </GoogleOAuthProvider>
