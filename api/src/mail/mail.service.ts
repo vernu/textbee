@@ -32,7 +32,6 @@ export class MailService {
       subject,
       template,
       context,
-      from,
     }
 
     if (from) {
