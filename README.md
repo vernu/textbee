@@ -23,7 +23,7 @@ from their application via a REST API. It utilizes android phones as SMS gateway
 const API_KEY = 'YOUR_API_KEY';
 const DEVICE_ID = 'YOUR_DEVICE_ID';
 
-await axios.post(`https://api.textbee.dev/api/v1/gateway/devices/${DEVICE_ID}/sendSMS`, {
+await axios.post(`https://api.textbee.dev/api/v1/gateway/devices/${DEVICE_ID}/send-sms`, {
   recipients: [ '+251912345678' ],
   message: 'Hello World!',
 }, {
@@ -37,7 +37,7 @@ await axios.post(`https://api.textbee.dev/api/v1/gateway/devices/${DEVICE_ID}/se
 **Code Snippet**: Curl command to send an SMS message via the REST API
 
 ```bash
-curl -X POST "https://api.textbee.dev/api/v1/gateway/devices/YOUR_DEVICE_ID/sendSMS" \
+curl -X POST "https://api.textbee.dev/api/v1/gateway/devices/YOUR_DEVICE_ID/send-sms" \
   -H 'x-api-key: YOUR_API_KEY' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -56,7 +56,7 @@ To receive SMS messages, you can enable the feature from the mobile app. You can
 const API_KEY = 'YOUR_API_KEY';
 const DEVICE_ID = 'YOUR_DEVICE_ID';
 
-await axios.get(`https://api.textbee.dev/api/v1/gateway/devices/${DEVICE_ID}/getReceivedSMS`, {
+await axios.get(`https://api.textbee.dev/api/v1/gateway/devices/${DEVICE_ID}/get-received-sms`, {
   headers: {
     'x-api-key': API_KEY,
   },
@@ -67,7 +67,7 @@ await axios.get(`https://api.textbee.dev/api/v1/gateway/devices/${DEVICE_ID}/get
 **Code Snippet**: Curl command to fetch received SMS messages
 
 ```bash
-curl -X GET "https://api.textbee.dev/api/v1/gateway/devices/YOUR_DEVICE_ID/getReceivedSMS"\
+curl -X GET "https://api.textbee.dev/api/v1/gateway/devices/YOUR_DEVICE_ID/get-received-sms"\
   -H "x-api-key: YOUR_API_KEY"
 ```
 
