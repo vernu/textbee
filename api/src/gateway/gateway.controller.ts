@@ -78,7 +78,8 @@ export class GatewayController {
 
   @ApiOperation({ summary: 'Send SMS to a device' })
   @UseGuards(AuthGuard, CanModifyDevice)
-  @Post('/devices/:id/sendSMS')
+  // deprecate sendSMS route in favor of send-sms, but allow both to prevent breaking changes
+  @Post(['/devices/:id/sendSMS', '/devices/:id/send-sms'])
   async sendSMS(
     @Param('id') deviceId: string,
     @Body() smsData: SendSMSInputDTO,
@@ -89,7 +90,8 @@ export class GatewayController {
 
   @ApiOperation({ summary: 'Received SMS from a device' })
   @HttpCode(HttpStatus.OK)
-  @Post('/devices/:id/receiveSMS')
+  // deprecate receiveSMS route in favor of receive-sms
+  @Post(['/devices/:id/receiveSMS', '/devices/:id/receive-sms'])
   @UseGuards(AuthGuard, CanModifyDevice)
   async receiveSMS(@Param('id') deviceId: string, @Body() dto: ReceivedSMSDTO) {
     const data = await this.gatewayService.receiveSMS(deviceId, dto)
@@ -99,7 +101,8 @@ export class GatewayController {
   @ApiOperation({ summary: 'Get received SMS from a device' })
   @ApiResponse({ status: 200, type: RetrieveSMSResponseDTO })
   @UseGuards(AuthGuard, CanModifyDevice)
-  @Get('/devices/:id/getReceivedSMS')
+  // deprecate getReceivedSMS route in favor of get-received-sms
+  @Get(['/devices/:id/getReceivedSMS', '/devices/:id/get-received-sms'])
   async getReceivedSMS(
     @Param('id') deviceId: string,
   ): Promise<RetrieveSMSResponseDTO> {
