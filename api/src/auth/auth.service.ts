@@ -234,8 +234,23 @@ export class AuthService {
         HttpStatus.NOT_FOUND,
       )
     }
+    if (apiKey.usageCount > 0) {
+      throw new HttpException(
+        { error: 'Api key cannot be deleted' },
+        HttpStatus.BAD_REQUEST,
+      )
+    }
 
-    // await this.apiKeyModel.deleteOne({ _id: apiKeyId })
+    await this.apiKeyModel.deleteOne({ _id: apiKeyId })
+  }
+
+  async revokeApiKey(apiKeyId: string) {
+    const apiKey = await this.apiKeyModel.findById(apiKeyId)
+    if (!apiKey) {
+      throw new HttpException({ error: 'Api key not found' }, HttpStatus.NOT_FOUND)
+    }
+    apiKey.revokedAt = new Date()
+    await apiKey.save()
   }
 
   async trackAccessLog({ request }) {

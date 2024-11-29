@@ -22,6 +22,9 @@ export class ApiKey {
 
   @Prop({ type: Date })
   lastUsedAt: Date
+
+  @Prop({ type: Date })
+  revokedAt?: Date
 }
 
 export const ApiKeySchema = SchemaFactory.createForClass(ApiKey)

@@ -85,6 +85,16 @@ export class AuthController {
     return { message: 'API Key Deleted' }
   }
 
+  @UseGuards(AuthGuard, CanModifyApiKey)
+  @ApiOperation({ summary: 'Revoke Api Key' })
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @Post('/api-keys/:id/revoke')
+  async revokeApiKey(@Param() params) {
+    await this.authService.revokeApiKey(params.id)
+    return { message: 'API Key Revoked' }
+  }
+
   @ApiOperation({ summary: 'Request Password Reset' })
   @HttpCode(HttpStatus.OK)
   @Post('/request-password-reset')

@@ -38,6 +38,7 @@ export class AuthGuard implements CanActivate {
       const regex = new RegExp(`^${apiKeyString.substr(0, 17)}`, 'g')
       const apiKey = await this.authService.findApiKey({
         apiKey: { $regex: regex },
+        $or: [{ revokedAt: null }, { revokedAt: { $exists: false } }],
       })
 
       if (apiKey && bcrypt.compareSync(apiKeyString, apiKey.hashedApiKey)) {
