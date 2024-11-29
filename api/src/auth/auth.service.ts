@@ -253,6 +253,15 @@ export class AuthService {
     await apiKey.save()
   }
 
+  async renameApiKey(apiKeyId: string, name: string) {
+    const apiKey = await this.apiKeyModel.findById(apiKeyId)
+    if (!apiKey) {
+      throw new HttpException({ error: 'Api key not found' }, HttpStatus.NOT_FOUND)
+    }
+    apiKey.name = name
+    await apiKey.save()
+  }
+
   async trackAccessLog({ request }) {
     const { apiKey, user, method, url, ip, headers } = request
     const userAgent = headers['user-agent']
