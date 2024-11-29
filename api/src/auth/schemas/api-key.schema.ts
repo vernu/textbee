@@ -11,6 +11,9 @@ export class ApiKey {
   @Prop({ type: String })
   apiKey: string // save first few chars only [ abc123****** ]
 
+  @Prop({ type: String, default: 'API Key' })
+  name: string
+  
   @Prop({ type: String })
   hashedApiKey: string
 

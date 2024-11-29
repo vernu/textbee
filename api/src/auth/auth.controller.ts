@@ -6,6 +6,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
   Request,
   UseGuards,
@@ -93,6 +94,16 @@ export class AuthController {
   async revokeApiKey(@Param() params) {
     await this.authService.revokeApiKey(params.id)
     return { message: 'API Key Revoked' }
+  }
+
+  @UseGuards(AuthGuard, CanModifyApiKey)
+  @ApiOperation({ summary: 'Rename Api Key' })
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @Patch('/api-keys/:id/rename')
+  async renameApiKey(@Param() params, @Body() input: { name: string }) {
+    await this.authService.renameApiKey(params.id, input.name)
+    return { message: 'API Key Renamed' }
   }
 
   @ApiOperation({ summary: 'Request Password Reset' })
