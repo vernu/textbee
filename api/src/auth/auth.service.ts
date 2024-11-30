@@ -213,7 +213,9 @@ export class AuthService {
   }
 
   async getUserApiKeys(currentUser: User) {
-    return this.apiKeyModel.find({ user: currentUser._id })
+    return this.apiKeyModel.find({ user: currentUser._id }, null, {
+      sort: { createdAt: -1 },
+    })
   }
 
   async findApiKey(params) {
