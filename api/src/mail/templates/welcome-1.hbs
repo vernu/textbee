@@ -1,32 +1,127 @@
-<h1>Hi {{name}},</h1>
-<p>
-My name is Vernu, and I'm the founder of TextBee.
-<br /><br />
+<html>
+  <head>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        color: #333333;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .container {
+        background-color: #ffffff;
+        border-radius: 8px;
+        padding: 30px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .header {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .divider {
+        border-top: 1px solid #e0e0e0;
+        margin: 20px 0;
+      }
+      .community-section {
+        text-align: center;
+      }
+      .tips-section {
+        margin: 20px 0;
+      }
+      .tips-section ol {
+        padding-left: 20px;
+      }
+      .signature {
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class='container'>
+      <div class='header'>
+        <h1>Welcome to TextBee!</h1>
+      </div>
 
-I built TextBee to help you with your messaging needs. be it sending OTP, notifications, or automated messaging workflows for your business.
-<br/><br/>
+      <p>Hi {{name}},</p>
 
-Here are few tips to get you started: <br/><br />
+      <p>I'm Vernu, the founder of TextBee. I built this platform to help you
+        with all your messaging needs - whether it's sending OTPs,
+        notifications, or creating automated messaging workflows for your
+        business.</p>
 
-<ol start="1">
-  <li><a href="https://github.com/vernu/textbee">Explore our Documentation: Learn how to integrate TextBee with your existing systems in the github readme</a></li>
-  <li><a href="https://discord.gg/d7vyfBpWbQ">Join the Community on Discord and get help: Connect with other users and developers, ask questions, and share ideas on our Community Forum.</a></li>
-  <li><a href="https://www.patreon.com/vernu">Support Our Work: Consider supporting us on Patreon to help us continue improving TextBee.</a></li>
-  <li><a href="https://github.com/vernu/textbee">Star our repo on Github</a></li>
-<br /> <br/>
-<hr/>
+      <div class='tips-section'>
+        <h3>Here are a few tips to get you started:</h3>
+        <ol>
+          <li><a href='https://github.com/vernu/textbee'>Explore our
+              Documentation</a>
+            - Learn how to integrate TextBee with your existing systems</li>
+          <li><a href='https://dl.textbee.dev'>Download the Mobile App</a></li>
+          <li><a href='https://textbee.dev/dashboard'>Access your Dashboard</a></li>
+          <li><a href='https://discord.gg/d7vyfBpWbQ'>Join our Discord Community</a></li>
+          <li><a href='https://www.patreon.com/vernu'>Support Our Work</a></li>
+          <li><a href='https://github.com/vernu/textbee'>Star our GitHub
+              Repository</a></li>
+        </ol>
+      </div>
 
-P.S. Why did you choose TextBee? What feedback do you have? <br/>
-Do you have any questions or need assistance? <br/>
-Feel free to reach out to our support team at <a href="mailto:contact@textbee.dev">contact@textbee.dev</a>. <br/>
-we read and respond to all emails as quickly as possible.
-</p>
-<hr/>
-<div>
-Cheers,  <br />
-Vernu, founder <br />
-<br />
-  <i>TextBee.dev</i>
-</div>
+      <div class='divider'></div>
 
+      <p>
+        <strong>P.S.</strong>
+        I'd love to hear from you! Why did you choose TextBee? Do you have any
+        feedback or questions?<br />
+        Feel free to reach out to our support team at
+        <a href='mailto:contact@textbee.dev'>contact@textbee.dev</a>.<br />
+        We read and respond to all emails as quickly as possible.
+      </p>
 
+      <div class='signature'>
+        <p>
+          Cheers,<br />
+          <strong>Vernu</strong><br />
+          Founder, TextBee.dev
+        </p>
+      </div>
+
+      <div class='divider'></div>
+
+      <div class='community-section'>
+        <p style='font-size: 14px; margin-bottom: 15px;'>Join our community!</p>
+        <a
+          href='https://discord.gg/d7vyfBpWbQ'
+          style='display: inline-block; margin: 0 10px; color: #7289DA; text-decoration: none;'
+        >
+          <img
+            src='https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/636e0a6918e57475a843f59f_icon_clyde_black_RGB.svg'
+            alt='Discord'
+            style='width: 20px; vertical-align: middle;'
+          />
+          Join Discord
+        </a>
+        <a
+          href='https://github.com/vernu/textbee'
+          style='display: inline-block; margin: 0 10px; color: #333; text-decoration: none;'
+        >
+          <img
+            src='https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png'
+            alt='GitHub'
+            style='width: 20px; vertical-align: middle;'
+          />
+          Star on GitHub
+        </a>
+        <a
+          href='https://patreon.com/vernu'
+          style='display: inline-block; margin: 0 10px; color: #FF424D; text-decoration: none;'
+        >
+          <img
+            src='https://c5.patreon.com/external/logo/downloads_logomark_color_on_white.png'
+            alt='Patreon'
+            style='width: 20px; vertical-align: middle;'
+          />
+          Support on Patreon
+        </a>
+      </div>
+    </div>
+  </body>
+</html>

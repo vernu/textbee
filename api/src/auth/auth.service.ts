@@ -155,11 +155,13 @@ export class AuthService {
     })
     passwordReset.save()
 
+    const resetLink = `${process.env.FRONTEND_URL || 'https://textbee.dev'}/reset-password?email=${encodeURIComponent(user.email)}&otp=${otp}`
+
     await this.mailService.sendEmailFromTemplate({
       to: user.email,
-      subject: 'Password Reset',
+      subject: 'textbee.dev - Password Reset',
       template: 'password-reset-request',
-      context: { name: user.name, otp },
+      context: { name: user.name, resetLink, otp },
     })
 
     return { message: 'Password reset email sent' }
@@ -189,7 +191,7 @@ export class AuthService {
 
     this.mailService.sendEmailFromTemplate({
       to: user.email,
-      subject: 'Password Reset',
+      subject: 'textbee.dev - Password Reset',
       template: 'password-reset-success',
       context: { name: user.name },
     })
