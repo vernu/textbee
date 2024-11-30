@@ -6,7 +6,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { InjectModel } from '@nestjs/mongoose'
 import { ApiKey, ApiKeyDocument } from './schemas/api-key.schema'
 import { Model } from 'mongoose'
-import { User } from '../users/schemas/user.schema'
+import { User, UserDocument } from '../users/schemas/user.schema'
 import axios from 'axios'
 import {
   PasswordReset,
@@ -197,6 +197,33 @@ export class AuthService {
     return { message: 'Password reset successfully' }
   }
 
+  async updateProfile(
+    input: { name: string; phone: string },
+    user: UserDocument,
+  ) {
+    return this.usersService.updateProfile(input, user)
+  }
+
+  async changePassword(
+    input: { oldPassword: string; newPassword: string },
+    user: UserDocument,
+  ) {
+    const userToUpdate = await this.usersService.findOne({ _id: user._id })
+    if (!userToUpdate) {
+      throw new HttpException({ error: 'User not found' }, HttpStatus.NOT_FOUND)
+    }
+    if (!(await bcrypt.compare(input.oldPassword, userToUpdate.password))) {
+      throw new HttpException(
+        { error: 'Invalid old password' },
+        HttpStatus.BAD_REQUEST,
+      )
+    }
+
+    const hashedPassword = await bcrypt.hash(input.newPassword, 10)
+    userToUpdate.password = hashedPassword
+    await userToUpdate.save()
+  }
+
   async generateApiKey(currentUser: User) {
     const apiKey = uuidv4()
     const hashedApiKey = await bcrypt.hash(apiKey, 10)
@@ -249,7 +276,10 @@ export class AuthService {
   async revokeApiKey(apiKeyId: string) {
     const apiKey = await this.apiKeyModel.findById(apiKeyId)
     if (!apiKey) {
-      throw new HttpException({ error: 'Api key not found' }, HttpStatus.NOT_FOUND)
+      throw new HttpException(
+        { error: 'Api key not found' },
+        HttpStatus.NOT_FOUND,
+      )
     }
     apiKey.revokedAt = new Date()
     await apiKey.save()
@@ -258,7 +288,10 @@ export class AuthService {
   async renameApiKey(apiKeyId: string, name: string) {
     const apiKey = await this.apiKeyModel.findById(apiKeyId)
     if (!apiKey) {
-      throw new HttpException({ error: 'Api key not found' }, HttpStatus.NOT_FOUND)
+      throw new HttpException(
+        { error: 'Api key not found' },
+        HttpStatus.NOT_FOUND,
+      )
     }
     apiKey.name = name
     await apiKey.save()

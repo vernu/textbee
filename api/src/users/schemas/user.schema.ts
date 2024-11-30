@@ -21,7 +21,7 @@ export class User {
   avatar?: string
 
   @Prop({ type: String, trim: true })
-  primaryPhone: string
+  phone: string
 
   @Prop({ type: String })
   password: string

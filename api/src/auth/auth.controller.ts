@@ -58,6 +58,30 @@ export class AuthController {
     return { data: req.user }
   }
 
+  @ApiOperation({ summary: 'Update Profile' })
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
+  @Patch('/update-profile')
+  async updateProfile(
+    @Body() input: { name: string; phone: string },
+    @Request() req,
+  ) {
+    return await this.authService.updateProfile(input, req.user)
+  }
+
+  @ApiOperation({ summary: 'Change Password' })
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
+  @Post('/change-password')
+  async changePassword(
+    @Body() input: { oldPassword: string; newPassword: string },
+    @Request() req,
+  ) {
+    return await this.authService.changePassword(input, req.user)
+  }
+
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Generate Api Key' })
   @ApiBearerAuth()

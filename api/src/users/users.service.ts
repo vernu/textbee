@@ -40,4 +40,23 @@ export class UsersService {
     })
     return await newUser.save()
   }
+
+  async updateProfile(
+    input: { name: string; phone: string },
+    user: UserDocument,
+  ) {
+    const userToUpdate = await this.findOne({ _id: user._id })
+    if (!userToUpdate) {
+      throw new HttpException({ error: 'User not found' }, HttpStatus.NOT_FOUND)
+    }
+
+    if (input.name) {
+      userToUpdate.name = input.name
+    }
+    if (input.phone) {
+      userToUpdate.phone = input.phone
+    }
+
+    return await userToUpdate.save()
+  }
 }
