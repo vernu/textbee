@@ -8,7 +8,7 @@ export class RegisterInputDTO {
   email: string
 
   @ApiProperty({ type: String })
-  primaryPhone?: string
+  phone?: string
 
   @ApiProperty({ type: String, required: true })
   password: string
