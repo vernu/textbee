@@ -26,12 +26,6 @@ export class CanModifyApiKey implements CanActivate {
 
     const apiKey = await this.authService.findApiKeyById(apiKeyId)
 
-    if (apiKey?.revokedAt) {
-      throw new HttpException(
-        { error: 'Unauthorized' },
-        HttpStatus.UNAUTHORIZED,
-      )
-    }
 
     if (
       !!userId &&
