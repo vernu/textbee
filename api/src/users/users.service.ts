@@ -19,10 +19,12 @@ export class UsersService {
     name,
     email,
     password,
+    phone,
   }: {
     name: string
     email: string
     password?: string
+    phone?: string
   }) {
     if (await this.findOne({ email })) {
       throw new HttpException(
@@ -37,6 +39,7 @@ export class UsersService {
       name,
       email,
       password,
+      phone,
     })
     return await newUser.save()
   }
