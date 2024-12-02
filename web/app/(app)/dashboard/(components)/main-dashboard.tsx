@@ -31,14 +31,14 @@ export default function DashboardOverview() {
       onValueChange={handleTabChange}
       className='space-y-4'
     >
-      <TabsList className='sticky top-[3.5rem] z-10 flex mx-auto max-w-md'>
+      <TabsList className='sticky top-[4rem] z-10 flex mx-auto max-w-md border-[1px] my-6 bg-blue-500 text-white '>
         <TabsTrigger value='overview' className='flex-1'>
           Overview
         </TabsTrigger>
         <TabsTrigger value='messaging' className='relative flex-1'>
           <MessageSquare className='ml-2 h-4 w-4' />
           <span className='mx-2'>Messaging</span>
-          <span className='absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground ml-8'>
+          <span className='absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-secondary text-[10px] text-secondary-foreground ml-8'>
             3
           </span>
         </TabsTrigger>
