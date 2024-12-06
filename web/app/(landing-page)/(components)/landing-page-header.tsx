@@ -9,7 +9,7 @@ import ThemeToggle from '@/components/shared/theme-toggle'
 export default function LandingPageHeader() {
   return (
     <ThemeProvider attribute='class' defaultTheme='system'>
-      <header className='sticky top-0 z-50 w-full border-b bg-white/95 dark:bg-[#1A2752] backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:bg-muted/95'>
+      <header className='sticky top-0 z-50 w-full border-b bg-white/95 dark:bg-[#1A2752] backdrop-blur supports-[backdrop-filter]:bg-white/60'>
         <div className='container flex h-14 items-center justify-between px-2'>
           <Link
             className='flex items-center space-x-2'
