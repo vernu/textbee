@@ -40,7 +40,13 @@ export async function middleware(request: NextRequest) {
   const response = NextResponse.next()
   response.headers.set('x-pathname', pathname)
 
-  return response
+  request.headers?.set('x-current-url', request.nextUrl?.href ?? '')
+
+  return NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  })
 }
 
 export const config = {

@@ -1,5 +1,13 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../components/ui/tabs'
+'use client'
+
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '../../../components/ui/tabs'
 import SyntaxHighlighter from 'react-syntax-highlighter'
+import { dark } from 'react-syntax-highlighter/dist/esm/styles/prism'
 
 const codeSnippets = [
   {
@@ -56,10 +64,10 @@ print(response.json())`,
 
 export default function CodeSnippetSection() {
   return (
-    <section className='container mx-auto py-24 px-4 sm:px-6 lg:px-8 max-w-7xl bg-gray-50'>
+    <section className='container mx-auto py-24 px-4 sm:px-6 lg:px-8 max-w-7xl bg-gray-50 dark:bg-muted rounded-2xl my-12'>
       <div className='mx-auto max-w-[58rem]'>
         <h3 className='text-3xl font-bold mb-8'>Code Snippet</h3>
-        <div className='bg-white p-6 rounded-xl shadow-sm'>
+        <div className='bg-white dark:bg-black p-6 rounded-xl shadow-sm'>
           <Tabs defaultValue={codeSnippets[0].tech} className='w-full'>
             <TabsList className='grid w-full grid-cols-3'>
               {codeSnippets.map((snippet) => {
@@ -76,6 +84,7 @@ export default function CodeSnippetSection() {
                   <SyntaxHighlighter
                     language={snippet.language}
                     showLineNumbers={snippet.language !== 'bash'}
+                    style={dark}
                     // className='min-h-[200px]'
                   >
                     {snippet.snippet}

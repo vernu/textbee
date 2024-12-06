@@ -52,7 +52,7 @@ export default function SupportProjectSection() {
 
   return (
     <>
-      <section className='container mx-auto py-24 px-4 sm:px-6 lg:px-8 max-w-7xl bg-gray-50'>
+      <section className='container mx-auto py-24 px-4 sm:px-6 lg:px-8 max-w-7xl bg-gray-50 dark:bg-muted rounded-2xl my-12'>
         <div className='mx-auto max-w-[58rem] text-center'>
           <h2 className='text-3xl font-bold mb-4'>Support The Project</h2>
           <p className='text-gray-500 mb-8'>
@@ -64,7 +64,7 @@ export default function SupportProjectSection() {
           </p>
           <div className='flex flex-col sm:flex-row justify-center gap-4'>
             <Link href={ExternalLinks.patreon} prefetch={false} target='_blank'>
-              <Button className='bg-blue-500 hover:bg-blue-600'>
+              <Button className='bg-blue-500 hover:bg-blue-600 text-white'>
                 <Heart className='mr-2 h-4 w-4' /> Become a Patron
               </Button>
             </Link>
@@ -84,7 +84,7 @@ export default function SupportProjectSection() {
             {cryptoWallets.map((wallet, index) => (
               <div
                 key={index}
-                className='flex items-center justify-between p-4 rounded-lg bg-gray-100'
+                className='flex items-center justify-between p-4 rounded-lg bg-gray-100 dark:bg-muted'
               >
                 <div>
                   <h4 className='font-semibold'>{wallet.name}</h4>

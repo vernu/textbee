@@ -10,7 +10,7 @@ export default function HowItWorksSection() {
   return (
     <section
       id='how-it-works'
-      className='container mx-auto py-24 px-4 sm:px-6 lg:px-8 max-w-7xl bg-gray-50'
+      className='container mx-auto py-24 px-4 sm:px-6 lg:px-8 max-w-7xl bg-gray-50 dark:bg-muted rounded-2xl'
     >
       <div className='mx-auto max-w-[58rem]'>
         <h2 className='text-3xl font-bold text-center mb-8'>How It Works</h2>
