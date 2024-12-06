@@ -17,7 +17,7 @@ export default function FeaturesSection() {
         <Card className='flex flex-col items-center justify-center p-6 text-center'>
           <Send className='h-12 w-12 mb-4 text-blue-500' />
           <h3 className='font-bold'>Send SMS</h3>
-          <p className='text-sm text-gray-500'>
+          <p className='text-sm '>
             Send SMS to any number from your dashboard or via REST API
           </p>
         </Card>

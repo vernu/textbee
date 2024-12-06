@@ -87,7 +87,7 @@ export default function GenerateApiKey() {
             >
               {isGeneratingApiKey ? (
                 <div className='flex justify-center items-center h-full'>
-                  <Spinner size='sm' className='text-white' />
+                  <Spinner size='sm' className='text-white dark:text-black' />
                 </div>
               ) : (
                 'Generate API Key'
@@ -111,7 +111,7 @@ export default function GenerateApiKey() {
           </DialogHeader>
 
           <div className='space-y-6'>
-            <div className='flex justify-center p-4 bg-muted rounded-lg '>
+            <div className='flex justify-center p-4 bg-muted dark:bg-white rounded-lg '>
               {generatedApiKey?.data && (
                 <QRCode value={generatedApiKey?.data} size={120} />
               )}

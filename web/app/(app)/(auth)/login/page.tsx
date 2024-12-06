@@ -17,7 +17,7 @@ import { Routes } from '@/config/routes'
 
 export default function LoginPage() {
   return (
-    <div className='flex items-center justify-center min-h-screen bg-gray-100'>
+    <div className='flex items-center justify-center min-h-screen bg-gray-100 dark:bg-muted'>
       <Card className='w-[400px] shadow-lg'>
         <CardHeader className='space-y-1'>
           <CardTitle className='text-2xl font-bold text-center'>
@@ -34,7 +34,7 @@ export default function LoginPage() {
               <span className='w-full border-t' />
             </div>
             <div className='relative flex justify-center text-xs uppercase'>
-              <span className='bg-background px-2 text-muted-foreground'>
+              <span className='bg-background dark:bg-muted px-2 text-muted-foreground'>
                 Or
               </span>
             </div>
