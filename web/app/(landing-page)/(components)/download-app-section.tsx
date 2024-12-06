@@ -7,7 +7,7 @@ export default function DownloadAppSection() {
   return (
     <section className='container mx-auto py-24 px-4 sm:px-6 lg:px-8 max-w-7xl'>
       <div className='mx-auto max-w-[58rem] text-center'>
-        <div className='rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 p-8'>
+        <div className='rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 p-8 dark:from-blue-950 dark:to-muted'>
           <div className='mx-auto max-w-sm'>
             <Image
               alt='App preview'
@@ -24,7 +24,7 @@ export default function DownloadAppSection() {
               Gateway.
             </p>
             <Link href={Routes.downloadAndroidApp} prefetch={false}>
-              <Button className='bg-blue-500 hover:bg-blue-600'>
+              <Button className='bg-blue-500 hover:bg-blue-600 text-white'>
                 Download App
               </Button>
             </Link>

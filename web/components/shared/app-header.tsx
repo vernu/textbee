@@ -16,6 +16,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { Menu, LogOut, LayoutDashboard, MessageSquarePlus } from 'lucide-react'
 import { signOut, useSession } from 'next-auth/react'
 import { Routes } from '@/config/routes'
+import ThemeToggle from './theme-toggle'
 
 export default function AppHeader() {
   const session = useSession()
@@ -44,7 +45,9 @@ export default function AppHeader() {
               {session.data?.user?.name?.charAt(0)}
             </AvatarFallback>
           </Avatar>
-          <div className='hidden md:block'>{session.data?.user?.name}</div>
+          <div className='hidden md:block'>
+            {session.data?.user?.name?.split(' ')[0]}
+          </div>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className='w-56' align='end' forceMount>
@@ -122,7 +125,7 @@ export default function AppHeader() {
               <Button
                 asChild
                 color='primary'
-                className='bg-blue-500 hover:bg-blue-600 rounded-full'
+                className='bg-blue-500 hover:bg-blue-600 text-white rounded-full'
               >
                 <Link href={Routes.register}>Get started</Link>
               </Button>
@@ -148,7 +151,8 @@ export default function AppHeader() {
           </Link>
         </div>
         <div className='flex flex-1 items-center justify-end space-x-2'>
-          <nav className='flex items-center space-x-2'>
+          <nav className='flex items-center space-x-6'>
+            <ThemeToggle />
             {isAuthenticated ? (
               <AuthenticatedMenu />
             ) : (

@@ -4,7 +4,7 @@ import Link from 'next/link'
 
 export default function CustomizationSection() {
   return (
-    <section className='py-24 bg-gradient-to-b from-blue-50 to-white'>
+    <section className='py-24 bg-gradient-to-b from-blue-50 to-white dark:from-blue-950 dark:to-muted'>
       <div className='container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl'>
         <div className='mx-auto max-w-3xl text-center mb-12'>
           <h2 className='text-4xl font-bold mb-4 text-blue-600'>

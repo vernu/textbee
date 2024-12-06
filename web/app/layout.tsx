@@ -9,6 +9,9 @@ import { Session } from 'next-auth'
 import { getServerSession } from 'next-auth'
 import { headers } from 'next/dist/client/components/headers'
 import { authOptions } from '@/lib/auth'
+import { PrismaClient } from '@prisma/client'
+import prismaClient from '@/lib/prismaClient'
+import { userAgent } from 'next/server'
 
 export const metadata: Metadata = {
   title: 'textbee.dev - Free and Open-Source SMS Gateway',
@@ -59,8 +62,46 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://textbee.dev'),
 }
 
+const trackPageView = async ({
+  headerList,
+  session,
+}: {
+  headerList: Headers
+  session: Session | null
+}) => {
+  const { ua } = userAgent({
+    headers: headerList,
+  })
+
+  const url = headerList.get('x-current-url')
+  const ip = headerList.get('x-forwarded-for')
+
+  const referer = headerList.get('referer')
+
+  const res = await prismaClient.pageView.create({
+    data: {
+      url,
+      // @ts-ignore
+      user: session?.user?.id,
+      userAgent: ua,
+      ip,
+      referer,
+    },
+  })
+  return res
+}
+
 export default async function RootLayout({ children }: PropsWithChildren) {
   const session: Session | null = await getServerSession(authOptions as any)
+
+  const headerList = headers()
+
+  trackPageView({ headerList, session })
+    .catch(console.error)
+    .then((res) => {
+      // console.log(res)
+    })
+
   return (
     <html lang='en'>
       <body>

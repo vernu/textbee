@@ -16,7 +16,7 @@ import { Routes } from '@/config/routes'
 
 export default function RegisterPage() {
   return (
-    <div className='flex items-center justify-center min-h-screen bg-gray-100'>
+    <div className='flex items-center justify-center min-h-screen bg-gray-100 dark:bg-muted'>
       <Card className='w-[450px] shadow-lg'>
         <CardHeader className='space-y-1'>
           <CardTitle className='text-2xl font-bold text-center'>
@@ -28,6 +28,16 @@ export default function RegisterPage() {
         </CardHeader>
         <CardContent>
           <RegisterForm />
+          <div className='relative mt-4'>
+            <div className='absolute inset-0 flex items-center'>
+              <span className='w-full border-t' />
+            </div>
+            <div className='relative flex justify-center text-xs uppercase'>
+              <span className='bg-background dark:bg-muted px-2 text-muted-foreground'>
+                Or
+              </span>
+            </div>
+          </div>
           <div className='mt-4 flex justify-center'>
             <LoginWithGoogle />
           </div>
