@@ -6,7 +6,7 @@ import Link from 'next/link'
 
 export default function HeroSection() {
   return (
-    <section className='relative overflow-hidden bg-gradient-to-b from-blue-50 to-white py-16 sm:py-24'>
+    <section className='relative overflow-hidden bg-gradient-to-b from-blue-50 to-white dark:from-blue-950 dark:to-muted py-16 sm:py-24'>
       <div className='absolute inset-0 bg-[url(/grid.svg)] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]'></div>
       <div className='container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl relative'>
         <div className='grid gap-8 lg:grid-cols-2 lg:gap-16'>
@@ -26,7 +26,7 @@ export default function HeroSection() {
             </div>
             <div className='flex flex-cdol gap-4 flex-row'>
               <Link href={Routes.register} prefetch={false}>
-                <Button className='bg-blue-500 hover:bg-blue-600' size='lg'>
+                <Button className='bg-blue-500 hover:bg-blue-600 dark:text-white' size='lg'>
                   Get Started
                 </Button>
               </Link>

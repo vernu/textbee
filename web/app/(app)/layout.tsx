@@ -12,7 +12,7 @@ export default async function RootLayout({ children }: PropsWithChildren) {
     <>
       <LayoutWrapper session={session}>
         <AppHeader />
-        {children}
+        <main className='min-h-[80vh]'>{children}</main>
       </LayoutWrapper>
     </>
   )

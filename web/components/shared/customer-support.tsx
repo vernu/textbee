@@ -88,7 +88,7 @@ export default function SupportButton() {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
         <Button
-          className='fixed bottom-4 right-4 shadow-lg bg-blue-500 hover:bg-blue-600 rounded-full'
+          className='fixed bottom-4 right-4 shadow-lg bg-blue-500 hover:bg-blue-600 dark:text-white rounded-full'
           size='sm'
         >
           <MessageSquarePlus className='h-5 w-5 mr-1' />
