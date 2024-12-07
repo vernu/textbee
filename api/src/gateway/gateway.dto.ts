@@ -78,6 +78,22 @@ export class SMSData {
 }
 export class SendSMSInputDTO extends SMSData {}
 
+export class SendBulkSMSInputDTO {
+  @ApiProperty({
+    type: String,
+    required: true,
+    description: 'The template to send the SMS with',
+  })
+  messageTemplate: string
+
+  @ApiProperty({
+    type: [SMSData],
+    required: true,
+    description: 'The messages to send',
+  })
+  messages: SMSData[]
+}
+
 export class ReceivedSMSDTO {
   @ApiProperty({
     type: String,

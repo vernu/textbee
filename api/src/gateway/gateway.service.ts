@@ -7,6 +7,7 @@ import {
   ReceivedSMSDTO,
   RegisterDeviceInputDTO,
   RetrieveSMSDTO,
+  SendBulkSMSInputDTO,
   SendSMSInputDTO,
 } from './gateway.dto'
 import { User } from '../users/schemas/user.schema'
@@ -14,7 +15,10 @@ import { AuthService } from 'src/auth/auth.service'
 import { SMS } from './schemas/sms.schema'
 import { SMSType } from './sms-type.enum'
 import { SMSBatch } from './schemas/sms-batch.schema'
-import { Message } from 'firebase-admin/lib/messaging/messaging-api'
+import {
+  BatchResponse,
+  Message,
+} from 'firebase-admin/lib/messaging/messaging-api'
 @Injectable()
 export class GatewayService {
   constructor(
@@ -35,7 +39,10 @@ export class GatewayService {
     })
 
     if (device) {
-      return await this.updateDevice(device._id.toString(), { ...input, enabled: true })
+      return await this.updateDevice(device._id.toString(), {
+        ...input,
+        enabled: true,
+      })
     } else {
       return await this.deviceModel.create({ ...input, user })
     }
@@ -216,6 +223,142 @@ export class GatewayService {
         HttpStatus.BAD_REQUEST,
       )
     }
+  }
+
+  async sendBulkSMS(deviceId: string, body: SendBulkSMSInputDTO): Promise<any> {
+    const device = await this.deviceModel.findById(deviceId)
+
+    if (!device?.enabled) {
+      throw new HttpException(
+        {
+          success: false,
+          error: 'Device does not exist or is not enabled',
+        },
+        HttpStatus.BAD_REQUEST,
+      )
+    }
+
+    if (
+      !Array.isArray(body.messages) ||
+      body.messages.length === 0 ||
+      body.messages.map((m) => m.recipients).flat().length === 0
+    ) {
+      throw new HttpException(
+        {
+          success: false,
+          error: 'Invalid message list',
+        },
+        HttpStatus.BAD_REQUEST,
+      )
+    }
+
+    if (body.messages.map((m) => m.recipients).flat().length > 50) {
+      throw new HttpException(
+        {
+          success: false,
+          error: 'Maximum of 50 recipients per batch is allowed',
+        },
+        HttpStatus.BAD_REQUEST,
+      )
+    }
+
+    const { messageTemplate, messages } = body
+
+    const smsBatch = await this.smsBatchModel.create({
+      device: device._id,
+      message: messageTemplate,
+      recipientCount: messages
+        .map((m) => m.recipients.length)
+        .reduce((a, b) => a + b, 0),
+      recipientPreview: this.getRecipientsPreview(
+        messages.map((m) => m.recipients).flat(),
+      ),
+    })
+
+    const fcmResponses: BatchResponse[] = []
+    for (const smsData of messages) {
+      const message = smsData.message
+      const recipients = smsData.recipients
+
+      if (!message) {
+        continue
+      }
+
+      if (!Array.isArray(recipients) || recipients.length === 0) {
+        continue
+      }
+
+      const fcmMessages: Message[] = []
+
+      for (const recipient of recipients) {
+        const sms = await this.smsModel.create({
+          device: device._id,
+          smsBatch: smsBatch._id,
+          message: message,
+          type: SMSType.SENT,
+          recipient,
+          requestedAt: new Date(),
+        })
+        const updatedSMSData = {
+          smsId: sms._id,
+          smsBatchId: smsBatch._id,
+          message,
+          recipients: [recipient],
+
+          // Legacy fields to be removed in the future
+          smsBody: message,
+          receivers: [recipient],
+        }
+        const stringifiedSMSData = JSON.stringify(updatedSMSData)
+
+        const fcmMessage: Message = {
+          data: {
+            smsData: stringifiedSMSData,
+          },
+          token: device.fcmToken,
+          android: {
+            priority: 'high',
+          },
+        }
+        fcmMessages.push(fcmMessage)
+      }
+
+      try {
+        const response = await firebaseAdmin.messaging().sendEach(fcmMessages)
+
+        console.log(response)
+        fcmResponses.push(response)
+
+        this.deviceModel
+          .findByIdAndUpdate(deviceId, {
+            $inc: { sentSMSCount: response.successCount },
+          })
+          .exec()
+          .catch((e) => {
+            console.log('Failed to update sentSMSCount')
+            console.log(e)
+          })
+      } catch (e) {
+        console.log('Failed to send SMS: FCM')
+        console.log(e)
+      }
+    }
+    
+    const successCount = fcmResponses.reduce(
+      (acc, m) => acc + m.successCount,
+      0,
+    )
+    const failureCount = fcmResponses.reduce(
+      (acc, m) => acc + m.failureCount,
+      0,
+    )
+    const response = {
+      success: successCount > 0,
+      successCount,
+      failureCount,
+      fcmResponses,
+    }
+    return response
   }
 
   async receiveSMS(deviceId: string, dto: ReceivedSMSDTO): Promise<any> {
