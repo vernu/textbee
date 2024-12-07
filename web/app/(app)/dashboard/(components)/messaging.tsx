@@ -4,8 +4,9 @@ import { useState } from 'react'
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import SendSms from './send-sms'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import ReceivedSms from './received-sms'
+import BulkSMSSend from './bulk-sms-send'
+import { Badge } from '@/components/ui/badge'
 
 export default function Messaging() {
   const [currentTab, setCurrentTab] = useState('send')
@@ -26,7 +27,13 @@ export default function Messaging() {
             Send
           </TabsTrigger>
           <TabsTrigger value='bulk-send' className='flex-1'>
-            Bulk Send
+            Bulk Send{' '}
+            <Badge
+              variant='outline'
+              className='ml-2 bg-blue-500 text-white dark:bg-blue-600 dark:text-white'
+            >
+              new
+            </Badge>
           </TabsTrigger>
           <TabsTrigger value='received' className='flex-1'>
             Received
@@ -40,18 +47,7 @@ export default function Messaging() {
         <TabsContent value='bulk-send' className='space-y-4'>
           {/* comming soon section */}
           <div className='grid gap-6 max-w-xl mx-auto mt-10'>
-            <Card>
-              <CardHeader>
-                <CardTitle>Bulk Send</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className='flex items-center gap-2'>
-                  <div className='flex items-center gap-2'>
-                    <p>Coming soon...</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <BulkSMSSend />
           </div>
         </TabsContent>
 
