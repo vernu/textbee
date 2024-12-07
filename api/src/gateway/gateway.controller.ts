@@ -23,6 +23,7 @@ import {
   ReceivedSMSDTO,
   RegisterDeviceInputDTO,
   RetrieveSMSResponseDTO,
+  SendBulkSMSInputDTO,
   SendSMSInputDTO,
 } from './gateway.dto'
 import { GatewayService } from './gateway.service'
@@ -87,6 +88,18 @@ export class GatewayController {
     const data = await this.gatewayService.sendSMS(deviceId, smsData)
     return { data }
   }
+
+  @ApiOperation({ summary: 'Send Bulk SMS' })
+  @UseGuards(AuthGuard, CanModifyDevice)
+  @Post(['/devices/:id/send-bulk-sms'])
+  async sendBulkSMS(
+    @Param('id') deviceId: string,
+    @Body() body: SendBulkSMSInputDTO,
+  ) {
+    const data = await this.gatewayService.sendBulkSMS(deviceId, body)
+    return { data }
+  }
+
 
   @ApiOperation({ summary: 'Received SMS from a device' })
   @HttpCode(HttpStatus.OK)

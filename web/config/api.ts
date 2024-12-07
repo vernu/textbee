@@ -20,6 +20,7 @@ export const ApiEndpoints = {
   gateway: {
     listDevices: () => '/gateway/devices',
     sendSMS: (id: string) => `/gateway/devices/${id}/send-sms`,
+    sendBulkSMS: (id: string) => `/gateway/devices/${id}/send-bulk-sms`,
     getReceivedSMS: (id: string) => `/gateway/devices/${id}/get-received-sms`,
 
     getStats: () => '/gateway/stats',
