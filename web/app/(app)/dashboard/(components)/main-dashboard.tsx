@@ -38,9 +38,6 @@ export default function DashboardOverview() {
         <TabsTrigger value='messaging' className='relative flex-1'>
           <MessageSquare className='ml-2 h-4 w-4' />
           <span className='mx-2'>Messaging</span>
-          <span className='absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-secondary text-[10px] text-secondary-foreground ml-8'>
-            3
-          </span>
         </TabsTrigger>
       </TabsList>
 
