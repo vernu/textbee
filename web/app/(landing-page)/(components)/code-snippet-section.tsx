@@ -19,7 +19,7 @@ const BASE_URL = 'https://api.textbee.dev/api/v1'
 const API_KEY = 'YOUR_API_KEY'
 const DEVICE_ID = 'YOUR_DEVICE_ID'
 
-const response = await axios.post(\`\$\{BASE_URL\}/gateway/devices/\$\{DEVICE_ID}/sendSMS\`, {
+const response = await axios.post(\`\$\{BASE_URL\}/gateway/devices/\$\{DEVICE_ID}/send-sms\`, {
   recipients: [ '+1234567890' ],
   message: 'Hello World!',
 }, {
@@ -40,7 +40,7 @@ API_KEY = 'YOUR_API_KEY'
 DEVICE_ID = 'YOUR_DEVICE_ID'
 
 response = requests.post(
-f'{BASE_URL}/api/device/{DEVICE_ID}/sendSMS',
+f'{BASE_URL}/api/device/{DEVICE_ID}/send-sms',
 json={
     'recipients': ['+1234567890'],
     'message': 'Hello World!'
@@ -52,7 +52,7 @@ print(response.json())`,
   {
     tech: 'cURL',
     language: 'bash',
-    snippet: `curl -X POST "https://api.textbee.dev/api/v1/gateway/devices/YOUR_DEVICE_ID/sendSMS" \\
+    snippet: `curl -X POST "https://api.textbee.dev/api/v1/gateway/devices/YOUR_DEVICE_ID/send-sms" \\
   -H 'x-api-key: YOUR_API_KEY' \\
   -H 'Content-Type: application/json' \\
   -d '{
