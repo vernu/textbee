@@ -134,7 +134,7 @@ public class MainActivity extends AppCompatActivity {
                 }
                 @Override
                 public void onFailure(Call<RegisterDeviceResponseDTO> call, Throwable t) {
-                    Snackbar.make(view, "An error occured :(", Snackbar.LENGTH_LONG).show();
+                    Snackbar.make(view, "An error occurred :(", Snackbar.LENGTH_LONG).show();
                     Log.e(TAG, "API_ERROR "+ t.getMessage());
                     Log.e(TAG, "API_ERROR "+ t.getLocalizedMessage());
                     compoundButton.setEnabled(true);
@@ -268,7 +268,7 @@ public class MainActivity extends AppCompatActivity {
                         }
                         @Override
                         public void onFailure(Call<RegisterDeviceResponseDTO> call, Throwable t) {
-                            Snackbar.make(view, "An error occured :(", Snackbar.LENGTH_LONG).show();
+                            Snackbar.make(view, "An error occurred :(", Snackbar.LENGTH_LONG).show();
                             Log.e(TAG, "API_ERROR "+ t.getMessage());
                             Log.e(TAG, "API_ERROR "+ t.getLocalizedMessage());
                             registerDeviceBtn.setEnabled(true);
