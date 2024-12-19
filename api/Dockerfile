@@ -1,4 +1,4 @@
-FROM node:18-alpine AS base
+FROM node:lts-alpine AS base
 RUN npm i -g pnpm
 WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
@@ -13,7 +13,7 @@ FROM base AS build
 ENV NODE_ENV=production
 RUN pnpm build
 
-FROM node:18-alpine AS prod
+FROM node:lts-alpine AS prod
 ENV NODE_ENV=production
 WORKDIR /app
 RUN npm i -g pnpm
