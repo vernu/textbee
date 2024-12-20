@@ -1,0 +1,36 @@
+services:
+  textbee-web:
+    image: textbee-web
+    container_name: textbee-web
+    build: 
+      context: ./web
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    env_file: 
+      - path: ./web/.env
+        required: true
+    command: pnpm start
+  textbee-api:
+    image: textbee-api
+    container_name: textbee-api
+    build: 
+      context: ./api
+      dockerfile: Dockerfile
+    ports:
+      - "3005:3005"
+    env_file: 
+      - path: ./api/.env
+        required: true
+    depends_on:
+      - textbee-db
+  textbee-db:
+    image: mongo
+    container_name: textbee-db
+    volumes:
+      - textbee-db-data:/data/db
+    ports:
+      - "27017:27017"
+
+volumes:
+  textbee-db-data:
