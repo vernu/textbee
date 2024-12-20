@@ -23,14 +23,14 @@ services:
       - path: ./api/.env
         required: true
     depends_on:
-      - mongo
-  mongo:
+      - textbee-db
+  textbee-db:
     image: mongo
-    container_name: mongo
+    container_name: textbee-db
     volumes:
-      - mongo_data:/data/db
+      - textbee-db-data:/data/db
     ports:
       - "27017:27017"
 
 volumes:
-  mongo_data:
+  textbee-db-data:
