@@ -1,6 +1,6 @@
 services:
   textbee-web:
-    image: textbee-web
+    image: ghcr.io/vernu/textbee/api:latest
     container_name: textbee-web
     build: 
       context: ./web
@@ -12,7 +12,7 @@ services:
         required: true
     command: pnpm start
   textbee-api:
-    image: textbee-api
+    image: ghcr.io/vernu/textbee/api:latest
     container_name: textbee-api
     build: 
       context: ./api
