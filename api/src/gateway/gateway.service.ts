@@ -19,6 +19,8 @@ import {
   BatchResponse,
   Message,
 } from 'firebase-admin/lib/messaging/messaging-api'
+import { WebhookEvent } from 'src/webhook/webhook-event.enum'
+import { WebhookService } from 'src/webhook/webhook.service'
 @Injectable()
 export class GatewayService {
   constructor(
@@ -26,6 +28,7 @@ export class GatewayService {
     @InjectModel(SMS.name) private smsModel: Model<SMS>,
     @InjectModel(SMSBatch.name) private smsBatchModel: Model<SMSBatch>,
     private authService: AuthService,
+    private webhookService: WebhookService,
   ) {}
 
   async registerDevice(
@@ -343,7 +346,7 @@ export class GatewayService {
         console.log(e)
       }
     }
-    
+
     const successCount = fcmResponses.reduce(
       (acc, m) => acc + m.successCount,
       0,
@@ -411,7 +414,14 @@ export class GatewayService {
         console.log(e)
       })
 
-    // TODO: Implement webhook to forward received SMS to user's callback URL
+    this.webhookService.deliverNotification({
+      sms,
+      user: device.user,
+        event: WebhookEvent.MESSAGE_RECEIVED,
+      })
+      .catch((e) => {
+        console.log(e)
+      })
 
     return sms
   }
