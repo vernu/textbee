@@ -9,7 +9,7 @@ export type WebhookSubscriptionDocument = WebhookSubscription & Document
 export class WebhookSubscription {
   _id?: Types.ObjectId
 
-  @Prop({ type: Types.ObjectId, ref: User.name })
+  @Prop({ type: Types.ObjectId, ref: User.name, required: true })
   user: User
 
   @Prop({ type: Boolean, default: true })
