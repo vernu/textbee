@@ -7,6 +7,7 @@ import { AuthModule } from '../auth/auth.module'
 import { UsersModule } from '../users/users.module'
 import { SMS, SMSSchema } from './schemas/sms.schema'
 import { SMSBatch, SMSBatchSchema } from './schemas/sms-batch.schema'
+import { WebhookModule } from 'src/webhook/webhook.module'
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { SMSBatch, SMSBatchSchema } from './schemas/sms-batch.schema'
     ]),
     AuthModule,
     UsersModule,
+    WebhookModule,
   ],
   controllers: [GatewayController],
   providers: [GatewayService],
