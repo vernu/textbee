@@ -42,13 +42,18 @@ export class WebhookService {
   }
 
   async create({ user, createWebhookDto }) {
-    const { events, deliveryUrl } = createWebhookDto
+    const { events, deliveryUrl, signingSecret } = createWebhookDto
 
     // Add URL validation
     try {
       new URL(deliveryUrl)
     } catch (e) {
       throw new HttpException('Invalid delivery URL', HttpStatus.BAD_REQUEST)
+    }
+
+    // validate signing secret
+    if (signingSecret.length < 20) {
+      throw new HttpException('Invalid signing secret', HttpStatus.BAD_REQUEST)
     }
 
     const existingSubscription = await this.webhookSubscriptionModel.findOne({
@@ -66,8 +71,6 @@ export class WebhookService {
     if (!events.every((event) => Object.values(WebhookEvent).includes(event))) {
       throw new HttpException('Invalid event type', HttpStatus.BAD_REQUEST)
     }
-
-    const signingSecret = uuidv4()
 
     // TODO: Encrypt signing secret
     // const webhookSignatureKey = process.env.WEBHOOK_SIGNATURE_KEY
@@ -117,16 +120,13 @@ export class WebhookService {
   }
 
   async deliverNotification({ sms, user, event }) {
-    console.log('deliverNotification')
-    console.log(sms)
-    console.log(user)
-    console.log(event)
     const webhookSubscription = await this.webhookSubscriptionModel.findOne({
       user: user._id,
       events: { $in: [event] },
+      isActive: true,
     })
 
-    if (!webhookSubscription || !webhookSubscription.isActive) {
+    if (!webhookSubscription) {
       return
     }
 
@@ -161,6 +161,23 @@ export class WebhookService {
     const webhookSubscription = await this.webhookSubscriptionModel.findById(
       webhookNotification.webhookSubscription,
     )
+
+    if (!webhookSubscription) {
+      console.error(
+        `Webhook subscription not found for ${webhookNotification._id}`,
+      )
+      return
+    }
+
+    if (!webhookSubscription.isActive) {
+      webhookNotification.deliveryAttemptAbortedAt = now
+      await webhookNotification.save()
+      console.error(
+        `Webhook subscription is not active for ${webhookNotification._id}, aborting delivery`,
+      )
+      return
+    }
+
     const deliveryUrl = webhookSubscription?.deliveryUrl
     const signingSecret = webhookSubscription?.signingSecret
 
@@ -184,7 +201,6 @@ export class WebhookService {
       webhookNotification.deliveredAt = now
       await webhookNotification.save()
 
-
       webhookSubscription.successfulDeliveryCount += 1
       webhookSubscription.lastDeliverySuccessAt = now
     } catch (e) {
@@ -197,7 +213,6 @@ export class WebhookService {
         webhookNotification.deliveryAttemptCount,
       )
       await webhookNotification.save()
-      
     } finally {
       webhookSubscription.deliveryAttemptCount += 1
       await webhookSubscription.save()
@@ -205,9 +220,9 @@ export class WebhookService {
   }
 
   private getNextDeliveryAttemptAt(deliveryAttemptCount: number): Date {
-    // Delays in minutes
+    // Delays in minutes after a failed delivery attempt
     const delaySequence = [
-      1, // 1 minute
+      3, // 3 minutes
       5, // 5 minutes
       30, // 30 minutes
       60, // 1 hour
@@ -228,8 +243,8 @@ export class WebhookService {
     return new Date(Date.now() + delayInMinutes * 60 * 1000)
   }
 
-  // Check for notifications that need to be delivered every minute
-  @Cron(CronExpression.EVERY_MINUTE)
+  // Check for notifications that need to be delivered every 3 minutes
+  @Cron('0 */3 * * * *')
   async checkForNotificationsToDeliver() {
     const now = new Date()
     const notifications = await this.webhookNotificationModel
@@ -240,7 +255,11 @@ export class WebhookService {
         deliveryAttemptAbortedAt: null,
       })
       .sort({ nextDeliveryAttemptAt: 1 })
-      .limit(50)
+      .limit(30)
+
+    if (notifications.length === 0) {
+      return
+    }
 
     console.log(`delivering ${notifications.length} webhook notifications`)
 
