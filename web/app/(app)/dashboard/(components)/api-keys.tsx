@@ -25,7 +25,7 @@ import { useToast } from '@/hooks/use-toast'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import httpBrowserClient from '@/lib/httpBrowserClient'
 import { ApiEndpoints } from '@/config/api'
-import { Spinner } from '@/components/ui/spinner'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export default function ApiKeys() {
   const {
@@ -132,9 +132,29 @@ export default function ApiKeys() {
         <ScrollArea className='h-[400px] pr-4'>
           <div className='space-y-2'>
             {isPending && (
-              <div className='flex justify-center items-center h-full'>
-                <Spinner size='sm' />
-              </div>
+              <>
+                {[1, 2, 3].map((i) => (
+                  <Card key={i} className='border-0 shadow-none'>
+                    <CardContent className='flex items-center p-3'>
+                      <Skeleton className='h-6 w-6 mr-3' />
+                      <div className='flex-1'>
+                        <div className='flex items-center justify-between'>
+                          <Skeleton className='h-4 w-24' />
+                          <Skeleton className='h-4 w-16' />
+                        </div>
+                        <div className='flex items-center space-x-2 mt-1'>
+                          <Skeleton className='h-4 w-64' />
+                        </div>
+                        <div className='flex items-center mt-1 space-x-3'>
+                          <Skeleton className='h-3 w-32' />
+                          <Skeleton className='h-3 w-32' />
+                        </div>
+                      </div>
+                      <Skeleton className='h-6 w-6' />
+                    </CardContent>
+                  </Card>
+                ))}
+              </>
             )}
 
             {error && (

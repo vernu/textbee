@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast'
 import httpBrowserClient from '@/lib/httpBrowserClient'
 import { ApiEndpoints } from '@/config/api'
 import { useQuery } from '@tanstack/react-query'
-import { Spinner } from '@/components/ui/spinner'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export default function DeviceList() {
   const { toast } = useToast()
@@ -42,9 +42,27 @@ export default function DeviceList() {
         <ScrollArea className='h-[400px] pr-4'>
           <div className='space-y-2'>
             {isPending && (
-              <div className='flex justify-center items-center h-full'>
-                <Spinner size='sm' />
-              </div>
+              <>
+                {[1, 2, 3].map((i) => (
+                  <Card key={i} className='border-0 shadow-none'>
+                    <CardContent className='flex items-center p-3'>
+                      <Skeleton className='h-6 w-6 rounded-full mr-3' />
+                      <div className='flex-1'>
+                        <div className='flex items-center justify-between'>
+                          <Skeleton className='h-4 w-[120px]' />
+                          <Skeleton className='h-4 w-[60px]' />
+                        </div>
+                        <div className='flex items-center space-x-2 mt-1'>
+                          <Skeleton className='h-4 w-[180px]' />
+                        </div>
+                        <div className='flex items-center mt-1 space-x-3'>
+                          <Skeleton className='h-3 w-[200px]' />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </>
             )}
 
             {error && (
