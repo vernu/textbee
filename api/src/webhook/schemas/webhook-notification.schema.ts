@@ -21,7 +21,7 @@ export class WebhookNotification {
   @Prop({ type: Types.ObjectId, ref: SMS.name })
   sms: SMS
 
-  @Prop({ type: String })
+  @Prop({ type: Date })
   deliveredAt: Date
 
   @Prop({ type: Date })
