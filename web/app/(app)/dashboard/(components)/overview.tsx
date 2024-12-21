@@ -6,6 +6,7 @@ import GetStartedCard from './get-started'
 import { ApiEndpoints } from '@/config/api'
 import httpBrowserClient from '@/lib/httpBrowserClient'
 import { useQuery } from '@tanstack/react-query'
+import { Skeleton } from '@/components/ui/skeleton'
 // import GetStartedCard from "@/components/get-started-card";
 
 export const StatCard = ({ title, value, icon: Icon, description }) => {
@@ -16,7 +17,7 @@ export const StatCard = ({ title, value, icon: Icon, description }) => {
         <Icon className='h-4 w-4 text-muted-foreground' />
       </CardHeader>
       <CardContent>
-        <div className='text-2xl font-bold'>{value}</div>
+        <div className='text-2xl font-bold'>{value ?? <Skeleton className='h-4 w-8 mb-2' />}</div>
         <p className='text-xs text-muted-foreground'>{description}</p>
       </CardContent>
     </Card>

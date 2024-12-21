@@ -30,11 +30,11 @@ export default function HeroSection() {
                   Get Started
                 </Button>
               </Link>
-              <Link href='#how-it-works' prefetch={false}>
+              <a href='#how-it-works'>
                 <Button variant='outline' size='lg'>
                   How It Works
                 </Button>
-              </Link>
+              </a>
             </div>
             <div className='flex items-center space-x-4 text-sm'>
               <div className='flex items-center'>
