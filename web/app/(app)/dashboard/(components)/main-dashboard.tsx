@@ -1,23 +1,16 @@
 'use client'
 
-import { useRouter, usePathname } from 'next/navigation'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-// import Overview from "@/components/overview";
-// import DeviceList from "@/components/device-list";
-// import ApiKeys from "@/components/api-keys";
-// import MessagingPanel from "@/components/messaging-panel";
+
 import { Webhook, MessageSquare } from 'lucide-react'
 import { useState } from 'react'
 import Overview from './overview'
 import DeviceList from './device-list'
 import ApiKeys from './api-keys'
 import Messaging from './messaging'
+import WebhooksSection from './webhooks/webhooks-section'
 
 export default function DashboardOverview() {
-  const router = useRouter()
-  const pathname = usePathname()
 
   const [currentTab, setCurrentTab] = useState('overview')
 
@@ -49,19 +42,7 @@ export default function DashboardOverview() {
           <ApiKeys />
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Webhooks (Coming Soon)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Alert>
-              <AlertDescription>
-                Webhook support is coming soon! You&apos;ll be able to configure
-                endpoints to receive SMS notifications in real-time.
-              </AlertDescription>
-            </Alert>
-          </CardContent>
-        </Card>
+        <WebhooksSection />
       </TabsContent>
 
       <TabsContent value='messaging'>
