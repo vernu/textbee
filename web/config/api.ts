@@ -23,6 +23,9 @@ export const ApiEndpoints = {
     sendBulkSMS: (id: string) => `/gateway/devices/${id}/send-bulk-sms`,
     getReceivedSMS: (id: string) => `/gateway/devices/${id}/get-received-sms`,
 
+    getWebhooks: () => '/webhooks',
+    createWebhook: () => '/webhooks',
+    updateWebhook: (id: string) => `/webhooks/${id}`,
     getStats: () => '/gateway/stats',
   },
 }
