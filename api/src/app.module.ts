@@ -5,7 +5,9 @@ import { AuthModule } from './auth/auth.module'
 import { UsersModule } from './users/users.module'
 import { ThrottlerModule } from '@nestjs/throttler'
 import { APP_GUARD } from '@nestjs/core/constants'
+import { WebhookModule } from './webhook/webhook.module'
 import { ThrottlerByIpGuard } from './auth/guards/throttle-by-ip.guard'
+import { ScheduleModule } from '@nestjs/schedule'
 
 @Module({
   imports: [
@@ -16,9 +18,11 @@ import { ThrottlerByIpGuard } from './auth/guards/throttle-by-ip.guard'
         limit: 30,
       },
     ]),
+    ScheduleModule.forRoot(),
     AuthModule,
     UsersModule,
     GatewayModule,
+    WebhookModule,
   ],
   controllers: [],
   providers: [
