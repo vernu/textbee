@@ -205,7 +205,7 @@ export class WebhookService {
       webhookSubscription.lastDeliverySuccessAt = now
     } catch (e) {
       console.error(
-        `Failed to deliver webhook notification ${webhookNotification._id}: received response status code ${e.response.status}`,
+        `Failed to deliver webhook notification ${webhookNotification._id}: received response status code ${e.response?.status} with message ${e.message}`,
       )
       webhookNotification.deliveryAttemptCount += 1
       webhookNotification.lastDeliveryAttemptAt = now
