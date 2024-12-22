@@ -80,15 +80,15 @@ def webhook():
 
 export function WebhookDocs() {
   return (
-    <Accordion type='multiple' className='w-full space-y-4'>
+    <Accordion type='multiple' className='w-full space-y-2 sm:space-y-4'>
       <AccordionItem value='delivery' className='border rounded-lg'>
-        <AccordionTrigger className='px-4 hover:no-underline [&[data-state=open]>div]:bg-muted'>
+        <AccordionTrigger className='px-3 sm:px-4 hover:no-underline [&[data-state=open]>div]:bg-muted'>
           <div className='flex items-center gap-2 py-2 -my-2 px-2 rounded-md'>
             <AlertCircle className='h-4 w-4' />
-            <span>Webhook Delivery Information</span>
+            <span className='text-sm sm:text-base'>Webhook Delivery Information</span>
           </div>
         </AccordionTrigger>
-        <AccordionContent className='px-4 pb-4'>
+        <AccordionContent className='px-3 sm:px-4 pb-4'>
           <div className='space-y-2 mt-2 text-sm text-muted-foreground'>
             <p>
               When a new SMS is received, we&apos;ll send a POST request to your

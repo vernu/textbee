@@ -84,11 +84,11 @@ export default function WebhooksSection() {
   }
 
   return (
-    <div className='container mx-auto py-8'>
-      <div className='flex justify-between items-center mb-8'>
+    <div className='container mx-auto py-4 sm:py-8 px-4 sm:px-6'>
+      <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8'>
         <div>
-          <h1 className='text-3xl font-bold flex items-center gap-2'>
-            <Webhook className='h-8 w-8' />
+          <h1 className='text-xl sm:text-2xl font-bold flex flex-wrap items-center gap-2'>
+            <Webhook className='h-5 w-5 sm:h-6 sm:w-6' />
             Webhooks
             <TooltipProvider>
               <Tooltip>
@@ -103,22 +103,36 @@ export default function WebhooksSection() {
               </Tooltip>
             </TooltipProvider>
           </h1>
-          <p className='text-muted-foreground mt-2'>
+          <p className='text-sm text-muted-foreground mt-2'>
             Manage webhook notifications for your SMS events
           </p>
         </div>
-        <Button
-          onClick={handleCreateClick}
-          disabled={webhooks?.data?.length > 0 || isLoading}
-          variant='default'
-        >
-          <PlusCircle className='mr-2 h-4 w-4' />
-          Create Webhook
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div>
+                <Button
+                  onClick={handleCreateClick}
+                  disabled={webhooks?.data?.length > 0 || isLoading}
+                  variant='default'
+                  className='w-full sm:w-auto'
+                >
+                  <PlusCircle className='mr-2 h-4 w-4' />
+                  Create Webhook
+                </Button>
+              </div>
+            </TooltipTrigger>
+            {webhooks?.data?.length > 0 && (
+              <TooltipContent>
+                <p>You already have an active webhook subscription. You can edit or manage the existing webhook instead.</p>
+              </TooltipContent>
+            )}
+          </Tooltip>
+        </TooltipProvider>
       </div>
 
-      <div className='grid grid-cols-1 lg:grid-cols-2 gap-8'>
-        <div>
+      <div className='grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8'>
+        <div className='space-y-4'>
           {isLoading ? (
             <div className='grid gap-4'>
               <WebhookCardSkeleton />
@@ -157,7 +171,7 @@ export default function WebhooksSection() {
         </div>
       </div>
 
-      <div className='block lg:hidden mt-8'>
+      <div className='block lg:hidden mt-4 sm:mt-8'>
         <WebhookDocs />
       </div>
 

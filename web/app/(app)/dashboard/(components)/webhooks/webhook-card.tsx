@@ -65,10 +65,10 @@ export function WebhookCard({ webhook, onEdit, onDelete }: WebhookCardProps) {
 
   return (
     <Card>
-      <CardHeader className='flex flex-row items-center justify-between'>
+      <CardHeader className='flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4'>
         <div className='space-y-1'>
-          <div className='flex items-center space-x-2'>
-            <h3 className='text-lg font-semibold'>Webhook Endpoint</h3>
+          <div className='flex flex-wrap items-center gap-2'>
+            <h3 className='text-base font-semibold'>Webhook Endpoint</h3>
             <Badge variant={webhook.isActive ? 'default' : 'secondary'}>
               {webhook.isActive ? 'Active' : 'Inactive'}
             </Badge>
@@ -77,15 +77,15 @@ export function WebhookCard({ webhook, onEdit, onDelete }: WebhookCardProps) {
             Notifications for SMS events
           </p>
         </div>
-        <div className='flex items-center space-x-2'>
+        <div className='flex flex-wrap items-center gap-2'>
           <Switch 
             checked={webhook.isActive} 
             onCheckedChange={handleToggle}
             disabled={isLoading}
           />
           <Button variant='outline' size='sm' onClick={onEdit}>
-            <Edit2 className='h-4 w-4 mr-2' />
-            Edit
+            <Edit2 className='h-4 w-4 sm:mr-2' />
+            <span className='hidden sm:inline'>Edit</span>
           </Button>
           <DeleteWebhookButton onDelete={onDelete} />
         </div>
@@ -94,32 +94,34 @@ export function WebhookCard({ webhook, onEdit, onDelete }: WebhookCardProps) {
         <div className='space-y-4'>
           <div>
             <label className='text-sm font-medium'>Delivery URL</label>
-            <div className='flex items-center mt-1'>
-              <code className='flex-1 bg-muted px-3 py-2 rounded-md text-sm'>
+            <div className='flex items-center gap-1 mt-1'>
+              <code className='flex-1 bg-muted px-3 py-2 rounded-md text-sm break-all'>
                 {webhook.deliveryUrl}
               </code>
-              <CopyButton value={webhook.deliveryUrl} label='Copy URL' />
+              <CopyButton value={webhook.deliveryUrl} label='Copy URL' className="ml-1" />
             </div>
           </div>
           <div>
             <label className='text-sm font-medium'>Signing Secret</label>
-            <div className='flex items-center mt-1'>
-              <code className='flex-1 bg-muted px-3 py-2 rounded-md text-sm font-mono'>
+            <div className='flex items-center gap-1 mt-1'>
+              <code className='flex-1 bg-muted px-3 py-2 rounded-md text-sm font-mono break-all'>
                 {showSecret ? webhook.signingSecret : maskSecret(webhook.signingSecret)}
               </code>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowSecret(!showSecret)}
-                className="mx-2"
-              >
-                {showSecret ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </Button>
-              <CopyButton value={webhook.signingSecret} label='Copy Secret' />
+              <div className='flex items-center gap-1 shrink-0 ml-1'>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowSecret(!showSecret)}
+                  className="h-8 w-8"
+                >
+                  {showSecret ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </Button>
+                <CopyButton value={webhook.signingSecret} label='Copy Secret' />
+              </div>
             </div>
           </div>
           <div>
