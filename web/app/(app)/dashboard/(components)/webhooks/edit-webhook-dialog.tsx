@@ -28,7 +28,6 @@ import {
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import * as z from 'zod'
-import { useEffect, useState } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 import { WebhookData } from '@/lib/types'
 import { WEBHOOK_EVENTS } from '@/lib/constants'
