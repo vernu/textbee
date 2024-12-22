@@ -7,7 +7,7 @@ import React, { useEffect, useState } from 'react'
 import CommunityAlert from './community-alert'
 import { Card, CardContent } from '@/components/ui/card'
 import { Phone, Clock, MessageSquare } from 'lucide-react'
-import { Spinner } from '@/components/ui/spinner'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export function ReceivedSmsCard({ sms }) {
   const formattedDate = new Date(sms.receivedAt).toLocaleString('en-US', {
@@ -35,6 +35,22 @@ export function ReceivedSmsCard({ sms }) {
           <div className='flex gap-2'>
             <p className='text-sm max-w-sm md:max-w-none'>{sms.message}</p>
           </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+export function ReceivedSmsCardSkeleton() {
+  return (
+    <Card className='hover:bg-muted/50 transition-colors max-w-sm md:max-w-none'>
+      <CardContent className='p-4'>
+        <div className='space-y-3'>
+          <div className='flex justify-between items-start'>
+            <Skeleton className='h-5 w-24' />
+            <Skeleton className='h-4 w-32' />
+          </div>
+          <Skeleton className='h-4 w-full' />
         </div>
       </CardContent>
     </Card>
@@ -81,8 +97,13 @@ export default function ReceivedSms() {
 
   if (isLoadingDevices)
     return (
-      <div className='flex justify-center items-center h-full'>
-        <Spinner size='sm' />
+      <div className='space-y-4'>
+        <Skeleton className='h-10 w-full' />
+        <div className='space-y-4'>
+          {[1, 2, 3].map((i) => (
+            <ReceivedSmsCardSkeleton key={i} />
+          ))}
+        </div>
       </div>
     )
   if (devicesError)
@@ -120,8 +141,10 @@ export default function ReceivedSms() {
             className='space-y-4'
           >
             {isLoadingReceivedSms && (
-              <div className='flex justify-center items-center h-full'>
-                <Spinner size='sm' />
+              <div className='space-y-4'>
+                {[1, 2, 3].map((i) => (
+                  <ReceivedSmsCardSkeleton key={i} />
+                ))}
               </div>
             )}
             {receivedSmsError && (
