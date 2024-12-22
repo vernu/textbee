@@ -2,7 +2,7 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
-import { Webhook, MessageSquare } from 'lucide-react'
+import { MessageSquare } from 'lucide-react'
 import { useState } from 'react'
 import Overview from './overview'
 import DeviceList from './device-list'

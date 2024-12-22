@@ -2,11 +2,9 @@ import { Tabs, TabsList, TabsContent, TabsTrigger } from '@/components/ui/tabs'
 import { ApiEndpoints } from '@/config/api'
 import httpBrowserClient from '@/lib/httpBrowserClient'
 import { useQuery } from '@tanstack/react-query'
-import { Heart } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
-import CommunityAlert from './community-alert'
 import { Card, CardContent } from '@/components/ui/card'
-import { Phone, Clock, MessageSquare } from 'lucide-react'
+import { Clock } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 
 export function ReceivedSmsCard({ sms }) {
