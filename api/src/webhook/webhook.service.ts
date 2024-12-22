@@ -163,7 +163,7 @@ export class WebhookService {
     )
 
     if (!webhookSubscription) {
-      console.error(
+      console.log(
         `Webhook subscription not found for ${webhookNotification._id}`,
       )
       return
@@ -172,7 +172,7 @@ export class WebhookService {
     if (!webhookSubscription.isActive) {
       webhookNotification.deliveryAttemptAbortedAt = now
       await webhookNotification.save()
-      console.error(
+      console.log(
         `Webhook subscription is not active for ${webhookNotification._id}, aborting delivery`,
       )
       return
@@ -204,8 +204,8 @@ export class WebhookService {
       webhookSubscription.successfulDeliveryCount += 1
       webhookSubscription.lastDeliverySuccessAt = now
     } catch (e) {
-      console.error(
-        `Failed to deliver webhook notification ${webhookNotification._id}: received response status code ${e.response?.status} with message ${e.message}`,
+      console.log(
+        `Failed to deliver webhook notification: ID ${webhookNotification._id}, status code: ${e.response?.status}, message: ${e.message}`,
       )
       webhookNotification.deliveryAttemptCount += 1
       webhookNotification.lastDeliveryAttemptAt = now
