@@ -42,6 +42,23 @@ export async function POST(req: NextRequest) {
   const message = body.message ?? 'No message provided'
 
   try {
+    // check if the user has already requested account deletion
+    const existingRequest = await prismaClient.supportMessage.findFirst({
+      where: {
+        user: currentUser.id,
+        category: 'account-deletion',
+      },
+    })
+
+    if (existingRequest) {
+      return NextResponse.json(
+        {
+          message: 'You have already requested account deletion',
+        },
+        { status: 400 }
+      )
+    }
+
     const result = await prismaClient.supportMessage.create({
       data: {
         user: currentUser.id,
