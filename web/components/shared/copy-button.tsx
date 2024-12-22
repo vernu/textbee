@@ -8,9 +8,10 @@ import { useToast } from "@/hooks/use-toast";
 interface CopyButtonProps {
   value: string;
   label: string;
+  className?: string;
 }
 
-export function CopyButton({ value, label }: CopyButtonProps) {
+export function CopyButton({ value, label, className }: CopyButtonProps) {
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
 
@@ -35,9 +36,9 @@ export function CopyButton({ value, label }: CopyButtonProps) {
   return (
     <Button
       variant="ghost"
-      size="sm"
+      size="icon"
+      className={className}
       onClick={copyToClipboard}
-      className="ml-2"
     >
       {copied ? (
         <Check className="h-4 w-4 text-green-500" />
