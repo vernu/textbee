@@ -1,6 +1,6 @@
 services:
   textbee-web:
-    image: ghcr.io/vernu/textbee/api:latest
+    image: ghcr.io/vernu/textbee/web:latest
     container_name: textbee-web
     build: 
       context: ./web
