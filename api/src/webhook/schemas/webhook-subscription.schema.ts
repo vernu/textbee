@@ -28,6 +28,8 @@ export class WebhookSubscription {
   successfulDeliveryCount: number
 
   @Prop({ type: Number, default: 0 })
+  deliveryFailureCount: number
+  @Prop({ type: Number, default: 0 })
   deliveryAttemptCount: number
 
   @Prop({ type: Date })
@@ -35,6 +37,9 @@ export class WebhookSubscription {
 
   @Prop({ type: Date })
   lastDeliverySuccessAt: Date
+
+  @Prop({ type: Date })
+  lastDeliveryFailureAt: Date
 }
 
 export const WebhookSubscriptionSchema =
