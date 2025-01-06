@@ -4,14 +4,15 @@ import { useState } from 'react'
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
-import { Button } from '@/components/ui/button'
-import { QrCode, Heart, UserCircle } from 'lucide-react'
+import { Heart, UserCircle } from 'lucide-react'
 import CommunityAlert from './community-alert'
 import MainDashboard from './main-dashboard'
 import CommunityLinks from './community-links'
 import AccountSettings from './account-settings'
 import GenerateApiKey from './generate-api-key'
 import { useSession } from 'next-auth/react'
+import { JoinCommunityModal } from '@/components/shared/join-community-modal'
+import { ContributeModal } from '@/components/shared/contribute-modal'
 
 export default function Dashboard({
   children,
@@ -69,7 +70,6 @@ export default function Dashboard({
         </TabsContent>
 
         <TabsContent value='community' className='space-y-4'>
-          <CommunityAlert />
           <CommunityLinks />
         </TabsContent>
 
@@ -78,6 +78,9 @@ export default function Dashboard({
           <AccountSettings />
         </TabsContent>
       </Tabs>
+
+      <JoinCommunityModal />
+      <ContributeModal />
     </div>
   )
 }

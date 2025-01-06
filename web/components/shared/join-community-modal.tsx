@@ -29,8 +29,8 @@ export const JoinCommunityModal = () => {
 
       const lastShown = localStorage.getItem(STORAGE_KEYS.LAST_SHOWN)
       const now = Date.now()
-
-      if (!lastShown || now - parseInt(lastShown) >= SHOW_INTERVAL) {
+      const lastShownTime = lastShown ? parseInt(lastShown) : 0
+      if (!lastShown || now - lastShownTime >= SHOW_INTERVAL) {
         if (Math.random() < RANDOM_CHANCE) {
           setIsOpen(true)
           localStorage.setItem(STORAGE_KEYS.LAST_SHOWN, now.toString())
