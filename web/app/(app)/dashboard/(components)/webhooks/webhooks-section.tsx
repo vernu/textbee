@@ -17,7 +17,8 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
+} from '@/components/ui/tooltip'
+import { Badge } from '@/components/ui/badge'
 
 function WebhookCardSkeleton() {
   return (
@@ -90,18 +91,12 @@ export default function WebhooksSection() {
           <h1 className='text-xl sm:text-2xl font-bold flex flex-wrap items-center gap-2'>
             <Webhook className='h-5 w-5 sm:h-6 sm:w-6' />
             Webhooks
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger>
-                  <span className='text-xs font-medium px-2 py-1 rounded-full bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200'>
-                    BETA
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>This feature is in beta and may undergo changes. Use with caution in production environments.</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <Badge
+              variant='outline'
+              className='text-xs font-medium px-2 py-1 rounded-full bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200'
+            >
+              new
+            </Badge>
           </h1>
           <p className='text-sm text-muted-foreground mt-2'>
             Manage webhook notifications for your SMS events
@@ -124,7 +119,10 @@ export default function WebhooksSection() {
             </TooltipTrigger>
             {webhooks?.data?.length > 0 && (
               <TooltipContent>
-                <p>You already have an active webhook subscription. You can edit or manage the existing webhook instead.</p>
+                <p>
+                  You already have an active webhook subscription. You can edit
+                  or manage the existing webhook instead.
+                </p>
               </TooltipContent>
             )}
           </Tooltip>
@@ -154,9 +152,12 @@ export default function WebhooksSection() {
             </div>
           ) : (
             <div className='bg-muted/50 rounded-lg p-8 text-center'>
-              <h3 className='text-lg font-medium mb-2'>No webhook configured</h3>
+              <h3 className='text-lg font-medium mb-2'>
+                No webhook configured
+              </h3>
               <p className='text-muted-foreground mb-4'>
-                Create a webhook to receive real-time notifications for SMS events
+                Create a webhook to receive real-time notifications for SMS
+                events
               </p>
               <Button onClick={handleCreateClick} variant='default'>
                 <PlusCircle className='mr-2 h-4 w-4' />

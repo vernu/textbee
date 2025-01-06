@@ -30,7 +30,7 @@ export default function Messaging() {
             Bulk Send{' '}
             <Badge
               variant='outline'
-              className='ml-2 bg-blue-500 text-white dark:bg-blue-600 dark:text-white'
+              className='ml-2 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200'
             >
               new
             </Badge>
