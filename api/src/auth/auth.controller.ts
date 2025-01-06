@@ -143,4 +143,23 @@ export class AuthController {
   async resetPassword(@Body() input: ResetPasswordInputDTO) {
     return await this.authService.resetPassword(input)
   }
+
+  // send email verification code
+  @ApiOperation({ summary: 'Send Email Verification Code' })
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
+  @Post('/send-email-verification-email')
+  async sendEmailVerificationEmail(@Request() req) {
+    return await this.authService.sendEmailVerificationEmail(req.user)
+  }
+
+  @ApiOperation({ summary: 'Verify Email' })
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
+  @Post('/verify-email')
+  async verifyEmail(@Body() input: { userId: string; verificationCode: string }) {
+    return await this.authService.verifyEmail(input)
+  }
 }

@@ -31,6 +31,9 @@ export class User {
 
   @Prop({ type: Date })
   lastLoginAt: Date
+
+  @Prop({ type: Date })
+  emailVerifiedAt: Date
 }
 
 export const UserSchema = SchemaFactory.createForClass(User)
