@@ -108,6 +108,13 @@ export default function AppHeader() {
                 <LayoutDashboard className='h-4 w-4' />
                 Dashboard
               </Link>
+              <Link
+                href={Routes.contribute}
+                className='flex items-center gap-2 py-2'
+              >
+                <MessageSquarePlus className='h-4 w-4' />
+                Contribute
+              </Link>
               <Button
                 onClick={handleLogout}
                 variant='ghost'
@@ -153,6 +160,15 @@ export default function AppHeader() {
         <div className='flex flex-1 items-center justify-end space-x-2'>
           <nav className='flex items-center space-x-6'>
             <ThemeToggle />
+            <Link
+              href={Routes.contribute}
+              className='items-center gap-2 pr-8 hidden md:block'
+            >
+              <Button variant='outline' className='px-4 py-2 text-sm'>
+                Contribute
+              </Button>
+            </Link>
+
             {isAuthenticated ? (
               <AuthenticatedMenu />
             ) : (

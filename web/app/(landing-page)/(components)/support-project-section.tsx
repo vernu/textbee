@@ -2,7 +2,7 @@
 
 import { toast } from '@/hooks/use-toast'
 import { Button } from '../../../components/ui/button'
-import { Heart, Coins, Check, Copy } from 'lucide-react'
+import { Heart, Coins, Check, Copy, Star, CreditCard } from 'lucide-react'
 import { useState } from 'react'
 import {
   Dialog,
@@ -20,23 +20,29 @@ export default function SupportProjectSection() {
   const cryptoWallets = [
     {
       name: 'Bitcoin (BTC)',
-      address: '1Ag3nQKGDdmcqSZicRRKnGGKwfgSkhhA5M',
+      address: 'bc1qhffsnhp8ynqy6xvh982cu0x5w7vguuum3nqae9',
       network: 'Bitcoin',
     },
     {
       name: 'Ethereum (ETH)',
-      address: '0x61368be0052ee9245287ee88f7f1fceb5343e207',
+      address: '0xDB8560a42bdaa42C58462C6b2ee5A7D36F1c1f2a',
       network: 'Ethereum (ERC20)',
     },
     {
       name: 'Tether (USDT)',
-      address: '0x61368be0052ee9245287ee88f7f1fceb5343e207',
+      address: '0xDB8560a42bdaa42C58462C6b2ee5A7D36F1c1f2a',
       network: 'Ethereum (ERC20)',
     },
+    // {
+    //   name: 'Tether (USDT)',
+    //   address: 'TD6txzY61D6EgnVfMLPsqKhYfyV5iHrbkw',
+    //   network: 'Tron (TRC20)',
+    // },
     {
-      name: 'Tether (USDT)',
-      address: 'TD6txzY61D6EgnVfMLPsqKhYfyV5iHrbkw',
-      network: 'Tron (TRC20)',
+      name: 'Monero (XMR)',
+      address:
+        '856J5eHJM7bgBhkc51oCuMYUGKvUvF1zwAWrQsqwuH1shG9qnX4YkoZbMmhCPep1JragY2W1hpzAnDda6BXvCgZxUJhUyTg',
+      network: 'Monero (XMR)',
     },
   ]
 
@@ -56,19 +62,32 @@ export default function SupportProjectSection() {
         <div className='mx-auto max-w-[58rem] text-center'>
           <h2 className='text-3xl font-bold mb-4'>Support The Project</h2>
           <p className='text-gray-500 mb-8'>
-            Maintaining an open-source project requires time and dedication. By
-            becoming a patron or donating cryptocurrency, your contribution will
-            directly support the development, including implementation of new
-            features, enhance performance, and ensure the highest level of
-            security and reliability.
+            Maintaining an open-source project requires time and dedication.
+            Your contribution will directly support the development, including
+            implementation of new features, enhance performance, and ensure the
+            highest level of security and reliability.
           </p>
-          <div className='flex flex-col sm:flex-row justify-center gap-4'>
+          <div className='flex flex-col sm:flex-row justify-center gap-4 flex-wrap'>
             <Link href={ExternalLinks.patreon} prefetch={false} target='_blank'>
-              <Button className='bg-blue-500 hover:bg-blue-600 text-white'>
+              <Button className='bg-blue-500 hover:bg-blue-600 text-white sm:w-auto w-full'>
                 <Heart className='mr-2 h-4 w-4' /> Become a Patron
               </Button>
             </Link>
-            <Button variant='outline' onClick={() => setCryptoOpen(true)}>
+            <Link href={ExternalLinks.github} prefetch={false} target='_blank'>
+              <Button variant='outline' className='sm:w-auto w-full'>
+                <Star className='mr-2 h-4 w-4' /> Star on GitHub
+              </Button>
+            </Link>
+            <Link href={ExternalLinks.polar} prefetch={false} target='_blank'>
+              <Button variant='outline' className='sm:w-auto w-full'>
+                <CreditCard className='mr-2 h-4 w-4' /> One-time Donation
+              </Button>
+            </Link>
+            <Button
+              variant='outline'
+              onClick={() => setCryptoOpen(true)}
+              className='sm:w-auto w-full'
+            >
               <Coins className='mr-2 h-4 w-4' /> Donate Crypto
             </Button>
           </div>

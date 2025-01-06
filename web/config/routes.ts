@@ -1,5 +1,6 @@
 export const Routes = {
   landingPage: '/',
+  contribute: '/contribute',
   login: '/login',
   register: '/register',
   logout: '/logout',
