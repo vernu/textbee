@@ -29,9 +29,9 @@ export default function LandingPageHeader() {
           </Button> */}
             <Link
               className='text-sm font-medium hover:text-blue-500'
-              href={ExternalLinks.github}
+              href={Routes.contribute}
             >
-              Github
+              Contribute
             </Link>
 
             <Link
