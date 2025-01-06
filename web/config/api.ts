@@ -8,6 +8,9 @@ export const ApiEndpoints = {
 
     whoAmI: () => '/auth/who-am-i',
 
+    sendEmailVerificationEmail: () => '/auth/send-email-verification-email',
+    verifyEmail: () => '/auth/verify-email',
+
     requestPasswordReset: () => '/auth/request-password-reset',
     resetPassword: () => '/auth/reset-password',
 
