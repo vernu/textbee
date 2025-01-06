@@ -15,6 +15,11 @@ import {
 import { MailService } from 'src/mail/mail.service'
 import { RequestResetPasswordInputDTO, ResetPasswordInputDTO } from './auth.dto'
 import { AccessLog } from './schemas/access-log.schema'
+import {
+  EmailVerification,
+  EmailVerificationDocument,
+} from './schemas/email-verification.schema'
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -24,6 +29,8 @@ export class AuthService {
     @InjectModel(PasswordReset.name)
     private passwordResetModel: Model<PasswordResetDocument>,
     @InjectModel(AccessLog.name) private accessLogModel: Model<AccessLog>,
+    @InjectModel(EmailVerification.name)
+    private emailVerificationModel: Model<EmailVerificationDocument>,
     private readonly mailService: MailService,
   ) {}
 
@@ -79,6 +86,10 @@ export class AuthService {
       user.googleId = googleId
     }
 
+    if (!user.emailVerifiedAt) {
+      user.emailVerifiedAt = new Date()
+    }
+
     if (user.name !== name) {
       user.name = name
     }
@@ -126,6 +137,11 @@ export class AuthService {
       template: 'welcome-1',
       context: { name: user.name },
       from: 'vernu vernu@textbee.dev',
+    })
+
+    this.sendEmailVerificationEmail(user).catch((e) => {
+      console.log('Failed to send email verification email')
+      console.log(e)
     })
 
     const payload = { email: user.email, sub: user._id }
@@ -224,6 +240,67 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(input.newPassword, 10)
     userToUpdate.password = hashedPassword
     await userToUpdate.save()
+  }
+
+  async sendEmailVerificationEmail(user: UserDocument) {
+    const verificationCode = uuidv4()
+    const expiresAt = new Date(Date.now() + 20 * 60 * 1000) // 20 minutes
+
+    const hashedVerificationCode = await bcrypt.hash(verificationCode, 10)
+
+    const emailVerification = new this.emailVerificationModel({
+      user: user._id,
+      verificationCode: hashedVerificationCode,
+      expiresAt,
+    })
+    await emailVerification.save()
+
+    const verificationLink = `${process.env.FRONTEND_URL || 'https://textbee.dev'}/verify-email?userId=${user._id}&verificationCode=${verificationCode}`
+
+    await this.mailService.sendEmailFromTemplate({
+      to: user.email,
+      subject: 'textbee.dev - Verify Email',
+      template: 'verify-email',
+      context: {
+        name: user.name,
+        verificationLink,
+      },
+    })
+
+    return { message: 'Email verification email sent' }
+  }
+
+  async verifyEmail({ userId, verificationCode }) {
+    const user: UserDocument = await this.usersService.findOne({ _id: userId })
+    if (!user) {
+      throw new HttpException({ error: 'User not found' }, HttpStatus.NOT_FOUND)
+    }
+    const emailVerification = await this.emailVerificationModel.findOne(
+      {
+        user: user._id,
+        expiresAt: { $gt: new Date() },
+      },
+      null,
+      { sort: { createdAt: -1 } },
+    )
+    if (
+      !emailVerification ||
+      !bcrypt.compareSync(verificationCode, emailVerification.verificationCode)
+    ) {
+      throw new HttpException(
+        { error: 'Invalid verification code' },
+        HttpStatus.BAD_REQUEST,
+      )
+    }
+
+    if (user.emailVerifiedAt) {
+      return { message: 'Email already verified' }
+    }
+
+    user.emailVerifiedAt = new Date()
+    await user.save()
+
+    return { message: 'Email verified successfully' }
   }
 
   async generateApiKey(currentUser: User) {

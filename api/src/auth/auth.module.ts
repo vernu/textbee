@@ -13,6 +13,7 @@ import {
   PasswordResetSchema,
 } from './schemas/password-reset.schema'
 import { AccessLog, AccessLogSchema } from './schemas/access-log.schema'
+import { EmailVerification, EmailVerificationSchema } from './schemas/email-verification.schema'
 
 @Module({
   imports: [
@@ -28,6 +29,10 @@ import { AccessLog, AccessLogSchema } from './schemas/access-log.schema'
       {
         name: AccessLog.name,
         schema: AccessLogSchema,
+      },
+      {
+        name: EmailVerification.name,
+        schema: EmailVerificationSchema,
       },
     ]),
     UsersModule,
