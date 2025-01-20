@@ -67,7 +67,7 @@ export default function RegisterForm() {
           message: 'Failed to create account',
         })
       } else {
-        router.push(Routes.dashboard)
+        router.push(`${Routes.verifyEmail}?verificationEmailSent=1`)
       }
     } catch (error) {
       console.error('register error:', error)

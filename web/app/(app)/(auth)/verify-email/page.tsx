@@ -17,6 +17,7 @@ import { Loader2, CheckCircle, XCircle, Mail, ArrowRight } from 'lucide-react'
 import { useMutation } from '@tanstack/react-query'
 import httpBrowserClient from '@/lib/httpBrowserClient'
 import { ApiEndpoints } from '@/config/api'
+import { Routes } from '@/config/routes'
 
 const ErrorAlert = ({ message }: { message: string }) => (
   <Alert
@@ -157,7 +158,14 @@ const VerifyEmail = ({
         >
           <CheckCircle className='h-5 w-5 text-green-600' />
           <AlertTitle className='text-lg font-semibold'>Success</AlertTitle>
-          <AlertDescription>{successMessage}</AlertDescription>
+          <AlertDescription>
+            <div className='flex flex-col gap-2'>
+              <div>{successMessage}</div>
+              <Link href={Routes.dashboard} className='font-medium underline'>
+                Go to Dashboard
+              </Link>
+            </div>
+          </AlertDescription>
         </Alert>
       )
     if (error) return <ErrorAlert message={error} />
@@ -185,15 +193,92 @@ const VerifyEmail = ({
   )
 }
 
+const CheckEmailPrompt = () => {
+  const {
+    mutate: sendVerificationEmailMutation,
+    isPending,
+    isError,
+    isSuccess,
+  } = useMutation({
+    mutationFn: () =>
+      httpBrowserClient.post(
+        ApiEndpoints.auth.sendEmailVerificationEmail(),
+        {}
+      ),
+  })
+
+  return (
+    <Card className='w-full max-w-md'>
+      <CardHeader>
+        <CardTitle className='text-2xl font-bold'>Check your email</CardTitle>
+        <CardDescription>
+          We've sent you a verification email. Please check your inbox and click
+          the link to verify your account.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className='space-y-4'>
+        {isSuccess && (
+          <Alert className='bg-green-50 text-green-700 border-green-200'>
+            <CheckCircle className='h-5 w-5 text-green-600' />
+            <AlertTitle className='text-lg font-semibold'>
+              Email Sent
+            </AlertTitle>
+            <AlertDescription>
+              A new verification email has been sent to your inbox
+            </AlertDescription>
+          </Alert>
+        )}
+        {isError && (
+          <Alert
+            variant='destructive'
+            className='bg-red-50 text-red-700 border-red-200'
+          >
+            <XCircle className='h-5 w-5 text-red-600' />
+            <AlertTitle className='text-lg font-semibold'>Error</AlertTitle>
+            <AlertDescription>
+              Failed to resend verification email
+            </AlertDescription>
+          </Alert>
+        )}
+      </CardContent>
+      <CardFooter className='flex flex-col gap-4'>
+        <div className='flex items-center gap-2 justify-center w-full'>
+          <span className='text-sm text-gray-600'>
+            Didn't receive the email?
+          </span>
+          <Button
+            variant='link'
+            onClick={() => sendVerificationEmailMutation()}
+            disabled={isPending}
+            className='text-sm p-0 h-auto font-semibold'
+          >
+            {isPending ? (
+              <>
+                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                Sending...
+              </>
+            ) : (
+              'Click to resend'
+            )}
+          </Button>
+        </div>
+      </CardFooter>
+    </Card>
+  )
+}
+
 export default function VerifyEmailPage() {
   const searchParams = useSearchParams()
   const userId = searchParams.get('userId')
   const verificationCode = searchParams.get('verificationCode')
+  const verificationEmailSent = searchParams.get('verificationEmailSent')
 
   return (
     <div className='flex min-h-screen items-center justify-center bg-gray-100 dark:bg-gray-900 p-4'>
       {userId && verificationCode ? (
         <VerifyEmail userId={userId} verificationCode={verificationCode} />
+      ) : verificationEmailSent ? (
+        <CheckEmailPrompt />
       ) : (
         <SendVerificationEmail />
       )}
