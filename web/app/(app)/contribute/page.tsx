@@ -30,35 +30,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-
-const cryptoWallets = [
-  {
-    name: 'Bitcoin (BTC)',
-    address: 'bc1qhffsnhp8ynqy6xvh982cu0x5w7vguuum3nqae9',
-    network: 'Bitcoin',
-  },
-  {
-    name: 'Ethereum (ETH)',
-    address: '0xDB8560a42bdaa42C58462C6b2ee5A7D36F1c1f2a',
-    network: 'Ethereum (ERC20)',
-  },
-  {
-    name: 'Tether (USDT)',
-    address: '0xDB8560a42bdaa42C58462C6b2ee5A7D36F1c1f2a',
-    network: 'Ethereum (ERC20)',
-  },
-  // {
-  //   name: 'Tether (USDT)',
-  //   address: 'TD6txzY61D6EgnVfMLPsqKhYfyV5iHrbkw',
-  //   network: 'Tron (TRC20)',
-  // },
-  {
-    name: 'Monero (XMR)',
-    address:
-      '856J5eHJM7bgBhkc51oCuMYUGKvUvF1zwAWrQsqwuH1shG9qnX4YkoZbMmhCPep1JragY2W1hpzAnDda6BXvCgZxUJhUyTg',
-    network: 'Monero (XMR)',
-  },
-]
+import { CRYPTO_ADDRESSES } from '@/lib/constants'
+import Image from 'next/image'
 
 export default function ContributePage() {
   const { toast } = useToast()
@@ -153,17 +126,16 @@ export default function ContributePage() {
                         </DialogTitle>
                       </DialogHeader>
                       <div className='space-y-4'>
-                        {cryptoWallets.map((wallet, index) => (
+                        {CRYPTO_ADDRESSES.map((wallet, index) => (
                           <div key={index} className='space-y-2'>
                             <div className='flex items-center justify-between'>
                               <span className='flex items-center gap-2'>
-                                {wallet.name.includes('Bitcoin') ? (
-                                  <Bitcoin className='h-4 w-4' />
-                                ) : wallet.name.includes('Ethereum') ? (
-                                  <Coins className='h-4 w-4' />
-                                ) : (
-                                  <Wallet className='h-4 w-4' />
-                                )}{' '}
+                                <Image
+                                  src={wallet.icon}
+                                  alt={wallet.name}
+                                  width={32}
+                                  height={32}
+                                />
                                 {wallet.name}
                               </span>
                               <Button

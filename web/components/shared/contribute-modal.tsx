@@ -23,6 +23,8 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { ExternalLinks } from '@/config/external-links'
+import { CRYPTO_ADDRESSES } from '@/lib/constants'
+import Image from 'next/image'
 
 // Add constants for localStorage and timing
 const STORAGE_KEYS = {
@@ -38,30 +40,6 @@ export function ContributeModal() {
   const [cryptoOpen, setCryptoOpen] = useState(false)
   const [copiedAddress, setCopiedAddress] = useState('')
 
-  const cryptoWallets = [
-    {
-      name: 'Bitcoin (BTC)',
-      address: 'bc1qhffsnhp8ynqy6xvh982cu0x5w7vguuum3nqae9',
-      network: 'Bitcoin',
-    },
-    {
-      name: 'Ethereum (ETH)',
-      address: '0xDB8560a42bdaa42C58462C6b2ee5A7D36F1c1f2a',
-      network: 'Ethereum (ERC20)',
-    },
-    {
-      name: 'Tether (USDT)',
-      address: '0xDB8560a42bdaa42C58462C6b2ee5A7D36F1c1f2a',
-      network: 'Ethereum (ERC20)',
-    },
-    {
-      name: 'Monero (XMR)',
-      address:
-        '856J5eHJM7bgBhkc51oCuMYUGKvUvF1zwAWrQsqwuH1shG9qnX4YkoZbMmhCPep1JragY2W1hpzAnDda6BXvCgZxUJhUyTg',
-      network: 'Monero (XMR)',
-    },
-  ]
-
   const copyToClipboard = (address: string) => {
     navigator.clipboard.writeText(address)
     setCopiedAddress(address)
@@ -70,6 +48,9 @@ export function ContributeModal() {
 
   useEffect(() => {
     const checkAndShowModal = () => {
+      setIsOpen(true)
+      return
+
       const hasContributed =
         localStorage.getItem(STORAGE_KEYS.HAS_CONTRIBUTED) === 'true'
       if (hasContributed) return
@@ -184,34 +165,49 @@ export function ContributeModal() {
       </Dialog>
 
       <Dialog open={cryptoOpen} onOpenChange={setCryptoOpen}>
-        <DialogContent className='sm:max-w-[500px]'>
+        <DialogContent className='sm:max-w-[425px]'>
           <DialogHeader>
             <DialogTitle>Donate Cryptocurrency</DialogTitle>
           </DialogHeader>
-          <div className='grid gap-4 py-4'>
-            {cryptoWallets.map((wallet, index) => (
+          <div className='grid gap-2'>
+            {CRYPTO_ADDRESSES.map((wallet, index) => (
               <div
                 key={index}
-                className='flex items-center justify-between p-4 rounded-lg bg-gray-100 dark:bg-muted'
+                className='flex gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors'
               >
-                <div>
-                  <h4 className='font-semibold'>{wallet.name}</h4>
-                  <p className='text-sm text-gray-500'>{wallet.network}</p>
-                  <p className='text-xs text-gray-400 mt-1 break-all'>
+                <Image
+                  src={wallet.icon}
+                  alt={wallet.name}
+                  width={32}
+                  height={32}
+                  className='shrink-0 mt-1'
+                />
+                <div className='min-w-0 flex-1'>
+                  <div className='flex items-center justify-between'>
+                    <div>
+                      <p className='font-medium text-sm'>{wallet.name}</p>
+                      <p className='text-xs text-muted-foreground'>{wallet.network}</p>
+                    </div>
+                    <Button
+                      variant='ghost'
+                      size='sm'
+                      className='h-8 px-2 shrink-0'
+                      onClick={() => copyToClipboard(wallet.address)}
+                    >
+                      {copiedAddress === wallet.address ? (
+                        <Check className='h-3.5 w-3.5' />
+                      ) : (
+                        <Copy className='h-3.5 w-3.5' />
+                      )}
+                    </Button>
+                  </div>
+                  <p
+                    className='text-xs text-muted-foreground break-all'
+                    title={wallet.address}
+                  >
                     {wallet.address}
                   </p>
                 </div>
-                <Button
-                  variant='outline'
-                  size='icon'
-                  onClick={() => copyToClipboard(wallet.address)}
-                >
-                  {copiedAddress === wallet.address ? (
-                    <Check className='h-4 w-4' />
-                  ) : (
-                    <Copy className='h-4 w-4' />
-                  )}
-                </Button>
               </div>
             ))}
           </div>
