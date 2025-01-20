@@ -12,39 +12,11 @@ import {
 } from '../../../components/ui/dialog'
 import Link from 'next/link'
 import { ExternalLinks } from '@/config/external-links'
-
+import { CRYPTO_ADDRESSES } from '@/lib/constants'
+import Image from 'next/image'
 export default function SupportProjectSection() {
   const [cryptoOpen, setCryptoOpen] = useState(false)
   const [copiedAddress, setCopiedAddress] = useState('')
-
-  const cryptoWallets = [
-    {
-      name: 'Bitcoin (BTC)',
-      address: 'bc1qhffsnhp8ynqy6xvh982cu0x5w7vguuum3nqae9',
-      network: 'Bitcoin',
-    },
-    {
-      name: 'Ethereum (ETH)',
-      address: '0xDB8560a42bdaa42C58462C6b2ee5A7D36F1c1f2a',
-      network: 'Ethereum (ERC20)',
-    },
-    {
-      name: 'Tether (USDT)',
-      address: '0xDB8560a42bdaa42C58462C6b2ee5A7D36F1c1f2a',
-      network: 'Ethereum (ERC20)',
-    },
-    // {
-    //   name: 'Tether (USDT)',
-    //   address: 'TD6txzY61D6EgnVfMLPsqKhYfyV5iHrbkw',
-    //   network: 'Tron (TRC20)',
-    // },
-    {
-      name: 'Monero (XMR)',
-      address:
-        '856J5eHJM7bgBhkc51oCuMYUGKvUvF1zwAWrQsqwuH1shG9qnX4YkoZbMmhCPep1JragY2W1hpzAnDda6BXvCgZxUJhUyTg',
-      network: 'Monero (XMR)',
-    },
-  ]
 
   const copyToClipboard = (address: string) => {
     navigator.clipboard.writeText(address)
@@ -99,23 +71,34 @@ export default function SupportProjectSection() {
           <DialogHeader>
             <DialogTitle>Donate Cryptocurrency</DialogTitle>
           </DialogHeader>
-          <div className='grid gap-4 py-4'>
-            {cryptoWallets.map((wallet, index) => (
+          <div className='grid gap-2 py-2'>
+            {CRYPTO_ADDRESSES.map((wallet, index) => (
               <div
                 key={index}
-                className='flex items-center justify-between p-4 rounded-lg bg-gray-100 dark:bg-muted'
+                className='flex items-center justify-between p-2 rounded-lg bg-gray-100 dark:bg-muted'
               >
-                <div>
-                  <h4 className='font-semibold'>{wallet.name}</h4>
-                  <p className='text-sm text-gray-500'>{wallet.network}</p>
-                  <p className='text-xs text-gray-400 mt-1 break-all'>
-                    {wallet.address}
-                  </p>
+                <div className='flex items-center gap-2'>
+                  <Image
+                    src={wallet.icon}
+                    alt={wallet.name}
+                    width={24}
+                    height={24}
+                  />
+                  <div>
+                    <div className='flex items-center gap-2'>
+                      <h4 className='font-medium text-sm'>{wallet.name}</h4>
+                      <span className='text-xs text-gray-500'>({wallet.network})</span>
+                    </div>
+                    <p className='text-xs text-gray-400 break-all'>
+                      {wallet.address}
+                    </p>
+                  </div>
                 </div>
                 <Button
-                  variant='outline'
-                  size='icon'
+                  variant='ghost'
+                  size='sm'
                   onClick={() => copyToClipboard(wallet.address)}
+                  className='h-8 w-8'
                 >
                   {copiedAddress === wallet.address ? (
                     <Check className='h-4 w-4' />
