@@ -157,7 +157,6 @@ export class AuthController {
   @ApiOperation({ summary: 'Verify Email' })
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
-  @UseGuards(AuthGuard)
   @Post('/verify-email')
   async verifyEmail(@Body() input: { userId: string; verificationCode: string }) {
     return await this.authService.verifyEmail(input)
