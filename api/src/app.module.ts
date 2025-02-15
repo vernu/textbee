@@ -8,6 +8,7 @@ import { APP_GUARD } from '@nestjs/core/constants'
 import { WebhookModule } from './webhook/webhook.module'
 import { ThrottlerByIpGuard } from './auth/guards/throttle-by-ip.guard'
 import { ScheduleModule } from '@nestjs/schedule'
+import { BillingModule } from './billing/billing.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { ScheduleModule } from '@nestjs/schedule'
     UsersModule,
     GatewayModule,
     WebhookModule,
+    BillingModule,
   ],
   controllers: [],
   providers: [
