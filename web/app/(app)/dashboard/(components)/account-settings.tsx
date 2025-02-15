@@ -27,6 +27,7 @@ import {
   UserCircle,
   Loader2,
   Check,
+  Calendar,
 } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -195,6 +196,106 @@ export default function AccountSettings() {
     },
   })
 
+  const CurrentPlan = () => {
+
+    const {
+      data: currentPlan,
+      isLoading: isLoadingPlan,
+      error: planError,
+    } = useQuery({
+      queryKey: ['currentPlan'],
+      queryFn: () =>
+        httpBrowserClient
+          .get(ApiEndpoints.billing.currentPlan())
+          .then((res) => res.data),
+    })
+
+
+    if (isLoadingPlan) return <div className='flex justify-center items-center h-full'><Spinner size='sm' /></div>
+    if (planError)
+      return (
+        <p className='text-sm text-destructive'>
+          Failed to load plan information
+        </p>
+      )
+
+    return (
+      <div className='bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border rounded-lg shadow p-4'>
+        <div className='flex items-center justify-between mb-4'>
+          <div>
+            <h3 className='text-lg font-bold text-gray-900 dark:text-white'>
+              {currentPlan?.name}
+            </h3>
+            <p className='text-xs text-gray-500 dark:text-gray-400'>
+              Current subscription
+            </p>
+          </div>
+          <div className='flex items-center bg-green-50 dark:bg-green-900/30 px-2 py-0.5 rounded-full'>
+            <Check className='h-3 w-3 text-green-600 dark:text-green-400 mr-1' />
+            <span className='text-xs font-medium text-green-600 dark:text-green-400'>Active</span>
+          </div>
+        </div>
+
+        <div className='grid grid-cols-2 gap-3'>
+          <div className='flex items-center space-x-2 bg-white dark:bg-gray-800 p-2 rounded-md shadow-sm'>
+            <Calendar className='h-4 w-4 text-blue-600 dark:text-blue-400' />
+            <div>
+              <p className='text-xs text-gray-500 dark:text-gray-400'>Next Payment</p>
+              <p className='text-sm font-medium text-gray-900 dark:text-white'>
+                {currentPlan?.nextPaymentDate ?? '-:-'}
+              </p>
+            </div>
+          </div>
+
+          <div className='flex items-center space-x-2 bg-white dark:bg-gray-800 p-2 rounded-md shadow-sm'>
+            <Shield className='h-4 w-4 text-purple-600 dark:text-purple-400' />
+            <div>
+              <p className='text-xs text-gray-500 dark:text-gray-400'>Quota</p>
+              <p className='text-sm font-medium text-gray-900 dark:text-white'>
+                {currentPlan?.quota}
+              </p>
+            </div>
+          </div>
+
+          <div className='col-span-2 bg-white dark:bg-gray-800 p-2 rounded-md shadow-sm'>
+            <div className='grid grid-cols-3 gap-2'>
+              <div>
+                <p className='text-xs text-gray-500 dark:text-gray-400'>Daily</p>
+                <p className='text-sm font-medium text-gray-900 dark:text-white'>{currentPlan?.dailyLimit}</p>
+              </div>
+              <div>
+                <p className='text-xs text-gray-500 dark:text-gray-400'>Monthly</p>
+                <p className='text-sm font-medium text-gray-900 dark:text-white'>{currentPlan?.monthlyLimit}</p>
+              </div>
+              <div>
+                <p className='text-xs text-gray-500 dark:text-gray-400'>Bulk</p>
+                <p className='text-sm font-medium text-gray-900 dark:text-white'>{currentPlan?.bulkSendLimit}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className='mt-3 flex justify-end gap-2'>
+          {currentPlan?.name?.toLowerCase() === 'free' ? (
+            <Link 
+              href="/checkout/pro"
+              className='text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-md transition-colors'
+            >
+              Upgrade to Pro →
+            </Link>
+          ) : (
+            <Link 
+              href="/billing" 
+              className='text-xs font-medium text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white'
+            >
+              Manage Subscription →
+            </Link>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   if (isLoadingUser)
     return (
       <div className='flex justify-center items-center h-full'>
@@ -204,6 +305,7 @@ export default function AccountSettings() {
 
   return (
     <div className='grid gap-6 max-w-2xl mx-auto'>
+      <CurrentPlan />
       <Card>
         <CardHeader>
           <div className='flex items-center gap-2'>
