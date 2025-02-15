@@ -1,6 +1,6 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common'
 import { InjectModel } from '@nestjs/mongoose'
-import { Model } from 'mongoose'
+import { Model, Types } from 'mongoose'
 import { Plan, PlanDocument } from './schemas/plan.schema'
 import {
   Subscription,
@@ -12,6 +12,7 @@ import { CheckoutResponseDTO, PlanDTO } from './billing.dto'
 import { SMSDocument } from 'src/gateway/schemas/sms.schema'
 import { SMS } from 'src/gateway/schemas/sms.schema'
 import { validateEvent } from '@polar-sh/sdk/webhooks'
+import { PolarWebhookPayload, PolarWebhookPayloadDocument } from './schemas/polar-webhook-payload.schema'
 
 @Injectable()
 export class BillingService {
@@ -23,6 +24,8 @@ export class BillingService {
     private subscriptionModel: Model<SubscriptionDocument>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(SMS.name) private smsModel: Model<SMSDocument>,
+    @InjectModel(PolarWebhookPayload.name)
+    private polarWebhookPayloadModel: Model<PolarWebhookPayloadDocument>,
   ) {
     this.initializePlans()
     this.polarApi = new Polar({
@@ -228,11 +231,11 @@ export class BillingService {
     newPlanName?: string
     newPlanPolarProductId?: string
   }) {
-    // switch the subscription to the new one
-    // deactivate the current active subscription
-    // activate the new subscription if it exists or create a new one
+    console.log(`Switching plan for user: ${userId}`);
 
-    // get the plan from the polarProductId
+    // Convert userId to ObjectId
+    const userObjectId = new Types.ObjectId(userId);
+
     let plan: PlanDocument
     if (newPlanPolarProductId) {
       plan = await this.planModel.findOne({
@@ -246,18 +249,24 @@ export class BillingService {
       throw new Error('Plan not found')
     }
 
-    // if any of the subscriptions that are not the new plan are active, deactivate them
-    await this.subscriptionModel.updateMany(
-      { user: userId, plan: { $ne: plan._id }, isActive: true },
+    console.log(`Found plan: ${plan.name}`);
+
+    // Deactivate current active subscriptions
+    const result = await this.subscriptionModel.updateMany(
+      { user: userObjectId, plan: { $ne: plan._id }, isActive: true },
       { isActive: false, endDate: new Date() },
     )
+    console.log(`Deactivated subscriptions: ${result.modifiedCount}`);
 
-    // create or update the new subscription
-    await this.subscriptionModel.updateOne(
-      { user: userId, plan: plan._id },
+    // Create or update the new subscription
+    const updateResult = await this.subscriptionModel.updateOne(
+      { user: userObjectId, plan: plan._id },
       { isActive: true },
       { upsert: true },
     )
+    console.log(`Updated or created subscription: ${updateResult.upsertedCount > 0 ? 'Created' : 'Updated'}`);
+
+    return { success: true, plan: plan.name };
   }
 
   async canPerformAction(
@@ -405,6 +414,9 @@ export class BillingService {
       'webhook-signature': headers['webhook-signature'] ?? '',
     }
 
+    console.log('webhookHeaders')
+    console.log(webhookHeaders)
+
     try {
       const webhookPayload = validateEvent(
         payload,
@@ -413,7 +425,24 @@ export class BillingService {
       )
       return webhookPayload
     } catch (error) {
+      console.log('failed to validate polar webhook payload')
+      console.error(error)
       throw new Error('Invalid webhook payload')
     }
+  }
+
+  async storePolarWebhookPayload(payload: any) {
+    const userId = payload.data?.metadata?.userId || payload.data?.userId
+    const eventType = payload.type
+    const name = payload.data?.customer?.name
+    const email = payload.data?.customer?.email
+
+    await this.polarWebhookPayloadModel.create({
+      userId,
+      eventType,
+      name,
+      email,
+      payload,
+    })
   }
 }
