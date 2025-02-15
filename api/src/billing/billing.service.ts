@@ -105,8 +105,10 @@ export class BillingService {
         customerEmail: user.email,
         customerName: user.name,
         customerIpAddress: req.ip,
+        customerId: user._id?.toString(),
         metadata: {
           userId: user._id?.toString(),
+          customerId: user._id?.toString(),
         },
       }
       const discount = await this.polarApi.discounts.get({

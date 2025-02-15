@@ -42,15 +42,19 @@ export class BillingController {
     // Handle Polar.sh webhook events
     switch (payload.type) {
       case 'subscription.created':
+        console.log('polar subscription.created')
+        console.log(payload)
         await this.billingService.switchPlan({
-          userId: payload.data.userId,
-          newPlanName: payload.data?.product?.name || 'pro',
+          userId: payload.data.customerId,
+          newPlanName: payload.data?.product?.name?.split(' ')[payload.data?.product?.name?.length - 1] || 'pro',
           newPlanPolarProductId: payload.data?.product?.id,
         })
         break
 
       // @ts-ignore
       case 'subscription.cancelled':
+        console.log('polar subscription.cancelled')
+        console.log(payload)
         await this.billingService.switchPlan({
           // @ts-ignore
           userId: payload?.data?.userId,
@@ -58,7 +62,7 @@ export class BillingController {
         })
         break
       default:
-        console.log('Unhandled event type:', payload.type)
+        console.log('Unhandled polar event type:', payload.type)
         break
     }
   }
