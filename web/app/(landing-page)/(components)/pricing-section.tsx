@@ -130,7 +130,7 @@ const PricingSection = () => {
               asChild
               className='w-full bg-white text-black hover:bg-gray-100'
             >
-              <Link href='/dashboard?selectedPlan=pro'>Upgrade to Pro</Link>
+              <Link href='/checkout/pro'>Upgrade to Pro</Link>
             </Button>
           </div>
 
