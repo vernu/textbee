@@ -5,7 +5,7 @@ import HowItWorksSection from '@/app/(landing-page)/(components)/how-it-works-se
 import CustomizationSection from '@/app/(landing-page)/(components)/customization-section'
 import SupportProjectSection from '@/app/(landing-page)/(components)/support-project-section'
 import CodeSnippetSection from '@/app/(landing-page)/(components)/code-snippet-section'
-
+import PricingSection from '@/app/(landing-page)/(components)/pricing-section'
 export default function LandingPage() {
   return (
     <div className='flex min-h-screen flex-col'>
@@ -14,6 +14,7 @@ export default function LandingPage() {
         <FeaturesSection />
         <HowItWorksSection />
         <DownloadAppSection />
+        <PricingSection />
         <CustomizationSection />
         <CodeSnippetSection />
         <SupportProjectSection />

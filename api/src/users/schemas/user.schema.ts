@@ -34,6 +34,9 @@ export class User {
 
   @Prop({ type: Date })
   emailVerifiedAt: Date
+
+  @Prop({ type: Boolean, default: false })
+  isBanned: boolean
 }
 
 export const UserSchema = SchemaFactory.createForClass(User)

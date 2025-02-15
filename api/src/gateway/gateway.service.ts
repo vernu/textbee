@@ -21,6 +21,7 @@ import {
 } from 'firebase-admin/lib/messaging/messaging-api'
 import { WebhookEvent } from 'src/webhook/webhook-event.enum'
 import { WebhookService } from 'src/webhook/webhook.service'
+import { BillingService } from 'src/billing/billing.service'
 @Injectable()
 export class GatewayService {
   constructor(
@@ -29,6 +30,7 @@ export class GatewayService {
     @InjectModel(SMSBatch.name) private smsBatchModel: Model<SMSBatch>,
     private authService: AuthService,
     private webhookService: WebhookService,
+    private billingService: BillingService,
   ) {}
 
   async registerDevice(
@@ -112,6 +114,12 @@ export class GatewayService {
 
     const message = smsData.message || smsData.smsBody
     const recipients = smsData.recipients || smsData.receivers
+
+    await this.billingService.canPerformAction(
+      device.user.toString(),
+      'send_sms',
+      recipients.length,
+    )
 
     if (!message) {
       throw new HttpException(
@@ -240,6 +248,12 @@ export class GatewayService {
         HttpStatus.BAD_REQUEST,
       )
     }
+
+    await this.billingService.canPerformAction(
+      device.user.toString(),
+      'bulk_send_sms',
+      body.messages.map((m) => m.recipients).flat().length,
+    )
 
     if (
       !Array.isArray(body.messages) ||
@@ -377,6 +391,12 @@ export class GatewayService {
       )
     }
 
+    await this.billingService.canPerformAction(
+      device.user.toString(),
+      'receive_sms',
+      1,
+    )
+
     if (
       (!dto.receivedAt && !dto.receivedAtInMillis) ||
       !dto.sender ||
@@ -414,9 +434,10 @@ export class GatewayService {
         console.log(e)
       })
 
-    this.webhookService.deliverNotification({
-      sms,
-      user: device.user,
+    this.webhookService
+      .deliverNotification({
+        sms,
+        user: device.user,
         event: WebhookEvent.MESSAGE_RECEIVED,
       })
       .catch((e) => {
