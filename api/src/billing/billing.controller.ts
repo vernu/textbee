@@ -46,6 +46,9 @@ export class BillingController {
       req.headers,
     )
 
+    // store the payload in the database
+    await this.billingService.storePolarWebhookPayload(payload)
+
     // Handle Polar.sh webhook events
     switch (payload.type) {
       case 'subscription.created':
