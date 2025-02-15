@@ -119,8 +119,8 @@ export class BillingService {
         // productPriceId: isYearly
         //   ? selectedPlan.yearlyPolarProductId
         //   : selectedPlan.monthlyPolarProductId,
-        successUrl: `${process.env.FRONTEND_URL}/checkout-success?checkout_id={CHECKOUT_ID}`,
-        cancelUrl: `${process.env.FRONTEND_URL}/checkout-cancel?checkout_id={CHECKOUT_ID}`,
+        successUrl: `${process.env.FRONTEND_URL}/dashboard?checkout-success=1&checkout_id={CHECKOUT_ID}`,
+        cancelUrl: `${process.env.FRONTEND_URL}/dashboard?checkout-cancel=1&checkout_id={CHECKOUT_ID}`,
         customerEmail: user.email,
         customerName: user.name,
         customerIpAddress: req.ip,
