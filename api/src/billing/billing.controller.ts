@@ -49,10 +49,11 @@ export class BillingController {
     // Handle Polar.sh webhook events
     switch (payload.type) {
       case 'subscription.created':
+      case 'subscription.active':
         console.log('polar subscription.created')
         console.log(payload)
         await this.billingService.switchPlan({
-          userId: payload.data.customerId,
+          userId: payload.data?.metadata?.userId as string,
           newPlanName: payload.data?.product?.name?.split(' ')[payload.data?.product?.name?.length - 1] || 'pro',
           newPlanPolarProductId: payload.data?.product?.id,
         })
