@@ -31,4 +31,9 @@ export const ApiEndpoints = {
     updateWebhook: (id: string) => `/webhooks/${id}`,
     getStats: () => '/gateway/stats',
   },
+  billing: {
+    currentPlan: () => '/billing/current-plan',
+    checkout: () => '/billing/checkout',
+    plans: () => '/billing/plans',
+  },
 }

@@ -70,6 +70,25 @@ export class BillingService {
     })
   }
 
+  async getCurrentPlan(user: any) {
+    const subscription = await this.subscriptionModel.findOne({
+      user: user._id,
+      isActive: true,
+    })
+
+
+
+    let plan = null
+
+    if (!subscription) {
+      plan = await this.planModel.findOne({ name: 'free' })
+    } else {
+      plan = await this.planModel.findById(subscription.plan)
+    }
+
+    return plan
+  }
+
   async getCheckoutUrl({
     user,
     payload,
@@ -105,10 +124,8 @@ export class BillingService {
         customerEmail: user.email,
         customerName: user.name,
         customerIpAddress: req.ip,
-        customerId: user._id?.toString(),
         metadata: {
           userId: user._id?.toString(),
-          customerId: user._id?.toString(),
         },
       }
       const discount = await this.polarApi.discounts.get({
