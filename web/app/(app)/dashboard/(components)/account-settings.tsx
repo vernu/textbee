@@ -28,6 +28,7 @@ import {
   Loader2,
   Check,
   Calendar,
+  Info,
 } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -42,6 +43,7 @@ import { Textarea } from '@/components/ui/textarea'
 import axios from 'axios'
 import { useSession } from 'next-auth/react'
 import { Routes } from '@/config/routes'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 const updateProfileSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -261,15 +263,63 @@ export default function AccountSettings() {
             <div className='grid grid-cols-3 gap-2'>
               <div>
                 <p className='text-xs text-gray-500 dark:text-gray-400'>Daily</p>
-                <p className='text-sm font-medium text-gray-900 dark:text-white'>{currentPlan?.dailyLimit}</p>
+                <p className='text-sm font-medium text-gray-900 dark:text-white'>
+                  {currentPlan?.dailyLimit === -1 ? 'Unlimited' : currentPlan?.dailyLimit}
+                  {currentPlan?.dailyLimit === -1 && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className='inline-flex items-center'>
+                            <Info className='h-4 w-4 text-gray-500 ml-1 cursor-pointer' />
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Unlimited (within monthly limit)</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+                </p>
               </div>
               <div>
                 <p className='text-xs text-gray-500 dark:text-gray-400'>Monthly</p>
-                <p className='text-sm font-medium text-gray-900 dark:text-white'>{currentPlan?.monthlyLimit}</p>
+                <p className='text-sm font-medium text-gray-900 dark:text-white'>
+                  {currentPlan?.monthlyLimit === -1 ? 'Unlimited' : currentPlan?.monthlyLimit.toLocaleString()}
+                  {currentPlan?.monthlyLimit === -1 && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className='inline-flex items-center'>
+                            <Info className='h-4 w-4 text-gray-500 ml-1 cursor-pointer' />
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Unlimited (within monthly limit)</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+                </p>
               </div>
               <div>
                 <p className='text-xs text-gray-500 dark:text-gray-400'>Bulk</p>
-                <p className='text-sm font-medium text-gray-900 dark:text-white'>{currentPlan?.bulkSendLimit}</p>
+                <p className='text-sm font-medium text-gray-900 dark:text-white'>
+                  {currentPlan?.bulkSendLimit === -1 ? 'Unlimited' : currentPlan?.bulkSendLimit}
+                  {currentPlan?.bulkSendLimit === -1 && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className='inline-flex items-center'>
+                            <Info className='h-4 w-4 text-gray-500 ml-1 cursor-pointer' />
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Unlimited (within monthly limit)</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+                </p>
               </div>
             </div>
           </div>
