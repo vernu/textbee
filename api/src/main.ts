@@ -4,6 +4,7 @@ import { NestFactory } from '@nestjs/core'
 import { AppModule } from './app.module'
 import * as firebase from 'firebase-admin'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
+import * as express from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule)
@@ -50,6 +51,7 @@ async function bootstrap() {
     credential: firebase.credential.cert(firebaseConfig),
   })
 
+  app.use('/api/v1/billing/webhook/polar', express.raw({ type: 'application/json' }));
   app.enableCors()
   await app.listen(PORT)
 }

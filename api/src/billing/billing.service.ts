@@ -413,10 +413,6 @@ export class BillingService {
       'webhook-timestamp': headers['webhook-timestamp'] ?? '',
       'webhook-signature': headers['webhook-signature'] ?? '',
     }
-
-    console.log('webhookHeaders')
-    console.log(webhookHeaders)
-
     try {
       const webhookPayload = validateEvent(
         payload,
