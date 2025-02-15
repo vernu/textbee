@@ -2,11 +2,15 @@
 
 import { useState, useEffect } from 'react'
 import httpBrowserClient from '@/lib/httpBrowserClient'
+import { useSession } from 'next-auth/react'
+import { redirect } from 'next/navigation'
 
 export default function CheckoutPage({ params }) {
   const [error, setError] = useState<string | null>(null)
 
   const planName = params.planName as string
+
+  const { data: session } = useSession()
 
   useEffect(() => {
     const initiateCheckout = async () => {
@@ -24,6 +28,10 @@ export default function CheckoutPage({ params }) {
 
     initiateCheckout()
   }, [planName])
+
+  if (!session?.user) {
+    return redirect(`/login?redirect=${window.location.href}`)
+  }
 
   if (error) {
     return <div className='text-red-500'>{error}</div>
