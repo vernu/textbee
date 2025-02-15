@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common'
+import { forwardRef, Module } from '@nestjs/common'
 import { MongooseModule } from '@nestjs/mongoose'
 import { Device, DeviceSchema } from './schemas/device.schema'
 import { GatewayController } from './gateway.controller'
@@ -8,6 +8,7 @@ import { UsersModule } from '../users/users.module'
 import { SMS, SMSSchema } from './schemas/sms.schema'
 import { SMSBatch, SMSBatchSchema } from './schemas/sms-batch.schema'
 import { WebhookModule } from 'src/webhook/webhook.module'
+import { BillingModule } from 'src/billing/billing.module'
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { WebhookModule } from 'src/webhook/webhook.module'
     AuthModule,
     UsersModule,
     WebhookModule,
+    forwardRef(() => BillingModule),
   ],
   controllers: [GatewayController],
   providers: [GatewayService],
