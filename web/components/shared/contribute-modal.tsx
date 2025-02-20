@@ -25,6 +25,9 @@ import Link from 'next/link'
 import { ExternalLinks } from '@/config/external-links'
 import { CRYPTO_ADDRESSES } from '@/lib/constants'
 import Image from 'next/image'
+import { ApiEndpoints } from '@/config/api'
+import httpBrowserClient from '@/lib/httpBrowserClient'
+import { useQuery } from '@tanstack/react-query'
 
 // Add constants for localStorage and timing
 const STORAGE_KEYS = {
@@ -46,14 +49,35 @@ export function ContributeModal() {
     setTimeout(() => setCopiedAddress(''), 3000)
   }
 
+  const {
+    data: currentPlan,
+    isLoading: isLoadingPlan,
+    error: planError,
+  } = useQuery({
+    queryKey: ['currentPlan'],
+    queryFn: () =>
+      httpBrowserClient
+        .get(ApiEndpoints.billing.currentPlan())
+        .then((res) => res.data),
+  })
+
   useEffect(() => {
     const checkAndShowModal = () => {
-      setIsOpen(true)
-      return
+
+      if (isLoadingPlan) return
+      if (planError) return
+
+      if (currentPlan?.name?.toLowerCase() !== 'free') {
+        return
+      }
+
 
       const hasContributed =
         localStorage.getItem(STORAGE_KEYS.HAS_CONTRIBUTED) === 'true'
       if (hasContributed) return
+
+      setIsOpen(true) 
+      return;
 
       const lastShown = localStorage.getItem(STORAGE_KEYS.LAST_SHOWN)
       const now = Date.now()
@@ -73,7 +97,7 @@ export function ContributeModal() {
         checkAndShowModal()
       }
     })
-  }, [])
+  }, [currentPlan?.name, isLoadingPlan, planError])
 
   const handleContributed = () => {
     localStorage.setItem(STORAGE_KEYS.HAS_CONTRIBUTED, 'true')
