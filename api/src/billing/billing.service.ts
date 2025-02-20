@@ -430,8 +430,10 @@ export class BillingService {
   async storePolarWebhookPayload(payload: any) {
     const userId = payload.data?.metadata?.userId || payload.data?.userId
     const eventType = payload.type
-    const name = payload.data?.customer?.name
-    const email = payload.data?.customer?.email
+    const name = payload.data?.customer?.name || payload.data?.customerName
+    const email = payload.data?.customer?.email || payload.data?.customerEmail
+    const productId = payload.data?.product?.id || payload.data?.productId
+    const productName = payload.data?.product?.name || payload.data?.productName
 
     await this.polarWebhookPayloadModel.create({
       userId,
@@ -439,6 +441,8 @@ export class BillingService {
       name,
       email,
       payload,
+      productId,
+      productName,
     })
   }
 }

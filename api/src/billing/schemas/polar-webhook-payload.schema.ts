@@ -19,6 +19,12 @@ export class PolarWebhookPayload {
 
   @Prop({ type: Object })
   payload: Record<string, any>
+
+  @Prop()
+  productId: string
+
+  @Prop()
+  productName: string
 }
 
 export const PolarWebhookPayloadSchema = SchemaFactory.createForClass(PolarWebhookPayload)
