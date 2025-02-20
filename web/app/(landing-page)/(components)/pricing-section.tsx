@@ -73,10 +73,10 @@ const PricingSection = () => {
                   <div>
                     <div className='space-y-1'>
                       <div className='text-lg text-gray-400 line-through'>
-                        $9.90
+                        $9.99
                       </div>
                       <div className='flex items-baseline gap-1'>
-                        <span className='text-3xl font-bold'>$6.90</span>
+                        <span className='text-3xl font-bold'>$6.99</span>
                         <span className='text-gray-300'>/month</span>
                       </div>
                     </div>
