@@ -12,7 +12,10 @@ import { CheckoutResponseDTO, PlanDTO } from './billing.dto'
 import { SMSDocument } from 'src/gateway/schemas/sms.schema'
 import { SMS } from 'src/gateway/schemas/sms.schema'
 import { validateEvent } from '@polar-sh/sdk/webhooks'
-import { PolarWebhookPayload, PolarWebhookPayloadDocument } from './schemas/polar-webhook-payload.schema'
+import {
+  PolarWebhookPayload,
+  PolarWebhookPayloadDocument,
+} from './schemas/polar-webhook-payload.schema'
 
 @Injectable()
 export class BillingService {
@@ -27,44 +30,11 @@ export class BillingService {
     @InjectModel(PolarWebhookPayload.name)
     private polarWebhookPayloadModel: Model<PolarWebhookPayloadDocument>,
   ) {
-    this.initializePlans()
     this.polarApi = new Polar({
       accessToken: process.env.POLAR_ACCESS_TOKEN ?? '',
       server:
         process.env.POLAR_SERVER === 'production' ? 'production' : 'sandbox',
     })
-  }
-
-  private async initializePlans() {
-    const plans = await this.planModel.find()
-    if (plans.length === 0) {
-      await this.planModel.create([
-        {
-          name: 'free',
-          dailyLimit: 50,
-          monthlyLimit: 1000,
-          bulkSendLimit: 50,
-          monthlyPrice: 0,
-          yearlyPrice: 0,
-        },
-        {
-          name: 'pro',
-          dailyLimit: -1, // -1 means unlimited
-          monthlyLimit: 5000,
-          bulkSendLimit: -1,
-          monthlyPrice: 690, // $6.90
-          yearlyPrice: 6900, // $69.00
-        },
-        {
-          name: 'custom',
-          dailyLimit: -1,
-          monthlyLimit: -1,
-          bulkSendLimit: -1,
-          monthlyPrice: 0, // Custom pricing
-          yearlyPrice: 0, // Custom pricing
-        },
-      ])
-    }
   }
 
   async getPlans(): Promise<PlanDTO[]> {
@@ -78,8 +48,6 @@ export class BillingService {
       user: user._id,
       isActive: true,
     })
-
-
 
     let plan = null
 
@@ -107,7 +75,10 @@ export class BillingService {
       name: payload.planName,
     })
 
-    if (!selectedPlan?.polarProductId) {
+    if (
+      !selectedPlan?.polarMonthlyProductId &&
+      !selectedPlan?.polarYearlyProductId
+    ) {
       throw new Error('Plan cannot be purchased')
     }
 
@@ -118,10 +89,11 @@ export class BillingService {
 
     try {
       const checkoutOptions: any = {
-        productId: selectedPlan.polarProductId,
-        // productPriceId: isYearly
-        //   ? selectedPlan.yearlyPolarProductId
-        //   : selectedPlan.monthlyPolarProductId,
+        // productId: selectedPlan.polarProductId, // deprecated
+        products: [
+          selectedPlan.polarMonthlyProductId,
+          selectedPlan.polarYearlyProductId,
+        ],
         successUrl: `${process.env.FRONTEND_URL}/dashboard?checkout-success=1&checkout_id={CHECKOUT_ID}`,
         cancelUrl: `${process.env.FRONTEND_URL}/dashboard?checkout-cancel=1&checkout_id={CHECKOUT_ID}`,
         customerEmail: user.email,
@@ -138,8 +110,7 @@ export class BillingService {
         checkoutOptions.discountId = discount.id
       }
 
-      const checkout =
-        await this.polarApi.checkouts.custom.create(checkoutOptions)
+      const checkout = await this.polarApi.checkouts.create(checkoutOptions)
       console.log(checkout)
       return { redirectUrl: checkout.url }
     } catch (error) {
@@ -226,20 +197,35 @@ export class BillingService {
     userId,
     newPlanName,
     newPlanPolarProductId,
+    currentPeriodStart,
+    currentPeriodEnd,
+    subscriptionStartDate,
+    subscriptionEndDate,
+    status,
   }: {
     userId: string
     newPlanName?: string
     newPlanPolarProductId?: string
+    createdAt?: Date
+    currentPeriodStart?: Date
+    currentPeriodEnd?: Date
+    subscriptionStartDate?: Date
+    subscriptionEndDate?: Date
+    status?: string
   }) {
-    console.log(`Switching plan for user: ${userId}`);
+    console.log(`Switching plan for user: ${userId}`)
 
     // Convert userId to ObjectId
-    const userObjectId = new Types.ObjectId(userId);
+    const userObjectId = new Types.ObjectId(userId)
 
     let plan: PlanDocument
     if (newPlanPolarProductId) {
       plan = await this.planModel.findOne({
-        polarProductId: newPlanPolarProductId,
+        $or: [
+          // { polarProductId: newPlanPolarProductId }, // deprecated
+          { polarMonthlyProductId: newPlanPolarProductId },
+          { polarYearlyProductId: newPlanPolarProductId },
+        ],
       })
     } else if (newPlanName) {
       plan = await this.planModel.findOne({ name: newPlanName })
@@ -249,24 +235,33 @@ export class BillingService {
       throw new Error('Plan not found')
     }
 
-    console.log(`Found plan: ${plan.name}`);
+    console.log(`Found plan: ${plan.name}`)
 
     // Deactivate current active subscriptions
     const result = await this.subscriptionModel.updateMany(
       { user: userObjectId, plan: { $ne: plan._id }, isActive: true },
       { isActive: false, endDate: new Date() },
     )
-    console.log(`Deactivated subscriptions: ${result.modifiedCount}`);
+    console.log(`Deactivated subscriptions: ${result.modifiedCount}`)
 
     // Create or update the new subscription
     const updateResult = await this.subscriptionModel.updateOne(
       { user: userObjectId, plan: plan._id },
-      { isActive: true },
+      {
+        isActive: true,
+        currentPeriodStart,
+        currentPeriodEnd,
+        subscriptionStartDate,
+        subscriptionEndDate,
+        status,
+      },
       { upsert: true },
     )
-    console.log(`Updated or created subscription: ${updateResult.upsertedCount > 0 ? 'Created' : 'Updated'}`);
+    console.log(
+      `Updated or created subscription: ${updateResult.upsertedCount > 0 ? 'Created' : 'Updated'}`,
+    )
 
-    return { success: true, plan: plan.name };
+    return { success: true, plan: plan.name }
   }
 
   async canPerformAction(
@@ -274,9 +269,6 @@ export class BillingService {
     action: 'send_sms' | 'receive_sms' | 'bulk_send_sms',
     value: number,
   ) {
-
-    
-
     // TODO: temporary allow all requests until march 15 2025
     if (new Date() < new Date('2025-03-15')) {
       return true
@@ -306,7 +298,7 @@ export class BillingService {
       user: userId,
       isActive: true,
     })
-    
+
     if (!subscription) {
       plan = await this.planModel.findOne({ name: 'free' })
     } else {
