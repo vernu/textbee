@@ -18,7 +18,7 @@ import { SMSBatch } from './schemas/sms-batch.schema'
 import {
   BatchResponse,
   Message,
-} from 'firebase-admin/lib/messaging/messaging-api'
+} from 'firebase-admin/messaging'
 import { WebhookEvent } from 'src/webhook/webhook-event.enum'
 import { WebhookService } from 'src/webhook/webhook.service'
 import { BillingService } from 'src/billing/billing.service'

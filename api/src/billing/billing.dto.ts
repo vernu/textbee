@@ -11,7 +11,13 @@ export class PlanDTO {
   yearlyPrice?: number
 
   @ApiProperty({ type: String })
-  polarProductId: string
+  polarProductId?: string
+
+  @ApiProperty({ type: String })
+  polarMonthlyProductId?: string
+
+  @ApiProperty({ type: String })
+  polarYearlyProductId?: string
 
   @ApiProperty({ type: Boolean })
   isActive: boolean

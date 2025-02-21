@@ -26,6 +26,24 @@ export class Plan {
   @Prop({ type: String, unique: true })
   polarProductId?: string
 
+  @Prop({ type: String, unique: true })
+  polarMonthlyProductId?: string
+
+  @Prop({ type: String, unique: true })
+  polarYearlyProductId?: string
+
+  @Prop({ type: Date })
+  subscriptionStartDate?: Date
+
+  @Prop({ type: Date })
+  subscriptionEndDate?: Date
+
+  @Prop({ type: Date })
+  currentPeriodStart?: Date
+
+  @Prop({ type: Date })
+  currentPeriodEnd?: Date
+
   @Prop({ type: Boolean, default: true })
   isActive: boolean
 }

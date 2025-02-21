@@ -57,8 +57,14 @@ export class BillingController {
         console.log(payload)
         await this.billingService.switchPlan({
           userId: payload.data?.metadata?.userId as string,
-          newPlanName: payload.data?.product?.name?.split(' ')[payload.data?.product?.name?.length - 1] || 'pro',
+          // TODO: remove this after more plans are added
+          newPlanName: 'pro',
           newPlanPolarProductId: payload.data?.product?.id,
+          currentPeriodStart: payload.data?.currentPeriodStart,
+          currentPeriodEnd: payload.data?.currentPeriodEnd,
+          status: payload.data?.status,
+          subscriptionStartDate: payload.data?.createdAt,
+          subscriptionEndDate: payload.data?.canceledAt,
         })
         break
 
