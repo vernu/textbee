@@ -270,7 +270,7 @@ export default function AccountSettings() {
             <div>
               <p className='text-xs text-gray-500 dark:text-gray-400'>Quota</p>
               <p className='text-sm font-medium text-gray-900 dark:text-white'>
-                {currentSubscription?.quota}
+                {currentSubscription?.plan?.quota}
               </p>
             </div>
           </div>
@@ -282,10 +282,10 @@ export default function AccountSettings() {
                   Daily
                 </p>
                 <p className='text-sm font-medium text-gray-900 dark:text-white'>
-                  {currentSubscription?.dailyLimit === -1
+                  {currentSubscription?.plan?.dailyLimit === -1
                     ? 'Unlimited'
-                    : currentSubscription?.dailyLimit}
-                  {currentSubscription?.dailyLimit === -1 && (
+                    : currentSubscription?.plan?.dailyLimit}
+                  {currentSubscription?.plan?.dailyLimit === -1 && (
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -306,10 +306,10 @@ export default function AccountSettings() {
                   Monthly
                 </p>
                 <p className='text-sm font-medium text-gray-900 dark:text-white'>
-                  {currentSubscription?.monthlyLimit === -1
+                  {currentSubscription?.plan?.monthlyLimit === -1
                     ? 'Unlimited'
-                    : currentSubscription?.monthlyLimit.toLocaleString()}
-                  {currentSubscription?.monthlyLimit === -1 && (
+                    : currentSubscription?.plan?.monthlyLimit?.toLocaleString()}
+                  {currentSubscription?.plan?.monthlyLimit === -1 && (
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -328,10 +328,10 @@ export default function AccountSettings() {
               <div>
                 <p className='text-xs text-gray-500 dark:text-gray-400'>Bulk</p>
                 <p className='text-sm font-medium text-gray-900 dark:text-white'>
-                  {currentSubscription?.bulkSendLimit === -1
+                  {currentSubscription?.plan?.bulkSendLimit === -1
                     ? 'Unlimited'
-                    : currentSubscription?.bulkSendLimit}
-                  {currentSubscription?.bulkSendLimit === -1 && (
+                    : currentSubscription?.plan?.bulkSendLimit}
+                  {currentSubscription?.plan?.bulkSendLimit === -1 && (
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>

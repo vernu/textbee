@@ -51,15 +51,16 @@ export class BillingService {
       })
       .populate('plan')
 
-    let plan = null
-
-    if (!subscription) {
-      plan = await this.planModel.findOne({ name: 'free' })
-    } else {
-      plan = await this.planModel.findById(subscription.plan)
+    if (subscription) {
+      return subscription
     }
 
-    return plan
+    const plan = await this.planModel.findOne({ name: 'free' })
+
+    return {
+      plan,
+      isActive: true,
+    }
   }
 
   async getCheckoutUrl({
