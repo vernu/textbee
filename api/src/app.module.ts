@@ -16,7 +16,7 @@ import { BillingModule } from './billing/billing.module';
     ThrottlerModule.forRoot([
       {
         ttl: 60000,
-        limit: 30,
+        limit: 60,
       },
     ]),
     ScheduleModule.forRoot(),
