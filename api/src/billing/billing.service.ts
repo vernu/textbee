@@ -43,11 +43,13 @@ export class BillingService {
     })
   }
 
-  async getCurrentPlan(user: any) {
-    const subscription = await this.subscriptionModel.findOne({
-      user: user._id,
-      isActive: true,
-    })
+  async getCurrentSubscription(user: any) {
+    const subscription = await this.subscriptionModel
+      .findOne({
+        user: user._id,
+        isActive: true,
+      })
+      .populate('plan')
 
     let plan = null
 
@@ -240,7 +242,7 @@ export class BillingService {
     // Deactivate current active subscriptions
     const result = await this.subscriptionModel.updateMany(
       { user: userObjectId, plan: { $ne: plan._id }, isActive: true },
-      { isActive: false, endDate: new Date() },
+      { isActive: false, subscriptionEndDate: new Date() },
     )
     console.log(`Deactivated subscriptions: ${result.modifiedCount}`)
 

@@ -28,8 +28,8 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { Spinner } from '@/components/ui/spinner'
 import httpBrowserClient from '@/lib/httpBrowserClient'
 
-const MAX_FILE_SIZE = 1024 * 1024 // 1 MB
-const MAX_ROWS = 50
+const DEFAULT_MAX_FILE_SIZE = 1024 * 1024 // 1 MB
+const DEFAULT_MAX_ROWS = 50
 
 export default function BulkSMSSend() {
   const [csvData, setCsvData] = useState<any[]>([])
@@ -39,9 +39,29 @@ export default function BulkSMSSend() {
   const [selectedRecipient, setSelectedRecipient] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
 
+  const {
+    data: currentSubscription,
+    isLoading: isLoadingSubscription,
+    error: subscriptionError,
+  } = useQuery({
+    queryKey: ['currentSubscription'],
+    queryFn: () =>
+      httpBrowserClient
+        .get(ApiEndpoints.billing.currentSubscription())
+        .then((res) => res.data),
+  })
+
+  const maxRows = useMemo(() => {
+    if (currentSubscription?.plan?.bulkSendLimit == -1) {
+      return 9999
+    }
+
+    return currentSubscription?.plan?.bulkSendLimit || DEFAULT_MAX_ROWS
+  }, [currentSubscription])
+
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0]
-    if (file.size > MAX_FILE_SIZE) {
+    if (file.size > DEFAULT_MAX_FILE_SIZE) {
       setError('File size exceeds 1 MB limit.')
       return
     }
@@ -49,8 +69,8 @@ export default function BulkSMSSend() {
     Papa.parse(file, {
       complete: (results) => {
         if (results.data && results.data.length > 0) {
-          if (results.data.length > MAX_ROWS) {
-            setError(`CSV file exceeds ${MAX_ROWS} rows limit.`)
+          if (results.data.length > maxRows) {
+            setError(`CSV file exceeds ${maxRows} rows limit.`)
             return
           }
           setCsvData(results.data as any[])
@@ -136,8 +156,8 @@ export default function BulkSMSSend() {
           <section>
             <h2 className='text-lg font-semibold mb-2'>1. Upload CSV</h2>
             <p className='text-sm text-gray-500 mb-4'>
-              Upload a CSV file (max 1MB, {MAX_ROWS} rows) containing recipient
-              information.
+              Upload a CSV file (max {DEFAULT_MAX_FILE_SIZE} bytes, {maxRows}
+              rows) containing recipient information.
             </p>
             <div
               {...getRootProps()}
@@ -153,7 +173,8 @@ export default function BulkSMSSend() {
                 Drag &amp; drop a CSV file here, or click to select one
               </p>
               <p className='text-sm text-gray-500 mt-1'>
-                Max file size: 1MB, Max rows: 50
+                Max file size: {DEFAULT_MAX_FILE_SIZE} bytes, Max rows:{' '}
+                {maxRows}
               </p>
             </div>
             {error && (

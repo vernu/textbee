@@ -269,16 +269,6 @@ export class GatewayService {
       )
     }
 
-    if (body.messages.map((m) => m.recipients).flat().length > 50) {
-      throw new HttpException(
-        {
-          success: false,
-          error: 'Maximum of 50 recipients per batch is allowed',
-        },
-        HttpStatus.BAD_REQUEST,
-      )
-    }
-
     const { messageTemplate, messages } = body
 
     const smsBatch = await this.smsBatchModel.create({

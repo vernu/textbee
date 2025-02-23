@@ -43,7 +43,12 @@ import { Textarea } from '@/components/ui/textarea'
 import axios from 'axios'
 import { useSession } from 'next-auth/react'
 import { Routes } from '@/config/routes'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 
 const updateProfileSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -198,26 +203,29 @@ export default function AccountSettings() {
     },
   })
 
-  const CurrentPlan = () => {
-
+  const CurrentSubscription = () => {
     const {
-      data: currentPlan,
-      isLoading: isLoadingPlan,
-      error: planError,
+      data: currentSubscription,
+      isLoading: isLoadingSubscription,
+      error: subscriptionError,
     } = useQuery({
-      queryKey: ['currentPlan'],
+      queryKey: ['currentSubscription'],
       queryFn: () =>
         httpBrowserClient
-          .get(ApiEndpoints.billing.currentPlan())
+          .get(ApiEndpoints.billing.currentSubscription())
           .then((res) => res.data),
     })
 
-
-    if (isLoadingPlan) return <div className='flex justify-center items-center h-full'><Spinner size='sm' /></div>
-    if (planError)
+    if (isLoadingSubscription)
+      return (
+        <div className='flex justify-center items-center h-full'>
+          <Spinner size='sm' />
+        </div>
+      )
+    if (subscriptionError)
       return (
         <p className='text-sm text-destructive'>
-          Failed to load plan information
+          Failed to load subscription information
         </p>
       )
 
@@ -226,7 +234,7 @@ export default function AccountSettings() {
         <div className='flex items-center justify-between mb-4'>
           <div>
             <h3 className='text-lg font-bold text-gray-900 dark:text-white'>
-              {currentPlan?.name}
+              {currentSubscription?.plan?.name}
             </h3>
             <p className='text-xs text-gray-500 dark:text-gray-400'>
               Current subscription
@@ -234,7 +242,9 @@ export default function AccountSettings() {
           </div>
           <div className='flex items-center bg-green-50 dark:bg-green-900/30 px-2 py-0.5 rounded-full'>
             <Check className='h-3 w-3 text-green-600 dark:text-green-400 mr-1' />
-            <span className='text-xs font-medium text-green-600 dark:text-green-400'>Active</span>
+            <span className='text-xs font-medium text-green-600 dark:text-green-400'>
+              Active
+            </span>
           </div>
         </div>
 
@@ -242,9 +252,15 @@ export default function AccountSettings() {
           <div className='flex items-center space-x-2 bg-white dark:bg-gray-800 p-2 rounded-md shadow-sm'>
             <Calendar className='h-4 w-4 text-blue-600 dark:text-blue-400' />
             <div>
-              <p className='text-xs text-gray-500 dark:text-gray-400'>Next Payment</p>
+              <p className='text-xs text-gray-500 dark:text-gray-400'>
+                Next Payment
+              </p>
               <p className='text-sm font-medium text-gray-900 dark:text-white'>
-                {currentPlan?.nextPaymentDate ?? '-:-'}
+                {currentSubscription?.nextPaymentDate
+                  ? new Date(
+                      currentSubscription?.nextPaymentDate
+                    ).toLocaleDateString()
+                  : '-:-'}
               </p>
             </div>
           </div>
@@ -254,7 +270,7 @@ export default function AccountSettings() {
             <div>
               <p className='text-xs text-gray-500 dark:text-gray-400'>Quota</p>
               <p className='text-sm font-medium text-gray-900 dark:text-white'>
-                {currentPlan?.quota}
+                {currentSubscription?.quota}
               </p>
             </div>
           </div>
@@ -262,10 +278,14 @@ export default function AccountSettings() {
           <div className='col-span-2 bg-white dark:bg-gray-800 p-2 rounded-md shadow-sm'>
             <div className='grid grid-cols-3 gap-2'>
               <div>
-                <p className='text-xs text-gray-500 dark:text-gray-400'>Daily</p>
+                <p className='text-xs text-gray-500 dark:text-gray-400'>
+                  Daily
+                </p>
                 <p className='text-sm font-medium text-gray-900 dark:text-white'>
-                  {currentPlan?.dailyLimit === -1 ? 'Unlimited' : currentPlan?.dailyLimit}
-                  {currentPlan?.dailyLimit === -1 && (
+                  {currentSubscription?.dailyLimit === -1
+                    ? 'Unlimited'
+                    : currentSubscription?.dailyLimit}
+                  {currentSubscription?.dailyLimit === -1 && (
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -282,10 +302,14 @@ export default function AccountSettings() {
                 </p>
               </div>
               <div>
-                <p className='text-xs text-gray-500 dark:text-gray-400'>Monthly</p>
+                <p className='text-xs text-gray-500 dark:text-gray-400'>
+                  Monthly
+                </p>
                 <p className='text-sm font-medium text-gray-900 dark:text-white'>
-                  {currentPlan?.monthlyLimit === -1 ? 'Unlimited' : currentPlan?.monthlyLimit.toLocaleString()}
-                  {currentPlan?.monthlyLimit === -1 && (
+                  {currentSubscription?.monthlyLimit === -1
+                    ? 'Unlimited'
+                    : currentSubscription?.monthlyLimit.toLocaleString()}
+                  {currentSubscription?.monthlyLimit === -1 && (
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -304,8 +328,10 @@ export default function AccountSettings() {
               <div>
                 <p className='text-xs text-gray-500 dark:text-gray-400'>Bulk</p>
                 <p className='text-sm font-medium text-gray-900 dark:text-white'>
-                  {currentPlan?.bulkSendLimit === -1 ? 'Unlimited' : currentPlan?.bulkSendLimit}
-                  {currentPlan?.bulkSendLimit === -1 && (
+                  {currentSubscription?.bulkSendLimit === -1
+                    ? 'Unlimited'
+                    : currentSubscription?.bulkSendLimit}
+                  {currentSubscription?.bulkSendLimit === -1 && (
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -326,16 +352,16 @@ export default function AccountSettings() {
         </div>
 
         <div className='mt-3 flex justify-end gap-2'>
-          {currentPlan?.name?.toLowerCase() === 'free' ? (
-            <Link 
-              href="/checkout/pro"
+          {currentSubscription?.plan?.name?.toLowerCase() === 'free' ? (
+            <Link
+              href='/checkout/pro'
               className='text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-md transition-colors'
             >
               Upgrade to Pro →
             </Link>
           ) : (
-            <Link 
-              href="https://polar.sh/textbee/portal/" 
+            <Link
+              href='https://polar.sh/textbee/portal/'
               className='text-xs font-medium text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white'
             >
               Manage Subscription →
@@ -355,7 +381,7 @@ export default function AccountSettings() {
 
   return (
     <div className='grid gap-6 max-w-2xl mx-auto'>
-      <CurrentPlan />
+      <CurrentSubscription />
       <Card>
         <CardHeader>
           <div className='flex items-center gap-2'>
