@@ -32,7 +32,7 @@ export const ApiEndpoints = {
     getStats: () => '/gateway/stats',
   },
   billing: {
-    currentPlan: () => '/billing/current-plan',
+    currentSubscription: () => '/billing/current-subscription',
     checkout: () => '/billing/checkout',
     plans: () => '/billing/plans',
   },

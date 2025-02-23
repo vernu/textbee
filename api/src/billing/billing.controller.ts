@@ -19,11 +19,10 @@ export class BillingController {
     return this.billingService.getPlans()
   }
 
-
-  @Get('current-plan')
+  @Get('current-subscription')
   @UseGuards(AuthGuard)
-  async getCurrentPlan(@Request() req: any) {
-    return this.billingService.getCurrentPlan(req.user)
+  async getCurrentSubscription(@Request() req: any) {
+    return this.billingService.getCurrentSubscription(req.user)
   }
 
   @Post('checkout')

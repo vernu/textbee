@@ -3,6 +3,16 @@ import { Document, Types } from 'mongoose'
 import { User } from '../../users/schemas/user.schema'
 import { Plan } from './plan.schema'
 
+export enum SubscriptionStatus {
+  Incomplete = 'incomplete',
+  IncompleteExpired = 'incomplete_expired',
+  Trialing = 'trialing',
+  Active = 'active',
+  PastDue = 'past_due',
+  Canceled = 'canceled',
+  Unpaid = 'unpaid',
+}
+
 export type SubscriptionDocument = Subscription & Document
 
 @Schema({ timestamps: true })
@@ -17,10 +27,19 @@ export class Subscription {
   // polarSubscriptionId?: string
 
   @Prop({ type: Date })
-  startDate: Date
+  subscriptionStartDate?: Date
 
   @Prop({ type: Date })
-  endDate: Date
+  subscriptionEndDate?: Date
+
+  @Prop({ type: Date })
+  currentPeriodStart?: Date
+
+  @Prop({ type: Date })
+  currentPeriodEnd?: Date
+
+  @Prop({ type: String })
+  status: string
 
   @Prop({ type: Boolean, default: true })
   isActive: boolean
