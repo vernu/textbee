@@ -256,10 +256,10 @@ export default function AccountSettings() {
                 Next Payment
               </p>
               <p className='text-sm font-medium text-gray-900 dark:text-white'>
-                {currentSubscription?.nextPaymentDate
+                {currentSubscription?.currentPeriodEnd
                   ? new Date(
-                      currentSubscription?.nextPaymentDate
-                    ).toLocaleDateString()
+                      currentSubscription?.currentPeriodEnd
+                    ).toISOString()
                   : '-:-'}
               </p>
             </div>
