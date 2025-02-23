@@ -50,24 +50,24 @@ export function ContributeModal() {
   }
 
   const {
-    data: currentPlan,
-    isLoading: isLoadingPlan,
-    error: planError,
+    data: currentSubscription,
+    isLoading: isLoadingSubscription,
+    error: subscriptionError,
   } = useQuery({
-    queryKey: ['currentPlan'],
+    queryKey: ['currentSubscription'],
     queryFn: () =>
       httpBrowserClient
-        .get(ApiEndpoints.billing.currentPlan())
+        .get(ApiEndpoints.billing.currentSubscription())
         .then((res) => res.data),
   })
 
   useEffect(() => {
     const checkAndShowModal = () => {
 
-      if (isLoadingPlan) return
-      if (planError) return
+      if (isLoadingSubscription) return
+      if (subscriptionError) return
 
-      if (currentPlan?.name?.toLowerCase() !== 'free') {
+      if (currentSubscription?.plan?.name?.toLowerCase() !== 'free') {
         return
       }
 
@@ -97,7 +97,7 @@ export function ContributeModal() {
         checkAndShowModal()
       }
     })
-  }, [currentPlan?.name, isLoadingPlan, planError])
+  }, [currentSubscription?.plan?.name, isLoadingSubscription, subscriptionError])
 
   const handleContributed = () => {
     localStorage.setItem(STORAGE_KEYS.HAS_CONTRIBUTED, 'true')
