@@ -86,7 +86,7 @@ export default function BulkSMSSend() {
       header: true,
       skipEmptyLines: true,
     })
-  }, [])
+  }, [maxRows])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop })
 
