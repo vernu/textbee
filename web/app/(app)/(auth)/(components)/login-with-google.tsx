@@ -4,10 +4,12 @@ import { Routes } from '@/config/routes'
 import { toast } from '@/hooks/use-toast'
 import { CredentialResponse, GoogleLogin } from '@react-oauth/google'
 import { signIn } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 export default function LoginWithGoogle() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirect = searchParams.get('redirect')
 
   const onGoogleLoginSuccess = async (
     credentialResponse: CredentialResponse
@@ -21,7 +23,7 @@ export default function LoginWithGoogle() {
       redirect: false,
       idToken: credentialResponse.credential,
     })
-    router.push(Routes.dashboard)
+    router.push(redirect ? decodeURIComponent(redirect) : Routes.dashboard)
   }
 
   const onGoogleLoginError = () => {

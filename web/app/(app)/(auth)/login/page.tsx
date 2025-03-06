@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 
 import {
   Card,
@@ -16,6 +17,9 @@ import LoginForm from '../(components)/login-form'
 import { Routes } from '@/config/routes'
 
 export default function LoginPage() {
+  const searchParams = useSearchParams()
+  const redirect = searchParams.get('redirect')
+
   return (
     <div className='flex items-center justify-center min-h-screen bg-gray-100 dark:bg-muted'>
       <Card className='w-[400px] shadow-lg'>
@@ -53,7 +57,12 @@ export default function LoginPage() {
           <p className='text-sm text-gray-600'>
             Don&apos;t have an account?{' '}
             <Link
-              href={Routes.register}
+              href={{
+                pathname: Routes.register,
+                query: {
+                  redirect: redirect ? decodeURIComponent(redirect) : undefined,
+                },
+              }}
               className='font-medium text-blue-600 hover:underline'
             >
               Sign up
