@@ -13,8 +13,12 @@ import {
 import LoginWithGoogle from '../(components)/login-with-google'
 import RegisterForm from '../(components)/register-form'
 import { Routes } from '@/config/routes'
+import { useSearchParams } from 'next/navigation'
 
 export default function RegisterPage() {
+  const searchParams = useSearchParams()
+  const redirect = searchParams.get('redirect')
+
   return (
     <div className='flex items-center justify-center min-h-screen bg-gray-100 dark:bg-muted'>
       <Card className='w-[450px] shadow-lg'>
@@ -46,7 +50,12 @@ export default function RegisterPage() {
           <p className='text-sm text-gray-600'>
             Already have an account?{' '}
             <Link
-              href={Routes.login}
+              href={{
+                pathname: Routes.login,
+                query: {
+                  redirect: redirect ? decodeURIComponent(redirect) : undefined,
+                },
+              }}
               className='font-medium text-blue-600 hover:underline'
             >
               Sign in
