@@ -259,7 +259,11 @@ export default function AccountSettings() {
                 {currentSubscription?.currentPeriodEnd
                   ? new Date(
                       currentSubscription?.currentPeriodEnd
-                    ).toISOString()
+                    ).toLocaleDateString('en-US', {
+                      month: 'long',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })
                   : '-:-'}
               </p>
             </div>
