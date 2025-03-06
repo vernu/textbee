@@ -13,7 +13,7 @@ import GenerateApiKey from './generate-api-key'
 import { useSession } from 'next-auth/react'
 import { JoinCommunityModal } from '@/components/shared/join-community-modal'
 import { ContributeModal } from '@/components/shared/contribute-modal'
-
+import UpgradeToProAlert from './upgrade-to-pro-alert'
 export default function Dashboard({
   children,
 }: {
@@ -66,15 +66,18 @@ export default function Dashboard({
 
         <TabsContent value='dashboard' className='space-y-4'>
           <CommunityAlert />
+          <UpgradeToProAlert />
           <MainDashboard />
         </TabsContent>
 
         <TabsContent value='community' className='space-y-4'>
           <CommunityLinks />
+          <UpgradeToProAlert />
         </TabsContent>
 
         <TabsContent value='account' className='space-y-4'>
           <CommunityAlert />
+          <UpgradeToProAlert />
           <AccountSettings />
         </TabsContent>
       </Tabs>
