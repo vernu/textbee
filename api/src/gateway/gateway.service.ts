@@ -493,6 +493,66 @@ export class GatewayService {
     };
   }
 
+  async getMessages(deviceId: string, type = '', page = 1, limit = 50): Promise<{ data: any[], meta: any }> {
+    const device = await this.deviceModel.findById(deviceId)
+
+    if (!device) {
+      throw new HttpException(
+        {
+          success: false,
+          error: 'Device does not exist',
+        },
+        HttpStatus.BAD_REQUEST,
+      )
+    }
+
+    // Calculate skip value for pagination
+    const skip = (page - 1) * limit;
+
+    // Build query based on type filter
+    const query: any = { device: device._id };
+    
+    if (type === 'sent') {
+      query.type = SMSType.SENT;
+    } else if (type === 'received') {
+      query.type = SMSType.RECEIVED;
+    }
+
+    // Get total count for pagination metadata
+    const total = await this.smsModel.countDocuments(query);
+
+    // @ts-ignore
+    const data = await this.smsModel
+      .find(
+        query,
+        null,
+        { 
+          // Sort by the most recent timestamp (receivedAt for received, sentAt for sent)
+          sort: { createdAt: -1 }, 
+          limit: limit,
+          skip: skip 
+        },
+      )
+      .populate({
+        path: 'device',
+        select: '_id brand model buildId enabled',
+      })
+      .lean() // Use lean() to return plain JavaScript objects instead of Mongoose documents
+
+    // Calculate pagination metadata
+    const totalPages = Math.ceil(total / limit);
+    
+    return {
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages,
+      },
+      data,
+    };
+  }
+
   async getStatsForUser(user: User) {
     const devices = await this.deviceModel.find({ user: user._id })
     const apiKeys = await this.authService.getUserApiKeys(user)
