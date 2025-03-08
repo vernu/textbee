@@ -113,13 +113,20 @@ export class GatewayController {
 
   @ApiOperation({ summary: 'Get received SMS from a device' })
   @ApiResponse({ status: 200, type: RetrieveSMSResponseDTO })
+  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number (default: 1)' })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Number of items per page (default: 50, max: 100)' })
   @UseGuards(AuthGuard, CanModifyDevice)
   // deprecate getReceivedSMS route in favor of get-received-sms
   @Get(['/devices/:id/getReceivedSMS', '/devices/:id/get-received-sms'])
   async getReceivedSMS(
     @Param('id') deviceId: string,
+    @Request() req,
   ): Promise<RetrieveSMSResponseDTO> {
-    const data = await this.gatewayService.getReceivedSMS(deviceId)
-    return { data }
+    // Extract page and limit from query params, with defaults and max values
+    const page = req.query.page ? parseInt(req.query.page, 10) : 1;
+    const limit = req.query.limit ? Math.min(parseInt(req.query.limit, 10), 100) : 50;
+    
+    const result = await this.gatewayService.getReceivedSMS(deviceId, page, limit)
+    return result;
   }
 }
