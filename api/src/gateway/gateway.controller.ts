@@ -129,4 +129,24 @@ export class GatewayController {
     const result = await this.gatewayService.getReceivedSMS(deviceId, page, limit)
     return result;
   }
+
+  @ApiOperation({ summary: 'Get message history (sent and received) from a device' })
+  @ApiResponse({ status: 200, type: RetrieveSMSResponseDTO })
+  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number (default: 1)' })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Number of items per page (default: 50, max: 100)' })
+  @ApiQuery({ name: 'type', required: false, type: String, description: 'Filter by message type: all, sent, or received (default: all)' })
+  @UseGuards(AuthGuard, CanModifyDevice)
+  @Get('/devices/:id/messages')
+  async getMessages(
+    @Param('id') deviceId: string,
+    @Request() req,
+  ): Promise<RetrieveSMSResponseDTO> {
+    // Extract page and limit from query params, with defaults and max values
+    const page = req.query.page ? parseInt(req.query.page, 10) : 1;
+    const limit = req.query.limit ? Math.min(parseInt(req.query.limit, 10), 100) : 50;
+    const type = req.query.type || '';
+    
+    const result = await this.gatewayService.getMessages(deviceId, type, page, limit);
+    return result;
+  }
 }
