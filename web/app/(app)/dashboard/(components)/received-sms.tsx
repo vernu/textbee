@@ -4,8 +4,201 @@ import httpBrowserClient from '@/lib/httpBrowserClient'
 import { useQuery } from '@tanstack/react-query'
 import React, { useEffect, useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
-import { Clock } from 'lucide-react'
+import { Clock, MessageSquare, Reply } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { useForm, Controller } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { sendSmsSchema } from '@/lib/schemas'
+import type { SendSmsFormData } from '@/lib/schemas'
+import { useMutation } from '@tanstack/react-query'
+import { Spinner } from '@/components/ui/spinner'
+import { Check, X } from 'lucide-react'
+
+function ReplyDialog({ sms, onClose }: { sms: any; onClose?: () => void }) {
+  const [open, setOpen] = useState(false)
+
+  const {
+    mutate: sendSms,
+    isPending: isSendingSms,
+    error: sendSmsError,
+    isSuccess: isSendSmsSuccess,
+  } = useMutation({
+    mutationKey: ['send-sms'],
+    mutationFn: (data: SendSmsFormData) =>
+      httpBrowserClient.post(ApiEndpoints.gateway.sendSMS(data.deviceId), data),
+    onSuccess: () => {
+      setTimeout(() => {
+        setOpen(false)
+        if (onClose) onClose()
+      }, 1500)
+    },
+  })
+
+  const {
+    register,
+    control,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm<SendSmsFormData>({
+    resolver: zodResolver(sendSmsSchema),
+    defaultValues: {
+      deviceId: sms?.device?._id,
+      recipients: [sms.sender],
+      message: '',
+    },
+  })
+
+  const { data: devices, isLoading: isLoadingDevices } = useQuery({
+    queryKey: ['devices'],
+    queryFn: () =>
+      httpBrowserClient
+        .get(ApiEndpoints.gateway.listDevices())
+        .then((res) => res.data),
+  })
+
+  useEffect(() => {
+    if (open) {
+      reset({
+        deviceId: sms?.device?._id,
+        recipients: [sms.sender],
+        message: '',
+      })
+    }
+  }, [open, sms, reset])
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant='ghost' size='sm' className='gap-1'>
+          <Reply className='h-3.5 w-3.5' />
+          Reply
+        </Button>
+      </DialogTrigger>
+      <DialogContent className='sm:max-w-[500px]'>
+        <DialogHeader>
+          <DialogTitle className='flex items-center gap-2'>
+            <MessageSquare className='h-5 w-5' />
+            Reply to {sms.sender}
+          </DialogTitle>
+          <DialogDescription>
+            Send a reply message to this sender
+          </DialogDescription>
+        </DialogHeader>
+        <form
+          onSubmit={(e) => handleSubmit((data) => sendSms(data))(e)}
+          className='space-y-4 mt-4'
+        >
+          <div className='space-y-4'>
+            <div>
+              <Controller
+                name='deviceId'
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    defaultValue={sms?.device?._id}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder='Select a device' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {devices?.data?.map((device) => (
+                        <SelectItem key={device._id} value={device._id}>
+                          {device.brand} {device.model}{' '}
+                          {device.enabled ? '' : '(disabled)'}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.deviceId && (
+                <p className='text-sm text-destructive mt-1'>
+                  {errors.deviceId.message}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <Input
+                type='tel'
+                placeholder='Phone Number'
+                {...register('recipients.0')}
+              />
+              {errors.recipients?.[0] && (
+                <p className='text-sm text-destructive mt-1'>
+                  {errors.recipients[0].message}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <Textarea
+                placeholder='Message'
+                {...register('message')}
+                rows={4}
+              />
+              {errors.message && (
+                <p className='text-sm text-destructive mt-1'>
+                  {errors.message.message}
+                </p>
+              )}
+            </div>
+          </div>
+          {sendSmsError && (
+            <div className='flex items-center gap-2 text-destructive'>
+              <p>Error sending SMS: {sendSmsError.message}</p>
+              <X className='h-5 w-5' />
+            </div>
+          )}
+
+          {isSendSmsSuccess && (
+            <div className='flex items-center gap-2 text-green-600'>
+              <p>SMS sent successfully!</p>
+              <Check className='h-5 w-5' />
+            </div>
+          )}
+
+          <div className='flex justify-end gap-2'>
+            <Button
+              type='button'
+              variant='outline'
+              onClick={() => setOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button type='submit' disabled={isSendingSms}>
+              {isSendingSms && (
+                <Spinner size='sm' className='mr-2' color='white' />
+              )}
+              {isSendingSms ? 'Sending...' : 'Send Reply'}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
 
 export function ReceivedSmsCard({ sms }) {
   const formattedDate = new Date(sms.receivedAt).toLocaleString('en-US', {
@@ -32,6 +225,10 @@ export function ReceivedSmsCard({ sms }) {
 
           <div className='flex gap-2'>
             <p className='text-sm max-w-sm md:max-w-none'>{sms.message}</p>
+          </div>
+
+          <div className='flex justify-end'>
+            <ReplyDialog sms={sms} />
           </div>
         </div>
       </CardContent>
