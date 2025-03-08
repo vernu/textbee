@@ -4,7 +4,7 @@ import { useState } from 'react'
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import SendSms from './send-sms'
-import ReceivedSms from './received-sms'
+import MessageHistory from './message-history'
 import BulkSMSSend from './bulk-sms-send'
 import { Badge } from '@/components/ui/badge'
 
@@ -35,8 +35,8 @@ export default function Messaging() {
               new
             </Badge>
           </TabsTrigger>
-          <TabsTrigger value='received' className='flex-1'>
-            Received
+          <TabsTrigger value='history' className='flex-1'>
+            History
           </TabsTrigger>
         </TabsList>
 
@@ -45,14 +45,13 @@ export default function Messaging() {
         </TabsContent>
 
         <TabsContent value='bulk-send' className='space-y-4'>
-          {/* comming soon section */}
           <div className='grid gap-6 max-w-xl mx-auto mt-10'>
             <BulkSMSSend />
           </div>
         </TabsContent>
 
-        <TabsContent value='received' className='space-y-4'>
-          <ReceivedSms />
+        <TabsContent value='history' className='space-y-4'>
+          <MessageHistory />
         </TabsContent>
       </Tabs>
     </div>
