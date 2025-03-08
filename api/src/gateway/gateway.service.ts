@@ -437,7 +437,7 @@ export class GatewayService {
     return sms
   }
 
-  async getReceivedSMS(deviceId: string): Promise<RetrieveSMSDTO[]> {
+  async getReceivedSMS(deviceId: string, page = 1, limit = 50): Promise<{ data: any[], meta: any }> {
     const device = await this.deviceModel.findById(deviceId)
 
     if (!device) {
@@ -450,20 +450,47 @@ export class GatewayService {
       )
     }
 
+    // Calculate skip value for pagination
+    const skip = (page - 1) * limit;
+
+    // Get total count for pagination metadata
+    const total = await this.smsModel.countDocuments({
+      device: device._id,
+      type: SMSType.RECEIVED,
+    });
+
     // @ts-ignore
-    return await this.smsModel
+    const data = await this.smsModel
       .find(
         {
           device: device._id,
           type: SMSType.RECEIVED,
         },
         null,
-        { sort: { receivedAt: -1 }, limit: 200 },
+        { 
+          sort: { receivedAt: -1 }, 
+          limit: limit,
+          skip: skip 
+        },
       )
       .populate({
         path: 'device',
         select: '_id brand model buildId enabled',
       })
+      .lean() // Use lean() to return plain JavaScript objects instead of Mongoose documents
+
+    // Calculate pagination metadata
+    const totalPages = Math.ceil(total / limit);
+    
+    return {
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages,
+      },
+      data,
+    };
   }
 
   async getStatsForUser(user: User) {

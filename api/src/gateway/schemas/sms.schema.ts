@@ -62,3 +62,6 @@ export class SMS {
 }
 
 export const SMSSchema = SchemaFactory.createForClass(SMS)
+
+
+SMSSchema.index({ device: 1, type: 1, receivedAt: -1 })

@@ -89,7 +89,15 @@ export default function SendSms() {
                   name='deviceId'
                   control={control}
                   render={({ field }) => (
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      defaultValue={
+                        devices?.data?.length === 1
+                          ? devices?.data?.[0]?._id
+                          : ''
+                      }
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder='Select a device' />
                       </SelectTrigger>

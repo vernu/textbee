@@ -195,6 +195,36 @@ export class RetrieveSMSDTO {
   updatedAt: Date
 }
 
+export class PaginationMetaDTO {
+  @ApiProperty({
+    type: Number,
+    required: true,
+    description: 'Current page number',
+  })
+  page: number;
+
+  @ApiProperty({
+    type: Number,
+    required: true,
+    description: 'Number of items per page',
+  })
+  limit: number;
+
+  @ApiProperty({
+    type: Number,
+    required: true,
+    description: 'Total number of items',
+  })
+  total: number;
+
+  @ApiProperty({
+    type: Number,
+    required: true,
+    description: 'Total number of pages',
+  })
+  totalPages: number;
+}
+
 export class RetrieveSMSResponseDTO {
   @ApiProperty({
     type: [RetrieveSMSDTO],
@@ -202,4 +232,11 @@ export class RetrieveSMSResponseDTO {
     description: 'The received SMS data',
   })
   data: RetrieveSMSDTO[]
+
+  @ApiProperty({
+    type: PaginationMetaDTO,
+    required: true,
+    description: 'Pagination metadata',
+  })
+  meta?: PaginationMetaDTO
 }
