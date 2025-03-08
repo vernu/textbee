@@ -267,6 +267,7 @@ export default function ReceivedSms() {
 
   const handleTabChange = (tab: string) => {
     setCurrentTab(tab)
+    setPage(1)
   }
 
   const [currentTab, setCurrentTab] = useState('')
@@ -277,18 +278,37 @@ export default function ReceivedSms() {
     }
   }, [devices])
 
+  const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(20)
+
   const {
-    data: receivedSms,
+    data: receivedSmsResponse,
     isLoading: isLoadingReceivedSms,
     error: receivedSmsError,
   } = useQuery({
-    queryKey: ['received-sms', currentTab],
+    queryKey: ['received-sms', currentTab, page, limit],
     enabled: !!currentTab,
     queryFn: () =>
       httpBrowserClient
-        .get(ApiEndpoints.gateway.getReceivedSMS(currentTab))
+        .get(
+          `${ApiEndpoints.gateway.getReceivedSMS(
+            currentTab
+          )}?page=${page}&limit=${limit}`
+        )
         .then((res) => res.data),
   })
+
+  const receivedSms = receivedSmsResponse?.data || []
+  const pagination = receivedSmsResponse?.meta || {
+    page: 1,
+    limit: 20,
+    total: 0,
+    totalPages: 1,
+  }
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage)
+  }
 
   if (isLoadingDevices)
     return (
@@ -347,15 +367,129 @@ export default function ReceivedSms() {
                 Error: {receivedSmsError.message}
               </div>
             )}
-            {!isLoadingReceivedSms && !receivedSms?.data?.length && (
+            {!isLoadingReceivedSms && !receivedSms?.length && (
               <div className='flex justify-center items-center h-full'>
                 No messages found
               </div>
             )}
 
-            {receivedSms?.data?.map((sms) => (
+            {receivedSms?.map((sms) => (
               <ReceivedSmsCard key={sms._id} sms={sms} />
             ))}
+
+            {pagination.totalPages > 1 && (
+              <div className='flex justify-center mt-6 space-x-2'>
+                <Button
+                  onClick={() => handlePageChange(Math.max(1, page - 1))}
+                  disabled={page === 1}
+                  variant={page === 1 ? 'ghost' : 'default'}
+                >
+                  Previous
+                </Button>
+
+                <div className='flex flex-wrap items-center gap-2 justify-center sm:justify-start'>
+                  {/* First page */}
+                  {pagination.totalPages > 1 && (
+                    <Button
+                      onClick={() => handlePageChange(1)}
+                      variant={page === 1 ? 'default' : 'ghost'}
+                      size='icon'
+                      className={`h-8 w-8 rounded-full ${
+                        page === 1
+                          ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                          : 'hover:bg-secondary'
+                      }`}
+                    >
+                      1
+                    </Button>
+                  )}
+
+                  {/* Ellipsis if needed */}
+                  {page > 4 && pagination.totalPages > 7 && (
+                    <span className='px-1'>...</span>
+                  )}
+
+                  {/* Middle pages */}
+                  {Array.from(
+                    { length: Math.min(6, pagination.totalPages - 2) },
+                    (_, i) => {
+                      let pageToShow
+
+                      if (pagination.totalPages <= 8) {
+                        // If we have 8 or fewer pages, show pages 2 through 7 (or fewer)
+                        pageToShow = i + 2
+                      } else if (page <= 4) {
+                        // Near the start
+                        pageToShow = i + 2
+                      } else if (page >= pagination.totalPages - 3) {
+                        // Near the end
+                        pageToShow = pagination.totalPages - 7 + i
+                      } else {
+                        // Middle - center around current page
+                        pageToShow = page - 2 + i
+                      }
+
+                      // Ensure page is within bounds and not the first or last page
+                      if (
+                        pageToShow > 1 &&
+                        pageToShow < pagination.totalPages
+                      ) {
+                        return (
+                          <Button
+                            key={pageToShow}
+                            onClick={() => handlePageChange(pageToShow)}
+                            variant={page === pageToShow ? 'default' : 'ghost'}
+                            size='icon'
+                            className={`h-8 w-8 rounded-full ${
+                              page === pageToShow
+                                ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                                : 'hover:bg-secondary'
+                            }`}
+                          >
+                            {pageToShow}
+                          </Button>
+                        )
+                      }
+                      return null
+                    }
+                  )}
+
+                  {/* Ellipsis if needed */}
+                  {page < pagination.totalPages - 3 &&
+                    pagination.totalPages > 7 && (
+                      <span className='px-1'>...</span>
+                    )}
+
+                  {/* Last page */}
+                  {pagination.totalPages > 1 && (
+                    <Button
+                      onClick={() => handlePageChange(pagination.totalPages)}
+                      variant={
+                        page === pagination.totalPages ? 'default' : 'ghost'
+                      }
+                      size='icon'
+                      className={`h-8 w-8 rounded-full ${
+                        page === pagination.totalPages
+                          ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                          : 'hover:bg-secondary'
+                      }`}
+                    >
+                      {pagination.totalPages}
+                    </Button>
+                  )}
+                </div>
+
+                <Button
+                  onClick={() =>
+                    handlePageChange(Math.min(pagination.totalPages, page + 1))
+                  }
+                  disabled={page === pagination.totalPages}
+                  variant={page === pagination.totalPages ? 'ghost' : 'default'}
+                >
+                  Next
+                </Button>
+              </div>
+            )}
           </TabsContent>
         ))}
       </Tabs>
