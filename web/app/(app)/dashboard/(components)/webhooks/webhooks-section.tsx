@@ -18,7 +18,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { Badge } from '@/components/ui/badge'
 
 function WebhookCardSkeleton() {
   return (
@@ -91,12 +90,6 @@ export default function WebhooksSection() {
           <h1 className='text-xl sm:text-2xl font-bold flex flex-wrap items-center gap-2'>
             <Webhook className='h-5 w-5 sm:h-6 sm:w-6' />
             Webhooks
-            <Badge
-              variant='outline'
-              className='text-xs font-medium px-2 py-1 rounded-full bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200'
-            >
-              new
-            </Badge>
           </h1>
           <p className='text-sm text-muted-foreground mt-2'>
             Manage webhook notifications for your SMS events

@@ -33,16 +33,6 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from "@/components/ui/badge"
 
-// You might need to add this CSS to your global styles or component
-const styles = {
-  deviceSelectorContainer: `
-    mb-6 mt-4 p-4 
-    bg-gradient-to-r from-indigo-50/50 to-purple-50/50 
-    rounded-xl shadow-sm
-    border border-indigo-100
-  `
-}
-
 function ReplyDialog({ sms, onClose }: { sms: any; onClose?: () => void }) {
   const [open, setOpen] = useState(false)
 
