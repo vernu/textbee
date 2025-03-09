@@ -98,7 +98,6 @@ export function ContributeModal() {
         localStorage.getItem(STORAGE_KEYS.HAS_CONTRIBUTED) === 'true'
       if (hasContributed) return
 
-
       const lastShown = localStorage.getItem(STORAGE_KEYS.LAST_SHOWN)
       const now = Date.now()
 
@@ -117,7 +116,14 @@ export function ContributeModal() {
         checkAndShowModal()
       }
     })
-  }, [currentSubscription?.plan?.name, currentSubscription.user.createdAt, currentUser?.createdAt, currentUserError, isLoadingSubscription, isLoadingUser, subscriptionError])
+  }, [
+    currentSubscription,
+    currentUser,
+    currentUserError,
+    isLoadingSubscription,
+    isLoadingUser,
+    subscriptionError,
+  ])
 
   const handleContributed = () => {
     localStorage.setItem(STORAGE_KEYS.HAS_CONTRIBUTED, 'true')
