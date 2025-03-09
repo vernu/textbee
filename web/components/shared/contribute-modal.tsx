@@ -61,23 +61,43 @@ export function ContributeModal() {
         .then((res) => res.data),
   })
 
+  const {
+    data: currentUser,
+    isLoading: isLoadingUser,
+    error: currentUserError,
+  } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: () =>
+      httpBrowserClient
+        .get(ApiEndpoints.auth.whoAmI())
+        .then((res) => res.data?.data),
+  })
+
   useEffect(() => {
     const checkAndShowModal = () => {
-
-      if (isLoadingSubscription) return
-      if (subscriptionError) return
+      if (isLoadingSubscription || isLoadingUser) return
+      if (subscriptionError || currentUserError) return
 
       if (currentSubscription?.plan?.name?.toLowerCase() !== 'free') {
         return
       }
 
+      // Check if user account is less than 3 days old
+      if (currentUser?.createdAt) {
+        const createdAt = new Date(currentUser?.createdAt)
+        const now = new Date()
+        const daysSinceCreation =
+          (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24)
+
+        if (daysSinceCreation < 3) {
+          return // Don't show modal for new users
+        }
+      }
 
       const hasContributed =
         localStorage.getItem(STORAGE_KEYS.HAS_CONTRIBUTED) === 'true'
       if (hasContributed) return
 
-      setIsOpen(true) 
-      return;
 
       const lastShown = localStorage.getItem(STORAGE_KEYS.LAST_SHOWN)
       const now = Date.now()
@@ -97,7 +117,7 @@ export function ContributeModal() {
         checkAndShowModal()
       }
     })
-  }, [currentSubscription?.plan?.name, isLoadingSubscription, subscriptionError])
+  }, [currentSubscription?.plan?.name, currentSubscription.user.createdAt, currentUser?.createdAt, currentUserError, isLoadingSubscription, isLoadingUser, subscriptionError])
 
   const handleContributed = () => {
     localStorage.setItem(STORAGE_KEYS.HAS_CONTRIBUTED, 'true')
@@ -210,7 +230,9 @@ export function ContributeModal() {
                   <div className='flex items-center justify-between'>
                     <div>
                       <p className='font-medium text-sm'>{wallet.name}</p>
-                      <p className='text-xs text-muted-foreground'>{wallet.network}</p>
+                      <p className='text-xs text-muted-foreground'>
+                        {wallet.network}
+                      </p>
                     </div>
                     <Button
                       variant='ghost'
