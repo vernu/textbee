@@ -6,7 +6,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import SendSms from './send-sms'
 import MessageHistory from './message-history'
 import BulkSMSSend from './bulk-sms-send'
-import { Badge } from '@/components/ui/badge'
 
 export default function Messaging() {
   const [currentTab, setCurrentTab] = useState('send')
@@ -28,12 +27,6 @@ export default function Messaging() {
           </TabsTrigger>
           <TabsTrigger value='bulk-send' className='flex-1'>
             Bulk Send{' '}
-            <Badge
-              variant='outline'
-              className='ml-2 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200'
-            >
-              new
-            </Badge>
           </TabsTrigger>
           <TabsTrigger value='history' className='flex-1'>
             History
