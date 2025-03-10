@@ -57,6 +57,8 @@ export default function SendSms() {
   } = useForm<SendSmsFormData>({
     resolver: zodResolver(sendSmsSchema),
     defaultValues: {
+      deviceId:
+        devices?.data?.length === 1 ? devices?.data?.[0]?._id : undefined,
       recipients: [''],
       message: '',
     },
@@ -89,15 +91,7 @@ export default function SendSms() {
                   name='deviceId'
                   control={control}
                   render={({ field }) => (
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                      defaultValue={
-                        devices?.data?.length === 1
-                          ? devices?.data?.[0]?._id
-                          : ''
-                      }
-                    >
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <SelectTrigger>
                         <SelectValue placeholder='Select a device' />
                       </SelectTrigger>
@@ -106,7 +100,7 @@ export default function SendSms() {
                           <SelectItem
                             key={device._id}
                             value={device._id}
-                            // disabled={!device.enabled}
+                            disabled={!device.enabled}
                           >
                             {device.brand} {device.model}{' '}
                             {device.enabled ? '' : '(disabled)'}
