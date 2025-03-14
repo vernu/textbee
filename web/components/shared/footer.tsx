@@ -27,22 +27,34 @@ export default function Footer() {
           </Link>
           <Link
             className='text-sm font-medium hover:text-blue-500'
-            href={ExternalLinks.patreon}
-          >
-            Become a Patron
-          </Link>
-          <Link
-            className='text-sm font-medium hover:text-blue-500'
             href={Routes.downloadAndroidApp}
           >
             Download App
           </Link>
           <Link
             className='text-sm font-medium hover:text-blue-500'
-            href={ExternalLinks.github}
+            href={Routes.contribute}
             target='_blank'
           >
-            GitHub
+            Contribute
+          </Link>
+          <Link
+            className='text-sm font-medium hover:text-blue-500'
+            href={Routes.privacyPolicy}
+          >
+            Privacy Policy
+          </Link>
+          <Link
+            className='text-sm font-medium hover:text-blue-500'
+            href={Routes.termsOfService}
+          >
+            Terms of Service
+          </Link>
+          <Link
+            className='text-sm font-medium hover:text-blue-500'
+            href={Routes.refundPolicy}
+          >
+            Refund Policy
           </Link>
         </nav>
       </div>
