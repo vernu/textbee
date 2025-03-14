@@ -30,9 +30,9 @@ export default function FeaturesSection() {
         </Card>
         <Card className='flex flex-col items-center justify-center p-6 text-center'>
           <Zap className='h-12 w-12 mb-4 text-blue-500' />
-          <h3 className='font-bold'>100% Free</h3>
+          <h3 className='font-bold'>Free</h3>
           <p className='text-sm text-gray-500'>
-            No credit card required. No hidden fees. No strings attached.
+            No credit card required to get started.
           </p>
         </Card>
         <Card className='flex flex-col items-center justify-center p-6 text-center'>
