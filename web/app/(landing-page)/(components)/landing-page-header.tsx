@@ -1,10 +1,21 @@
 import Link from 'next/link'
-import { MessageSquarePlus, Moon } from 'lucide-react'
+import {
+  MessageSquarePlus,
+  Moon,
+  CreditCard,
+  Heart,
+  LayoutDashboard,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { ExternalLinks } from '@/config/external-links'
 import { Routes } from '@/config/routes'
 import { ThemeProvider } from 'next-themes'
 import ThemeToggle from '@/components/shared/theme-toggle'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 
 export default function LandingPageHeader() {
   return (
@@ -18,36 +29,60 @@ export default function LandingPageHeader() {
             <MessageSquarePlus className='h-6 w-6 text-blue-500' />
             <span className='font-bold'>
               Text<span className='text-blue-500'>Bee</span>
+              <span className='text-xs align-center text-gray-500 dark:text-gray-400'>
+                .dev
+              </span>
             </span>
           </Link>
           <nav className='flex items-center space-x-4'>
             <ThemeToggle />
+            <TooltipProvider>
+              <Link
+                className='text-sm font-medium hover:text-blue-500'
+                href={'/#pricing'}
+              >
+                <span className='hidden sm:inline'>Pricing</span>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <CreditCard className='h-5 w-5 sm:hidden' />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Pricing</p>
+                  </TooltipContent>
+                </Tooltip>
+              </Link>
+              <Link
+                className='text-sm font-medium hover:text-blue-500'
+                href={Routes.contribute}
+              >
+                <span className='hidden sm:inline'>Contribute</span>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Heart className='h-5 w-5 sm:hidden' />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Contribute</p>
+                  </TooltipContent>
+                </Tooltip>
+              </Link>
 
-            {/* <Button variant='ghost' size='icon'>
-            <Moon className='h-4 w-4' />
-            <span className='sr-only'>Toggle theme</span>
-          </Button> */}
-            <Link
-              className='text-sm font-medium hover:text-blue-500'
-              href={Routes.contribute}
-            >
-              Contribute
-            </Link>
-
-            <Link
-              className='text-sm font-medium hover:text-blue-500'
-              href={Routes.dashboard}
-            >
-              <Button className='bg-blue-500 hover:bg-blue-600 dark:text-white rounded-full'>
-                Go to Dashboard
-              </Button>
-            </Link>
-            {/* <Link
-            className='text-sm font-medium hover:text-blue-500'
-            href='/register'
-          >
-            Register
-          </Link> */}
+              <Link
+                className='text-sm font-medium hover:text-blue-500'
+                href={Routes.dashboard}
+              >
+                <Button className='bg-blue-500 hover:bg-blue-600 dark:text-white rounded-full'>
+                  <span className='hidden sm:inline'>Go to Dashboard</span>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <LayoutDashboard className='h-5 w-5 sm:hidden' />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Go to Dashboard</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </Button>
+              </Link>
+            </TooltipProvider>
           </nav>
         </div>
       </header>
