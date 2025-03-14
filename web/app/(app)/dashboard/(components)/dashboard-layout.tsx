@@ -39,10 +39,10 @@ export default function Dashboard({
   return (
     <div className='flex-1 space-y-4 p-4 pt-6 md:p-8'>
       <div className='flex items-center justify-between space-y-2 flex-col md:flex-row'>
-        <h2 className='text-3xl font-bold tracking-tight'>
+        <h2 className='text-2xl font-bold tracking-tight'>
           {welcomeMessage}, {session?.user?.name}
         </h2>
-        <div className='flex items-center space-x-2 py-4'>
+        <div className='hidden md:flex items-center space-x-2 py-4'>
           <GenerateApiKey />
         </div>
       </div>

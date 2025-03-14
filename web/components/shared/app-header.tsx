@@ -154,6 +154,9 @@ export default function AppHeader() {
             <MessageSquarePlus className='h-6 w-6 text-blue-500' />
             <span className='font-bold'>
               Text<span className='text-blue-500'>Bee</span>
+              <span className='text-xs align-center text-gray-500 dark:text-gray-400'>
+                .dev
+              </span>
             </span>
           </Link>
         </div>
