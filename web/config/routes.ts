@@ -11,4 +11,6 @@ export const Routes = {
 
   downloadAndroidApp: 'https://dl.textbee.dev',
   privacyPolicy: '/privacy-policy',
+  refundPolicy: '/refund-policy',
+  termsOfService: '/terms-of-service',
 }

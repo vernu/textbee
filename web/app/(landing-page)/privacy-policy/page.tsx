@@ -1,6 +1,5 @@
 import { Metadata } from 'next'
 import { Card, CardContent } from '@/components/ui/card'
-import LandingPageHeader from '../(components)/landing-page-header'
 
 export const metadata: Metadata = {
   title: 'Privacy Policy | TextBee',
@@ -10,7 +9,6 @@ export const metadata: Metadata = {
 export default function PrivacyPolicyPage() {
   return (
     <>
-      <LandingPageHeader />
       <div className='container max-w-7xl py-6 md:px-12'>
         <Card className='border-none shadow-none'>
           <CardContent className='space-y-6'>
