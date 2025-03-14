@@ -23,6 +23,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 1,
     },
     {
+      url: `${baseUrl}#pricing`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.8,
+    },
+    {
       url: `${baseUrl}${Routes.login}`,
       lastModified: new Date(),
       changeFrequency: 'monthly' as const,
@@ -46,12 +52,25 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly' as const,
       priority: 0.7,
     },
-    // {
-    //   url: `${baseUrl}/pricing`,
-    //   lastModified: new Date(),
-    //   changeFrequency: 'monthly' as const,
-    //   priority: 0.8,
-    // },
+    {
+      url: `${baseUrl}${Routes.privacyPolicy}`,
+      lastModified: new Date(),
+      changeFrequency: 'yearly' as const,
+      priority: 0.5,
+    },
+    {
+      url: `${baseUrl}${Routes.termsOfService}`,
+      lastModified: new Date(),
+      changeFrequency: 'yearly' as const,
+      priority: 0.5,
+    },
+    {
+      url: `${baseUrl}${Routes.refundPolicy}`,
+      lastModified: new Date(),
+      changeFrequency: 'yearly' as const,
+      priority: 0.5,
+    },
+    
     // {
     //   url: `${baseUrl}/docs`,
     //   lastModified: new Date(),
@@ -63,18 +82,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     //   lastModified: new Date(),
     //   changeFrequency: 'weekly' as const,
     //   priority: 0.7,
-    // },
-    // {
-    //   url: `${baseUrl}/privacy`,
-    //   lastModified: new Date(),
-    //   changeFrequency: 'yearly' as const,
-    //   priority: 0.5,
-    // },
-    // {
-    //   url: `${baseUrl}/terms`,
-    //   lastModified: new Date(),
-    //   changeFrequency: 'yearly' as const,
-    //   priority: 0.5,
     // },
   ]
 
