@@ -14,6 +14,8 @@ import { useSession } from 'next-auth/react'
 import { JoinCommunityModal } from '@/components/shared/join-community-modal'
 import { ContributeModal } from '@/components/shared/contribute-modal'
 import UpgradeToProAlert from './upgrade-to-pro-alert'
+import VerifyEmailAlert from './verify-email-alert'
+
 export default function Dashboard({
   children,
 }: {
@@ -66,17 +68,20 @@ export default function Dashboard({
 
         <TabsContent value='dashboard' className='space-y-4'>
           <CommunityAlert />
+          <VerifyEmailAlert />
           <UpgradeToProAlert />
           <MainDashboard />
         </TabsContent>
 
         <TabsContent value='community' className='space-y-4'>
-          <CommunityLinks />
+          <VerifyEmailAlert />
           <UpgradeToProAlert />
+          <CommunityLinks />
         </TabsContent>
 
         <TabsContent value='account' className='space-y-4'>
           <CommunityAlert />
+          <VerifyEmailAlert />
           <UpgradeToProAlert />
           <AccountSettings />
         </TabsContent>
