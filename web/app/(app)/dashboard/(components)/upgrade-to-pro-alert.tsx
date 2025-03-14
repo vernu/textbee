@@ -21,11 +21,11 @@ export default function UpgradeToProAlert() {
 
   const ctaMessages = useMemo(() => [
     "Upgrade to Pro for exclusive features and benefits!",
-    "Offer: You are eligible for a 50% discount when upgrading to Pro!",
+    "Offer: You are eligible for a 30% discount when upgrading to Pro!",
     "Unlock premium features with our Pro plan today!",
     "Take your experience to the next level with Pro!",
     "Pro users get priority support and advanced features!",
-    "Limited time offer: Upgrade to Pro and save 50%!",
+    "Limited time offer: Upgrade to Pro and save 30%!",
   ], []);
 
   const buttonTexts = useMemo(() => [
@@ -62,7 +62,7 @@ export default function UpgradeToProAlert() {
           {randomCta}
         </span>
         <span className='w-full sm:flex-1 text-center sm:text-left text-xs md:text-sm'>
-          Use discount code <strong className="text-yellow-200">SAVEBIG50</strong> at checkout for a 50%
+          Use discount code <strong className="text-yellow-200">SAVE30P</strong> at checkout for a 30%
           discount!
         </span>
         <div className='w-full sm:w-auto mt-2 sm:mt-0 flex justify-center sm:justify-end flex-wrap gap-1 md:gap-2'>
