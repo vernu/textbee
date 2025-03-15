@@ -73,13 +73,18 @@ export class UsersService {
   }
 
   
-  @Cron('0 19 * * *') // Every day at 7 PM
+  @Cron('0 12 * * *') // Every day at 12 PM
   async sendEmailToInactiveNewUsers() {
     try {
-      // Get users who signed up in the last 24 hours
+      // Get users who signed up between 24-48 hours ago (1-2 days ago)
+      const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000)
       const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
+      
       const newUsers = await this.userModel.find({
-        createdAt: { $gte: oneDayAgo },
+        createdAt: { 
+          $gte: twoDaysAgo,
+          $lt: oneDayAgo 
+        },
       })
 
       for (const user of newUsers) {
@@ -107,16 +112,21 @@ export class UsersService {
   }
 
 
-  @Cron('0 20 * * *') // Every day at 8 PM
+  @Cron('0 13 * * *') // Every day at 1 PM
   async sendEmailToFreeUsers() {
     try {
-      // Get users who signed up in the last 3 days
+      // Get users who signed up exactly 3 days ago (within a 24-hour window)
       const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
-      const recentUsers = await this.userModel.find({
-        createdAt: { $gte: threeDaysAgo },
+      const fourDaysAgo = new Date(Date.now() - 4 * 24 * 60 * 60 * 1000)
+      
+      const usersToEmail = await this.userModel.find({
+        createdAt: { 
+          $gte: fourDaysAgo,
+          $lt: threeDaysAgo 
+        },
       })
 
-      for (const user of recentUsers) {
+      for (const user of usersToEmail) {
         // Check if user is on free plan
         const subscription = await this.billingService.getActiveSubscription(user._id.toString())
         
