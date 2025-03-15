@@ -13,4 +13,5 @@ export const Routes = {
   privacyPolicy: '/privacy-policy',
   refundPolicy: '/refund-policy',
   termsOfService: '/terms-of-service',
+  statusPage: 'https://status.textbee.dev',
 }
