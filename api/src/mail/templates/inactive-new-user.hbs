@@ -9,29 +9,24 @@
       padding: 20px; } .header { text-align: center; padding: 20px 0; } .logo {
       max-width: 150px; } .content { background-color: #f9f9f9; padding: 30px;
       border-radius: 5px; } .button { display: inline-block; background-color:
-      #4CAF50; color: white; text-decoration: none; padding: 12px 24px;
+      #4A90E2; color: white; text-decoration: none; padding: 12px 24px;
       border-radius: 4px; font-weight: bold; margin: 20px 0; } .footer {
       text-align: center; font-size: 12px; color: #777; margin-top: 30px; }
       .steps { margin: 20px 0; } .step { margin-bottom: 15px; } .step-number {
       display: inline-block; width: 25px; height: 25px; background-color:
-      #4CAF50; color: white; border-radius: 50%; text-align: center;
+      #4A90E2; color: white; border-radius: 50%; text-align: center;
       line-height: 25px; margin-right: 10px; }
     </style>
   </head>
   <body>
     <div class='container'>
       <div class='header'>
-        {{! <img
-          src='https://textbee.dev/logo.png'
-          alt='textbee.dev Logo'
-          class='logo'
-        /> }}
       </div>
 
       <div class='content'>
         <h2>Hello {{name}},</h2>
 
-        <p>Thank you for signing up for SMS Gateway! We noticed you haven't
+        <p>Thank you for signing up for textbee.dev! We noticed you haven't
           registered any devices yet.</p>
 
         <p>With textbee.dev, you can:</p>
@@ -47,18 +42,22 @@
         <div class='steps'>
           <div class='step'>
             <span class='step-number'>1</span>
-            Install the SMS Gateway app on your Android device
+            Install the textbee.dev android app on your device
           </div>
           <div class='step'>
             <span class='step-number'>2</span>
-            Log in with your account credentials
-          </div>
-          <div class='step'>
-            <span class='step-number'>3</span>
             Grant the necessary permissions
           </div>
           <div class='step'>
+            <span class='step-number'>3</span>
+            Login to your <a href='{{registerDeviceUrl}}'>dashboard</a> and generate a QR code
+          </div>
+          <div class='step'>
             <span class='step-number'>4</span>
+            Scan the QR code with the app to register your device
+          </div>
+          <div class='step'>
+            <span class='step-number'>5</span>
             Start sending and receiving SMS!
           </div>
         </div>
