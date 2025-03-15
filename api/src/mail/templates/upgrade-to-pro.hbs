@@ -1,0 +1,94 @@
+<html>
+  <head>
+    <meta charset='utf-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+    <title>Upgrade to Pro - textbee.dev</title>
+    <style>
+      body { font-family: Arial, sans-serif; line-height: 1.6; color: #333;
+      margin: 0; padding: 0; } .container { max-width: 600px; margin: 0 auto;
+      padding: 20px; } .header { text-align: center; padding: 20px 0; } .logo {
+      max-width: 150px; } .content { background-color: #f9f9f9; padding: 30px;
+      border-radius: 5px; } .button { display: inline-block; background-color:
+      #4A90E2; color: white; text-decoration: none; padding: 12px 24px;
+      border-radius: 4px; font-weight: bold; margin: 20px 0; } .footer {
+      text-align: center; font-size: 12px; color: #777; margin-top: 30px; }
+      .feature { margin-bottom: 15px; display: flex; align-items: center; }
+      .feature-icon { display: inline-block; width: 20px; height: 20px;
+      background-color: #4A90E2; color: white; border-radius: 50%; text-align:
+      center; line-height: 20px; margin-right: 10px; font-weight: bold; }
+      .comparison { width: 100%; border-collapse: collapse; margin: 20px 0; }
+      .comparison th, .comparison td { padding: 10px; text-align: center;
+      border-bottom: 1px solid #ddd; } .comparison th { background-color:
+      #f2f2f2; } .highlight { background-color: #e6f2ff; }
+    </style>
+  </head>
+  <body>
+    <div class='container'>
+      <div class='header'>
+        {{! <img src="https://textbee.dev/logo.png" alt="textbee.dev Logo" class="logo"> }}
+      </div>
+
+      <div class='content'>
+        <h2>Hello {{name}},</h2>
+
+        <p>Thank you for using textbee.dev! We hope you're enjoying our service
+          so far.</p>
+
+        <p>We wanted to let you know that you're currently on our
+          <strong>Free Plan</strong>, which provides basic functionality. To
+          unlock the full potential of textbee.dev, consider upgrading to our
+          <strong>Pro Plan</strong>.</p>
+
+        <h3>Plan Comparison:</h3>
+
+        <table class='comparison'>
+          <tr>
+            <th>Feature</th>
+            <th>Free Plan</th>
+            <th class='highlight'>Pro Plan</th>
+          </tr>
+          <tr>
+            <td>Daily Message Limit</td>
+            <td>50</td>
+            <td class='highlight'>Unlimited</td>
+          </tr>
+          <tr>
+            <td>Monthly Recipient Limit</td>
+            <td>500</td>
+            <td class='highlight'>5,000</td>
+          </tr>
+          <tr>
+            <td>Device Limit</td>
+            <td>1</td>
+            <td class='highlight'>Unlimited</td>
+          </tr>
+          <tr>
+            <td>Bulk SMS Recipients</td>
+            <td>50</td>
+            <td class='highlight'>Unlimited</td>
+          </tr>
+          <tr>
+            <td>Support</td>
+            <td>Basic</td>
+            <td class='highlight'>Priority</td>
+          </tr>
+
+        </table>
+
+        <div style='text-align: center;'>
+          <a href='{{upgradeUrl}}' class='button'>Upgrade to Pro Now</a>
+        </div>
+
+        <p>If you have any questions about our plans or need assistance, please
+          feel free to contact us at
+          <a href='mailto:support@textbee.dev'>support@textbee.dev</a>.</p>
+
+        <p>Best regards,<br />The textbee.dev Team</p>
+      </div>
+
+      <div class='footer'>
+        <p>© 2025 textbee.dev.</p>
+      </div>
+    </div>
+  </body>
+</html>

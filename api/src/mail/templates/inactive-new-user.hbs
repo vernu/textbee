@@ -1,0 +1,84 @@
+<html>
+  <head>
+    <meta charset='utf-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+    <title>Get Started with textbee.dev</title>
+    <style>
+      body { font-family: Arial, sans-serif; line-height: 1.6; color: #333;
+      margin: 0; padding: 0; } .container { max-width: 600px; margin: 0 auto;
+      padding: 20px; } .header { text-align: center; padding: 20px 0; } .logo {
+      max-width: 150px; } .content { background-color: #f9f9f9; padding: 30px;
+      border-radius: 5px; } .button { display: inline-block; background-color:
+      #4CAF50; color: white; text-decoration: none; padding: 12px 24px;
+      border-radius: 4px; font-weight: bold; margin: 20px 0; } .footer {
+      text-align: center; font-size: 12px; color: #777; margin-top: 30px; }
+      .steps { margin: 20px 0; } .step { margin-bottom: 15px; } .step-number {
+      display: inline-block; width: 25px; height: 25px; background-color:
+      #4CAF50; color: white; border-radius: 50%; text-align: center;
+      line-height: 25px; margin-right: 10px; }
+    </style>
+  </head>
+  <body>
+    <div class='container'>
+      <div class='header'>
+        {{! <img
+          src='https://textbee.dev/logo.png'
+          alt='textbee.dev Logo'
+          class='logo'
+        /> }}
+      </div>
+
+      <div class='content'>
+        <h2>Hello {{name}},</h2>
+
+        <p>Thank you for signing up for SMS Gateway! We noticed you haven't
+          registered any devices yet.</p>
+
+        <p>With textbee.dev, you can:</p>
+        <ul>
+          <li>Send and receive SMS messages from your dashboard or API</li>
+          <li>Receive SMS notifications with webhooks</li>
+          <li>Integrate SMS functionality into your applications</li>
+          <li>And much more!</li>
+        </ul>
+
+        <p>To get started, you'll need to register your first device:</p>
+
+        <div class='steps'>
+          <div class='step'>
+            <span class='step-number'>1</span>
+            Install the SMS Gateway app on your Android device
+          </div>
+          <div class='step'>
+            <span class='step-number'>2</span>
+            Log in with your account credentials
+          </div>
+          <div class='step'>
+            <span class='step-number'>3</span>
+            Grant the necessary permissions
+          </div>
+          <div class='step'>
+            <span class='step-number'>4</span>
+            Start sending and receiving SMS!
+          </div>
+        </div>
+
+        <div style='text-align: center;'>
+          <a href='{{registerDeviceUrl}}' class='button'>Register Your Device
+            Now</a>
+        </div>
+
+        <p>If you have any questions or need assistance, please don't hesitate
+          to contact our support team at
+          <a href='mailto:support@textbee.dev'>support@textbee.dev</a>.</p>
+
+        <p>Best regards,<br />The textbee.dev Team</p>
+      </div>
+
+      <div class='footer'>
+        <p>© 2025 textbee.dev. All rights reserved.</p>
+
+      </div>
+    </div>
+  </body>
+</html>
