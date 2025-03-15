@@ -253,6 +253,26 @@ export default function AccountSettings() {
             <Calendar className='h-4 w-4 text-blue-600 dark:text-blue-400' />
             <div>
               <p className='text-xs text-gray-500 dark:text-gray-400'>
+                Start Date
+              </p>
+              <p className='text-sm font-medium text-gray-900 dark:text-white'>
+                {currentSubscription?.subscriptionStartDate
+                  ? new Date(
+                      currentSubscription?.subscriptionStartDate
+                    ).toLocaleDateString('en-US', {
+                      month: 'long',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })
+                  : '-:-'}
+              </p>
+            </div>
+          </div>
+
+          <div className='flex items-center space-x-2 bg-white dark:bg-gray-800 p-2 rounded-md shadow-sm'>
+            <Calendar className='h-4 w-4 text-blue-600 dark:text-blue-400' />
+            <div>
+              <p className='text-xs text-gray-500 dark:text-gray-400'>
                 Next Payment
               </p>
               <p className='text-sm font-medium text-gray-900 dark:text-white'>
@@ -269,19 +289,12 @@ export default function AccountSettings() {
             </div>
           </div>
 
-          <div className='flex items-center space-x-2 bg-white dark:bg-gray-800 p-2 rounded-md shadow-sm'>
-            <Shield className='h-4 w-4 text-purple-600 dark:text-purple-400' />
-            <div>
-              <p className='text-xs text-gray-500 dark:text-gray-400'>Quota</p>
-              <p className='text-sm font-medium text-gray-900 dark:text-white'>
-                {currentSubscription?.plan?.quota}
-              </p>
-            </div>
-          </div>
-
-          <div className='col-span-2 bg-white dark:bg-gray-800 p-2 rounded-md shadow-sm'>
-            <div className='grid grid-cols-3 gap-2'>
-              <div>
+          <div className='col-span-2 bg-white dark:bg-gray-800 p-3 rounded-md shadow-sm'>
+            <p className='text-xs text-gray-500 dark:text-gray-400 mb-2 font-medium'>
+              Usage Limits
+            </p>
+            <div className='grid grid-cols-3 gap-3'>
+              <div className='bg-gray-50 dark:bg-gray-700/50 p-2 rounded-md'>
                 <p className='text-xs text-gray-500 dark:text-gray-400'>
                   Daily
                 </p>
@@ -305,7 +318,7 @@ export default function AccountSettings() {
                   )}
                 </p>
               </div>
-              <div>
+              <div className='bg-gray-50 dark:bg-gray-700/50 p-2 rounded-md'>
                 <p className='text-xs text-gray-500 dark:text-gray-400'>
                   Monthly
                 </p>
@@ -322,14 +335,14 @@ export default function AccountSettings() {
                           </span>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>Unlimited (within monthly limit)</p>
+                          <p>Unlimited (within fair usage)</p>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
                   )}
                 </p>
               </div>
-              <div>
+              <div className='bg-gray-50 dark:bg-gray-700/50 p-2 rounded-md'>
                 <p className='text-xs text-gray-500 dark:text-gray-400'>Bulk</p>
                 <p className='text-sm font-medium text-gray-900 dark:text-white'>
                   {currentSubscription?.plan?.bulkSendLimit === -1
@@ -355,7 +368,7 @@ export default function AccountSettings() {
           </div>
         </div>
 
-        <div className='mt-3 flex justify-end gap-2'>
+        <div className='mt-4 flex justify-end gap-2'>
           {currentSubscription?.plan?.name?.toLowerCase() === 'free' ? (
             <Link
               href='/checkout/pro'
@@ -366,7 +379,7 @@ export default function AccountSettings() {
           ) : (
             <Link
               href='https://polar.sh/textbee/portal/'
-              className='text-xs font-medium text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white'
+              className='text-xs font-medium bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 px-3 py-1.5 rounded-md transition-colors'
             >
               Manage Subscription →
             </Link>
