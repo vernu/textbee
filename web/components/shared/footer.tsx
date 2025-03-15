@@ -1,6 +1,6 @@
 import { ExternalLinks } from '@/config/external-links'
 import { Routes } from '@/config/routes'
-import { MessageSquarePlus } from 'lucide-react'
+import { MessageSquarePlus, Activity } from 'lucide-react'
 import Link from 'next/link'
 export default function Footer() {
   return (
@@ -37,6 +37,14 @@ export default function Footer() {
             target='_blank'
           >
             Contribute
+          </Link>
+          <Link
+            className='text-sm font-medium group flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-50 hover:bg-green-100 dark:bg-green-900/20 dark:hover:bg-green-900/30 transition-colors'
+            href={Routes.statusPage}
+            target='_blank'
+          >
+            <Activity className='h-3.5 w-3.5 text-green-500 group-hover:animate-pulse' />
+            <span className='text-green-700 dark:text-green-400'>Status</span>
           </Link>
           <Link
             className='text-sm font-medium hover:text-blue-500'
