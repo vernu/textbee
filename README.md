@@ -158,6 +158,25 @@ curl -X GET "https://api.textbee.dev/api/v1/gateway/devices/YOUR_DEVICE_ID/get-r
    ```
 4. Ensure your domain points to your VPS and Caddy is configured properly.
 
+### Dockerized env
+#### Requirements:   
+- Docker installed
+- docker-compose installed
+1. After setting up Firebase, update your `.env` in `web` && `api` folder.
+   ```bash
+   cd web && cp .env.example .env \
+   && cd ../api && cp .env.example .env
+   ```
+2. Navigate to root folder and execute docker-compose.yml file.    
+   This will spin up `web` container, `api` container alongside with `MongoDB` and `MongoExpress`. `TextBee` database will be automatically created.
+   ```bash
+   docker-compose up -d
+   ```
+   To stop the containers simply type
+   ```bash
+   docker-compose down
+   ```   
+
 ## Contributing
 
 Contributions are welcome!
