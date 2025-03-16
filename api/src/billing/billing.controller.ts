@@ -65,6 +65,9 @@ export class BillingController {
           status: payload.data?.status,
           subscriptionStartDate: payload.data?.createdAt,
           subscriptionEndDate: payload.data?.canceledAt,
+          amount: payload.data?.amount,
+          currency: payload.data?.currency,
+          recurringInterval: payload.data?.recurringInterval,
         })
         break
 

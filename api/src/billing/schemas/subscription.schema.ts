@@ -26,8 +26,17 @@ export class Subscription {
   // @Prop()
   // polarSubscriptionId?: string
 
+  @Prop({ type: String })
+  recurringInterval?: string
+
   @Prop({ type: Date })
   subscriptionStartDate?: Date
+
+  @Prop({ type: Number })
+  amount?: number
+
+  @Prop({ type: String })
+  currency?: string
 
   @Prop({ type: Date })
   subscriptionEndDate?: Date

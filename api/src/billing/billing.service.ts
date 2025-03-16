@@ -137,7 +137,7 @@ export class BillingService {
     })
 
     if (customPlanSubscription) {
-      return customPlanSubscription
+      return customPlanSubscription.populate('plan')
     }
 
     const proPlanSubscription = await this.subscriptionModel.findOne({
@@ -147,7 +147,7 @@ export class BillingService {
     })
 
     if (proPlanSubscription) {
-      return proPlanSubscription
+      return proPlanSubscription.populate('plan')
     }
 
     const freePlanSubscription = await this.subscriptionModel.findOne({
@@ -157,7 +157,7 @@ export class BillingService {
     })
 
     if (freePlanSubscription) {
-      return freePlanSubscription
+      return freePlanSubscription.populate('plan')
     }
 
     // create a new free plan subscription
@@ -168,7 +168,7 @@ export class BillingService {
       startDate: new Date(),
     })
 
-    return newFreePlanSubscription
+    return newFreePlanSubscription.populate('plan')
   }
 
   async getUserLimits(userId: string) {
@@ -205,6 +205,9 @@ export class BillingService {
     subscriptionStartDate,
     subscriptionEndDate,
     status,
+    amount,
+    currency,
+    recurringInterval,
   }: {
     userId: string
     newPlanName?: string
@@ -215,6 +218,9 @@ export class BillingService {
     subscriptionStartDate?: Date
     subscriptionEndDate?: Date
     status?: string
+    amount?: number
+    currency?: string
+    recurringInterval?: string
   }) {
     console.log(`Switching plan for user: ${userId}`)
 
@@ -257,6 +263,9 @@ export class BillingService {
         subscriptionStartDate,
         subscriptionEndDate,
         status,
+        amount,
+        currency,
+        recurringInterval,
       },
       { upsert: true },
     )
