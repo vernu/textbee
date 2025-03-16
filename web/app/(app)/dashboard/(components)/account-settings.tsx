@@ -229,16 +229,44 @@ export default function AccountSettings() {
         </p>
       )
 
+    // Format price with currency symbol
+    const formatPrice = (amount: number | null | undefined, currency: string | null | undefined) => {
+      if (amount == null || currency == null) return 'Free';
+      
+      const formatter = new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: currency.toUpperCase() || 'USD',
+        minimumFractionDigits: 2,
+      });
+      
+      return formatter.format(amount / 100);
+    };
+
+    const getBillingInterval = (interval: string | null | undefined) => {
+      if (!interval) return '';
+      return interval.toLowerCase() === 'month' ? 'monthly' : 'yearly';
+    };
+
     return (
       <div className='bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border rounded-lg shadow p-4'>
         <div className='flex items-center justify-between mb-4'>
           <div>
             <h3 className='text-lg font-bold text-gray-900 dark:text-white'>
-              {currentSubscription?.plan?.name}
+              {currentSubscription?.plan?.name || 'Free Plan'}
             </h3>
-            <p className='text-xs text-gray-500 dark:text-gray-400'>
-              Current subscription
-            </p>
+            <div className='flex items-center gap-2'>
+              <p className='text-xs text-gray-500 dark:text-gray-400'>
+                Current subscription
+              </p>
+              {currentSubscription?.amount > 0 && (
+                <Badge variant="outline" className="text-xs font-medium">
+                  {formatPrice(currentSubscription?.amount, currentSubscription?.currency)} 
+                  {currentSubscription?.recurringInterval && (
+                    <span className="ml-1">/ {getBillingInterval(currentSubscription?.recurringInterval)}</span>
+                  )}
+                </Badge>
+              )}
+            </div>
           </div>
           <div className='flex items-center bg-green-50 dark:bg-green-900/30 px-2 py-0.5 rounded-full'>
             <Check className='h-3 w-3 text-green-600 dark:text-green-400 mr-1' />
@@ -264,7 +292,7 @@ export default function AccountSettings() {
                       day: 'numeric',
                       year: 'numeric',
                     })
-                  : '-:-'}
+                  : 'N/A'}
               </p>
             </div>
           </div>
@@ -284,7 +312,7 @@ export default function AccountSettings() {
                       day: 'numeric',
                       year: 'numeric',
                     })
-                  : '-:-'}
+                  : 'N/A'}
               </p>
             </div>
           </div>
@@ -301,7 +329,7 @@ export default function AccountSettings() {
                 <p className='text-sm font-medium text-gray-900 dark:text-white'>
                   {currentSubscription?.plan?.dailyLimit === -1
                     ? 'Unlimited'
-                    : currentSubscription?.plan?.dailyLimit}
+                    : currentSubscription?.plan?.dailyLimit || '0'}
                   {currentSubscription?.plan?.dailyLimit === -1 && (
                     <TooltipProvider>
                       <Tooltip>
@@ -325,7 +353,7 @@ export default function AccountSettings() {
                 <p className='text-sm font-medium text-gray-900 dark:text-white'>
                   {currentSubscription?.plan?.monthlyLimit === -1
                     ? 'Unlimited'
-                    : currentSubscription?.plan?.monthlyLimit?.toLocaleString()}
+                    : currentSubscription?.plan?.monthlyLimit?.toLocaleString() || '0'}
                   {currentSubscription?.plan?.monthlyLimit === -1 && (
                     <TooltipProvider>
                       <Tooltip>
@@ -347,7 +375,7 @@ export default function AccountSettings() {
                 <p className='text-sm font-medium text-gray-900 dark:text-white'>
                   {currentSubscription?.plan?.bulkSendLimit === -1
                     ? 'Unlimited'
-                    : currentSubscription?.plan?.bulkSendLimit}
+                    : currentSubscription?.plan?.bulkSendLimit || '0'}
                   {currentSubscription?.plan?.bulkSendLimit === -1 && (
                     <TooltipProvider>
                       <Tooltip>
@@ -369,7 +397,7 @@ export default function AccountSettings() {
         </div>
 
         <div className='mt-4 flex justify-end gap-2'>
-          {currentSubscription?.plan?.name?.toLowerCase() === 'free' ? (
+          {(!currentSubscription?.plan?.name || currentSubscription?.plan?.name?.toLowerCase() === 'free') ? (
             <Link
               href='/checkout/pro'
               className='text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-md transition-colors'
