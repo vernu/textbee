@@ -72,86 +72,105 @@ export class UsersService {
     return await userToUpdate.save()
   }
 
-  
   @Cron('0 12 * * *') // Every day at 12 PM
   async sendEmailToInactiveNewUsers() {
     try {
       // Get users who signed up between 24-48 hours ago (1-2 days ago)
       const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000)
       const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
-      
+
       const newUsers = await this.userModel.find({
-        createdAt: { 
+        createdAt: {
           $gte: twoDaysAgo,
-          $lt: oneDayAgo 
+          $lt: oneDayAgo,
         },
       })
 
-      for (const user of newUsers) {
-        // Check if user has any devices
-        const devices = await this.deviceModel.find({ user: user._id })
-        
-        if (devices.length === 0) {
-          // User hasn't registered any device, send email
-          await this.mailService.sendEmailFromTemplate({
-            to: user.email,
-            subject: 'Get Started with textbee.dev - Register Your First Device',
-            template: 'inactive-new-user',
-            context: {
-              name: user.name,
-              registerDeviceUrl: `${process.env.FRONTEND_URL}/dashboard`,
-            },
-          })
-          
-          console.log(`Sent inactive new user email to ${user.email}`)
+      const emailPromises = newUsers.map(async (user) => {
+        try {
+          // Check if user has any devices registered
+          const devices = await this.deviceModel.find({ user: user._id })
+
+          if (devices.length === 0) {
+            // User hasn't registered any device, send email
+            await this.mailService.sendEmailFromTemplate({
+              to: user.email,
+              subject:
+                'Get Started with textbee.dev - Register Your First Device',
+              template: 'inactive-new-user',
+              context: {
+                name: user.name,
+                registerDeviceUrl: `${process.env.FRONTEND_URL}/dashboard`,
+              },
+            })
+
+            console.log(`Sent inactive new user email to ${user.email}`)
+          }
+        } catch (error) {
+          console.error(`Error processing email for user ${user.email}:`, error)
         }
-      }
+      })
+
+      await Promise.allSettled(emailPromises)
     } catch (error) {
       console.error('Error sending emails to inactive new users:', error)
     }
   }
 
-
   @Cron('0 13 * * *') // Every day at 1 PM
   async sendEmailToFreeUsers() {
     try {
-      // Get users who signed up exactly 3 days ago (within a 24-hour window)
+      // Get users who signed up between 3-4 days ago
       const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
       const fourDaysAgo = new Date(Date.now() - 4 * 24 * 60 * 60 * 1000)
-      
+
       const usersToEmail = await this.userModel.find({
-        createdAt: { 
+        createdAt: {
           $gte: fourDaysAgo,
-          $lt: threeDaysAgo 
+          $lt: threeDaysAgo,
         },
       })
 
-      for (const user of usersToEmail) {
-        // Check if user is on free plan
-        const subscription = await this.billingService.getActiveSubscription(user._id.toString())
-        
-        if (subscription && subscription.plan && subscription.plan.name === 'free') {
-          // User is still on free plan, send upgrade email
-          await this.mailService.sendEmailFromTemplate({
-            to: user.email,
-            subject: 'Upgrade to Pro for More Features - textbee.dev',
-            template: 'upgrade-to-pro',
-            context: {
-              name: user.name,
-              upgradeUrl: `${process.env.FRONTEND_URL}/checkout/pro`,
-              features: [
-                'Increased SMS sending limits',
-                'Priority support',
-                'Unlimited devices',
-                'Unlimited Bulk SMS Recipients',
-                'and more...'
-              ]
-            },
-          })
-          
-          console.log(`Sent upgrade to pro email to ${user.email}`)
+      const emailPromises = usersToEmail.map(async (user) => {
+        try {
+          const subscription = await this.billingService.getActiveSubscription(
+            user._id.toString(),
+          )
+
+          if (subscription?.plan?.name === 'free') {
+            const devices = await this.deviceModel.find({ user: user._id })
+
+            if (devices.length === 0) {
+              await this.mailService.sendEmailFromTemplate({
+                to: user.email,
+                subject: `${user.name?.split(' ')[0]}, Your textbee.dev account is waiting for you!`,
+                template: 'inactive-new-user-day-3',
+                context: {
+                  name: user.name,
+                  registerDeviceUrl: `${process.env.FRONTEND_URL}/dashboard`,
+                },
+              })
+
+              console.log(`Sent inactive new user email to ${user.email}`)
+            } else {
+              await this.mailService.sendEmailFromTemplate({
+                to: user.email,
+                subject: `${user.name?.split(' ')[0]}, Upgrade to Pro with a 30% Discount - textbee.dev`,
+                template: 'upgrade-to-pro',
+                context: {
+                  name: user.name,
+                  upgradeUrl: `${process.env.FRONTEND_URL}/checkout/pro`,
+                },
+              })
+              console.log(`Sent upgrade to pro email to ${user.email}`)
+            }
+          }
+        } catch (error) {
+          console.error(`Error processing email for user ${user.email}:`, error)
         }
-      }
+      })
+
+      await Promise.allSettled(emailPromises)
     } catch (error) {
       console.error('Error sending emails to free plan users:', error)
     }
