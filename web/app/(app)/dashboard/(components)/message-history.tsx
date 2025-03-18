@@ -1,11 +1,22 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Clock, Reply, ArrowUpRight, ArrowDownLeft, MessageSquare, Check, X, Smartphone } from 'lucide-react'
+import {
+  Clock,
+  Reply,
+  ArrowUpRight,
+  ArrowDownLeft,
+  MessageSquare,
+  Check,
+  X,
+  Smartphone,
+  RefreshCw,
+  Timer,
+} from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -31,7 +42,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Badge } from "@/components/ui/badge"
+import { Badge } from '@/components/ui/badge'
 
 function ReplyDialog({ sms, onClose }: { sms: any; onClose?: () => void }) {
   const [open, setOpen] = useState(false)
@@ -201,7 +212,13 @@ function ReplyDialog({ sms, onClose }: { sms: any; onClose?: () => void }) {
   )
 }
 
-function FollowUpDialog({ message, onClose }: { message: any; onClose?: () => void }) {
+function FollowUpDialog({
+  message,
+  onClose,
+}: {
+  message: any
+  onClose?: () => void
+}) {
   const [open, setOpen] = useState(false)
 
   const {
@@ -231,7 +248,11 @@ function FollowUpDialog({ message, onClose }: { message: any; onClose?: () => vo
     resolver: zodResolver(sendSmsSchema),
     defaultValues: {
       deviceId: message?.device?._id,
-      recipients: [message.recipient || (message.recipients && message.recipients[0]) || ''],
+      recipients: [
+        message.recipient ||
+          (message.recipients && message.recipients[0]) ||
+          '',
+      ],
       message: '',
     },
   })
@@ -248,7 +269,11 @@ function FollowUpDialog({ message, onClose }: { message: any; onClose?: () => vo
     if (open) {
       reset({
         deviceId: message?.device?._id,
-        recipients: [message.recipient || (message.recipients && message.recipients[0]) || ''],
+        recipients: [
+          message.recipient ||
+            (message.recipients && message.recipients[0]) ||
+            '',
+        ],
         message: '',
       })
     }
@@ -266,7 +291,10 @@ function FollowUpDialog({ message, onClose }: { message: any; onClose?: () => vo
         <DialogHeader>
           <DialogTitle className='flex items-center gap-2'>
             <MessageSquare className='h-5 w-5' />
-            Follow Up with {message.recipient || (message.recipients && message.recipients[0]) || 'Recipient'}
+            Follow Up with{' '}
+            {message.recipient ||
+              (message.recipients && message.recipients[0]) ||
+              'Recipient'}
           </DialogTitle>
           <DialogDescription>
             Send a follow-up message to this recipient
@@ -372,7 +400,9 @@ function FollowUpDialog({ message, onClose }: { message: any; onClose?: () => vo
 function MessageCard({ message, type }) {
   const isSent = type === 'sent'
 
-  const formattedDate = new Date((isSent ? message.requestedAt : message.receivedAt) || message.createdAt).toLocaleString('en-US', {
+  const formattedDate = new Date(
+    (isSent ? message.requestedAt : message.receivedAt) || message.createdAt
+  ).toLocaleString('en-US', {
     hour: '2-digit',
     minute: '2-digit',
     day: 'numeric',
@@ -380,10 +410,14 @@ function MessageCard({ message, type }) {
     year: 'numeric',
   })
 
-  
-  
   return (
-    <Card className={`hover:bg-muted/50 transition-colors max-w-sm md:max-w-none ${isSent ? 'border-l-4 border-l-blue-500' : 'border-l-4 border-l-green-500'}`}>
+    <Card
+      className={`hover:bg-muted/50 transition-colors max-w-sm md:max-w-none ${
+        isSent
+          ? 'border-l-4 border-l-blue-500'
+          : 'border-l-4 border-l-green-500'
+      }`}
+    >
       <CardContent className='p-4'>
         <div className='space-y-3'>
           <div className='flex justify-between items-start'>
@@ -391,7 +425,12 @@ function MessageCard({ message, type }) {
               {isSent ? (
                 <div className='flex items-center text-blue-600 dark:text-blue-400 font-medium'>
                   <ArrowUpRight className='h-4 w-4 mr-1' />
-                  <span>To: {message.recipient || (message.recipients && message.recipients[0]) || 'Unknown'}</span>
+                  <span>
+                    To:{' '}
+                    {message.recipient ||
+                      (message.recipients && message.recipients[0]) ||
+                      'Unknown'}
+                  </span>
                 </div>
               ) : (
                 <div className='flex items-center text-green-600 dark:text-green-400 font-medium'>
@@ -415,7 +454,7 @@ function MessageCard({ message, type }) {
               <ReplyDialog sms={message} />
             </div>
           )}
-          
+
           {isSent && (
             <div className='flex justify-end'>
               <FollowUpDialog message={message} />
@@ -460,6 +499,9 @@ export default function MessageHistory() {
   const [messageType, setMessageType] = useState('all')
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(20)
+  const [autoRefreshInterval, setAutoRefreshInterval] = useState(0) // 0 means no auto-refresh
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const refreshTimerRef = useRef(null)
 
   useEffect(() => {
     if (devices?.data?.length) {
@@ -472,21 +514,57 @@ export default function MessageHistory() {
     data: messagesResponse,
     isLoading: isLoadingMessages,
     error: messagesError,
+    refetch,
   } = useQuery({
     queryKey: ['messages-history', currentDevice, messageType, page, limit],
     enabled: !!currentDevice,
     queryFn: () =>
       httpBrowserClient
         .get(
-          `${ApiEndpoints.gateway.getMessages(currentDevice)}?type=${messageType}&page=${page}&limit=${limit}`
+          `${ApiEndpoints.gateway.getMessages(
+            currentDevice
+          )}?type=${messageType}&page=${page}&limit=${limit}`
         )
         .then((res) => res.data),
   })
 
-  
+  // Handle manual refresh
+  const handleRefresh = async () => {
+    if (!currentDevice) return // Don't refresh if no device is selected
+
+    setIsRefreshing(true)
+    await refetch()
+    setTimeout(() => setIsRefreshing(false), 500) // Show refresh animation for at least 500ms
+  }
+
+  // Setup auto-refresh timer
+  useEffect(() => {
+    // Clear any existing timer
+    if (refreshTimerRef.current) {
+      clearInterval(refreshTimerRef.current)
+      refreshTimerRef.current = null
+    }
+
+    // Set up new timer if interval > 0
+    if (autoRefreshInterval > 0 && currentDevice) {
+      refreshTimerRef.current = setInterval(() => {
+        refetch()
+        // Brief visual feedback that refresh happened
+        setIsRefreshing(true)
+        setTimeout(() => setIsRefreshing(false), 300)
+      }, autoRefreshInterval * 1000)
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (refreshTimerRef.current) {
+        clearInterval(refreshTimerRef.current)
+      }
+    }
+  }, [autoRefreshInterval, currentDevice, messageType, page, limit, refetch])
 
   const messages = messagesResponse?.data || []
-  
+
   const pagination = messagesResponse?.meta || {
     page: 1,
     limit: 20,
@@ -536,60 +614,131 @@ export default function MessageHistory() {
 
   return (
     <div className='space-y-4'>
-      <div className="bg-gradient-to-r from-blue-50 to-sky-50 dark:from-blue-950/30 dark:to-sky-950/30 rounded-lg shadow-sm border border-blue-100 dark:border-blue-800/50 p-4 mb-4">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1.5">
-              <Smartphone className="h-3.5 w-3.5 text-blue-500" />
-              <h3 className="text-sm font-medium text-foreground">Device</h3>
+      <div className='bg-gradient-to-r from-blue-50 to-sky-50 dark:from-blue-950/30 dark:to-sky-950/30 rounded-lg shadow-sm border border-blue-100 dark:border-blue-800/50 p-4 mb-4'>
+        <div className='flex flex-col gap-4'>
+          <div className='flex flex-col sm:flex-row sm:items-center gap-3'>
+            <div className='flex-1'>
+              <div className='flex items-center gap-2 mb-1.5'>
+                <Smartphone className='h-3.5 w-3.5 text-blue-500' />
+                <h3 className='text-sm font-medium text-foreground'>Device</h3>
+              </div>
+              <Select value={currentDevice} onValueChange={handleDeviceChange}>
+                <SelectTrigger className='w-full bg-white/80 dark:bg-black/20 h-9 text-sm border-blue-200 dark:border-blue-800/70'>
+                  <SelectValue placeholder='Select a device' />
+                </SelectTrigger>
+                <SelectContent>
+                  {devices?.data?.map((device) => (
+                    <SelectItem key={device._id} value={device._id}>
+                      <div className='flex items-center gap-2'>
+                        <span className='font-medium'>
+                          {device.brand} {device.model}
+                        </span>
+                        {!device.enabled && (
+                          <Badge
+                            variant='outline'
+                            className='ml-1 text-xs py-0 h-5'
+                          >
+                            Disabled
+                          </Badge>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <Select value={currentDevice} onValueChange={handleDeviceChange}>
-              <SelectTrigger className="w-full bg-white/80 dark:bg-black/20 h-9 text-sm border-blue-200 dark:border-blue-800/70">
-                <SelectValue placeholder='Select a device' />
-              </SelectTrigger>
-              <SelectContent>
-                {devices?.data?.map((device) => (
-                  <SelectItem key={device._id} value={device._id}>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{device.brand} {device.model}</span>
-                      {!device.enabled && <Badge variant="outline" className="ml-1 text-xs py-0 h-5">Disabled</Badge>}
+
+            <div className='w-full sm:w-44'>
+              <div className='flex items-center gap-2 mb-1.5'>
+                <MessageSquare className='h-3.5 w-3.5 text-blue-500' />
+                <h3 className='text-sm font-medium text-foreground'>
+                  Message Type
+                </h3>
+              </div>
+              <Select
+                value={messageType}
+                onValueChange={handleMessageTypeChange}
+              >
+                <SelectTrigger className='w-full bg-white/80 dark:bg-black/20 h-9 text-sm border-blue-200 dark:border-blue-800/70'>
+                  <SelectValue placeholder='Message type' />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value='all'>
+                    <div className='flex items-center gap-1.5'>
+                      <div className='h-1.5 w-1.5 rounded-full bg-gray-500'></div>
+                      All Messages
                     </div>
                   </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="w-full sm:w-44">
-            <div className="flex items-center gap-2 mb-1.5">
-              <MessageSquare className="h-3.5 w-3.5 text-blue-500" />
-              <h3 className="text-sm font-medium text-foreground">Message Type</h3>
+                  <SelectItem value='received'>
+                    <div className='flex items-center gap-1.5'>
+                      <div className='h-1.5 w-1.5 rounded-full bg-green-500'></div>
+                      Received
+                    </div>
+                  </SelectItem>
+                  <SelectItem value='sent'>
+                    <div className='flex items-center gap-1.5'>
+                      <div className='h-1.5 w-1.5 rounded-full bg-blue-500'></div>
+                      Sent
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <Select value={messageType} onValueChange={handleMessageTypeChange}>
-              <SelectTrigger className="w-full bg-white/80 dark:bg-black/20 h-9 text-sm border-blue-200 dark:border-blue-800/70">
-                <SelectValue placeholder='Message type' />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value='all'>
-                  <div className="flex items-center gap-1.5">
-                    <div className="h-1.5 w-1.5 rounded-full bg-gray-500"></div>
-                    All Messages
-                  </div>
-                </SelectItem>
-                <SelectItem value='received'>
-                  <div className="flex items-center gap-1.5">
-                    <div className="h-1.5 w-1.5 rounded-full bg-green-500"></div>
-                    Received
-                  </div>
-                </SelectItem>
-                <SelectItem value='sent'>
-                  <div className="flex items-center gap-1.5">
-                    <div className="h-1.5 w-1.5 rounded-full bg-blue-500"></div>
-                    Sent
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
+          </div>
+
+          {/* Refresh Controls */}
+          <div className='flex items-center justify-between gap-2 pt-2 mt-2 border-t border-blue-100 dark:border-blue-800/50'>
+            <div className='flex items-center gap-1.5'>
+              <Button
+                onClick={handleRefresh}
+                variant='ghost'
+                size='sm'
+                disabled={!currentDevice}
+                className='h-7 px-2 text-xs text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/30'
+              >
+                <RefreshCw
+                  className={`h-3.5 w-3.5 mr-1 ${
+                    isRefreshing ? 'animate-spin' : ''
+                  }`}
+                />
+                Refresh Now
+              </Button>
+
+              {/* {messagesResponse && (
+                <span className='text-xs text-muted-foreground hidden sm:inline-block'>
+                  Updated: {new Date().toLocaleTimeString()}
+                </span>
+              )} */}
+            </div>
+
+            <div className='flex items-center gap-1.5'>
+              <Timer className='h-3 w-3 text-blue-500' />
+              <span className='text-xs font-medium mr-1'>Auto Refresh:</span>
+
+              <div className='flex'>
+                {[
+                  { value: 0, label: 'Off' },
+                  { value: 15, label: '15s' },
+                  { value: 30, label: '30s' },
+                  { value: 60, label: '60s' },
+                ].map((interval) => (
+                  <Button
+                    key={interval.value}
+                    size='sm'
+                    variant='ghost'
+                    disabled={!currentDevice && interval.value > 0}
+                    className={`h-6 px-1.5 text-xs ${
+                      autoRefreshInterval === interval.value
+                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium'
+                        : 'text-muted-foreground hover:bg-blue-50 dark:hover:bg-blue-900/20'
+                    }`}
+                    onClick={() => setAutoRefreshInterval(interval.value)}
+                  >
+                    {interval.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -608,7 +757,7 @@ export default function MessageHistory() {
         </div>
       )}
 
-      {(!isLoadingDevices && !messages) && (
+      {!isLoadingDevices && !messages && (
         <div className='flex justify-center items-center h-full py-10'>
           No messages found
         </div>
@@ -616,10 +765,10 @@ export default function MessageHistory() {
 
       <div className='space-y-4'>
         {messages?.map((message) => (
-          <MessageCard 
-            key={message._id} 
-            message={message} 
-            type={message.sender ? 'received' : 'sent'} 
+          <MessageCard
+            key={message._id}
+            message={message}
+            type={message.sender ? 'received' : 'sent'}
           />
         ))}
       </div>
@@ -677,10 +826,7 @@ export default function MessageHistory() {
                 }
 
                 // Ensure page is within bounds and not the first or last page
-                if (
-                  pageToShow > 1 &&
-                  pageToShow < pagination.totalPages
-                ) {
+                if (pageToShow > 1 && pageToShow < pagination.totalPages) {
                   return (
                     <Button
                       key={pageToShow}
@@ -702,18 +848,15 @@ export default function MessageHistory() {
             )}
 
             {/* Ellipsis if needed */}
-            {page < pagination.totalPages - 3 &&
-              pagination.totalPages > 7 && (
-                <span className='px-1'>...</span>
-              )}
+            {page < pagination.totalPages - 3 && pagination.totalPages > 7 && (
+              <span className='px-1'>...</span>
+            )}
 
             {/* Last page */}
             {pagination.totalPages > 1 && (
               <Button
                 onClick={() => handlePageChange(pagination.totalPages)}
-                variant={
-                  page === pagination.totalPages ? 'default' : 'ghost'
-                }
+                variant={page === pagination.totalPages ? 'default' : 'ghost'}
                 size='icon'
                 className={`h-8 w-8 rounded-full ${
                   page === pagination.totalPages
@@ -739,4 +882,4 @@ export default function MessageHistory() {
       )}
     </div>
   )
-} 
+}
