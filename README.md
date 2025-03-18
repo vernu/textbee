@@ -161,7 +161,6 @@ curl -X GET "https://api.textbee.dev/api/v1/gateway/devices/YOUR_DEVICE_ID/get-r
 ### Dockerized env
 #### Requirements:   
 - Docker installed
-- docker-compose installed
 1. After setting up Firebase, update your `.env` in `web` && `api` folder.
    ```bash
    cd web && cp .env.example .env \
@@ -170,11 +169,11 @@ curl -X GET "https://api.textbee.dev/api/v1/gateway/devices/YOUR_DEVICE_ID/get-r
 2. Navigate to root folder and execute docker-compose.yml file.    
    This will spin up `web` container, `api` container alongside with `MongoDB` and `MongoExpress`. `TextBee` database will be automatically created.
    ```bash
-   docker-compose up -d
+   docker compose up -d
    ```
    To stop the containers simply type
    ```bash
-   docker-compose down
+   docker compose down
    ```   
 
 ## Contributing
