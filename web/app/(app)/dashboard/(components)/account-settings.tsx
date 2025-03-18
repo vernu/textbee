@@ -268,10 +268,33 @@ export default function AccountSettings() {
               )}
             </div>
           </div>
-          <div className='flex items-center bg-green-50 dark:bg-green-900/30 px-2 py-0.5 rounded-full'>
-            <Check className='h-3 w-3 text-green-600 dark:text-green-400 mr-1' />
-            <span className='text-xs font-medium text-green-600 dark:text-green-400'>
-              Active
+          <div className={`flex items-center px-2 py-0.5 rounded-full ${
+            currentSubscription?.status === 'active' 
+              ? 'bg-green-50 dark:bg-green-900/30' 
+              : currentSubscription?.status === 'past_due'
+                ? 'bg-amber-50 dark:bg-amber-900/30'
+                : 'bg-gray-50 dark:bg-gray-800/50'
+          }`}>
+            <Check className={`h-3 w-3 mr-1 ${
+              currentSubscription?.status === 'active'
+                ? 'text-green-600 dark:text-green-400'
+                : currentSubscription?.status === 'past_due'
+                  ? 'text-amber-600 dark:text-amber-400'
+                  : 'text-gray-600 dark:text-gray-400'
+            }`} />
+            <span className={`text-xs font-medium ${
+              currentSubscription?.status === 'active'
+                ? 'text-green-600 dark:text-green-400'
+                : currentSubscription?.status === 'past_due'
+                  ? 'text-amber-600 dark:text-amber-400'
+                  : 'text-gray-600 dark:text-gray-400'
+            }`}>
+              {currentSubscription?.status 
+                ? currentSubscription.status
+                    .split('_')
+                    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                    .join(' ')
+                : 'Active'}
             </span>
           </div>
         </div>
