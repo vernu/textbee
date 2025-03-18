@@ -1,8 +1,9 @@
-FROM node:lts-alpine AS base
+FROM node:18-alpine AS base
 
 # Stage 1: Install web dependencies
 FROM base AS web-deps
 WORKDIR /app
+COPY .env ./.env
 COPY package.json pnpm-lock.yaml ./
 RUN corepack enable pnpm && pnpm install --frozen-lockfile
 
@@ -13,6 +14,7 @@ EXPOSE 3000
 WORKDIR /app
 COPY . .
 COPY --from=web-deps /app/node_modules ./node_modules
+COPY --from=web-deps /app/.env .env
 RUN corepack enable pnpm && pnpm run vercel-build
 
 CMD ["pnpm", "start"]
