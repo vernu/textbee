@@ -9,6 +9,10 @@ import { SMS, SMSSchema } from './schemas/sms.schema'
 import { SMSBatch, SMSBatchSchema } from './schemas/sms-batch.schema'
 import { WebhookModule } from 'src/webhook/webhook.module'
 import { BillingModule } from 'src/billing/billing.module'
+import { BullModule } from '@nestjs/bull'
+import { ConfigModule } from '@nestjs/config'
+import { SmsQueueService } from './queue/sms-queue.service'
+import { SmsQueueProcessor } from './queue/sms-queue.processor'
 
 @Module({
   imports: [
@@ -26,13 +30,26 @@ import { BillingModule } from 'src/billing/billing.module'
         schema: SMSBatchSchema,
       },
     ]),
+    BullModule.registerQueue({
+      name: 'sms',
+      defaultJobOptions: {
+        attempts: 2,
+        backoff: {
+          type: 'exponential',
+          delay: 1000,
+        },
+        removeOnComplete: false,
+        removeOnFail: false,
+      },
+    }),
     AuthModule,
     UsersModule,
     WebhookModule,
     forwardRef(() => BillingModule),
+    ConfigModule,
   ],
   controllers: [GatewayController],
-  providers: [GatewayService],
-  exports: [MongooseModule, GatewayService],
+  providers: [GatewayService, SmsQueueService, SmsQueueProcessor],
+  exports: [MongooseModule, GatewayService, SmsQueueService],
 })
 export class GatewayModule {}

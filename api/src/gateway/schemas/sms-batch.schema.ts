@@ -26,6 +26,21 @@ export class SMSBatch {
   @Prop({ type: String })
   recipientPreview: string
 
+  @Prop({ type: Number, default: 0 })
+  successCount: number
+
+  @Prop({ type: Number, default: 0 })
+  failureCount: number
+
+  @Prop({ type: String, default: 'pending', enum: ['pending', 'processing', 'completed', 'partial_success', 'failed'] })
+  status: string
+
+  @Prop({ type: String })
+  error: string
+
+  @Prop({ type: Date })
+  completedAt: Date
+
   // misc metadata for debugging
   @Prop({ type: Object })
   metadata: Record<string, any>
