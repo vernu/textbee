@@ -15,13 +15,12 @@ import { AuthService } from 'src/auth/auth.service'
 import { SMS } from './schemas/sms.schema'
 import { SMSType } from './sms-type.enum'
 import { SMSBatch } from './schemas/sms-batch.schema'
-import {
-  BatchResponse,
-  Message,
-} from 'firebase-admin/messaging'
+import { BatchResponse, Message } from 'firebase-admin/messaging'
 import { WebhookEvent } from 'src/webhook/webhook-event.enum'
 import { WebhookService } from 'src/webhook/webhook.service'
 import { BillingService } from 'src/billing/billing.service'
+import { SmsQueueService } from './queue/sms-queue.service'
+
 @Injectable()
 export class GatewayService {
   constructor(
@@ -31,6 +30,7 @@ export class GatewayService {
     private authService: AuthService,
     private webhookService: WebhookService,
     private billingService: BillingService,
+    private smsQueueService: SmsQueueService,
   ) {}
 
   async registerDevice(
@@ -151,6 +151,7 @@ export class GatewayService {
         message,
         recipientCount: recipients.length,
         recipientPreview: this.getRecipientsPreview(recipients),
+        status: 'pending',
       })
     } catch (e) {
       throw new HttpException(
@@ -173,6 +174,7 @@ export class GatewayService {
         type: SMSType.SENT,
         recipient,
         requestedAt: new Date(),
+        status: 'pending',
       })
       const updatedSMSData = {
         smsId: sms._id,
@@ -196,6 +198,50 @@ export class GatewayService {
         },
       }
       fcmMessages.push(fcmMessage)
+    }
+
+    // Check if we should use the queue
+    if (this.smsQueueService.isQueueEnabled()) {
+      try {
+        // Update batch status to processing
+        await this.smsBatchModel.findByIdAndUpdate(smsBatch._id, {
+          $set: { status: 'processing' },
+        })
+
+        // Add to queue
+        await this.smsQueueService.addSendSmsJob(
+          deviceId,
+          fcmMessages,
+          smsBatch._id.toString(),
+        )
+
+        return {
+          success: true,
+          message: 'SMS added to queue for processing',
+          smsBatchId: smsBatch._id,
+          recipientCount: recipients.length,
+        }
+      } catch (e) {
+        // Update batch status to failed
+        await this.smsBatchModel.findByIdAndUpdate(smsBatch._id, {
+          $set: { status: 'failed', error: e.message },
+        })
+
+        // Update all SMS in batch to failed
+        await this.smsModel.updateMany(
+          { smsBatch: smsBatch._id },
+          { $set: { status: 'failed', error: e.message } },
+        )
+
+        throw new HttpException(
+          {
+            success: false,
+            error: 'Failed to add SMS to queue',
+            additionalInfo: e,
+          },
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        )
+      }
     }
 
     try {
@@ -223,8 +269,26 @@ export class GatewayService {
           console.log('Failed to update sentSMSCount')
           console.log(e)
         })
+
+      this.smsBatchModel
+        .findByIdAndUpdate(smsBatch._id, {
+          $set: { status: 'completed' },
+        })
+        .exec()
+        .catch((e) => {
+          console.error('failed to update sms batch status to completed')
+        })
+
       return response
     } catch (e) {
+      this.smsBatchModel
+        .findByIdAndUpdate(smsBatch._id, {
+          $set: { status: 'failed', error: e.message },
+        })
+        .exec()
+        .catch((e) => {
+          console.error('failed to update sms batch status to failed')
+        })
       throw new HttpException(
         {
           success: false,
@@ -248,7 +312,6 @@ export class GatewayService {
         HttpStatus.BAD_REQUEST,
       )
     }
-
 
     if (
       !Array.isArray(body.messages) ||
@@ -281,9 +344,11 @@ export class GatewayService {
       recipientPreview: this.getRecipientsPreview(
         messages.map((m) => m.recipients).flat(),
       ),
+      status: 'pending',
     })
 
-    const fcmResponses: BatchResponse[] = []
+    const fcmMessages: Message[] = []
+
     for (const smsData of messages) {
       const message = smsData.message
       const recipients = smsData.recipients
@@ -296,8 +361,6 @@ export class GatewayService {
         continue
       }
 
-      const fcmMessages: Message[] = []
-
       for (const recipient of recipients) {
         const sms = await this.smsModel.create({
           device: device._id,
@@ -306,6 +369,7 @@ export class GatewayService {
           type: SMSType.SENT,
           recipient,
           requestedAt: new Date(),
+          status: 'pending',
         })
         const updatedSMSData = {
           smsId: sms._id,
@@ -330,9 +394,58 @@ export class GatewayService {
         }
         fcmMessages.push(fcmMessage)
       }
+    }
 
+    // Check if we should use the queue
+    if (this.smsQueueService.isQueueEnabled()) {
       try {
-        const response = await firebaseAdmin.messaging().sendEach(fcmMessages)
+        // Add to queue
+        await this.smsQueueService.addSendSmsJob(
+          deviceId,
+          fcmMessages,
+          smsBatch._id.toString(),
+        )
+
+        return {
+          success: true,
+          message: 'Bulk SMS added to queue for processing',
+          smsBatchId: smsBatch._id,
+          recipientCount: messages.map((m) => m.recipients).flat().length,
+        }
+      } catch (e) {
+        // Update batch status to failed
+        await this.smsBatchModel.findByIdAndUpdate(smsBatch._id, {
+          $set: {
+            status: 'failed',
+            error: e.message,
+            successCount: 0,
+            failureCount: fcmMessages.length,
+          },
+        })
+
+        // Update all SMS in batch to failed
+        await this.smsModel.updateMany(
+          { smsBatch: smsBatch._id },
+          { $set: { status: 'failed', error: e.message } },
+        )
+
+        throw new HttpException(
+          {
+            success: false,
+            error: 'Failed to add bulk SMS to queue',
+            additionalInfo: e,
+          },
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        )
+      }
+    }
+
+    const fcmMessagesBatches = fcmMessages.map((m) => [m])
+    const fcmResponses: BatchResponse[] = []
+
+    for (const batch of fcmMessagesBatches) {
+      try {
+        const response = await firebaseAdmin.messaging().sendEach(batch)
 
         console.log(response)
         fcmResponses.push(response)
@@ -346,9 +459,27 @@ export class GatewayService {
             console.log('Failed to update sentSMSCount')
             console.log(e)
           })
+
+        this.smsBatchModel
+          .findByIdAndUpdate(smsBatch._id, {
+            $set: { status: 'completed' },
+          })
+          .exec()
+          .catch((e) => {
+            console.error('failed to update sms batch status to completed')
+          })
       } catch (e) {
         console.log('Failed to send SMS: FCM')
         console.log(e)
+
+        this.smsBatchModel
+          .findByIdAndUpdate(smsBatch._id, {
+            $set: { status: 'failed', error: e.message },
+          })
+          .exec()
+          .catch((e) => {
+            console.error('failed to update sms batch status to failed')
+          })
       }
     }
 
@@ -438,7 +569,11 @@ export class GatewayService {
     return sms
   }
 
-  async getReceivedSMS(deviceId: string, page = 1, limit = 50): Promise<{ data: any[], meta: any }> {
+  async getReceivedSMS(
+    deviceId: string,
+    page = 1,
+    limit = 50,
+  ): Promise<{ data: any[]; meta: any }> {
     const device = await this.deviceModel.findById(deviceId)
 
     if (!device) {
@@ -452,13 +587,13 @@ export class GatewayService {
     }
 
     // Calculate skip value for pagination
-    const skip = (page - 1) * limit;
+    const skip = (page - 1) * limit
 
     // Get total count for pagination metadata
     const total = await this.smsModel.countDocuments({
       device: device._id,
       type: SMSType.RECEIVED,
-    });
+    })
 
     // @ts-ignore
     const data = await this.smsModel
@@ -468,10 +603,10 @@ export class GatewayService {
           type: SMSType.RECEIVED,
         },
         null,
-        { 
-          sort: { receivedAt: -1 }, 
+        {
+          sort: { receivedAt: -1 },
           limit: limit,
-          skip: skip 
+          skip: skip,
         },
       )
       .populate({
@@ -481,8 +616,8 @@ export class GatewayService {
       .lean() // Use lean() to return plain JavaScript objects instead of Mongoose documents
 
     // Calculate pagination metadata
-    const totalPages = Math.ceil(total / limit);
-    
+    const totalPages = Math.ceil(total / limit)
+
     return {
       meta: {
         page,
@@ -491,10 +626,15 @@ export class GatewayService {
         totalPages,
       },
       data,
-    };
+    }
   }
 
-  async getMessages(deviceId: string, type = '', page = 1, limit = 50): Promise<{ data: any[], meta: any }> {
+  async getMessages(
+    deviceId: string,
+    type = '',
+    page = 1,
+    limit = 50,
+  ): Promise<{ data: any[]; meta: any }> {
     const device = await this.deviceModel.findById(deviceId)
 
     if (!device) {
@@ -508,32 +648,28 @@ export class GatewayService {
     }
 
     // Calculate skip value for pagination
-    const skip = (page - 1) * limit;
+    const skip = (page - 1) * limit
 
     // Build query based on type filter
-    const query: any = { device: device._id };
-    
+    const query: any = { device: device._id }
+
     if (type === 'sent') {
-      query.type = SMSType.SENT;
+      query.type = SMSType.SENT
     } else if (type === 'received') {
-      query.type = SMSType.RECEIVED;
+      query.type = SMSType.RECEIVED
     }
 
     // Get total count for pagination metadata
-    const total = await this.smsModel.countDocuments(query);
+    const total = await this.smsModel.countDocuments(query)
 
     // @ts-ignore
     const data = await this.smsModel
-      .find(
-        query,
-        null,
-        { 
-          // Sort by the most recent timestamp (receivedAt for received, sentAt for sent)
-          sort: { createdAt: -1 }, 
-          limit: limit,
-          skip: skip 
-        },
-      )
+      .find(query, null, {
+        // Sort by the most recent timestamp (receivedAt for received, sentAt for sent)
+        sort: { createdAt: -1 },
+        limit: limit,
+        skip: skip,
+      })
       .populate({
         path: 'device',
         select: '_id brand model buildId enabled',
@@ -541,8 +677,8 @@ export class GatewayService {
       .lean() // Use lean() to return plain JavaScript objects instead of Mongoose documents
 
     // Calculate pagination metadata
-    const totalPages = Math.ceil(total / limit);
-    
+    const totalPages = Math.ceil(total / limit)
+
     return {
       meta: {
         page,
@@ -551,7 +687,7 @@ export class GatewayService {
         totalPages,
       },
       data,
-    };
+    }
   }
 
   async getStatsForUser(user: User) {
