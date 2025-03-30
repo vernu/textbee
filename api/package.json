@@ -43,6 +43,7 @@
     "firebase-admin": "^12.6.0",
     "handlebars": "^4.7.8",
     "ioredis": "^5.6.0",
+    "latest": "link:@polar-sh/sdk/latest",
     "mongoose": "^8.12.1",
     "nodemailer": "^6.10.0",
     "passport": "^0.7.0",
