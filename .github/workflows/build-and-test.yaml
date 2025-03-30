@@ -1,0 +1,64 @@
+name: Build and Test
+
+on:
+  push:
+    paths:
+      - 'api/**'
+      - 'web/**'
+      - '.github/workflows/build-and-test.yaml'
+  
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to run workflow on'
+        required: true
+        default: 'main'
+        type: string
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.branch || github.ref }}
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+          run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+      
+      - name: Build and test API
+        run: |
+          cd api
+          pnpm install
+          pnpm run build
+          pnpm test
+      
+      - name: Build web
+        run: |
+          cd web
+          pnpm install
+          pnpm run build 
