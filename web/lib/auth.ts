@@ -1,5 +1,5 @@
 import CredentialsProvider from 'next-auth/providers/credentials'
-import httpBrowserClient from './httpBrowserClient'
+import { httpServerClient } from './httpServerClient'
 import { DefaultSession } from 'next-auth'
 import { ApiEndpoints } from '@/config/api'
 import { Routes } from '@/config/routes'
@@ -31,7 +31,7 @@ export const authOptions = {
       async authorize(credentials) {
         const { email, password } = credentials
         try {
-          const res = await httpBrowserClient.post(ApiEndpoints.auth.login(), {
+          const res = await httpServerClient.post(ApiEndpoints.auth.login(), {
             email,
             password,
           })
@@ -62,7 +62,7 @@ export const authOptions = {
       async authorize(credentials) {
         const { email, password, name, phone } = credentials
         try {
-          const res = await httpBrowserClient.post(
+          const res = await httpServerClient.post(
             ApiEndpoints.auth.register(),
             {
               email,
@@ -94,7 +94,7 @@ export const authOptions = {
       async authorize(credentials) {
         const { idToken } = credentials
         try {
-          const res = await httpBrowserClient.post(
+          const res = await httpServerClient.post(
             ApiEndpoints.auth.signInWithGoogle(),
             {
               idToken,
