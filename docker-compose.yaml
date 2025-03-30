@@ -1,4 +1,3 @@
-
 services:
   # MongoDB service
   textbee-db:
@@ -9,14 +8,10 @@ services:
       - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USER:-adminUser}
       - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASS:-adminPassword}
       - MONGO_INITDB_DATABASE=textbee
-      # - MONGO_DB_USERNAME=${MONGO_USER:-textbeeUser}
-      # - MONGO_DB_PASSWORD=${MONGO_PASS:-textbeePassword}
     volumes:
       # - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
       - mongodb_data:/data/db
     ports:
-      # only allow access from the same machine, and use port 27018 to avoid conflict with default mongo port 27017
-      # - "127.0.0.1:${MONGO_PORT:-27018}:27017"
       - "${MONGO_PORT:-27018}:27017"
     networks:
       - textbee-network
@@ -47,6 +42,7 @@ services:
   # NestJS API
   textbee-api:
     container_name: textbee-api
+    # image: ghcr.io/vernu/textbee/api:latest
     build:
       context: ./api
       dockerfile: Dockerfile
@@ -57,25 +53,8 @@ services:
       - ./api/.env
     environment:
       - PORT=${PORT:-3001}
-      # - MONGO_URI=${MONGO_URI:-mongodb://${MONGO_USER:-textbeeUser}:${MONGO_PASS:-textbeePassword}@textbee-db:27018/TextBee}
-      # - MONGO_URI=mongodb://adminUser:adminPassword@textbee-db:27018/textbee
-      # - FRONTEND_URL=${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
-      # - JWT_SECRET=${JWT_SECRET:-your_jwt_secret_here}
-      # - JWT_EXPIRATION=${JWT_EXPIRATION:-60d}
-      # - MAIL_HOST=${MAIL_HOST}
-      # - MAIL_PORT=${MAIL_PORT}
-      # - MAIL_USER=${MAIL_USER}
-      # - MAIL_PASS=${MAIL_PASS}
-      # - MAIL_FROM=${MAIL_FROM}
-      # - USE_SMS_QUEUE=${USE_SMS_QUEUE:-false}
-      # - REDIS_HOST=${REDIS_HOST:-redis}
-      # - REDIS_PORT=${REDIS_PORT:-6379}
-      # - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
-      # - FIREBASE_PRIVATE_KEY_ID=${FIREBASE_PRIVATE_KEY_ID}
-      # - FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY}
-      # - FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL}
-      # - FIREBASE_CLIENT_ID=${FIREBASE_CLIENT_ID}
-      # - FIREBASE_CLIENT_C509_CERT_URL=${FIREBASE_CLIENT_C509_CERT_URL}
+      - REDIS_URL=${REDIS_URL:-redis://textbee-redis:6379}
+
     depends_on:
       textbee-db:
         condition: service_healthy
@@ -85,6 +64,7 @@ services:
   # Next.js Web
   textbee-web:
     container_name: textbee-web
+    # image: ghcr.io/vernu/textbee/web:latest
     build:
       context: ./web
       dockerfile: Dockerfile
@@ -95,26 +75,15 @@ services:
       - ./web/.env
     environment:
       - PORT=${PORT:-3000}
-      # - NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
       - NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL:-http://localhost:3001/api/v1}
-      # - AUTH_SECRET=${AUTH_SECRET:-generate_a_secure_random_string_here}
-      # - DATABASE_URL=mongodb://adminUser:adminPassword@textbee-db:27018/textbee
-      # - DATABASE_URL=mongodb://adminUser:adminPassword@textbee-db:27018/textbee
-      # - MAIL_HOST=${MAIL_HOST}
-      # - MAIL_PORT=${MAIL_PORT}
-      # - MAIL_USER=${MAIL_USER}
-      # - MAIL_PASS=${MAIL_PASS}
-      # - MAIL_FROM=${MAIL_FROM}
-      # - ADMIN_EMAIL=${ADMIN_EMAIL}
-      # - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
-      # - NEXT_PUBLIC_TAWKTO_EMBED_URL=${NEXT_PUBLIC_TAWKTO_EMBED_URL}
+
     depends_on:
       - textbee-api
     networks:
       - textbee-network
 
   # Redis (if SMS queue is needed)
-  redis:
+  textbee-redis:
     container_name: textbee-redis
     image: redis:alpine
     restart: always
