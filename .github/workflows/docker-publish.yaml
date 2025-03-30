@@ -4,8 +4,22 @@ on:
     push:
         branches: ["main"]
         tags: ["v*.*.*"]
-
     workflow_dispatch:
+        inputs:
+            git_ref:
+                description: 'Git Ref (Branch, Tag or Release)'
+                required: true
+                default: 'main'
+                type: string
+            image_name:
+                description: 'Docker image name (api, web, or both)'
+                required: true
+                default: 'both'
+                type: choice
+                options:
+                    - api
+                    - web
+                    - both
 
 env:
     # Use docker.io for Docker Hub if empty
@@ -27,6 +41,8 @@ jobs:
         steps:
             - name: Checkout repository
               uses: actions/checkout@v4
+              with:
+                  ref: ${{ github.event.inputs.git_ref || github.ref }}
 
             - name: Set up QEMU
               uses: docker/setup-qemu-action@v2
@@ -51,6 +67,7 @@ jobs:
             # https://github.com/docker/metadata-action
             - name: Extract Docker metadata for API
               id: meta-api
+              if: ${{ github.event.inputs.image_name == 'api' || github.event.inputs.image_name == 'both' || github.event_name != 'workflow_dispatch' }}
               uses: docker/metadata-action@v5
               with:
                   github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -60,15 +77,17 @@ jobs:
                       type=semver,pattern=v{{version}}
                       type=semver,pattern=v{{major}}.{{minor}}
                       type=semver,pattern=v{{major}}
+                      type=raw,value=${{ github.event.inputs.git_ref }},enable=${{ github.event_name == 'workflow_dispatch' }}
 
             # Build and push Docker image with Buildx (don't push on PR)
             # https://github.com/docker/build-push-action
-            - name: Build and push Docker image
+            - name: Build and push Docker image for API
               id: build-and-push-api
+              if: ${{ github.event.inputs.image_name == 'api' || github.event.inputs.image_name == 'both' || github.event_name != 'workflow_dispatch' }}
               uses: docker/build-push-action@v5
               with:
                   context: api
-                  build-args: VERSION=${{github.ref_name}}
+                  build-args: VERSION=${{ github.event.inputs.git_ref || github.ref_name }}
                   push: ${{ github.event_name != 'pull_request' }}
                   tags: ${{ steps.meta-api.outputs.tags }}
                   platforms: linux/amd64,linux/arm64
@@ -78,6 +97,7 @@ jobs:
             # https://github.com/docker/metadata-action
             - name: Extract Docker metadata for Web
               id: meta-web
+              if: ${{ github.event.inputs.image_name == 'web' || github.event.inputs.image_name == 'both' || github.event_name != 'workflow_dispatch' }}
               uses: docker/metadata-action@v5
               with:
                   github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -87,15 +107,17 @@ jobs:
                       type=semver,pattern=v{{version}}
                       type=semver,pattern=v{{major}}.{{minor}}
                       type=semver,pattern=v{{major}}
+                      type=raw,value=${{ github.event.inputs.git_ref }},enable=${{ github.event_name == 'workflow_dispatch' }}
 
             # Build and push Docker image with Buildx (don't push on PR)
             # https://github.com/docker/build-push-action
-            - name: Build and push Docker image
+            - name: Build and push Docker image for Web
               id: build-and-push-web
+              if: ${{ github.event.inputs.image_name == 'web' || github.event.inputs.image_name == 'both' || github.event_name != 'workflow_dispatch' }}
               uses: docker/build-push-action@v5
               with:
                   context: web
-                  build-args: VERSION=${{github.ref_name}}
+                  build-args: VERSION=${{ github.event.inputs.git_ref || github.ref_name }}
                   push: ${{ github.event_name != 'pull_request' }}
                   tags: ${{ steps.meta-web.outputs.tags }}
                   platforms: linux/amd64,linux/arm64
