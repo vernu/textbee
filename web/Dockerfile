@@ -79,4 +79,4 @@ EXPOSE ${PORT}
 # HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
 #   CMD wget -q -O - http://localhost:${PORT}/api/health || exit 1
 
-CMD ["node", "server.js"] 
+CMD ["node", "server"] 
