@@ -1,56 +1,141 @@
-services:
-  web:
-    container_name: web
-    build:
-      context: ./web
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    depends_on:
-      - mongo
-    environment:
-      NODE_ENV: production
 
-  api:
-    container_name: api
+services:
+  # MongoDB service
+  textbee-db:
+    container_name: textbee-db
+    image: mongo:latest
+    restart: always
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USER:-adminUser}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASS:-adminPassword}
+      - MONGO_INITDB_DATABASE=textbee
+      # - MONGO_DB_USERNAME=${MONGO_USER:-textbeeUser}
+      # - MONGO_DB_PASSWORD=${MONGO_PASS:-textbeePassword}
+    volumes:
+      # - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+      - mongodb_data:/data/db
+    ports:
+      # only allow access from the same machine, and use port 27018 to avoid conflict with default mongo port 27017
+      # - "127.0.0.1:${MONGO_PORT:-27018}:27017"
+      - "${MONGO_PORT:-27018}:27017"
+    networks:
+      - textbee-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # MongoDB Express (optional admin UI)
+  mongo-express:
+    container_name: textbee-mongo-express
+    image: mongo-express:latest
+    restart: always
+    ports:
+      - "${MONGO_EXPRESS_PORT:-8081}:8081"
+    environment:
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=${MONGO_ROOT_USER:-adminUser}
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=${MONGO_ROOT_PASS:-adminPassword}
+      - ME_CONFIG_MONGODB_SERVER=textbee-db
+    depends_on:
+      textbee-db:
+        condition: service_healthy
+    networks:
+      - textbee-network
+
+  # NestJS API
+  textbee-api:
+    container_name: textbee-api
     build:
       context: ./api
       dockerfile: Dockerfile
-      target: prod
+    restart: always
     ports:
-      - "3005:3005"
-    depends_on:
-      - mongo
+      - "${PORT:-3001}:3001"
+    env_file:
+      - ./api/.env
     environment:
-      NODE_ENV: production
+      - PORT=${PORT:-3001}
+      # - MONGO_URI=${MONGO_URI:-mongodb://${MONGO_USER:-textbeeUser}:${MONGO_PASS:-textbeePassword}@textbee-db:27018/TextBee}
+      # - MONGO_URI=mongodb://adminUser:adminPassword@textbee-db:27018/textbee
+      # - FRONTEND_URL=${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+      # - JWT_SECRET=${JWT_SECRET:-your_jwt_secret_here}
+      # - JWT_EXPIRATION=${JWT_EXPIRATION:-60d}
+      # - MAIL_HOST=${MAIL_HOST}
+      # - MAIL_PORT=${MAIL_PORT}
+      # - MAIL_USER=${MAIL_USER}
+      # - MAIL_PASS=${MAIL_PASS}
+      # - MAIL_FROM=${MAIL_FROM}
+      # - USE_SMS_QUEUE=${USE_SMS_QUEUE:-false}
+      # - REDIS_HOST=${REDIS_HOST:-redis}
+      # - REDIS_PORT=${REDIS_PORT:-6379}
+      # - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+      # - FIREBASE_PRIVATE_KEY_ID=${FIREBASE_PRIVATE_KEY_ID}
+      # - FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY}
+      # - FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL}
+      # - FIREBASE_CLIENT_ID=${FIREBASE_CLIENT_ID}
+      # - FIREBASE_CLIENT_C509_CERT_URL=${FIREBASE_CLIENT_C509_CERT_URL}
+    depends_on:
+      textbee-db:
+        condition: service_healthy
+    networks:
+      - textbee-network
 
-  mongo:
-    container_name: mongo
-    image: mongo
+  # Next.js Web
+  textbee-web:
+    container_name: textbee-web
+    build:
+      context: ./web
+      dockerfile: Dockerfile
     restart: always
     ports:
-      - "27017:27017"
+      - "${PORT:-3000}:3000"
+    env_file:
+      - ./web/.env
     environment:
-      MONGO_INITDB_ROOT_USERNAME: adminUser
-      MONGO_INITDB_ROOT_PASSWORD: adminPassword
-      MONGO_INITDB_DATABASE: TextBee
-    volumes:
-      - textbee-db-data:/data/db
-      # THe following scripts creates TextBee DB automatically, also the user which web and api are connecting with.
-      - ./mongo-init:/docker-entrypoint-initdb.d:ro
-  mongo-express:
-    container_name: mongo-ee
-    image: mongo-express
-    restart: always
-    ports:
-      - "8081:8081"
-    environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: adminUser
-      ME_CONFIG_MONGODB_ADMINPASSWORD: adminPassword
-      ME_CONFIG_MONGODB_URL: mongodb://adminUser:adminPassword@mongo:27017/
-      ME_CONFIG_BASICAUTH: "false"
+      - PORT=${PORT:-3000}
+      # - NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+      - NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL:-http://localhost:3001/api/v1}
+      # - AUTH_SECRET=${AUTH_SECRET:-generate_a_secure_random_string_here}
+      # - DATABASE_URL=mongodb://adminUser:adminPassword@textbee-db:27018/textbee
+      # - DATABASE_URL=mongodb://adminUser:adminPassword@textbee-db:27018/textbee
+      # - MAIL_HOST=${MAIL_HOST}
+      # - MAIL_PORT=${MAIL_PORT}
+      # - MAIL_USER=${MAIL_USER}
+      # - MAIL_PASS=${MAIL_PASS}
+      # - MAIL_FROM=${MAIL_FROM}
+      # - ADMIN_EMAIL=${ADMIN_EMAIL}
+      # - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
+      # - NEXT_PUBLIC_TAWKTO_EMBED_URL=${NEXT_PUBLIC_TAWKTO_EMBED_URL}
     depends_on:
-      - mongo
+      - textbee-api
+    networks:
+      - textbee-network
+
+  # Redis (if SMS queue is needed)
+  redis:
+    container_name: textbee-redis
+    image: redis:alpine
+    restart: always
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - textbee-network
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+networks:
+  textbee-network:
+    driver: bridge
 
 volumes:
-  textbee-db-data:
+  mongodb_data:
+  redis_data: 

@@ -1,20 +1,82 @@
-FROM node:18-alpine AS base
-
-# Stage 1: Install web dependencies
-FROM base AS web-deps
+# Stage 1: Dependencies
+FROM node:22-alpine AS deps
 WORKDIR /app
-COPY .env ./.env
+
+# Install pnpm and required OpenSSL dependencies
+RUN apk add --no-cache openssl openssl-dev
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+# Copy package.json and pnpm-lock.yaml
 COPY package.json pnpm-lock.yaml ./
-RUN corepack enable pnpm && pnpm install --frozen-lockfile
 
-# Stage 2: Build the web application
-FROM base AS web-builder
-ENV NODE_ENV=production
-EXPOSE 3000
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Stage 2: Builder
+FROM node:22-alpine AS builder
 WORKDIR /app
-COPY . .
-COPY --from=web-deps /app/node_modules ./node_modules
-COPY --from=web-deps /app/.env .env
-RUN corepack enable pnpm && pnpm run vercel-build
 
-CMD ["pnpm", "start"]
+# Install pnpm and required OpenSSL dependencies
+RUN apk add --no-cache openssl openssl-dev
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+# Copy dependencies from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+
+# Copy all files
+COPY . .
+
+# Set environment variables for building
+ENV NEXT_TELEMETRY_DISABLED 1
+
+# Generate prisma client - make sure it exists
+RUN pnpm prisma generate
+
+# Build the application
+RUN pnpm build
+
+# Stage 3: Production runner
+FROM node:22-alpine AS runner
+WORKDIR /app
+
+# Install pnpm and required OpenSSL dependencies
+RUN apk add --no-cache openssl openssl-dev
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+# Set environment variables
+ENV NODE_ENV production
+ENV NEXT_TELEMETRY_DISABLED 1
+ENV CONTAINER_RUNTIME docker
+
+# Add a non-root user to run the app
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs && \
+    chown -R nextjs:nodejs /app
+
+# Copy necessary files for the standalone app
+COPY --from=builder --chown=nextjs:nodejs /app/next.config.js ./
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# Copy Prisma schema and generate client during runtime
+COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+COPY --from=builder --chown=nextjs:nodejs /app/package.json ./
+COPY --from=builder --chown=nextjs:nodejs /app/pnpm-lock.yaml ./
+
+# Install only production dependencies, including Prisma, and generate Prisma client
+RUN pnpm install --prod --frozen-lockfile && \
+    pnpm prisma generate
+
+# Switch to non-root user
+USER nextjs
+
+# Expose the port the app will run on
+ENV PORT 3000
+EXPOSE ${PORT}
+
+# Health check to verify app is running
+# HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+#   CMD wget -q -O - http://localhost:${PORT}/api/health || exit 1
+
+CMD ["node", "server.js"] 

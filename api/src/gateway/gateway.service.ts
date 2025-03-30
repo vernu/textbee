@@ -11,14 +11,14 @@ import {
   SendSMSInputDTO,
 } from './gateway.dto'
 import { User } from '../users/schemas/user.schema'
-import { AuthService } from 'src/auth/auth.service'
+import { AuthService } from '../auth/auth.service'
 import { SMS } from './schemas/sms.schema'
 import { SMSType } from './sms-type.enum'
 import { SMSBatch } from './schemas/sms-batch.schema'
 import { BatchResponse, Message } from 'firebase-admin/messaging'
-import { WebhookEvent } from 'src/webhook/webhook-event.enum'
-import { WebhookService } from 'src/webhook/webhook.service'
-import { BillingService } from 'src/billing/billing.service'
+import { WebhookEvent } from '../webhook/webhook-event.enum'
+import { WebhookService } from '../webhook/webhook.service'
+import { BillingService } from '../billing/billing.service'
 import { SmsQueueService } from './queue/sms-queue.service'
 
 @Injectable()

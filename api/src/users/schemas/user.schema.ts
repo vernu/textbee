@@ -14,7 +14,7 @@ export class User {
   @Prop({ type: String, required: true, unique: true, lowercase: true })
   email: string
 
-  @Prop({ type: String, unique: true })
+  @Prop({ type: String, unique: true, sparse: true })
   googleId?: string
 
   @Prop({ type: String })
