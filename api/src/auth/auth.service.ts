@@ -12,7 +12,7 @@ import {
   PasswordReset,
   PasswordResetDocument,
 } from './schemas/password-reset.schema'
-import { MailService } from 'src/mail/mail.service'
+import { MailService } from '../mail/mail.service'
 import { RequestResetPasswordInputDTO, ResetPasswordInputDTO } from './auth.dto'
 import { AccessLog } from './schemas/access-log.schema'
 import {
