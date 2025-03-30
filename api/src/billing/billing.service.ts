@@ -7,10 +7,10 @@ import {
   SubscriptionDocument,
 } from './schemas/subscription.schema'
 import { Polar } from '@polar-sh/sdk'
-import { User, UserDocument } from 'src/users/schemas/user.schema'
+import { User, UserDocument } from '../users/schemas/user.schema'
 import { CheckoutResponseDTO, PlanDTO } from './billing.dto'
-import { SMSDocument } from 'src/gateway/schemas/sms.schema'
-import { SMS } from 'src/gateway/schemas/sms.schema'
+import { SMSDocument } from '../gateway/schemas/sms.schema'
+import { SMS } from '../gateway/schemas/sms.schema'
 import { validateEvent } from '@polar-sh/sdk/webhooks'
 import {
   PolarWebhookPayload,
@@ -123,7 +123,7 @@ export class BillingService {
   }
 
   async getActiveSubscription(userId: string) {
-    const user = await this.userModel.findById(userId)
+    const user = await this.userModel.findById(new Types.ObjectId(userId))
     const plans = await this.planModel.find()
 
     const customPlan = plans.find((plan) => plan.name === 'custom')
@@ -131,7 +131,7 @@ export class BillingService {
     const freePlan = plans.find((plan) => plan.name === 'free')
 
     const customPlanSubscription = await this.subscriptionModel.findOne({
-      user: userId,
+      user: user._id,
       plan: customPlan._id,
       isActive: true,
     })
@@ -141,7 +141,7 @@ export class BillingService {
     }
 
     const proPlanSubscription = await this.subscriptionModel.findOne({
-      user: userId,
+      user: user._id,
       plan: proPlan._id,
       isActive: true,
     })
@@ -151,7 +151,7 @@ export class BillingService {
     }
 
     const freePlanSubscription = await this.subscriptionModel.findOne({
-      user: userId,
+      user: user._id,
       plan: freePlan._id,
       isActive: true,
     })
@@ -161,19 +161,26 @@ export class BillingService {
     }
 
     // create a new free plan subscription
-    const newFreePlanSubscription = await this.subscriptionModel.create({
-      user: userId,
-      plan: freePlan._id,
-      isActive: true,
-      startDate: new Date(),
-    })
+    // const newFreePlanSubscription = await this.subscriptionModel.create({
+    //   user: user._id,
+    //   plan: freePlan._id,
+    //   isActive: true,
+    //   startDate: new Date(),
+    // })
 
-    return newFreePlanSubscription.populate('plan')
+    // return newFreePlanSubscription.populate('plan')
+    return {
+      user,
+      plan: freePlan,
+      isActive: true,
+      status: 'active',
+      amount: 0,
+    }
   }
 
   async getUserLimits(userId: string) {
     const subscription = await this.subscriptionModel
-      .findOne({ user: userId, isActive: true })
+      .findOne({ user: new Types.ObjectId(userId), isActive: true })
       .populate('plan')
 
     if (!subscription) {
@@ -281,103 +288,123 @@ export class BillingService {
     action: 'send_sms' | 'receive_sms' | 'bulk_send_sms',
     value: number,
   ) {
-    // TODO: temporary allow all requests until march 15 2025
-    if (new Date() < new Date('2025-03-15')) {
+    try {
+      const user = await this.userModel.findById(userId)
+      if (user.isBanned) {
+        throw new HttpException(
+          {
+            message: 'Sorry, we cannot process your request at the moment',
+          },
+          HttpStatus.BAD_REQUEST,
+        )
+      }
+
+      if (user.emailVerifiedAt === null) {
+        console.error('canPerformAction: User email not verified')
+        throw new HttpException(
+          {
+            message: 'Please verify your email to continue',
+          },
+          HttpStatus.BAD_REQUEST,
+        )
+      }
+
+      let plan: PlanDocument
+      const subscription = await this.subscriptionModel.findOne({
+        user: userId,
+        isActive: true,
+      })
+
+      if (!subscription) {
+        plan = await this.planModel.findOne({ name: 'free' })
+      } else {
+        plan = await this.planModel.findById(subscription.plan)
+      }
+
+      if (plan.name === 'custom') {
+        // TODO: for now custom plans are unlimited
+        return true
+      }
+
+      let hasReachedLimit = false
+      let message = ''
+
+      const processedSmsToday = await this.smsModel.countDocuments({
+        'device.user': userId,
+        createdAt: { $gte: new Date(new Date().setHours(0, 0, 0, 0)) },
+      })
+      const processedSmsLastMonth = await this.smsModel.countDocuments({
+        'device.user': userId,
+        createdAt: {
+          $gte: new Date(new Date().setMonth(new Date().getMonth() - 1)),
+        },
+      })
+
+      if (['send_sms', 'receive_sms', 'bulk_send_sms'].includes(action)) {
+        // check daily limit
+        if (
+          plan.dailyLimit !== -1 &&
+          processedSmsToday + value > plan.dailyLimit
+        ) {
+          hasReachedLimit = true
+          message = `You have reached your daily limit, you only have ${plan.dailyLimit - processedSmsToday} remaining`
+        }
+
+        // check monthly limit
+        if (
+          plan.monthlyLimit !== -1 &&
+          processedSmsLastMonth + value > plan.monthlyLimit
+        ) {
+          hasReachedLimit = true
+          message = `You have reached your monthly limit, you only have ${plan.monthlyLimit - processedSmsLastMonth} remaining`
+        }
+
+        // check bulk send limit
+        if (plan.bulkSendLimit !== -1 && value > plan.bulkSendLimit) {
+          hasReachedLimit = true
+          message = `You can only send ${plan.bulkSendLimit} sms at a time`
+        }
+      }
+
+      if (hasReachedLimit) {
+        console.error('canPerformAction: hasReachedLimit')
+        console.error(
+          JSON.stringify({
+            userId,
+            userEmail: user.email,
+            userName: user.name,
+            action,
+            value,
+            message,
+            hasReachedLimit: true,
+            dailyLimit: plan.dailyLimit,
+            dailyRemaining: plan.dailyLimit - processedSmsToday,
+            monthlyRemaining: plan.monthlyLimit - processedSmsLastMonth,
+            bulkSendLimit: plan.bulkSendLimit,
+            monthlyLimit: plan.monthlyLimit,
+          }),
+        )
+
+        throw new HttpException(
+          {
+            message: message,
+            hasReachedLimit: true,
+            dailyLimit: plan.dailyLimit,
+            dailyRemaining: plan.dailyLimit - processedSmsToday,
+            monthlyRemaining: plan.monthlyLimit - processedSmsLastMonth,
+            bulkSendLimit: plan.bulkSendLimit,
+            monthlyLimit: plan.monthlyLimit,
+          },
+          HttpStatus.BAD_REQUEST,
+        )
+      }
+
+      return true
+    } catch (error) {
+      console.error('canPerformAction: Exception in canPerformAction')
+      console.error(JSON.stringify(error))
       return true
     }
-
-    const user = await this.userModel.findById(userId)
-    if (user.isBanned) {
-      throw new HttpException(
-        {
-          message: 'Sorry, we cannot process your request at the moment',
-        },
-        HttpStatus.BAD_REQUEST,
-      )
-    }
-
-    if (user.emailVerifiedAt === null) {
-      // throw new HttpException(
-      //   {
-      //     message: 'Please verify your email to continue',
-      //   },
-      //   HttpStatus.BAD_REQUEST,
-      // )
-    }
-
-    let plan: PlanDocument
-    const subscription = await this.subscriptionModel.findOne({
-      user: userId,
-      isActive: true,
-    })
-
-    if (!subscription) {
-      plan = await this.planModel.findOne({ name: 'free' })
-    } else {
-      plan = await this.planModel.findById(subscription.plan)
-    }
-
-    if (plan.name === 'custom') {
-      // TODO: for now custom plans are unlimited
-      return true
-    }
-
-    let hasReachedLimit = false
-    let message = ''
-
-    const processedSmsToday = await this.smsModel.countDocuments({
-      'device.user': userId,
-      createdAt: { $gte: new Date(new Date().setHours(0, 0, 0, 0)) },
-    })
-    const processedSmsLastMonth = await this.smsModel.countDocuments({
-      'device.user': userId,
-      createdAt: {
-        $gte: new Date(new Date().setMonth(new Date().getMonth() - 1)),
-      },
-    })
-
-    if (['send_sms', 'receive_sms', 'bulk_send_sms'].includes(action)) {
-      // check daily limit
-      if (
-        plan.dailyLimit !== -1 &&
-        processedSmsToday + value > plan.dailyLimit
-      ) {
-        hasReachedLimit = true
-        message = `You have reached your daily limit, you only have ${plan.dailyLimit - processedSmsToday} remaining`
-      }
-
-      // check monthly limit
-      if (
-        plan.monthlyLimit !== -1 &&
-        processedSmsLastMonth + value > plan.monthlyLimit
-      ) {
-        hasReachedLimit = true
-        message = `You have reached your monthly limit, you only have ${plan.monthlyLimit - processedSmsLastMonth} remaining`
-      }
-
-      // check bulk send limit
-      if (plan.bulkSendLimit !== -1 && value > plan.bulkSendLimit) {
-        hasReachedLimit = true
-        message = `You can only send ${plan.bulkSendLimit} sms at a time`
-      }
-    }
-
-    if (hasReachedLimit) {
-      throw new HttpException(
-        {
-          message: message,
-          hasReachedLimit: true,
-          dailyLimit: plan.dailyLimit,
-          dailyRemaining: plan.dailyLimit - processedSmsToday,
-          monthlyRemaining: plan.monthlyLimit - processedSmsLastMonth,
-          bulkSendLimit: plan.bulkSendLimit,
-          monthlyLimit: plan.monthlyLimit,
-        },
-        HttpStatus.BAD_REQUEST,
-      )
-    }
-
-    return true
   }
 
   async getUsage(userId: string) {
