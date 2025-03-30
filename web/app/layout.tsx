@@ -9,7 +9,6 @@ import { Session } from 'next-auth'
 import { getServerSession } from 'next-auth'
 import { headers } from 'next/dist/client/components/headers'
 import { authOptions } from '@/lib/auth'
-import { PrismaClient } from '@prisma/client'
 import prismaClient from '@/lib/prismaClient'
 import { userAgent } from 'next/server'
 
