@@ -77,6 +77,9 @@ importers:
       ioredis:
         specifier: ^5.6.0
         version: 5.6.0
+      latest:
+        specifier: link:@polar-sh/sdk/latest
+        version: link:@polar-sh/sdk/latest
       mongoose:
         specifier: ^8.12.1
         version: 8.12.1(@aws-sdk/credential-providers@3.675.0(@aws-sdk/client-sso-oidc@3.675.0(@aws-sdk/client-sts@3.675.0)))(socks@2.8.3)
