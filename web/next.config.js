@@ -5,6 +5,7 @@ const nextConfig = {
     locales: ['en-US'],
     defaultLocale: 'en-US',
   },
+  output: 'standalone',
 
   async redirects() {
     return [
