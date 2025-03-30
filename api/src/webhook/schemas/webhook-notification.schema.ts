@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose'
 import { Document, Types } from 'mongoose'
 import { WebhookSubscription } from './webhook-subscription.schema'
-import { SMS } from 'src/gateway/schemas/sms.schema'
+import { SMS } from '../../gateway/schemas/sms.schema'
 
 export type WebhookNotificationDocument = WebhookNotification & Document
 

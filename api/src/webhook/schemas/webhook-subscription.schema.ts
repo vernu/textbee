@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose'
 import { Document, Types } from 'mongoose'
-import { User } from 'src/users/schemas/user.schema'
+import { User } from '../../users/schemas/user.schema'
 import { WebhookEvent } from '../webhook-event.enum'
 
 export type WebhookSubscriptionDocument = WebhookSubscription & Document
