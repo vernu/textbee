@@ -126,14 +126,14 @@ export class BillingService {
     const user = await this.userModel.findById(new Types.ObjectId(userId))
     const plans = await this.planModel.find()
 
-    const customPlan = plans.find((plan) => plan.name === 'custom')
+    const customPlans = plans.filter((plan) => plan.name?.startsWith('custom'))
     const proPlan = plans.find((plan) => plan.name === 'pro')
     const freePlan = plans.find((plan) => plan.name === 'free')
 
     const customPlanSubscription = await this.subscriptionModel.findOne({
       user: user._id,
-      plan: customPlan._id,
-      isActive: true,
+        plan: { $in: customPlans.map((plan) => plan._id) },
+        isActive: true,
     })
 
     if (customPlanSubscription) {
@@ -321,7 +321,7 @@ export class BillingService {
         plan = await this.planModel.findById(subscription.plan)
       }
 
-      if (plan.name === 'custom') {
+      if (plan.name?.startsWith('custom')) {
         // TODO: for now custom plans are unlimited
         return true
       }

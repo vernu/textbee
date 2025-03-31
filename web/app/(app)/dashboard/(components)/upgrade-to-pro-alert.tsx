@@ -51,7 +51,7 @@ export default function UpgradeToProAlert() {
     return null
   }
 
-  if (['pro', 'custom'].includes(currentSubscription?.plan?.name)) {
+  if (currentSubscription?.plan?.name !== 'free') {
     return null
   }
 
