@@ -311,7 +311,7 @@ export class BillingService {
 
       let plan: PlanDocument
       const subscription = await this.subscriptionModel.findOne({
-        user: userId,
+        user,
         isActive: true,
       })
 
