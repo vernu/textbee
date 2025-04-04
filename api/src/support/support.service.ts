@@ -48,6 +48,7 @@ export class SupportService {
       await this.mailService.sendEmailFromTemplate({
         from: 'support@textbee.dev',
         to: createSupportMessageDto.email,
+        cc: process.env.ADMIN_EMAIL,
         subject: `Support Request Submitted: ${createSupportMessageDto.category}-${savedMessage._id}`,
         template: 'customer-support-confirmation',
         context: {
@@ -120,6 +121,7 @@ export class SupportService {
       await this.mailService.sendEmailFromTemplate({
         from: 'support@textbee.dev',
         to: user.email,
+        cc: process.env.ADMIN_EMAIL,
         subject: `Account Deletion Request: ${savedMessage._id}`,
         template: 'account-deletion-request',
         context: {
