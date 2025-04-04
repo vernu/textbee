@@ -18,6 +18,7 @@ import { ScheduleModule } from '@nestjs/schedule'
 import { BillingModule } from './billing/billing.module'
 import { ConfigModule, ConfigService } from '@nestjs/config'
 import { BullModule } from '@nestjs/bull'
+import { SupportModule } from './support/support.module'
 
 @Injectable()
 export class LoggerMiddleware implements NestMiddleware {
@@ -56,6 +57,7 @@ export class LoggerMiddleware implements NestMiddleware {
     GatewayModule,
     WebhookModule,
     BillingModule,
+    SupportModule,
   ],
   controllers: [],
   providers: [
