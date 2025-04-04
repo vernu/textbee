@@ -1,0 +1,80 @@
+<html lang='en'>
+  <head>
+    <meta charset='UTF-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+    <title>Account Deletion Request</title>
+    <style>
+      body { font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6;
+      color: #333; max-width: 600px; margin: 0 auto; padding: 20px; } .header {
+      text-align: center; margin-bottom: 20px; } .logo { max-width: 150px;
+      margin-bottom: 10px; } h1 { color: #dc2626; margin-bottom: 20px; }
+      .content { background-color: #f9fafb; border-radius: 8px; padding: 20px;
+      margin-bottom: 20px; } .message-details { background-color: #ffffff;
+      border-left: 4px solid #dc2626; padding: 15px; margin: 15px 0;
+      border-radius: 4px; } .contact-info { margin-top: 20px; padding-top: 15px;
+      border-top: 1px solid #e5e7eb; } .field-label { font-weight: bold; color:
+      #4b5563; margin-bottom: 5px; } .footer { text-align: center; font-size:
+      14px; color: #6b7280; margin-top: 30px; padding-top: 20px; border-top: 1px
+      solid #e5e7eb; } .important-notice { background-color: #fee2e2;
+      border-left: 4px solid #dc2626; padding: 15px; margin: 15px 0;
+      border-radius: 4px; } .cancel-notice { background-color: #e0f2fe; border:
+      2px solid #0284c7; padding: 15px; margin: 20px 0; border-radius: 4px;
+      text-align: center; } .cancel-notice h3 { color: #0284c7; margin-top: 0; }
+      .cancel-action { font-weight: bold; font-size: 16px; } .cancel-button {
+      display: inline-block; margin-top: 10px; padding: 8px 16px;
+      background-color: #0284c7; color: white; border-radius: 4px;
+      text-decoration: none; font-weight: bold; }
+    </style>
+  </head>
+  <body>
+    <div class='header'>
+      {{!-- <img src="{{appLogoUrl}}" alt="TextBee Logo" class="logo"> --}}
+      <h1>Account Deletion Request</h1>
+    </div>
+
+    <div class='content'>
+      <p>Hello {{name}},</p>
+
+      <p>We have received your request to delete your TextBee account. We're
+        sorry to see you go.</p>
+
+      <div class='important-notice'>
+        <p><strong>Important:</strong>
+          Your account has been marked for deletion and will be processed within
+          7 days. During this period:</p>
+        <ul>
+          <li>You can still log in and access your account until the deletion is
+            completed</li>
+          <li>After the deletion is complete, all your data will be permanently
+            removed</li>
+          <li>This action cannot be undone once processed</li>
+        </ul>
+      </div>
+
+      <div class='message-details'>
+        <div class='field-label'>Reason for deletion:</div>
+        <p>{{#if message}}{{message}}{{else}}No reason provided{{/if}}</p>
+      </div>
+
+      <div class='contact-info'>
+        <div class='field-label'>Account Information:</div>
+        <p>Name: {{name}}</p>
+        <p>Email: {{email}}</p>
+      </div>
+
+      <div class='cancel-notice'>
+        <h3>Changed Your Mind?</h3>
+        <p class='cancel-action'>If you didn't request this deletion or want to
+          keep your account, you can easily cancel this request!</p>
+        <p>Simply reply to this email as soon as possible and we'll immediately
+          stop the deletion process.</p>
+        <p>Your account and all your data will remain intact. No further action
+          will be needed.</p>
+      </div>
+    </div>
+
+    <div class='footer'>
+      <p>&copy; {{currentYear}} textBee.dev.</p>
+    </div>
+  </body>
+</html>

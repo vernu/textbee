@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -31,13 +32,14 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from '@/hooks/use-toast'
-import axios from 'axios'
+import httpBrowserClient from '@/lib/httpBrowserClient'
+import { ApiEndpoints } from '@/config/api'
 
 const SupportFormSchema = z.object({
   name: z.string().min(1, { message: 'Name is required' }),
   email: z.string().email({ message: 'Invalid email address' }),
   phone: z.string().optional(),
-  category: z.enum(['general', 'technical'], {
+  category: z.enum(['general', 'technical', 'billing-and-payments', 'other'], {
     message: 'Support category is required',
   }),
   message: z.string().min(1, { message: 'Message is required' }),
@@ -45,6 +47,10 @@ const SupportFormSchema = z.object({
 
 export default function SupportButton() {
   const [open, setOpen] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isSubmitSuccessful, setIsSubmitSuccessful] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
   const form = useForm({
     resolver: zodResolver(SupportFormSchema),
     defaultValues: {
@@ -57,23 +63,41 @@ export default function SupportButton() {
   })
 
   const onSubmit = async (data: any) => {
-    try {
-      const response = await axios.post('/api/customer-support', data)
+    setIsSubmitting(true)
+    setErrorMessage(null)
 
-      const result = response.data
+    try {
+      // Use the existing httpBrowserClient to call the NestJS endpoint
+      const response = await httpBrowserClient.post(
+        ApiEndpoints.support.customerSupport(),
+        data
+      )
+
+      setIsSubmitSuccessful(true)
 
       toast({
         title: 'Support request submitted',
-        description: result.message,
+        description: response.data.message || 'We will get back to you soon.',
       })
+
+      // Wait 3 seconds before closing the dialog
+      setTimeout(() => {
+        setOpen(false)
+      }, 3000)
     } catch (error) {
-      form.setError('root.serverError', {
-        message: 'Error submitting support request',
-      })
+      console.error('Error submitting support request:', error)
+
+      setErrorMessage(
+        'Error submitting support request. Please try again later.'
+      )
+
       toast({
         title: 'Error submitting support request',
         description: 'Please try again later',
+        variant: 'destructive',
       })
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -81,6 +105,8 @@ export default function SupportButton() {
     setOpen(open)
     if (!open) {
       form.reset()
+      setIsSubmitSuccessful(false)
+      setErrorMessage(null)
     }
   }
 
@@ -98,19 +124,23 @@ export default function SupportButton() {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Contact Support</DialogTitle>
+          <DialogDescription>
+            Fill out the form below and we'll get back to you as soon as
+            possible.
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
             <FormField
               control={form.control}
               name='category'
-              disabled={form.formState.isSubmitting}
+              disabled={isSubmitting}
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Support Category</FormLabel>
                   <Select
                     onValueChange={field.onChange}
-                    disabled={form.formState.isSubmitting}
+                    disabled={isSubmitting}
                     defaultValue={field.value}
                   >
                     <FormControl>
@@ -123,6 +153,10 @@ export default function SupportButton() {
                       <SelectItem value='technical'>
                         Technical Support
                       </SelectItem>
+                      <SelectItem value='billing-and-payments'>
+                        Billing and Payments
+                      </SelectItem>
+                      <SelectItem value='other'>Other</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -132,7 +166,7 @@ export default function SupportButton() {
             <FormField
               control={form.control}
               name='name'
-              disabled={form.formState.isSubmitting}
+              disabled={isSubmitting}
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Name</FormLabel>
@@ -146,7 +180,7 @@ export default function SupportButton() {
             <FormField
               control={form.control}
               name='email'
-              disabled={form.formState.isSubmitting}
+              disabled={isSubmitting}
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Email</FormLabel>
@@ -164,7 +198,7 @@ export default function SupportButton() {
             <FormField
               control={form.control}
               name='phone'
-              disabled={form.formState.isSubmitting}
+              disabled={isSubmitting}
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Phone (Optional)</FormLabel>
@@ -178,7 +212,7 @@ export default function SupportButton() {
             <FormField
               control={form.control}
               name='message'
-              disabled={form.formState.isSubmitting}
+              disabled={isSubmitting}
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Message</FormLabel>
@@ -193,27 +227,23 @@ export default function SupportButton() {
                 </FormItem>
               )}
             />
-            {form.formState.isSubmitSuccessful && (
+            {isSubmitSuccessful && (
               <div className='flex items-center gap-2 text-green-500'>
                 <Check className='h-4 w-4' /> We received your message, we will
                 get back to you soon.
               </div>
             )}
 
-            {form.formState.errors.root?.serverError && (
-              <>
-                <AlertTriangle className='h-4 w-4' />{' '}
-                {form.formState.errors.root.serverError.message}
-              </>
+            {errorMessage && (
+              <div className='flex items-center gap-2 text-red-500'>
+                <AlertTriangle className='h-4 w-4' /> {errorMessage}
+              </div>
             )}
-            <Button
-              type='submit'
-              disabled={form.formState.isSubmitting}
-              className='w-full'
-            >
-              {form.formState.isSubmitting ? (
+            <Button type='submit' disabled={isSubmitting} className='w-full'>
+              {isSubmitting ? (
                 <>
-                  <Loader2 className='h-4 w-4 animate-spin' /> Submitting ...{' '}
+                  <Loader2 className='h-4 w-4 animate-spin mr-2' />{' '}
+                  Submitting...
                 </>
               ) : (
                 'Submit'

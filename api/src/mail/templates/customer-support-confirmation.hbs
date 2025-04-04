@@ -1,0 +1,61 @@
+<html lang='en'>
+  <head>
+    <meta charset='UTF-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+    <title>Support Request Confirmation</title>
+    <style>
+      body { font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6;
+      color: #333; max-width: 600px; margin: 0 auto; padding: 20px; } .header {
+      text-align: center; margin-bottom: 20px; } .logo { max-width: 150px;
+      margin-bottom: 10px; } h1 { color: #2563eb; margin-bottom: 20px; }
+      .content { background-color: #f9fafb; border-radius: 8px; padding: 20px;
+      margin-bottom: 20px; } .message-details { background-color: #ffffff;
+      border-left: 4px solid #2563eb; padding: 15px; margin: 15px 0;
+      border-radius: 4px; } .contact-info { margin-top: 20px; padding-top: 15px;
+      border-top: 1px solid #e5e7eb; } .field-label { font-weight: bold; color:
+      #4b5563; margin-bottom: 5px; } .footer { text-align: center; font-size:
+      14px; color: #6b7280; margin-top: 30px; padding-top: 20px; border-top: 1px
+      solid #e5e7eb; }
+    </style>
+  </head>
+  <body>
+    <div class='header'>
+      {{!-- <img src="{{appLogoUrl}}" alt="TextBee Logo" class="logo"> --}}
+      <h1>Support Request Submitted</h1>
+    </div>
+
+    <div class='content'>
+      <p>Hello {{name}},</p>
+
+      <p>Thank you for contacting our support team. We have received your
+        message and will get back to you as soon as possible.</p>
+
+      <div class='message-details'>
+        <div class='field-label'>Category:</div>
+        <p>{{category}}</p>
+
+        <div class='field-label'>Your Message:</div>
+        <p>{{message}}</p>
+      </div>
+
+      <div class='contact-info'>
+        <div class='field-label'>Your Contact Information:</div>
+        <p>Name: {{name}}</p>
+        <p>Email: {{email}}</p>
+        {{#if phone}}
+          <p>Phone: {{phone}}</p>
+        {{else}}
+          <p>Phone: Not provided</p>
+        {{/if}}
+      </div>
+
+      <p>we will review your request and respond to the email address you
+        provided. If you have any additional information to share, please reply
+        to this email.</p>
+    </div>
+
+    <div class='footer'>
+      <p>&copy; {{currentYear}} textBee.dev.</p>
+    </div>
+  </body>
+</html>

@@ -14,6 +14,8 @@ import {
 } from './schemas/password-reset.schema'
 import { AccessLog, AccessLogSchema } from './schemas/access-log.schema'
 import { EmailVerification, EmailVerificationSchema } from './schemas/email-verification.schema'
+import { AuthGuard } from './guards/auth.guard'
+import { OptionalAuthGuard } from './guards/optional-auth.guard'
 
 @Module({
   imports: [
@@ -44,7 +46,7 @@ import { EmailVerification, EmailVerificationSchema } from './schemas/email-veri
     MailModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, MongooseModule],
-  exports: [AuthService, JwtModule],
+  providers: [AuthService, JwtStrategy, AuthGuard, OptionalAuthGuard, MongooseModule],
+  exports: [AuthService, JwtModule, AuthGuard, OptionalAuthGuard],
 })
 export class AuthModule {}
