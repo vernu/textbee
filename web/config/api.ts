@@ -37,4 +37,8 @@ export const ApiEndpoints = {
     checkout: () => '/billing/checkout',
     plans: () => '/billing/plans',
   },
+  support: {
+    customerSupport: () => '/support/customer-support',
+    requestAccountDeletion: () => '/support/request-account-deletion',
+  },
 }

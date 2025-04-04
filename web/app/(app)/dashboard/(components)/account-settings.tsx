@@ -188,7 +188,7 @@ export default function AccountSettings() {
     isSuccess: isRequestAccountDeletionSuccess,
   } = useMutation({
     mutationFn: () =>
-      axios.post('/api/request-account-deletion', {
+      httpBrowserClient.post(ApiEndpoints.support.requestAccountDeletion(), {
         message: deleteReason,
       }),
     onSuccess: () => {
@@ -714,8 +714,9 @@ export default function AccountSettings() {
 
                   {requestAccountDeletionError && (
                     <p className='text-sm text-destructive'>
-                      {requestAccountDeletionError.message ||
-                        'Failed to submit account deletion request'}
+                      {(requestAccountDeletionError as any).response?.data?.message || 
+                       requestAccountDeletionError.message ||
+                       'Failed to submit account deletion request'}
                     </p>
                   )}
 

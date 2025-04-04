@@ -37,6 +37,12 @@ export class User {
 
   @Prop({ type: Boolean, default: false })
   isBanned: boolean
+
+  @Prop({ type: Date })
+  accountDeletionRequestedAt: Date
+
+  @Prop({ type: String })
+  accountDeletionReason: string
 }
 
 export const UserSchema = SchemaFactory.createForClass(User)
