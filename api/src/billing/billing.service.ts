@@ -132,8 +132,8 @@ export class BillingService {
 
     const customPlanSubscription = await this.subscriptionModel.findOne({
       user: user._id,
-        plan: { $in: customPlans.map((plan) => plan._id) },
-        isActive: true,
+      plan: { $in: customPlans.map((plan) => plan._id) },
+      isActive: true,
     })
 
     if (customPlanSubscription) {
@@ -395,12 +395,18 @@ export class BillingService {
             bulkSendLimit: plan.bulkSendLimit,
             monthlyLimit: plan.monthlyLimit,
           },
-          HttpStatus.BAD_REQUEST,
+          HttpStatus.TOO_MANY_REQUESTS,
         )
       }
 
       return true
     } catch (error) {
+      if (
+        error instanceof HttpException &&
+        error.getStatus() === HttpStatus.TOO_MANY_REQUESTS
+      ) {
+        throw error
+      }
       console.error('canPerformAction: Exception in canPerformAction')
       console.error(JSON.stringify(error))
       return true

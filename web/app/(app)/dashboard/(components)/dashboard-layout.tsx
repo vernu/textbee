@@ -15,6 +15,7 @@ import { JoinCommunityModal } from '@/components/shared/join-community-modal'
 import { ContributeModal } from '@/components/shared/contribute-modal'
 import UpgradeToProAlert from './upgrade-to-pro-alert'
 import VerifyEmailAlert from './verify-email-alert'
+import AccountDeletionAlert from './account-deletion-alert'
 
 export default function Dashboard({
   children,
@@ -67,6 +68,7 @@ export default function Dashboard({
         </TabsList>
 
         <TabsContent value='dashboard' className='space-y-4'>
+          <AccountDeletionAlert />
           <CommunityAlert />
           <VerifyEmailAlert />
           <UpgradeToProAlert />
@@ -74,12 +76,14 @@ export default function Dashboard({
         </TabsContent>
 
         <TabsContent value='community' className='space-y-4'>
+          <AccountDeletionAlert />
           <VerifyEmailAlert />
           <UpgradeToProAlert />
           <CommunityLinks />
         </TabsContent>
 
         <TabsContent value='account' className='space-y-4'>
+          <AccountDeletionAlert />
           <CommunityAlert />
           <VerifyEmailAlert />
           <UpgradeToProAlert />
