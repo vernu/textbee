@@ -61,4 +61,5 @@ jobs:
         run: |
           cd web
           pnpm install
+          pnpm run prisma:generate
           pnpm run build 
