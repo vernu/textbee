@@ -40,7 +40,6 @@
     "next": "14.2.26",
     "next-auth": "^4.24.10",
     "next-themes": "^0.4.3",
-    "nodemailer": "^6.9.16",
     "papaparse": "^5.4.1",
     "prisma": "^5.22.0",
     "react": "^18.2.0",
