@@ -92,9 +92,6 @@ importers:
       next-themes:
         specifier: ^0.4.3
         version: 0.4.3(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
-      nodemailer:
-        specifier: ^6.9.16
-        version: 6.9.16
       papaparse:
         specifier: ^5.4.1
         version: 5.4.1
@@ -6395,7 +6392,8 @@ snapshots:
 
   node-releases@2.0.18: {}
 
-  nodemailer@6.9.16: {}
+  nodemailer@6.9.16:
+    optional: true
 
   normalize-path@3.0.0: {}
 
