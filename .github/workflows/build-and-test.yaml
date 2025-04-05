@@ -5,6 +5,7 @@ on:
     paths:
       - 'api/**'
       - 'web/**'
+      - 'android/**'
       - '.github/workflows/build-and-test.yaml'
   
   workflow_dispatch:
@@ -16,8 +17,8 @@ on:
         type: string
 
 jobs:
-  build-and-test:
-    name: Build and Test
+  build-and-test-web-and-api:
+    name: Build and Test web and api
     runs-on: ubuntu-latest
     
     steps:
@@ -63,3 +64,45 @@ jobs:
           pnpm install
           pnpm run prisma:generate
           pnpm run build 
+
+  build-and-test-android:
+    name: Build and Test Android
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.branch || github.ref }}
+      
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+      
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v2
+        with:
+          gradle-version: '7.2'
+      
+      - name: Grant execute permission for gradlew
+        run: chmod +x android/gradlew
+      
+      - name: Build Android app
+        run: |
+          cd android
+          ./gradlew assembleDebug
+      
+      # - name: Run Android tests
+      #   run: |
+      #     cd android
+      #     ./gradlew testDebugUnitTest
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7 
