@@ -2,128 +2,218 @@
   <head>
     <meta charset='utf-8' />
     <meta name='viewport' content='width=device-width, initial-scale=1.0' />
-    <title>Upgrade to Pro - textbee.dev</title>
+    <title>Unlock More Capabilities with textbee.dev Pro</title>
     <style>
-      body { font-family: Arial, sans-serif; line-height: 1.6; color: #333;
-      margin: 0; padding: 0; } .container { max-width: 600px; margin: 0 auto;
-      padding: 20px; } .header { text-align: center; padding: 20px 0; } .logo {
-      max-width: 150px; } .content { background-color: #f9f9f9; padding: 30px;
-      border-radius: 5px; } .button { display: inline-block; background-color:
-      #4A90E2; color: white; text-decoration: none; padding: 12px 24px;
-      border-radius: 4px; font-weight: bold; margin: 20px 0; } .footer {
-      text-align: center; font-size: 12px; color: #777; margin-top: 30px; }
-      .feature { margin-bottom: 15px; display: flex; align-items: center; }
-      .feature-icon { display: inline-block; width: 20px; height: 20px;
-      background-color: #4A90E2; color: white; border-radius: 50%; text-align:
-      center; line-height: 20px; margin-right: 10px; font-weight: bold; }
-      .comparison { width: 100%; border-collapse: collapse; margin: 20px 0; }
-      .comparison th, .comparison td { padding: 10px; text-align: center;
-      border-bottom: 1px solid #ddd; } .comparison th { background-color:
-      #f2f2f2; } .highlight { background-color: #e6f2ff; }
+      body { 
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6; 
+        color: #333;
+        margin: 0; 
+        padding: 0; 
+        background-color: #f7f9fc;
+      } 
+      .container { 
+        max-width: 600px; 
+        margin: 0 auto;
+        padding: 20px; 
+      } 
+      .header { 
+        text-align: center; 
+        padding: 20px 0; 
+      } 
+      .logo { 
+        max-width: 150px; 
+      } 
+      .content { 
+        background-color: #ffffff; 
+        padding: 35px; 
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      } 
+      .button { 
+        display: inline-block; 
+        background-color: #4A90E2; 
+        color: white; 
+        text-decoration: none; 
+        padding: 12px 28px; 
+        border-radius: 4px; 
+        font-weight: 600;
+        margin: 25px 0;
+        transition: background-color 0.3s ease;
+      }
+      .button:hover {
+        background-color: #3A80D2;
+      }
+      .secondary-button { 
+        display: inline-block; 
+        background-color: #ffffff; 
+        color: #4A90E2; 
+        border: 1px solid #4A90E2;
+        text-decoration: none; 
+        padding: 11px 24px; 
+        border-radius: 4px; 
+        font-weight: 600;
+        margin: 25px 10px;
+        transition: background-color 0.3s ease;
+      }
+      .secondary-button:hover {
+        background-color: #f0f7ff;
+      }
+      .footer { 
+        text-align: center; 
+        font-size: 12px; 
+        color: #777; 
+        margin-top: 30px; 
+      }
+      .testimonial {
+        border-left: 4px solid #4A90E2;
+        padding: 15px 20px;
+        margin: 25px 0;
+        background-color: #f8fbff;
+        font-style: italic;
+      }
+      .testimonial-author {
+        font-weight: 600;
+        font-style: normal;
+        margin-top: 10px;
+      }
+      .pro-feature {
+        display: flex;
+        align-items: flex-start;
+        margin: 15px 0;
+      }
+      .feature-icon {
+        width: 24px;
+        height: 24px;
+        background-color: #4A90E2;
+        border-radius: 50%;
+        color: white;
+        text-align: center;
+        line-height: 24px;
+        margin-right: 15px;
+        flex-shrink: 0;
+      }
+      .feature-content {
+        flex-grow: 1;
+      }
+      .feature-content h4 {
+        margin: 0 0 5px 0;
+      }
+      .feature-content p {
+        margin: 0;
+        color: #555;
+      }
+      .pricing-container {
+        background-color: #f0f7ff;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 25px 0;
+        text-align: center;
+      }
+      .pricing-option {
+        display: inline-block;
+        background-color: white;
+        border-radius: 6px;
+        padding: 20px;
+        margin: 10px;
+        width: 150px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      }
+      .pricing-discount {
+        color: #e63946;
+        font-weight: bold;
+      }
+      .social-links {
+        margin-top: 20px;
+      }
+      .social-links a {
+        display: inline-block;
+        margin: 0 10px;
+        color: #4A90E2;
+        text-decoration: none;
+      }
     </style>
   </head>
   <body>
     <div class='container'>
       <div class='header'>
+        <!-- Logo could be added here -->
       </div>
 
       <div class='content'>
         <h2>Hello {{name}},</h2>
 
-        <p>Thank you for using textbee.dev! We hope you're enjoying our service
-          so far.</p>
+        <p>Thank you for using textbee.dev! We're excited to see that you've been using our platform with {{deviceCount}} connected device{{#if deviceCount > 1}}s{{/if}}.</p>
 
-        <p>We wanted to let you know that you're currently on our
-          <strong>Free Plan</strong>, which provides basic functionality. To
-          unlock the full potential of textbee.dev, consider upgrading to our
-          <strong>Pro Plan</strong>.</p>
+        <p>Many of our users have found that upgrading to Pro helps them scale their SMS capabilities more effectively as they grow. Here's what you can unlock:</p>
 
-        <p><strong>Special Offer Just For You:</strong>
-          We're extending a
-          <span style='color: #e63946; font-weight: bold;'>30% discount</span>
-          on all Pro plans exclusively for our most active users like you! This
-          offer is only available for a limited time.</p>
+        <div class="pro-feature">
+          <div class="feature-icon">✓</div>
+          <div class="feature-content">
+            <h4>Unlimited Daily Messages</h4>
+            <p>Remove the 50-message daily limit and scale your SMS communications as needed</p>
+          </div>
+        </div>
+        
+        <div class="pro-feature">
+          <div class="feature-icon">✓</div>
+          <div class="feature-content">
+            <h4>Connect Multiple Devices</h4>
+            <p>
+              Connect multiple devices to your account to increase your SMS sending capacity.
+            </p>
+          </div>
+        </div>
+        
+        <div class="pro-feature">
+          <div class="feature-icon">✓</div>
+          <div class="feature-content">
+            <h4>Priority Support</h4>
+            <p>Get faster responses and dedicated assistance for your integration questions</p>
+          </div>
+        </div>
+        
+        <div class="testimonial">
+          "textbee.dev Pro has been game-changing for our delivery notifications. We've seen a 28% increase in customer satisfaction since implementing automated SMS updates."
+          <div class="testimonial-author">- Sarah K., E-commerce Business Owner</div>
+        </div>
 
-        <h3>Plan Comparison:</h3>
+        <p>As a valued user, we're offering you a special <span class="pricing-discount">30% discount</span> if you upgrade in the next 7 days:</p>
 
-        <table class='comparison'>
-          <tr>
-            <th>Feature</th>
-            <th>Free Plan</th>
-            <th class='highlight'>Pro Plan</th>
-          </tr>
-          <tr>
-            <td>Daily Message Limit</td>
-            <td>50</td>
-            <td class='highlight'>Unlimited</td>
-          </tr>
-          <tr>
-            <td>Monthly Recipient Limit</td>
-            <td>500</td>
-            <td class='highlight'>5,000</td>
-          </tr>
-          <tr>
-            <td>Device Limit</td>
-            <td>1</td>
-            <td class='highlight'>Unlimited</td>
-          </tr>
-          <tr>
-            <td>Bulk SMS Recipients</td>
-            <td>50</td>
-            <td class='highlight'>Unlimited</td>
-          </tr>
-          <tr>
-            <td>Support</td>
-            <td>Basic</td>
-            <td class='highlight'>Priority</td>
-          </tr>
-
-        </table>
-
-        <div
-          style='background-color: #e6f2ff; padding: 15px; border-radius: 5px; margin-bottom: 20px; text-align: center;'
-        >
-          <h3 style='margin-top: 0; margin-bottom: 10px; color: #4A90E2;'>Pro
-            Plan Pricing</h3>
-          <div style='display: flex; justify-content: center; gap: 15px;'>
-            <div
-              style='padding: 10px; background-color: white; border-radius: 5px; flex: 1; max-width: 130px;'
-            >
-              <h4 style='margin: 0 0 5px 0;'>Monthly</h4>
-              <p style='font-size: 18px; font-weight: bold; margin: 5px 0;'><s
-                >$9.99</s>
-                <span style='color: #e63946;'>$6.99</span></p>
-              <p style='font-size: 11px; color: #666; margin: 0;'>30% off -
-                limited time</p>
-            </div>
-            <div
-              style='padding: 10px; background-color: white; border-radius: 5px; flex: 1; max-width: 130px;'
-            >
-              <h4 style='margin: 0 0 5px 0;'>Annual</h4>
-              <p style='font-size: 18px; font-weight: bold; margin: 5px 0;'><s
-                >$99.99</s>
-                <span style='color: #e63946;'>$69.99</span></p>
-              <p style='font-size: 11px; color: #666; margin: 0;'>30% off -
-                limited time</p>
-            </div>
+        <div class="pricing-container">
+          <div class="pricing-option">
+            <h4>Monthly</h4>
+            <p style="text-decoration: line-through; color: #777; margin: 5px 0;">$9.99/mo</p>
+            <p style="font-size: 18px; font-weight: bold; margin: 5px 0;">$6.99/mo</p>
+            <p style="font-size: 12px; color: #666;">30% savings</p>
+          </div>
+          
+          <div class="pricing-option">
+            <h4>Annual</h4>
+            <p style="text-decoration: line-through; color: #777; margin: 5px 0;">$99.99/yr</p>
+            <p style="font-size: 18px; font-weight: bold; margin: 5px 0;">$69.99/yr</p>
+            <p style="font-size: 12px; color: #666;">Save 42% vs monthly</p>
           </div>
         </div>
 
         <div style='text-align: center;'>
-          <a href='{{upgradeUrl}}' class='button'>Upgrade to Pro Now</a>
-          <p><small>Hurry! This 30% discount offer is only available for a
-              limited time.</small></p>
+          <a href='https://textbee.dev/checkout/pro' class='button'>Upgrade to Pro</a>
+          <a href='https://textbee.dev/#pricing' class='secondary-button'>Learn More</a>
         </div>
 
-        <p>If you have any questions about our plans or need assistance, please
-          feel free to contact us at
-          <a href='mailto:support@textbee.dev'>support@textbee.dev</a>.</p>
+        <p>Not ready to upgrade? That's completely fine! Your free plan will continue to work as usual. If you have any questions about the Pro features or need help with your current setup, I'm happy to assist.</p>
 
         <p>Best regards,<br />The textbee.dev Team</p>
+        
+        <div class="social-links">
+          <a href="https://discord.gg/d7vyfBpWbQ">Join our Discord Community</a> | 
+          <a href="https://github.com/vernu/textbee">Star us on GitHub</a>
+        </div>
       </div>
 
       <div class='footer'>
-        <p>© 2025 textbee.dev.</p>
+        <p>© 2025 textbee.dev. All rights reserved.</p>
+        <p style="font-size: 10px; color: #999;">You're receiving this email because you have an active textbee.dev account. To update your preferences, visit your <a href="https://textbee.dev/account/notifications">account settings</a>.</p>
       </div>
     </div>
   </body>

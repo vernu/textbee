@@ -1,126 +1,207 @@
 <html>
   <head>
+    <meta charset='utf-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+    <title>Welcome to textbee.dev</title>
     <style>
-      body {
-        font-family: Arial, sans-serif;
-        line-height: 1.6;
-        color: #333333;
-        max-width: 600px;
-        margin: 0 auto;
-        padding: 20px;
-      }
-      .container {
-        background-color: #ffffff;
-        border-radius: 8px;
-        padding: 30px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
-      .header {
-        text-align: center;
-        margin-bottom: 30px;
-      }
-      .divider {
-        border-top: 1px solid #e0e0e0;
-        margin: 20px 0;
-      }
-      .community-section {
-        text-align: center;
-      }
-      .tips-section {
-        margin: 20px 0;
-      }
-      .tips-section ol {
-        padding-left: 20px;
-      }
-      .signature {
-        margin-top: 20px;
-      }
+      body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.6; color: #333; margin: 0; padding: 0; background-color:
+      #f7f9fc; } .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+      .header { text-align: center; padding: 20px 0; } .logo { max-width: 150px;
+      } .content { background-color: #ffffff; padding: 35px; border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05); } .button { display:
+      inline-block; background-color: #4A90E2; color: white; text-decoration:
+      none; padding: 12px 28px; border-radius: 4px; font-weight: 600; margin:
+      25px 0; transition: background-color 0.3s ease; } .button:hover {
+      background-color: #3A80D2; } .footer { text-align: center; font-size:
+      12px; color: #777; margin-top: 30px; } .welcome-banner { background-color:
+      #4A90E2; color: white; padding: 30px; text-align: center; border-radius:
+      8px 8px 0 0; margin: -35px -35px 30px -35px; } .welcome-banner h1 {
+      margin: 0; font-size: 28px; letter-spacing: 0.5px; } .welcome-banner p {
+      margin: 10px 0 0 0; opacity: 0.9; } .divider { border-top: 1px solid
+      #e0e0e0; margin: 25px 0; } .quick-links { display: flex; flex-wrap: wrap;
+      justify-content: space-between; margin: 25px 0; } .quick-link {
+      background-color: #f8f9fa; border: 1px solid #e6e8eb; border-radius: 6px;
+      padding: 15px; margin-bottom: 15px; width: calc(50% - 45px);
+      text-decoration: none; color: #333; transition: all 0.2s ease; }
+      .quick-link:hover { background-color: #f0f7ff; border-color: #4A90E2;
+      transform: translateY(-2px); } .quick-link h3 { margin: 0 0 5px 0; color:
+      #4A90E2; font-size: 16px; } .quick-link p { margin: 0; font-size: 14px;
+      color: #666; } .steps-container { background-color: #f8f9fa;
+      border-radius: 8px; padding: 20px; margin: 25px 0; } .steps-container h2 {
+      margin-top: 0; color: #333; font-size: 18px; } .step { display: flex;
+      margin-bottom: 20px; } .step:last-child { margin-bottom: 0; } .step-number
+      { background-color: #4A90E2; color: white; width: 28px; height: 28px;
+      border-radius: 50%; display: flex; align-items: center; justify-content:
+      center; font-weight: bold; margin-right: 15px; flex-shrink: 0; }
+      .step-content { flex-grow: 1; } .step-content h3 { margin: 0 0 5px 0;
+      font-size: 16px; } .step-content p { margin: 0; color: #555; font-size:
+      14px; } .personal-note { background-color: #f6fbff; border-left: 4px solid
+      #4A90E2; padding: 20px; margin: 30px 0; } .signature { margin-top: 30px;
+      display: flex; align-items: center; } .signature-text { margin-left: 15px;
+      } .signature-text h3 { margin: 0 0 5px 0; } .signature-text p { margin: 0;
+      color: #666; font-style: italic; } .signature-img { width: 60px; height:
+      60px; border-radius: 50%; object-fit: cover; } .social-links { margin-top:
+      20px; display: flex; justify-content: center; flex-wrap: wrap; }
+      .social-links a { display: inline-flex; align-items: center; margin: 0
+      10px 10px 10px; color: #4A90E2; text-decoration: none; padding: 8px 15px;
+      border-radius: 4px; background-color: #f0f7ff; transition: all 0.2s ease;
+      } .social-links a:hover { background-color: #e0ebfa; } .social-links img {
+      width: 18px; height: 18px; margin-right: 8px; } .use-case { margin: 20px
+      0; padding: 15px; background-color: #f9f9f9; border-radius: 6px; }
+      .use-case h3 { margin-top: 0; color: #4A90E2; } @media (max-width: 550px)
+      { .quick-link { width: 100%; } }
     </style>
   </head>
   <body>
     <div class='container'>
       <div class='header'>
-        <h1>Welcome to TextBee!</h1>
+        <!-- Logo could be added here -->
       </div>
 
-      <p>Hi {{name}},</p>
+      <div class='content'>
+        <div class='welcome-banner'>
+          <h1>Welcome to textbee.dev!</h1>
+          <p>Your gateway to powerful SMS integration</p>
+        </div>
 
-      <p>It's Vernu here, creator of textbee.dev. I built this platform to help you
-        with all your messaging needs - whether it's sending OTPs,
-        notifications, or creating automated messaging workflows for your
-        business.</p>
+        <h2>Hi {{name}},</h2>
 
-      <div class='tips-section'>
-        <h3>Here are a few tips to get you started:</h3>
-        <ol>
-          <li><a href='https://github.com/vernu/textbee'>Explore our
-              Documentation</a>
-            - Learn how to integrate TextBee with your existing systems</li>
-          <li><a href='https://dl.textbee.dev'>Download the Mobile App</a></li>
-          <li><a href='https://textbee.dev/dashboard'>Access your Dashboard</a></li>
-          <li><a href='https://discord.gg/d7vyfBpWbQ'>Join our Discord Community</a></li>
-          <li><a href='https://www.patreon.com/vernu'>Support Our Work</a></li>
-          <li><a href='https://github.com/vernu/textbee'>Star our GitHub
-              Repository</a></li>
-        </ol>
-      </div>
+        <p>Welcome to textbee.dev! This platform is designed to provide simple
+          yet powerful SMS integration for developers and businesses of all
+          sizes.</p>
 
-      <div class='divider'></div>
+        <div class='personal-note'>
+          <p>Thank you for choosing textbee.dev. We're excited to support your
+            projects, whether you're building authentication systems for your
+            customers, notifications, or interactive workflows!</p>
+        </div>
 
-      <p>
-        <strong>P.S.</strong>
-        I'd love to hear from you! Why did you choose TextBee? Do you have any
-        feedback or questions?<br />
-        Feel free to reach out to our support team at
-        <a href='mailto:contact@textbee.dev'>contact@textbee.dev</a>.<br />
-        We read and respond to all emails as quickly as possible.
-      </p>
+        <h2>What You Can Build with textbee.dev</h2>
 
-      <div class='signature'>
-        <p>
-          Cheers,<br />
-          <strong>Vernu</strong><br />
-          Creator, textbee.dev
+        <div class='use-case'>
+          <h3>User Authentication</h3>
+          <p>Implement secure two-factor authentication with SMS verification
+            codes to protect user accounts and sensitive data.</p>
+        </div>
+
+        <div class='use-case'>
+          <h3>Customer Notifications</h3>
+          <p>Send automated order updates, appointment reminders, delivery
+            status changes, and other important alerts directly to your
+            customers' phones.</p>
+        </div>
+
+        <div class='use-case'>
+          <h3>Interactive Workflows</h3>
+          <p>Create conversational experiences where users can reply to messages
+            to complete tasks, answer surveys, or trigger automated responses.</p>
+        </div>
+
+        <p style='text-align: center; margin-top: 15px;'>
+          <a
+            href='https://textbee.dev/use-cases'
+            style='color: #4A90E2; text-decoration: underline;'
+          >Explore more use cases →</a>
         </p>
+
+        <h2>Get Started in Minutes</h2>
+
+        <div class='steps-container'>
+          <h2>Quick Setup Guide</h2>
+
+          <div class='step'>
+            <div class='step-number'>1</div>
+            <div class='step-content'>
+              <h3>Download the App</h3>
+              <p>Install our Android app from
+                <a href='https://dl.textbee.dev'>dl.textbee.dev</a></p>
+            </div>
+          </div>
+
+          <div class='step'>
+            <div class='step-number'>2</div>
+            <div class='step-content'>
+              <h3>Connect Your Device</h3>
+              <p>Visit your dashboard, generate a QR code, and scan it with the
+                app</p>
+            </div>
+          </div>
+
+          <div class='step'>
+            <div class='step-number'>3</div>
+            <div class='step-content'>
+              <h3>Start Sending</h3>
+              <p>Send SMS messages via our dashboard or integrate with our API</p>
+            </div>
+          </div>
+        </div>
+
+        <div style='text-align: center;'>
+          <a href='https://textbee.dev/dashboard' class='button'>Go to Your
+            Dashboard</a>
+        </div>
+
+        <div class='divider'></div>
+
+        <h2>Helpful Resources</h2>
+
+        <div class='quick-links'>
+          <a href='https://textbee.dev/quickstart' class='quick-link'>
+            <h3>Quick Start Guide</h3>
+            <p>Step-by-step setup instructions</p>
+          </a>
+
+          <a href='https://api.textbee.dev' class='quick-link'>
+            <h3>API Documentation</h3>
+            <p>Integrate SMS into your applications</p>
+          </a>
+
+          <a href='https://github.com/vernu/textbee' class='quick-link'>
+            <h3>GitHub Repository</h3>
+            <p>Explore the code and contribute</p>
+          </a>
+
+          <a href='https://discord.gg/d7vyfBpWbQ' class='quick-link'>
+            <h3>Discord Community</h3>
+            <p>Get help and share ideas</p>
+          </a>
+
+          <a href='https://textbee.dev/use-cases' class='quick-link'>
+            <h3>Code Examples</h3>
+            <p>Ready-to-use integration samples</p>
+          </a>
+
+          <a href='https://textbee.dev/#faqs' class='quick-link'>
+            <h3>FAQ</h3>
+            <p>Answers to common questions</p>
+          </a>
+        </div>
+
+        <div class='divider'></div>
+
+        <p>Have questions or feedback? I'd love to hear from you! Feel free to
+          reply to this email or contact our support team at
+          <a href='mailto:support@textbee.dev'>support@textbee.dev</a>.</p>
+
+        <div class='signature'>
+          <img
+            src='https://ui-avatars.com/api/?name=Vernu&background=4A90E2&color=fff'
+            class='signature-img'
+            alt='Vernu'
+          />
+          <div class='signature-text'>
+            <h3>Vernu</h3>
+            <p>Founder, textbee.dev</p>
+          </div>
+        </div>
       </div>
 
-      <div class='divider'></div>
-
-      <div class='community-section'>
-        <p style='font-size: 14px; margin-bottom: 15px;'>Join our community!</p>
-        <a
-          href='https://discord.gg/d7vyfBpWbQ'
-          style='display: inline-block; margin: 0 10px; color: #7289DA; text-decoration: none;'
-        >
-          <img
-            src='https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/636e0a6918e57475a843f59f_icon_clyde_black_RGB.svg'
-            alt='Discord'
-            style='width: 20px; vertical-align: middle;'
-          />
-          Join Discord
-        </a>
-        <a
-          href='https://github.com/vernu/textbee'
-          style='display: inline-block; margin: 0 10px; color: #333; text-decoration: none;'
-        >
-          <img
-            src='https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png'
-            alt='GitHub'
-            style='width: 20px; vertical-align: middle;'
-          />
-          Star on GitHub
-        </a>
-        <a
-          href='https://patreon.com/vernu'
-          style='display: inline-block; margin: 0 10px; color: #FF424D; text-decoration: none;'
-        >
-          <img
-            src='https://c5.patreon.com/external/logo/downloads_logomark_color_on_white.png'
-            alt='Patreon'
-            style='width: 20px; vertical-align: middle;'
-          />
-          Support on Patreon
-        </a>
+      <div class='footer'>
+        <p>© 2025 textbee.dev. All rights reserved.</p>
+        <p>If you don't want to receive these emails, you can
+          <a href='https://textbee.dev/account/notifications'>update your
+            preferences</a>.</p>
       </div>
     </div>
   </body>
