@@ -1,6 +1,8 @@
 export const Routes = {
   landingPage: '/',
   contribute: '/contribute',
+  useCases: '/use-cases',
+  quickstart: '/quickstart',
   login: '/login',
   register: '/register',
   logout: '/logout',
