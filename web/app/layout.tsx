@@ -13,7 +13,7 @@ import prismaClient from '@/lib/prismaClient'
 import { userAgent } from 'next/server'
 
 export const metadata: Metadata = {
-  title: 'textbee.dev - Free and Open-Source SMS Gateway',
+  title: 'textbee.dev - sms gateway',
   description:
     'TextBee is an open-source solution that turns your Android device into a powerful SMS gateway. Send SMS effortlessly through your applications.',
   authors: [
@@ -51,7 +51,7 @@ export const metadata: Metadata = {
     canonical: 'https://textbee.dev',
   },
   openGraph: {
-    title: 'textbee.dev - Free and Open-Source SMS Gateway',
+    title: 'textbee.dev - sms gateway',
     description:
       'TextBee is an open-source solution that turns your Android device into a powerful SMS gateway. Send SMS effortlessly through your applications.',
   },
