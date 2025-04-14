@@ -74,7 +74,7 @@ export default function LoginForm() {
                 <Input
                   placeholder='m@example.com'
                   {...field}
-                  className='bg-white'
+                  className='dark:text-white dark:bg-gray-800'
                 />
               </FormControl>
               <FormMessage />
@@ -88,7 +88,11 @@ export default function LoginForm() {
             <FormItem>
               <FormLabel>Password</FormLabel>
               <FormControl>
-                <Input type='password' {...field} className='bg-white' />
+                <Input 
+                  type='password' 
+                  {...field} 
+                  className='dark:text-white dark:bg-gray-800' 
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
