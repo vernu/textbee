@@ -29,6 +29,19 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
     },
     {
+      url: `${baseUrl}${Routes.useCases}`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}${Routes.quickstart}`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.8,
+    },
+
+    {
       url: `${baseUrl}${Routes.login}`,
       lastModified: new Date(),
       changeFrequency: 'monthly' as const,
@@ -70,7 +83,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'yearly' as const,
       priority: 0.5,
     },
-    
+
     // {
     //   url: `${baseUrl}/docs`,
     //   lastModified: new Date(),
