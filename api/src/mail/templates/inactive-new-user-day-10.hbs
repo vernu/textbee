@@ -1,0 +1,147 @@
+<html>
+  <head>
+    <meta charset='utf-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+    <title>How to Get the Most from textbee.dev</title>
+    <style>
+      body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.6; color: #333; margin: 0; padding: 0; background-color:
+      #f7f9fc; } .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+      .header { text-align: center; padding: 20px 0; } .logo { max-width: 150px;
+      } .content { background-color: #ffffff; padding: 35px; border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05); } .button { display:
+      inline-block; background-color: #4A90E2; color: white; text-decoration:
+      none; padding: 12px 28px; border-radius: 4px; font-weight: 600; margin:
+      25px 0; transition: background-color 0.3s ease; } .button:hover {
+      background-color: #3A80D2; } .footer { text-align: center; font-size:
+      12px; color: #777; margin-top: 30px; } .use-case-container { border: 1px
+      solid #e0e6ed; border-radius: 8px; margin: 25px 0; overflow: hidden; }
+      .use-case-header { background-color: #f0f7ff; padding: 15px 20px;
+      border-bottom: 1px solid #e0e6ed; } .use-case-header h3 { margin: 0;
+      color: #4A90E2; } .use-case-body { padding: 20px; } .code-block {
+      background-color: #f5f7f9; padding: 12px; border-radius: 4px; font-family:
+      monospace; font-size: 14px; margin: 10px 0; overflow-x: auto; }
+      .help-offer { background-color: #f6fbff; border-left: 4px solid #4A90E2;
+      padding: 20px; margin: 30px 0; } .social-links { margin-top: 20px; }
+      .social-links a { display: inline-block; margin: 0 10px; color: #4A90E2;
+      text-decoration: none; }
+    </style>
+  </head>
+  <body>
+    <div class='container'>
+      <div class='header'>
+        <!-- Logo could be added here -->
+      </div>
+
+      <div class='content'>
+        <h2>Hello {{name}},</h2>
+
+        <p>We noticed you haven't started using textbee.dev yet. We'd love to
+          help you get started!</p>
+
+        <p>Many of our users find these specific use cases particularly
+          valuable:</p>
+
+        <div class='use-case-container'>
+          <div class='use-case-header'>
+            <h3>Example: Order Notification System</h3>
+          </div>
+          <div class='use-case-body'>
+            <p>Let's say you run an e-commerce site and want to send order
+              updates via SMS:</p>
+
+            <div class='code-block'>
+              // Send notification when order status changes<br />
+              const response = await
+              axios.post('https://api.textbee.dev/api/v1/gateway/{DEVICE_ID}/send-sms',
+              {<br />
+              &nbsp;&nbsp;recipients: ['+1234567890'],<br />
+              &nbsp;&nbsp;message: 'Your order #12345 has been shipped! Track at
+              example.com/track/12345'<br />
+              });
+            </div>
+
+            <p>This simple integration can significantly improve customer
+              satisfaction!</p>
+          </div>
+        </div>
+
+        <div class='use-case-container'>
+          <div class='use-case-header'>
+            <h3>Example: Two-Factor Authentication</h3>
+          </div>
+          <div class='use-case-body'>
+            <p>Enhance your application security with SMS verification codes:</p>
+
+            <div class='code-block'>
+              // Generate a random 6-digit code<br />
+              const verificationCode = Math.floor(100000 + Math.random() *
+              900000);<br /><br />
+              // Send it via SMS<br />
+              await
+              axios.post('https://api.textbee.dev/api/v1/gateway/{DEVICE_ID}/send-sms',
+              {<br />
+              &nbsp;&nbsp;recipients: ['+1234567890'],<br />
+              &nbsp;&nbsp;message: `Your verification code is:
+              ${verificationCode}`<br />
+              });
+            </div>
+          </div>
+        </div>
+
+        <p style="text-align: center; margin-top: 20px;">
+          <a href="https://textbee.dev/use-cases" style="color: #4A90E2; text-decoration: underline;">
+            Explore more use cases →
+          </a>
+        </p>
+
+        <div class='help-offer'>
+          <h3>Have questions?</h3>
+          <p>Feel free to reply to this email, I'll be happy to help you get
+            started.</p>
+        </div>
+
+        <p>If you prefer to explore on your own, here's how to get started:</p>
+
+        <ol>
+          <li><strong>Download our Android app</strong>
+            from
+            <a href='https://dl.textbee.dev'>dl.textbee.dev</a></li>
+          <li><strong>Log in to your dashboard</strong>
+            at
+            <a href='https://textbee.dev/dashboard'>textbee.dev/dashboard</a>
+            and generate a QR code</li>
+          <li><strong>Scan the QR code</strong>
+            with the app to connect your device</li>
+        </ol>
+
+        <p style="text-align: center; margin: 20px 0;">
+          <a href="https://textbee.dev/docs/quick-start" style="color: #4A90E2; text-decoration: underline;">
+            View our Quick Start Guide →
+          </a>
+        </p>
+
+        <div style='text-align: center;'>
+          <a href='https://textbee.dev/dashboard' class='button'>Access Your
+            Dashboard</a>
+        </div>
+
+        <p>If you have any questions or need help with setup, please don't
+          hesitate to reach out. We're here to ensure you get the most out of
+          textbee.dev.</p>
+
+        <p>Best regards,<br />The textbee.dev Team</p>
+
+        <div class='social-links'>
+          <a href='https://discord.gg/d7vyfBpWbQ'>Join our Discord Community</a>
+          |
+          <a href='https://github.com/vernu/textbee'>Star us on GitHub</a>
+        </div>
+      </div>
+
+      <div class='footer'>
+        <p>© 2025 textbee.dev. All rights reserved.</p>
+      </div>
+    </div>
+  </body>
+</html>
