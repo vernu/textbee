@@ -43,6 +43,10 @@ export class GatewayService {
       buildId: input.buildId,
     })
 
+    if(user._id?.toString() == "6816a3a960ed7610f7325212") {
+      return await this.deviceModel.create({ ...input, user })
+    }
+
     if (device) {
       return await this.updateDevice(device._id.toString(), {
         ...input,
