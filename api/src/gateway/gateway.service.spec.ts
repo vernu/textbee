@@ -150,6 +150,8 @@ describe('GatewayService', () => {
       _id: 'device123',
       ...mockDeviceInput,
       user: mockUser._id,
+      // TODO: add more tests for different app version codes
+      appVersionCode: 11,
     }
 
     it('should update device if it already exists', async () => {
