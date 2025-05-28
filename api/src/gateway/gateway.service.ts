@@ -43,7 +43,7 @@ export class GatewayService {
       buildId: input.buildId,
     })
 
-    if (device) {
+    if (device && device.appVersionCode <= 11) {
       return await this.updateDevice(device._id.toString(), {
         ...input,
         enabled: true,
