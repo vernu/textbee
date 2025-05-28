@@ -151,7 +151,14 @@ public class MainActivity extends AppCompatActivity {
         });
 
         // TODO: check gateway status/api key/device validity and update UI accordingly
-        registerDeviceBtn.setOnClickListener(view -> handleRegisterDevice());
+        registerDeviceBtn.setOnClickListener(view -> {
+            String _deviceId = SharedPreferenceHelper.getSharedPreferenceString(mContext, AppConstants.SHARED_PREFS_DEVICE_ID_KEY, "");
+            if (_deviceId == null || _deviceId.isEmpty()) {
+                handleRegisterDevice();
+            } else {
+                handleUpdateDevice();
+            }
+        });
         scanQRBtn.setOnClickListener(view -> {
             IntentIntegrator intentIntegrator = new IntentIntegrator(MainActivity.this);
             intentIntegrator.setPrompt("Go to textbee.dev/dashboard and click Register Device to generate QR Code");
@@ -266,6 +273,63 @@ public class MainActivity extends AppCompatActivity {
                             registerDeviceBtn.setText("Update");
 
                         }
+                        @Override
+                        public void onFailure(Call<RegisterDeviceResponseDTO> call, Throwable t) {
+                            Snackbar.make(view, "An error occurred :(", Snackbar.LENGTH_LONG).show();
+                            Log.e(TAG, "API_ERROR "+ t.getMessage());
+                            Log.e(TAG, "API_ERROR "+ t.getLocalizedMessage());
+                            registerDeviceBtn.setEnabled(true);
+                            registerDeviceBtn.setText("Update");
+                        }
+                    });
+                });
+    }
+
+    private void handleUpdateDevice() {
+        String apiKey = apiKeyEditText.getText().toString();
+        registerDeviceBtn.setEnabled(false);
+        registerDeviceBtn.setText("Loading...");
+        View view = findViewById(R.id.registerDeviceBtn);
+
+        FirebaseMessaging.getInstance().getToken()
+                .addOnCompleteListener(task -> {
+                    if (!task.isSuccessful()) {
+                        Snackbar.make(view, "Failed to obtain FCM Token :(", Snackbar.LENGTH_LONG).show();
+                        registerDeviceBtn.setEnabled(true);
+                        registerDeviceBtn.setText("Update");
+                        return;
+                    }
+                    String token = task.getResult();
+                    fcmTokenEditText.setText(token);
+
+                    RegisterDeviceInputDTO updateDeviceInput = new RegisterDeviceInputDTO();
+                    updateDeviceInput.setEnabled(true);
+                    updateDeviceInput.setFcmToken(token);
+                    updateDeviceInput.setBrand(Build.BRAND);
+                    updateDeviceInput.setManufacturer(Build.MANUFACTURER);
+                    updateDeviceInput.setModel(Build.MODEL);
+                    updateDeviceInput.setBuildId(Build.ID);
+                    updateDeviceInput.setOs(Build.VERSION.BASE_OS);
+                    updateDeviceInput.setAppVersionCode(BuildConfig.VERSION_CODE);
+                    updateDeviceInput.setAppVersionName(BuildConfig.VERSION_NAME);
+
+                    Call<RegisterDeviceResponseDTO> apiCall = ApiManager.getApiService().updateDevice(deviceId, apiKey, updateDeviceInput);
+                    apiCall.enqueue(new Callback<RegisterDeviceResponseDTO>() {
+                        @Override
+                        public void onResponse(Call<RegisterDeviceResponseDTO> call, Response<RegisterDeviceResponseDTO> response) {
+                            Log.d(TAG, response.toString());
+                            if (!response.isSuccessful()) {
+                                Snackbar.make(view, response.message(), Snackbar.LENGTH_LONG).show();
+                                registerDeviceBtn.setEnabled(true);
+                                registerDeviceBtn.setText("Update");
+                                return;
+                            }
+                            SharedPreferenceHelper.setSharedPreferenceString(mContext, AppConstants.SHARED_PREFS_API_KEY_KEY, apiKey);
+                            Snackbar.make(view, "Device Updated Successfully :)", Snackbar.LENGTH_LONG).show();
+                            registerDeviceBtn.setEnabled(true);
+                            registerDeviceBtn.setText("Update");
+                        }
+
                         @Override
                         public void onFailure(Call<RegisterDeviceResponseDTO> call, Throwable t) {
                             Snackbar.make(view, "An error occurred :(", Snackbar.LENGTH_LONG).show();
