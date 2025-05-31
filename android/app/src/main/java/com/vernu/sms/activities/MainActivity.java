@@ -31,6 +31,7 @@ import com.vernu.sms.R;
 import com.vernu.sms.dtos.RegisterDeviceInputDTO;
 import com.vernu.sms.dtos.RegisterDeviceResponseDTO;
 import com.vernu.sms.helpers.SharedPreferenceHelper;
+import com.vernu.sms.helpers.VersionTracker;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import java.util.Arrays;
 import java.util.Objects;
@@ -83,6 +84,12 @@ public class MainActivity extends AppCompatActivity {
         String versionName = BuildConfig.VERSION_NAME;
         appVersionNameTxt.setText(versionName);
         appVersionCodeTxt.setText(String.valueOf(BuildConfig.VERSION_CODE));
+        
+        // Check for app version changes and report if needed
+        if (VersionTracker.hasVersionChanged(mContext)) {
+            Log.d(TAG, "App version changed or first launch, reporting to server");
+            VersionTracker.reportVersionToServer(mContext);
+        }
         
         // Initialize Crashlytics with user information
         FirebaseCrashlytics crashlytics = FirebaseCrashlytics.getInstance();
@@ -357,6 +364,9 @@ public class MainActivity extends AppCompatActivity {
                                     gatewaySwitch.setChecked(registerDeviceInput.isEnabled());
                                 }
                                 
+                                // Update stored version information
+                                VersionTracker.updateStoredVersion(mContext);
+                                
                                 registerDeviceBtn.setEnabled(true);
                                 registerDeviceBtn.setText("Update");
                             }
@@ -396,6 +406,9 @@ public class MainActivity extends AppCompatActivity {
                                 SharedPreferenceHelper.setSharedPreferenceBoolean(mContext, AppConstants.SHARED_PREFS_GATEWAY_ENABLED_KEY, registerDeviceInput.isEnabled());
                                 gatewaySwitch.setChecked(registerDeviceInput.isEnabled());
                             }
+                            
+                            // Update stored version information
+                            VersionTracker.updateStoredVersion(mContext);
                             
                             registerDeviceBtn.setEnabled(true);
                             registerDeviceBtn.setText("Update");
@@ -464,6 +477,9 @@ public class MainActivity extends AppCompatActivity {
                                 deviceIdTxt.setText(deviceId);
                                 deviceIdEditText.setText(deviceId);
                             }
+                            
+                            // Update stored version information
+                            VersionTracker.updateStoredVersion(mContext);
                             
                             Snackbar.make(view, "Device Updated Successfully :)", Snackbar.LENGTH_LONG).show();
                             registerDeviceBtn.setEnabled(true);
