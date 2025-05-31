@@ -14,6 +14,7 @@ import androidx.core.content.ContextCompat;
 
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.vernu.sms.services.StickyNotificationService;
+import com.vernu.sms.helpers.SharedPreferenceHelper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,22 +39,34 @@ public class TextBeeUtils {
     }
 
     public static void startStickyNotificationService(Context context) {
-
         if(!isPermissionGranted(context, Manifest.permission.RECEIVE_SMS)){
             return;
         }
-
-        Intent notificationIntent = new Intent(context, StickyNotificationService.class);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            context.startForegroundService(notificationIntent);
+        
+        // Only start service if user has enabled sticky notification
+        boolean stickyNotificationEnabled = SharedPreferenceHelper.getSharedPreferenceBoolean(
+                context,
+                AppConstants.SHARED_PREFS_STICKY_NOTIFICATION_ENABLED_KEY,
+                false
+        );
+        
+        if (stickyNotificationEnabled) {
+            Intent notificationIntent = new Intent(context, StickyNotificationService.class);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(notificationIntent);
+            } else {
+                context.startService(notificationIntent);
+            }
+            Log.i(TAG, "Starting sticky notification service");
         } else {
-            context.startService(notificationIntent);
+            Log.i(TAG, "Sticky notification disabled by user, not starting service");
         }
     }
 
     public static void stopStickyNotificationService(Context context) {
         Intent notificationIntent = new Intent(context, StickyNotificationService.class);
         context.stopService(notificationIntent);
+        Log.i(TAG, "Stopping sticky notification service");
     }
     
     /**
