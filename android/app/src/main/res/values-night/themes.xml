@@ -11,6 +11,33 @@
         <item name="colorOnSecondary">@color/black</item>
         <!-- Status bar color. -->
         <item name="android:statusBarColor" tools:targetApi="l">?attr/colorPrimaryVariant</item>
-        <!-- Customize your theme here. -->
+        <!-- Dark mode specific overrides -->
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+        <item name="android:windowBackground">@color/background_primary</item>
+        <item name="android:colorBackground">@color/background_primary</item>
+        <item name="android:editTextColor">@color/text_primary</item>
+        <item name="android:textColorHint">@color/text_secondary</item>
+    </style>
+    
+    <!-- Theme without action bar for MainActivity -->
+    <style name="Theme.SMSGateway.NoActionBar" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- Primary brand color. -->
+        <item name="colorPrimary">#4299E1</item>
+        <item name="colorPrimaryVariant">#4299cc</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <!-- Secondary brand color. -->
+        <item name="colorSecondary">#f35b04</item>
+        <item name="colorSecondaryVariant">#f18701</item>
+        <item name="colorOnSecondary">@color/black</item>
+        <!-- Status bar color. -->
+        <item name="android:statusBarColor" tools:targetApi="l">?attr/colorPrimaryVariant</item>
+        <!-- Dark mode specific overrides -->
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+        <item name="android:windowBackground">@color/background_primary</item>
+        <item name="android:colorBackground">@color/background_primary</item>
+        <item name="android:editTextColor">@color/text_primary</item>
+        <item name="android:textColorHint">@color/text_secondary</item>
     </style>
 </resources>
