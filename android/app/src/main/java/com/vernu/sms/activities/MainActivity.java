@@ -42,7 +42,7 @@ import retrofit2.Response;
 public class MainActivity extends AppCompatActivity {
 
     private Context mContext;
-    private Switch gatewaySwitch, receiveSMSSwitch;
+    private Switch gatewaySwitch, receiveSMSSwitch, stickyNotificationSwitch;
     private EditText apiKeyEditText, fcmTokenEditText, deviceIdEditText;
     private Button registerDeviceBtn, grantSMSPermissionBtn, scanQRBtn, checkUpdatesBtn;
     private ImageButton copyDeviceIdImgBtn;
@@ -62,6 +62,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         gatewaySwitch = findViewById(R.id.gatewaySwitch);
         receiveSMSSwitch = findViewById(R.id.receiveSMSSwitch);
+        stickyNotificationSwitch = findViewById(R.id.stickyNotificationSwitch);
         apiKeyEditText = findViewById(R.id.apiKeyEditText);
         fcmTokenEditText = findViewById(R.id.fcmTokenEditText);
         deviceIdEditText = findViewById(R.id.deviceIdEditText);
@@ -97,6 +98,14 @@ public class MainActivity extends AppCompatActivity {
         crashlytics.setCustomKey("device_model", Build.MODEL);
         crashlytics.setCustomKey("app_version", versionName);
         crashlytics.setCustomKey("app_version_code", BuildConfig.VERSION_CODE);
+
+        // Start sticky notification service if enabled
+        boolean gatewayEnabled = SharedPreferenceHelper.getSharedPreferenceBoolean(mContext, AppConstants.SHARED_PREFS_GATEWAY_ENABLED_KEY, false);
+        boolean stickyNotificationEnabled = SharedPreferenceHelper.getSharedPreferenceBoolean(mContext, AppConstants.SHARED_PREFS_STICKY_NOTIFICATION_ENABLED_KEY, false);
+        if (gatewayEnabled && stickyNotificationEnabled) {
+            TextBeeUtils.startStickyNotificationService(mContext);
+            Log.d(TAG, "Starting sticky notification service on app start");
+        }
 
         if (deviceId == null || deviceId.isEmpty()) {
             registerDeviceBtn.setText("Register");
@@ -150,11 +159,14 @@ public class MainActivity extends AppCompatActivity {
                     SharedPreferenceHelper.setSharedPreferenceBoolean(mContext, AppConstants.SHARED_PREFS_GATEWAY_ENABLED_KEY, isCheked);
                     boolean enabled = Boolean.TRUE.equals(Objects.requireNonNull(response.body()).data.get("enabled"));
                     compoundButton.setChecked(enabled);
-//                    if (enabled) {
-//                        TextBeeUtils.startStickyNotificationService(mContext);
-//                    } else {
-//                        TextBeeUtils.stopStickyNotificationService(mContext);
-//                    }
+                    if (enabled) {
+                        // Check if sticky notification is enabled
+                        if (SharedPreferenceHelper.getSharedPreferenceBoolean(mContext, AppConstants.SHARED_PREFS_STICKY_NOTIFICATION_ENABLED_KEY, false)) {
+                            TextBeeUtils.startStickyNotificationService(mContext);
+                        }
+                    } else {
+                        TextBeeUtils.stopStickyNotificationService(mContext);
+                    }
                     compoundButton.setEnabled(true);
                 }
                 @Override
@@ -174,6 +186,21 @@ public class MainActivity extends AppCompatActivity {
             SharedPreferenceHelper.setSharedPreferenceBoolean(mContext, AppConstants.SHARED_PREFS_RECEIVE_SMS_ENABLED_KEY, isCheked);
             compoundButton.setChecked(isCheked);
             Snackbar.make(view, "Receive SMS " + (isCheked ? "enabled" : "disabled"), Snackbar.LENGTH_LONG).show();
+        });
+
+        // Setup sticky notification switch
+        stickyNotificationSwitch.setChecked(SharedPreferenceHelper.getSharedPreferenceBoolean(mContext, AppConstants.SHARED_PREFS_STICKY_NOTIFICATION_ENABLED_KEY, false));
+        stickyNotificationSwitch.setOnCheckedChangeListener((compoundButton, isChecked) -> {
+            View view = compoundButton.getRootView();
+            SharedPreferenceHelper.setSharedPreferenceBoolean(mContext, AppConstants.SHARED_PREFS_STICKY_NOTIFICATION_ENABLED_KEY, isChecked);
+            
+            if (isChecked) {
+                TextBeeUtils.startStickyNotificationService(mContext);
+                Snackbar.make(view, "Background service enabled - app will be more reliable", Snackbar.LENGTH_LONG).show();
+            } else {
+                TextBeeUtils.stopStickyNotificationService(mContext);
+                Snackbar.make(view, "Background service disabled - app may be killed when in background", Snackbar.LENGTH_LONG).show();
+            }
         });
 
         // TODO: check gateway status/api key/device validity and update UI accordingly
