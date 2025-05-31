@@ -497,10 +497,15 @@
                             android:textStyle="bold" />
 
                         <TextView
+                            android:id="@+id/dashboardLinkText"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Go to textbee.dev/dashboard"
-                            android:textColor="@color/text_primary" />
+                            android:text="Go to https://textbee.dev/dashboard"
+                            android:textColor="?attr/colorPrimary"
+                            android:autoLink="web"
+                            android:linksClickable="true"
+                            android:clickable="true"
+                            android:focusable="true" />
                     </LinearLayout>
 
                     <LinearLayout
