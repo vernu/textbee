@@ -9,6 +9,7 @@ import {
   RetrieveSMSDTO,
   SendBulkSMSInputDTO,
   SendSMSInputDTO,
+  UpdateSMSStatusDTO,
 } from './gateway.dto'
 import { User } from '../users/schemas/user.schema'
 import { AuthService } from '../auth/auth.service'
@@ -688,6 +689,98 @@ export class GatewayService {
       },
       data,
     }
+  }
+
+  async updateSMSStatus(deviceId: string, dto: UpdateSMSStatusDTO): Promise<any> {
+
+    const device = await this.deviceModel.findById(deviceId);
+    
+    if (!device) {
+      throw new HttpException(
+        {
+          success: false,
+          error: 'Device not found',
+        },
+        HttpStatus.NOT_FOUND,
+      );
+    }
+    
+    const sms = await this.smsModel.findById(dto.smsId);
+    
+    if (!sms) {
+      throw new HttpException(
+        {
+          success: false,
+          error: 'SMS not found',
+        },
+        HttpStatus.NOT_FOUND,
+      );
+    }
+    
+    // Verify the SMS belongs to this device
+    if (sms.device.toString() !== deviceId) {
+      throw new HttpException(
+        {
+          success: false,
+          error: 'SMS does not belong to this device',
+        },
+        HttpStatus.FORBIDDEN,
+      );
+    }
+    
+    // Normalize status to uppercase for comparison
+    const normalizedStatus = dto.status.toUpperCase();
+    
+    const updateData: any = {
+      status: normalizedStatus, // Store normalized status
+    };
+    
+    // Update timestamps based on status
+    if (normalizedStatus === 'SENT' && dto.sentAtInMillis) {
+      updateData.sentAt = new Date(dto.sentAtInMillis);
+    } else if (normalizedStatus === 'DELIVERED' && dto.deliveredAtInMillis) {
+      updateData.deliveredAt = new Date(dto.deliveredAtInMillis);
+    } else if (normalizedStatus === 'FAILED' && dto.failedAtInMillis) {
+      updateData.failedAt = new Date(dto.failedAtInMillis);
+      updateData.errorCode = dto.errorCode;
+      updateData.errorMessage = dto.errorMessage || 'Unknown error';
+    }
+    
+    // Update the SMS
+    await this.smsModel.findByIdAndUpdate(dto.smsId, { $set: updateData });
+    
+    // Check if all SMS in batch have the same status, then update batch status
+    if (dto.smsBatchId) {
+      const smsBatch = await this.smsBatchModel.findById(dto.smsBatchId);
+      if (smsBatch) {
+        const allSmsInBatch = await this.smsModel.find({ smsBatch: dto.smsBatchId });
+        
+        // Check if all SMS in batch have the same status (case insensitive)
+        const allHaveSameStatus = allSmsInBatch.every(sms => sms.status.toLowerCase() === normalizedStatus);
+        
+        if (allHaveSameStatus) {
+          await this.smsBatchModel.findByIdAndUpdate(dto.smsBatchId, { 
+            $set: { status: normalizedStatus } 
+          });
+        }
+      }
+    }
+    
+    // Trigger webhook event for SMS status update
+    try {
+      this.webhookService.deliverNotification({
+        sms,
+        user: device.user,
+        event: WebhookEvent.SMS_STATUS_UPDATED,
+      });
+    } catch (error) {
+      console.error('Failed to trigger webhook event:', error);
+    }
+    
+    return {
+      success: true,
+      message: 'SMS status updated successfully',
+    };
   }
 
   async getStatsForUser(user: User) {
