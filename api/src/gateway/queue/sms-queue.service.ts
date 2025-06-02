@@ -41,6 +41,7 @@ export class SmsQueueService {
       batches.push(fcmMessages.slice(i, i + this.maxSmsBatchSize))
     }
 
+    let delayMultiplier = 1;
     for (const batch of batches) {
       await this.smsQueue.add(
         'send-sms',
@@ -52,7 +53,7 @@ export class SmsQueueService {
         {
           priority: 1, // TODO: Make this dynamic based on users subscription plan
           attempts: 1,
-          delay: 1000, // 1 second
+          delay: 1000 * delayMultiplier++,
           backoff: {
             type: 'exponential',
             delay: 5000, // 5 seconds

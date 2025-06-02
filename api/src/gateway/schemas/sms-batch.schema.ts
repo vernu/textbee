@@ -32,8 +32,8 @@ export class SMSBatch {
   @Prop({ type: Number, default: 0 })
   failureCount: number
 
-  @Prop({ type: String, default: 'pending', enum: ['pending', 'processing', 'completed', 'partial_success', 'failed'] })
-  status: string
+  @Prop({ type: String, default: 'PENDING' })
+  status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'PARTIAL_SUCCESS' | 'FAILED'
 
   @Prop({ type: String })
   error: string

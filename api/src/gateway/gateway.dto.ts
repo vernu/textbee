@@ -240,3 +240,62 @@ export class RetrieveSMSResponseDTO {
   })
   meta?: PaginationMetaDTO
 }
+
+export class UpdateSMSStatusDTO {
+  @ApiProperty({
+    type: String,
+    required: true,
+    description: 'The ID of the SMS',
+  })
+  smsId: string
+
+  @ApiProperty({
+    type: String,
+    required: true,
+    description: 'The ID of the SMS batch',
+  })
+  smsBatchId: string
+
+  @ApiProperty({
+    type: String,
+    required: true,
+    description: 'The status of the SMS (sent, delivered, failed)',
+    enum: ['sent', 'delivered', 'failed'],
+  })
+  status: string
+
+  @ApiProperty({
+    type: Number,
+    required: false,
+    description: 'The time the message was sent (in milliseconds)',
+  })
+  sentAtInMillis?: number
+
+  @ApiProperty({
+    type: Number,
+    required: false,
+    description: 'The time the message was delivered (in milliseconds)',
+  })
+  deliveredAtInMillis?: number
+
+  @ApiProperty({
+    type: Number,
+    required: false,
+    description: 'The time the message failed (in milliseconds)',
+  })
+  failedAtInMillis?: number
+
+  @ApiProperty({
+    type: String,
+    required: false,
+    description: 'Error code if the message failed',
+  })
+  errorCode?: string
+
+  @ApiProperty({
+    type: String,
+    required: false,
+    description: 'Error message if the message failed',
+  })
+  errorMessage?: string
+}

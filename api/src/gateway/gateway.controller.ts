@@ -25,6 +25,7 @@ import {
   RetrieveSMSResponseDTO,
   SendBulkSMSInputDTO,
   SendSMSInputDTO,
+  UpdateSMSStatusDTO,
 } from './gateway.dto'
 import { GatewayService } from './gateway.service'
 import { CanModifyDevice } from './guards/can-modify-device.guard'
@@ -148,5 +149,16 @@ export class GatewayController {
     
     const result = await this.gatewayService.getMessages(deviceId, type, page, limit);
     return result;
+  }
+
+  @ApiOperation({ summary: 'Update SMS status' })
+  @UseGuards(AuthGuard, CanModifyDevice)
+  @Patch('/devices/:id/sms-status')
+  async updateSMSStatus(
+    @Param('id') deviceId: string,
+    @Body() dto: UpdateSMSStatusDTO,
+  ) {
+    const data = await this.gatewayService.updateSMSStatus(deviceId, dto);
+    return { data };
   }
 }
