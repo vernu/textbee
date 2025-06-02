@@ -44,6 +44,15 @@
             </intent-filter>
         </receiver>
 
+        <receiver
+            android:name=".receivers.SMSStatusReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="SMS_SENT" />
+                <action android:name="SMS_DELIVERED" />
+            </intent-filter>
+        </receiver>
+
         <receiver android:enabled="true"
             android:name=".receivers.BootCompletedReceiver"
             android:exported="true"
