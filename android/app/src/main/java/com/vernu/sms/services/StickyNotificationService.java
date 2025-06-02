@@ -15,6 +15,8 @@ import androidx.core.app.NotificationCompat;
 import com.vernu.sms.R;
 import com.vernu.sms.activities.MainActivity;
 import com.vernu.sms.receivers.SMSBroadcastReceiver;
+import com.vernu.sms.AppConstants;
+import com.vernu.sms.helpers.SharedPreferenceHelper;
 
 public class StickyNotificationService extends Service {
 
@@ -32,15 +34,25 @@ public class StickyNotificationService extends Service {
         super.onCreate();
         Log.i(TAG, "Service Started");
 
+        // Only register receiver and show notification if enabled in preferences
+        boolean stickyNotificationEnabled = SharedPreferenceHelper.getSharedPreferenceBoolean(
+                getApplicationContext(),
+                AppConstants.SHARED_PREFS_STICKY_NOTIFICATION_ENABLED_KEY,
+                false
+        );
 
-//        IntentFilter filter = new IntentFilter();
-//        filter.addAction(Telephony.Sms.Intents.SMS_RECEIVED_ACTION);
-//        filter.addAction(android.telephony.TelephonyManager.ACTION_PHONE_STATE_CHANGED);
-//        registerReceiver(receiver, filter);
-//
-//        Notification notification = createNotification();
-//        startForeground(1, notification);
+        if (stickyNotificationEnabled) {
+            IntentFilter filter = new IntentFilter();
+            filter.addAction(Telephony.Sms.Intents.SMS_RECEIVED_ACTION);
+            filter.addAction(android.telephony.TelephonyManager.ACTION_PHONE_STATE_CHANGED);
+            registerReceiver(receiver, filter);
 
+            Notification notification = createNotification();
+            startForeground(1, notification);
+            Log.i(TAG, "Started foreground service with sticky notification");
+        } else {
+            Log.i(TAG, "Sticky notification disabled by user preference");
+        }
     }
 
     @Override
@@ -52,9 +64,19 @@ public class StickyNotificationService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
-//        unregisterReceiver(receiver);
+        
+        // Only unregister if we had registered in the first place
+        boolean stickyNotificationEnabled = SharedPreferenceHelper.getSharedPreferenceBoolean(
+                getApplicationContext(), 
+                AppConstants.SHARED_PREFS_STICKY_NOTIFICATION_ENABLED_KEY,
+                false
+        );
+        
+        if (stickyNotificationEnabled) {
+            unregisterReceiver(receiver);
+        }
+        
         Log.i(TAG, "StickyNotificationService destroyed");
-//        Toast.makeText(this, "Service destroyed", Toast.LENGTH_SHORT).show();
     }
 
     private Notification createNotification() {
@@ -72,10 +94,19 @@ public class StickyNotificationService extends Service {
             PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
 
             Notification.Builder builder = new Notification.Builder(this, notificationChannelId);
-            return builder.setContentTitle("TextBee is running").setContentText("TextBee is running in the background.").setContentIntent(pendingIntent).setOngoing(true).setSmallIcon(R.drawable.ic_launcher_foreground).build();
+            return builder.setContentTitle("TextBee Active")
+                    .setContentText("SMS gateway service is active")
+                    .setContentIntent(pendingIntent)
+                    .setOngoing(true)
+                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .build();
         } else {
             NotificationCompat.Builder builder = new NotificationCompat.Builder(this, notificationChannelId);
-            return builder.setContentTitle("TextBee is running").setContentText("TextBee is running in the background.").setOngoing(true).setSmallIcon(R.drawable.ic_launcher_foreground).build();
+            return builder.setContentTitle("TextBee Active")
+                    .setContentText("SMS gateway service is active")
+                    .setOngoing(true)
+                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .build();
         }
 
     }
