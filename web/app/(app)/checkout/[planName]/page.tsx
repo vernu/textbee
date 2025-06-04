@@ -13,26 +13,29 @@ export default function CheckoutPage({ params }) {
 
   const { data: session } = useSession()
 
-  const initiateCheckout = useCallback(async (retries = 2) => {
-    try {
-      const response = await httpBrowserClient.post('/billing/checkout', {
-        planName,
-      })
+  const initiateCheckout = useCallback(
+    async (retries = 2) => {
+      try {
+        const response = await httpBrowserClient.post('/billing/checkout', {
+          planName,
+        })
 
-      if (response.data?.redirectUrl) {
-        window.location.href = response.data?.redirectUrl
-      } else {
-        throw new Error('No redirect URL found')
+        if (response.data?.redirectUrl) {
+          window.location.href = response.data?.redirectUrl
+        } else {
+          throw new Error('No redirect URL found')
+        }
+      } catch (error) {
+        if (retries > 0) {
+          initiateCheckout(retries - 1)
+        } else {
+          setError('Failed to create checkout session. Please try again.')
+          console.error(error)
+        }
       }
-    } catch (error) {
-      if (retries > 0) {
-        initiateCheckout(retries - 1)
-      } else {
-        setError('Failed to create checkout session. Please try again.')
-        console.error(error)
-      }
-    }
-  }, [planName])
+    },
+    [planName]
+  )
 
   useEffect(() => {
     initiateCheckout()
@@ -51,7 +54,7 @@ export default function CheckoutPage({ params }) {
             setError(null)
             initiateCheckout()
           }}
-          className='mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600'
+          className='mt-4 px-4 py-2 bg-brand-500 text-white rounded hover:bg-brand-600'
         >
           Try Again
         </button>
@@ -61,7 +64,7 @@ export default function CheckoutPage({ params }) {
 
   return (
     <div className='flex flex-col items-center justify-center min-h-[80vh] bg-gray-100 p-6 rounded-lg shadow-lg'>
-      <Loader className='animate-spin mb-4 text-blue-500' size={48} />
+      <Loader className='animate-spin mb-4 text-brand-500' size={48} />
       <h2 className='text-2xl font-bold text-gray-800 mb-2'>Hang Tight!</h2>
       <p className='text-lg text-gray-600 mb-4'>
         We're processing your order. This won't take long!
