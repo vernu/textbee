@@ -728,19 +728,19 @@ export class GatewayService {
       );
     }
     
-    // Normalize status to uppercase for comparison
-    const normalizedStatus = dto.status.toUpperCase();
+    // Normalize status to lowercase for comparison
+    const normalizedStatus = dto.status.toLowerCase();
     
     const updateData: any = {
       status: normalizedStatus, // Store normalized status
     };
     
     // Update timestamps based on status
-    if (normalizedStatus === 'SENT' && dto.sentAtInMillis) {
+    if (normalizedStatus === 'sent' && dto.sentAtInMillis) {
       updateData.sentAt = new Date(dto.sentAtInMillis);
-    } else if (normalizedStatus === 'DELIVERED' && dto.deliveredAtInMillis) {
+    } else if (normalizedStatus === 'delivered' && dto.deliveredAtInMillis) {
       updateData.deliveredAt = new Date(dto.deliveredAtInMillis);
-    } else if (normalizedStatus === 'FAILED' && dto.failedAtInMillis) {
+    } else if (normalizedStatus === 'failed' && dto.failedAtInMillis) {
       updateData.failedAt = new Date(dto.failedAtInMillis);
       updateData.errorCode = dto.errorCode;
       updateData.errorMessage = dto.errorMessage || 'Unknown error';
