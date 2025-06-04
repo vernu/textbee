@@ -57,12 +57,11 @@ COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy Prisma schema and generate client during runtime
-COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+
 COPY --from=builder --chown=nextjs:nodejs /app/package.json ./
 COPY --from=builder --chown=nextjs:nodejs /app/pnpm-lock.yaml ./
 
-# Install only production dependencies, including Prisma, and generate Prisma client
+# Install only production dependencies
 RUN pnpm install --prod --frozen-lockfile
 
 # Switch to non-root user
