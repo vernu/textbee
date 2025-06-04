@@ -88,10 +88,10 @@ export default function LoginForm() {
             <FormItem>
               <FormLabel>Password</FormLabel>
               <FormControl>
-                <Input 
-                  type='password' 
-                  {...field} 
-                  className='dark:text-white dark:bg-gray-800' 
+                <Input
+                  type='password'
+                  {...field}
+                  className='dark:text-white dark:bg-gray-800'
                 />
               </FormControl>
               <FormMessage />

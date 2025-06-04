@@ -123,7 +123,7 @@ export default function RequestPasswordResetForm() {
         <CardFooter className='text-center'>
           <Link
             href={Routes.login}
-            className='text-sm text-blue-600 hover:underline'
+            className='text-sm text-brand-600 hover:underline'
           >
             Back to login
           </Link>

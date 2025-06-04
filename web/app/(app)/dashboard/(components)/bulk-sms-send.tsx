@@ -143,7 +143,7 @@ export default function BulkSMSSend() {
   const isStep3Disabled = isStep2Disabled || !selectedColumn || !messageTemplate
 
   return (
-    <div className='container mx-auto p-4 space-y-8'>
+    <div className='space-y-8'>
       <Card>
         <CardHeader>
           <CardTitle>Send Bulk SMS</CardTitle>
