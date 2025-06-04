@@ -39,7 +39,8 @@ export default function LoginForm() {
   const onSubmit = async (data: LoginFormValues) => {
     try {
       const result = await signIn('email-password-login', {
-        redirect: false,
+        redirect: true,
+        callbackUrl: Routes.dashboard,
         email: data.email,
         password: data.password,
       })
@@ -49,8 +50,6 @@ export default function LoginForm() {
           type: 'manual',
           message: 'Invalid email or password',
         })
-      } else {
-        router.push(Routes.dashboard)
       }
     } catch (error) {
       console.error('login error:', error)
