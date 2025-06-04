@@ -9,6 +9,7 @@ import {
   RetrieveSMSDTO,
   SendBulkSMSInputDTO,
   SendSMSInputDTO,
+  UpdateSMSStatusDTO,
 } from './gateway.dto'
 import { User } from '../users/schemas/user.schema'
 import { AuthService } from '../auth/auth.service'
@@ -690,6 +691,98 @@ export class GatewayService {
     }
   }
 
+  async updateSMSStatus(deviceId: string, dto: UpdateSMSStatusDTO): Promise<any> {
+
+    const device = await this.deviceModel.findById(deviceId);
+    
+    if (!device) {
+      throw new HttpException(
+        {
+          success: false,
+          error: 'Device not found',
+        },
+        HttpStatus.NOT_FOUND,
+      );
+    }
+    
+    const sms = await this.smsModel.findById(dto.smsId);
+    
+    if (!sms) {
+      throw new HttpException(
+        {
+          success: false,
+          error: 'SMS not found',
+        },
+        HttpStatus.NOT_FOUND,
+      );
+    }
+    
+    // Verify the SMS belongs to this device
+    if (sms.device.toString() !== deviceId) {
+      throw new HttpException(
+        {
+          success: false,
+          error: 'SMS does not belong to this device',
+        },
+        HttpStatus.FORBIDDEN,
+      );
+    }
+    
+    // Normalize status to lowercase for comparison
+    const normalizedStatus = dto.status.toLowerCase();
+    
+    const updateData: any = {
+      status: normalizedStatus, // Store normalized status
+    };
+    
+    // Update timestamps based on status
+    if (normalizedStatus === 'sent' && dto.sentAtInMillis) {
+      updateData.sentAt = new Date(dto.sentAtInMillis);
+    } else if (normalizedStatus === 'delivered' && dto.deliveredAtInMillis) {
+      updateData.deliveredAt = new Date(dto.deliveredAtInMillis);
+    } else if (normalizedStatus === 'failed' && dto.failedAtInMillis) {
+      updateData.failedAt = new Date(dto.failedAtInMillis);
+      updateData.errorCode = dto.errorCode;
+      updateData.errorMessage = dto.errorMessage || 'Unknown error';
+    }
+    
+    // Update the SMS
+    await this.smsModel.findByIdAndUpdate(dto.smsId, { $set: updateData });
+    
+    // Check if all SMS in batch have the same status, then update batch status
+    if (dto.smsBatchId) {
+      const smsBatch = await this.smsBatchModel.findById(dto.smsBatchId);
+      if (smsBatch) {
+        const allSmsInBatch = await this.smsModel.find({ smsBatch: dto.smsBatchId });
+        
+        // Check if all SMS in batch have the same status (case insensitive)
+        const allHaveSameStatus = allSmsInBatch.every(sms => sms.status.toLowerCase() === normalizedStatus);
+        
+        if (allHaveSameStatus) {
+          await this.smsBatchModel.findByIdAndUpdate(dto.smsBatchId, { 
+            $set: { status: normalizedStatus } 
+          });
+        }
+      }
+    }
+    
+    // Trigger webhook event for SMS status update
+    try {
+      this.webhookService.deliverNotification({
+        sms,
+        user: device.user,
+        event: WebhookEvent.SMS_STATUS_UPDATED,
+      });
+    } catch (error) {
+      console.error('Failed to trigger webhook event:', error);
+    }
+    
+    return {
+      success: true,
+      message: 'SMS status updated successfully',
+    };
+  }
+
   async getStatsForUser(user: User) {
     const devices = await this.deviceModel.find({ user: user._id })
     const apiKeys = await this.authService.getUserApiKeys(user)
@@ -727,5 +820,79 @@ export class GatewayService {
         recipients.length - 2
       } others`
     }
+  }
+
+  async getSMSById(deviceId: string, smsId: string): Promise<any> {
+    // Check if device exists and is enabled
+    const device = await this.deviceModel.findById(deviceId);
+    if (!device) {
+      throw new HttpException(
+        {
+          success: false,
+          error: 'Device not found',
+        },
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    // Find the SMS that belongs to this device
+    const sms = await this.smsModel.findOne({ 
+      _id: smsId,
+      device: deviceId
+    });
+
+    if (!sms) {
+      throw new HttpException(
+        {
+          success: false,
+          error: 'SMS not found',
+        },
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    return sms;
+  }
+
+  async getSmsBatchById(deviceId: string, smsBatchId: string): Promise<any> {
+    // Check if device exists
+    const device = await this.deviceModel.findById(deviceId);
+    if (!device) {
+      throw new HttpException(
+        {
+          success: false,
+          error: 'Device not found',
+        },
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    // Find the SMS batch that belongs to this device
+    const smsBatch = await this.smsBatchModel.findOne({ 
+      _id: smsBatchId,
+      device: deviceId
+    });
+
+    if (!smsBatch) {
+      throw new HttpException(
+        {
+          success: false,
+          error: 'SMS batch not found',
+        },
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    // Find all SMS messages that belong to this batch
+    const smsMessages = await this.smsModel.find({ 
+      smsBatch: smsBatchId,
+      device: deviceId
+    });
+
+    // Return both the batch and its SMS messages
+    return {
+      batch: smsBatch,
+      messages: smsMessages
+    };
   }
 }

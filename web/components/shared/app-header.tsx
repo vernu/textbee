@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -132,7 +133,7 @@ export default function AppHeader() {
               <Button
                 asChild
                 color='primary'
-                className='bg-blue-500 hover:bg-blue-600 text-white rounded-full'
+                className='bg-primary hover:bg-primary/90 text-white rounded-full'
               >
                 <Link href={Routes.register}>Get started</Link>
               </Button>
@@ -151,9 +152,15 @@ export default function AppHeader() {
             className='flex items-center space-x-2'
             href={Routes.landingPage}
           >
-            <MessageSquarePlus className='h-6 w-6 text-blue-500' />
+            <Image
+              src='/images/logo.png'
+              alt='textbee Logo'
+              width={24}
+              height={24}
+              className='h-6 w-6 bg-white rounded-full'
+            />
             <span className='font-bold'>
-              Text<span className='text-blue-500'>Bee</span>
+              text<span className='text-primary'>bee</span>
               <span className='text-xs align-center text-gray-500 dark:text-gray-400'>
                 .dev
               </span>
@@ -181,8 +188,7 @@ export default function AppHeader() {
                 </Button>
                 <Button
                   asChild
-                  color='primary'
-                  className='bg-blue-500 hover:bg-blue-600 rounded-full'
+                  className='bg-primary hover:bg-primary/90 text-white rounded-full'
                 >
                   <Link href={Routes.register}>Get started</Link>
                 </Button>

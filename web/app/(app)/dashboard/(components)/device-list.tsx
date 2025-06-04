@@ -39,7 +39,6 @@ export default function DeviceList() {
         <CardTitle className='text-lg'>Registered Devices</CardTitle>
       </CardHeader>
       <CardContent>
-        <ScrollArea className='h-[400px] pr-4'>
           <div className='space-y-2'>
             {isPending && (
               <>
@@ -129,7 +128,6 @@ export default function DeviceList() {
               </Card>
             ))}
           </div>
-        </ScrollArea>
       </CardContent>
     </Card>
   )

@@ -218,7 +218,7 @@ export default function AccountSettings() {
 
     if (isLoadingSubscription)
       return (
-        <div className='flex justify-center items-center h-full'>
+        <div className='flex justify-center items-center h-full min-h-[200px] mt-10'>
           <Spinner size='sm' />
         </div>
       )
@@ -230,22 +230,25 @@ export default function AccountSettings() {
       )
 
     // Format price with currency symbol
-    const formatPrice = (amount: number | null | undefined, currency: string | null | undefined) => {
-      if (amount == null || currency == null) return 'Free';
-      
+    const formatPrice = (
+      amount: number | null | undefined,
+      currency: string | null | undefined
+    ) => {
+      if (amount == null || currency == null) return 'Free'
+
       const formatter = new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: currency.toUpperCase() || 'USD',
         minimumFractionDigits: 2,
-      });
-      
-      return formatter.format(amount / 100);
-    };
+      })
+
+      return formatter.format(amount / 100)
+    }
 
     const getBillingInterval = (interval: string | null | undefined) => {
-      if (!interval) return '';
-      return interval.toLowerCase() === 'month' ? 'monthly' : 'yearly';
-    };
+      if (!interval) return ''
+      return interval.toLowerCase() === 'month' ? 'monthly' : 'yearly'
+    }
 
     return (
       <div className='bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border rounded-lg shadow p-4'>
@@ -259,40 +262,54 @@ export default function AccountSettings() {
                 Current subscription
               </p>
               {currentSubscription?.amount > 0 && (
-                <Badge variant="outline" className="text-xs font-medium">
-                  {formatPrice(currentSubscription?.amount, currentSubscription?.currency)} 
+                <Badge variant='outline' className='text-xs font-medium'>
+                  {formatPrice(
+                    currentSubscription?.amount,
+                    currentSubscription?.currency
+                  )}
                   {currentSubscription?.recurringInterval && (
-                    <span className="ml-1">/ {getBillingInterval(currentSubscription?.recurringInterval)}</span>
+                    <span className='ml-1'>
+                      /{' '}
+                      {getBillingInterval(
+                        currentSubscription?.recurringInterval
+                      )}
+                    </span>
                   )}
                 </Badge>
               )}
             </div>
           </div>
-          <div className={`flex items-center px-2 py-0.5 rounded-full ${
-            currentSubscription?.status === 'active' 
-              ? 'bg-green-50 dark:bg-green-900/30' 
-              : currentSubscription?.status === 'past_due'
+          <div
+            className={`flex items-center px-2 py-0.5 rounded-full ${
+              currentSubscription?.status === 'active'
+                ? 'bg-green-50 dark:bg-green-900/30'
+                : currentSubscription?.status === 'past_due'
                 ? 'bg-amber-50 dark:bg-amber-900/30'
                 : 'bg-gray-50 dark:bg-gray-800/50'
-          }`}>
-            <Check className={`h-3 w-3 mr-1 ${
-              currentSubscription?.status === 'active'
-                ? 'text-green-600 dark:text-green-400'
-                : currentSubscription?.status === 'past_due'
+            }`}
+          >
+            <Check
+              className={`h-3 w-3 mr-1 ${
+                currentSubscription?.status === 'active'
+                  ? 'text-green-600 dark:text-green-400'
+                  : currentSubscription?.status === 'past_due'
                   ? 'text-amber-600 dark:text-amber-400'
                   : 'text-gray-600 dark:text-gray-400'
-            }`} />
-            <span className={`text-xs font-medium ${
-              currentSubscription?.status === 'active'
-                ? 'text-green-600 dark:text-green-400'
-                : currentSubscription?.status === 'past_due'
+              }`}
+            />
+            <span
+              className={`text-xs font-medium ${
+                currentSubscription?.status === 'active'
+                  ? 'text-green-600 dark:text-green-400'
+                  : currentSubscription?.status === 'past_due'
                   ? 'text-amber-600 dark:text-amber-400'
                   : 'text-gray-600 dark:text-gray-400'
-            }`}>
-              {currentSubscription?.status 
+              }`}
+            >
+              {currentSubscription?.status
                 ? currentSubscription.status
                     .split('_')
-                    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
                     .join(' ')
                 : 'Active'}
             </span>
@@ -301,7 +318,7 @@ export default function AccountSettings() {
 
         <div className='grid grid-cols-2 gap-3'>
           <div className='flex items-center space-x-2 bg-white dark:bg-gray-800 p-2 rounded-md shadow-sm'>
-            <Calendar className='h-4 w-4 text-blue-600 dark:text-blue-400' />
+            <Calendar className='h-4 w-4 text-brand-600 dark:text-brand-400' />
             <div>
               <p className='text-xs text-gray-500 dark:text-gray-400'>
                 Start Date
@@ -321,7 +338,7 @@ export default function AccountSettings() {
           </div>
 
           <div className='flex items-center space-x-2 bg-white dark:bg-gray-800 p-2 rounded-md shadow-sm'>
-            <Calendar className='h-4 w-4 text-blue-600 dark:text-blue-400' />
+            <Calendar className='h-4 w-4 text-brand-600 dark:text-brand-400' />
             <div>
               <p className='text-xs text-gray-500 dark:text-gray-400'>
                 Next Payment
@@ -376,7 +393,8 @@ export default function AccountSettings() {
                 <p className='text-sm font-medium text-gray-900 dark:text-white'>
                   {currentSubscription?.plan?.monthlyLimit === -1
                     ? 'Unlimited'
-                    : currentSubscription?.plan?.monthlyLimit?.toLocaleString() || '0'}
+                    : currentSubscription?.plan?.monthlyLimit?.toLocaleString() ||
+                      '0'}
                   {currentSubscription?.plan?.monthlyLimit === -1 && (
                     <TooltipProvider>
                       <Tooltip>
@@ -420,10 +438,11 @@ export default function AccountSettings() {
         </div>
 
         <div className='mt-4 flex justify-end gap-2'>
-          {(!currentSubscription?.plan?.name || currentSubscription?.plan?.name?.toLowerCase() === 'free') ? (
+          {!currentSubscription?.plan?.name ||
+          currentSubscription?.plan?.name?.toLowerCase() === 'free' ? (
             <Link
               href='/checkout/pro'
-              className='text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-md transition-colors'
+              className='text-xs font-medium text-white bg-brand-600 hover:bg-brand-700 px-3 py-1.5 rounded-md transition-colors'
             >
               Upgrade to Pro →
             </Link>
@@ -442,13 +461,13 @@ export default function AccountSettings() {
 
   if (isLoadingUser)
     return (
-      <div className='flex justify-center items-center h-full'>
+      <div className='flex justify-center items-center h-full min-h-[200px] mt-10'>
         <Spinner size='sm' />
       </div>
     )
 
   return (
-    <div className='grid gap-6 max-w-2xl mx-auto'>
+    <div className='grid gap-6 max-w-2xl mt-10'>
       <CurrentSubscription />
       <Card>
         <CardHeader>
@@ -599,7 +618,7 @@ export default function AccountSettings() {
             </div>
 
             <div className='space-y-2'>
-              <Label htmlFor='oldPassword'>Old Password</Label>
+              <Label htmlFor='newPassword'>New Password</Label>
               <Input
                 id='newPassword'
                 type='password'
@@ -714,9 +733,10 @@ export default function AccountSettings() {
 
                   {requestAccountDeletionError && (
                     <p className='text-sm text-destructive'>
-                      {(requestAccountDeletionError as any).response?.data?.message || 
-                       requestAccountDeletionError.message ||
-                       'Failed to submit account deletion request'}
+                      {(requestAccountDeletionError as any).response?.data
+                        ?.message ||
+                        requestAccountDeletionError.message ||
+                        'Failed to submit account deletion request'}
                     </p>
                   )}
 
