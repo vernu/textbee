@@ -397,6 +397,142 @@ function FollowUpDialog({
   )
 }
 
+function StatusDetailsDialog({ message }: { message: any }) {
+  const [open, setOpen] = useState(false);
+  
+  // Format timestamps for display
+  const formatTimestamp = (timestamp) => {
+    if (!timestamp) return 'N/A';
+    return new Date(timestamp).toLocaleString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+  };
+  
+  // Get status badge color and icon based on message status
+  const getStatusBadge = () => {
+    const status = message.status || 'pending';
+    
+    switch (status) {
+      case 'PENDING':
+        return {
+          color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+          icon: <Timer className="h-3 w-3 mr-1" />,
+          label: 'Pending'
+        };
+      case 'SENT':
+        return {
+          color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+          icon: <Check className="h-3 w-3 mr-1" />,
+          label: 'Sent'
+        };
+      case 'DELIVERED':
+        return {
+          color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+          icon: <Check className="h-3 w-3 mr-1" />,
+          label: 'Delivered'
+        };
+      case 'FAILED':
+        return {
+          color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
+          icon: <X className="h-3 w-3 mr-1" />,
+          label: 'Failed'
+        };
+      default:
+        return {
+          color: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300',
+          icon: <Timer className="h-3 w-3 mr-1" />,
+          label: status
+        };
+    }
+  };
+
+  const statusBadge = getStatusBadge();
+  
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Badge variant="outline" className={`${statusBadge.color} flex items-center text-xs cursor-pointer`}>
+          {statusBadge.icon}
+          {statusBadge.label}
+        </Badge>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <MessageSquare className="h-5 w-5" />
+            SMS Status Details
+          </DialogTitle>
+          <DialogDescription>
+            Detailed information about this SMS message
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-4 mt-4">
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            <div className="font-medium">Status</div>
+            <div>{message.status || 'pending'}</div>
+            
+            <div className="font-medium">Requested At</div>
+            <div>{formatTimestamp(message.requestedAt)}</div>
+            
+            <div className="font-medium">Sent At</div>
+            <div>{formatTimestamp(message.sentAt)}</div>
+            
+            <div className="font-medium">Delivered At</div>
+            <div>{formatTimestamp(message.deliveredAt)}</div>
+            
+            {message.status === 'FAILED' && (
+              <>
+                <div className="font-medium">Failed At</div>
+                <div>{formatTimestamp(message.failedAt)}</div>
+                
+                {message.errorCode && (
+                  <>
+                    <div className="font-medium">Error Code</div>
+                    <div className="">{message.errorCode}</div>
+                  </>
+                )}
+                
+                {message.errorMessage && (
+                  <>
+                    <div className="font-medium">Error Message</div>
+                    <div className="">{message.errorMessage}</div>
+                  </>
+                )}
+                
+                {(!message.errorCode && !message.errorMessage && message.error) && (
+                  <>
+                    <div className="font-medium">Error</div>
+                    <div className="text-destructive">{message.error || 'Unknown error'}</div>
+                  </>
+                )}
+              </>
+            )}
+            
+            <div className="font-medium">Recipient</div>
+            <div>{message.recipient || (message.recipients && message.recipients[0]) || 'Unknown'}</div>
+            
+            <div className="font-medium">Message ID</div>
+            <div className="font-mono text-xs">{message._id}</div>
+            
+            {message.smsBatch && (
+              <>
+                <div className="font-medium">Batch ID</div>
+                <div className="font-mono text-xs">{message.smsBatch}</div>
+              </>
+            )}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function MessageCard({ message, type }) {
   const isSent = type === 'sent'
 
@@ -414,7 +550,7 @@ function MessageCard({ message, type }) {
     <Card
       className={`hover:bg-muted/50 transition-colors max-w-sm md:max-w-none ${
         isSent
-          ? 'border-l-4 border-l-blue-500'
+          ? 'border-l-4 border-l-brand-500'
           : 'border-l-4 border-l-green-500'
       }`}
     >
@@ -423,7 +559,7 @@ function MessageCard({ message, type }) {
           <div className='flex justify-between items-start'>
             <div className='flex items-center gap-2'>
               {isSent ? (
-                <div className='flex items-center text-blue-600 dark:text-blue-400 font-medium'>
+                <div className='flex items-center text-brand-600 dark:text-brand-400 font-medium'>
                   <ArrowUpRight className='h-4 w-4 mr-1' />
                   <span>
                     To:{' '}
@@ -449,17 +585,18 @@ function MessageCard({ message, type }) {
             <p className='text-sm max-w-sm md:max-w-none'>{message.message}</p>
           </div>
 
-          {!isSent && (
-            <div className='flex justify-end'>
-              <ReplyDialog sms={message} />
+          <div className='flex justify-between items-center'>
+            {isSent && (
+              <div className='flex items-center'>
+                <StatusDetailsDialog message={message} />
+              </div>
+            )}
+            
+            <div className='flex justify-end ml-auto'>
+              {!isSent && <ReplyDialog sms={message} />}
+              {isSent && <FollowUpDialog message={message} />}
             </div>
-          )}
-
-          {isSent && (
-            <div className='flex justify-end'>
-              <FollowUpDialog message={message} />
-            </div>
-          )}
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -614,16 +751,16 @@ export default function MessageHistory() {
 
   return (
     <div className='space-y-4'>
-      <div className='bg-gradient-to-r from-blue-50 to-sky-50 dark:from-blue-950/30 dark:to-sky-950/30 rounded-lg shadow-sm border border-blue-100 dark:border-blue-800/50 p-4 mb-4'>
+      <div className='bg-gradient-to-r from-brand-50 to-sky-50 dark:from-brand-950/30 dark:to-sky-950/30 rounded-lg shadow-sm border border-brand-100 dark:border-brand-800/50 p-4 mb-4'>
         <div className='flex flex-col gap-4'>
           <div className='flex flex-col sm:flex-row sm:items-center gap-3'>
             <div className='flex-1'>
               <div className='flex items-center gap-2 mb-1.5'>
-                <Smartphone className='h-3.5 w-3.5 text-blue-500' />
+                <Smartphone className='h-3.5 w-3.5 text-brand-500' />
                 <h3 className='text-sm font-medium text-foreground'>Device</h3>
               </div>
               <Select value={currentDevice} onValueChange={handleDeviceChange}>
-                <SelectTrigger className='w-full bg-white/80 dark:bg-black/20 h-9 text-sm border-blue-200 dark:border-blue-800/70'>
+                <SelectTrigger className='w-full bg-white/80 dark:bg-black/20 h-9 text-sm border-brand-200 dark:border-brand-800/70'>
                   <SelectValue placeholder='Select a device' />
                 </SelectTrigger>
                 <SelectContent>
@@ -650,7 +787,7 @@ export default function MessageHistory() {
 
             <div className='w-full sm:w-44'>
               <div className='flex items-center gap-2 mb-1.5'>
-                <MessageSquare className='h-3.5 w-3.5 text-blue-500' />
+                <MessageSquare className='h-3.5 w-3.5 text-brand-500' />
                 <h3 className='text-sm font-medium text-foreground'>
                   Message Type
                 </h3>
@@ -659,7 +796,7 @@ export default function MessageHistory() {
                 value={messageType}
                 onValueChange={handleMessageTypeChange}
               >
-                <SelectTrigger className='w-full bg-white/80 dark:bg-black/20 h-9 text-sm border-blue-200 dark:border-blue-800/70'>
+                <SelectTrigger className='w-full bg-white/80 dark:bg-black/20 h-9 text-sm border-brand-200 dark:border-brand-800/70'>
                   <SelectValue placeholder='Message type' />
                 </SelectTrigger>
                 <SelectContent>
@@ -677,7 +814,7 @@ export default function MessageHistory() {
                   </SelectItem>
                   <SelectItem value='sent'>
                     <div className='flex items-center gap-1.5'>
-                      <div className='h-1.5 w-1.5 rounded-full bg-blue-500'></div>
+                      <div className='h-1.5 w-1.5 rounded-full bg-brand-500'></div>
                       Sent
                     </div>
                   </SelectItem>
@@ -687,14 +824,14 @@ export default function MessageHistory() {
           </div>
 
           {/* Refresh Controls */}
-          <div className='flex items-center justify-between gap-2 pt-2 mt-2 border-t border-blue-100 dark:border-blue-800/50'>
+          <div className='flex items-center justify-between gap-2 pt-2 mt-2 border-t border-brand-100 dark:border-brand-800/50'>
             <div className='flex items-center gap-1.5'>
               <Button
                 onClick={handleRefresh}
                 variant='ghost'
                 size='sm'
                 disabled={!currentDevice}
-                className='h-7 px-2 text-xs text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/30'
+                className='h-7 px-2 text-xs text-brand-700 dark:text-brand-300 hover:bg-brand-100 dark:hover:bg-brand-900/30'
               >
                 <RefreshCw
                   className={`h-3.5 w-3.5 mr-1 ${
@@ -712,7 +849,7 @@ export default function MessageHistory() {
             </div>
 
             <div className='flex items-center gap-1.5'>
-              <Timer className='h-3 w-3 text-blue-500' />
+              <Timer className='h-3 w-3 text-brand-500' />
               <span className='text-xs font-medium mr-1'>Auto Refresh:</span>
 
               <div className='flex'>
@@ -729,8 +866,8 @@ export default function MessageHistory() {
                     disabled={!currentDevice && interval.value > 0}
                     className={`h-6 px-1.5 text-xs ${
                       autoRefreshInterval === interval.value
-                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium'
-                        : 'text-muted-foreground hover:bg-blue-50 dark:hover:bg-blue-900/20'
+                        ? 'bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 font-medium'
+                        : 'text-muted-foreground hover:bg-brand-50 dark:hover:bg-brand-900/20'
                     }`}
                     onClick={() => setAutoRefreshInterval(interval.value)}
                   >
@@ -792,7 +929,7 @@ export default function MessageHistory() {
                 size='icon'
                 className={`h-8 w-8 rounded-full ${
                   page === 1
-                    ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                    ? 'bg-primary text-brand-foreground hover:bg-primary/90'
                     : 'hover:bg-secondary'
                 }`}
               >
@@ -835,7 +972,7 @@ export default function MessageHistory() {
                       size='icon'
                       className={`h-8 w-8 rounded-full ${
                         page === pageToShow
-                          ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                          ? 'bg-primary text-brand-foreground hover:bg-primary/90'
                           : 'hover:bg-secondary'
                       }`}
                     >
@@ -860,7 +997,7 @@ export default function MessageHistory() {
                 size='icon'
                 className={`h-8 w-8 rounded-full ${
                   page === pagination.totalPages
-                    ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                    ? 'bg-primary text-brand-foreground hover:bg-primary/90'
                     : 'hover:bg-secondary'
                 }`}
               >

@@ -15,7 +15,7 @@ export default function Messaging() {
   }
 
   return (
-    <div className='grid gap-6 max-w-sm md:max-w-xl mx-auto mt-10'>
+    <div className='grid gap-6 w-full max-w-sm md:max-w-3xl'>
       <Tabs
         value={currentTab}
         onValueChange={handleTabChange}
@@ -38,7 +38,7 @@ export default function Messaging() {
         </TabsContent>
 
         <TabsContent value='bulk-send' className='space-y-4'>
-          <div className='grid gap-6 max-w-xl mx-auto mt-10'>
+          <div className='grid gap-6 w-full'>
             <BulkSMSSend />
           </div>
         </TabsContent>

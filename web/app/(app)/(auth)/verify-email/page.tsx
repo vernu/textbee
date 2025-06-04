@@ -40,8 +40,8 @@ const SuccessAlert = ({ title, message }: { title: string; message: string }) =>
 )
 
 const InfoAlert = ({ title, message }: { title: string; message: string }) => (
-  <Alert className='bg-blue-50 text-blue-700 border-blue-200'>
-    <Mail className='h-5 w-5 text-blue-600' />
+  <Alert className='bg-brand-50 text-brand-700 border-brand-200'>
+    <Mail className='h-5 w-5 text-brand-600' />
     <AlertTitle className='text-lg font-semibold'>{title}</AlertTitle>
     <AlertDescription>{message}</AlertDescription>
   </Alert>
@@ -54,7 +54,7 @@ const LoadingSpinner = () => (
 )
 
 const DashboardButton = () => (
-  <Button className='w-full py-5 mt-2' asChild>
+  <Button className='w-full py-5 mt-2 text-white' asChild>
     <Link href={Routes.dashboard}>
       Go to Dashboard
       <ArrowRight className='ml-2 h-5 w-5' />
