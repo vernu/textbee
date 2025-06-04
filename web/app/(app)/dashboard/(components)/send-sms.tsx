@@ -71,7 +71,7 @@ export default function SendSms() {
   })
 
   return (
-    <div className='grid gap-6 max-w-xl mx-auto mt-10'>
+    <div>
       <Card>
         <CardHeader>
           <div className='flex items-center gap-2'>

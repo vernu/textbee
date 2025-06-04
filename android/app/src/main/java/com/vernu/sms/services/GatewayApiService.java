@@ -21,4 +21,7 @@ public interface GatewayApiService {
 
     @POST("gateway/devices/{deviceId}/receive-sms")
     Call<SMSForwardResponseDTO> sendReceivedSMS(@Path("deviceId") String deviceId, @Header("x-api-key") String apiKey, @Body() SMSDTO body);
+
+    @PATCH("gateway/devices/{deviceId}/sms-status")
+    Call<SMSForwardResponseDTO> updateSMSStatus(@Path("deviceId") String deviceId, @Header("x-api-key") String apiKey, @Body() SMSDTO body);
 }

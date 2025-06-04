@@ -56,7 +56,7 @@ export default function RegisterPage() {
                   redirect: redirect ? decodeURIComponent(redirect) : undefined,
                 },
               }}
-              className='font-medium text-blue-600 hover:underline'
+              className='font-medium text-brand-600 hover:underline'
             >
               Sign in
             </Link>

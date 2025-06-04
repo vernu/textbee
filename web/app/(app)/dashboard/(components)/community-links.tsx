@@ -6,8 +6,8 @@ import { ExternalLinks } from '@/config/external-links'
 
 export default function CommunityLinks() {
   return (
-    <div className='grid gap-4 md:grid-cols-4'>
-      <Card>
+    <div className='grid gap-4 md:grid-cols-2'>
+      {/* <Card>
         <CardHeader>
           <CardTitle>One-time Donation</CardTitle>
         </CardHeader>
@@ -22,9 +22,9 @@ export default function CommunityLinks() {
             </Button>
           </Link>
         </CardContent>
-      </Card>
+      </Card> */}
 
-      <Card>
+      {/* <Card>
         <CardHeader>
           <CardTitle>Support on Patreon</CardTitle>
         </CardHeader>
@@ -39,7 +39,7 @@ export default function CommunityLinks() {
             </Button>
           </Link>
         </CardContent>
-      </Card>
+      </Card> */}
 
       <Card>
         <CardHeader>

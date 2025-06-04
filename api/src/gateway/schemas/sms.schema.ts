@@ -49,15 +49,18 @@ export class SMS {
 
   @Prop({ type: Date })
   failedAt: Date
+  
+  @Prop({ type: Number, required: false })
+  errorCode: number
+
+  @Prop({ type: String, required: false })
+  errorMessage: string
 
   // @Prop({ type: String })
   // failureReason: string
 
-  @Prop({ type: String, default: 'pending', enum: ['pending', 'sent', 'delivered', 'failed'] })
-  status: string
-
-  @Prop({ type: String })
-  error: string
+  @Prop({ type: String, default: 'pending' })
+  status: 'pending' | 'sent' | 'delivered' | 'failed'
 
   // misc metadata for debugging
   @Prop({ type: Object })

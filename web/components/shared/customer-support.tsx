@@ -114,7 +114,7 @@ export default function SupportButton() {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
         <Button
-          className='fixed bottom-4 right-4 shadow-lg bg-blue-500 hover:bg-blue-600 dark:text-white rounded-full'
+          className='fixed bottom-4 right-4 shadow-lg bg-brand-500 hover:bg-brand-600 dark:text-white rounded-full'
           size='sm'
         >
           <MessageSquarePlus className='h-5 w-5 mr-1' />
@@ -229,8 +229,8 @@ export default function SupportButton() {
             />
             {isSubmitSuccessful && (
               <div className='flex items-center gap-2 text-green-500'>
-                <Check className='h-4 w-4' /> We received your message, we will
-                get back to you soon.
+                <Check className='h-4 w-4' /> We have received your message, we
+                will get back to you soon.
               </div>
             )}
 
