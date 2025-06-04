@@ -21,7 +21,6 @@ import com.vernu.sms.helpers.SharedPreferenceHelper;
 public class StickyNotificationService extends Service {
 
     private static final String TAG = "StickyNotificationService";
-    private final BroadcastReceiver receiver = new SMSBroadcastReceiver();
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -34,7 +33,7 @@ public class StickyNotificationService extends Service {
         super.onCreate();
         Log.i(TAG, "Service Started");
 
-        // Only register receiver and show notification if enabled in preferences
+        // Only show notification if enabled in preferences
         boolean stickyNotificationEnabled = SharedPreferenceHelper.getSharedPreferenceBoolean(
                 getApplicationContext(),
                 AppConstants.SHARED_PREFS_STICKY_NOTIFICATION_ENABLED_KEY,
@@ -42,11 +41,6 @@ public class StickyNotificationService extends Service {
         );
 
         if (stickyNotificationEnabled) {
-            IntentFilter filter = new IntentFilter();
-            filter.addAction(Telephony.Sms.Intents.SMS_RECEIVED_ACTION);
-            filter.addAction(android.telephony.TelephonyManager.ACTION_PHONE_STATE_CHANGED);
-            registerReceiver(receiver, filter);
-
             Notification notification = createNotification();
             startForeground(1, notification);
             Log.i(TAG, "Started foreground service with sticky notification");
@@ -64,17 +58,6 @@ public class StickyNotificationService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        
-        // Only unregister if we had registered in the first place
-        boolean stickyNotificationEnabled = SharedPreferenceHelper.getSharedPreferenceBoolean(
-                getApplicationContext(), 
-                AppConstants.SHARED_PREFS_STICKY_NOTIFICATION_ENABLED_KEY,
-                false
-        );
-        
-        if (stickyNotificationEnabled) {
-            unregisterReceiver(receiver);
-        }
         
         Log.i(TAG, "StickyNotificationService destroyed");
     }
