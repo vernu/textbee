@@ -24,7 +24,7 @@ export default function DashboardOverview() {
       onValueChange={handleTabChange}
       className='space-y-4'
     >
-      <TabsList className='sticky top-[4rem] z-10 flex mx-auto max-w-md border-[1px] my-6 bg-blue-500 text-white '>
+      <TabsList className='sticky top-[4rem] z-10 flex mx-auto max-w-md border-[1px] my-6 bg-brand-500 text-white '>
         <TabsTrigger value='overview' className='flex-1'>
           Overview
         </TabsTrigger>

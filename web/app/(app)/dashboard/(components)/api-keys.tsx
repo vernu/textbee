@@ -129,7 +129,6 @@ export default function ApiKeys() {
         <CardTitle className='text-lg'>API Keys</CardTitle>
       </CardHeader>
       <CardContent>
-        <ScrollArea className='h-[400px] pr-4'>
           <div className='space-y-2'>
             {isPending && (
               <>
@@ -255,7 +254,6 @@ export default function ApiKeys() {
               </Card>
             ))}
           </div>
-        </ScrollArea>
 
         {/* Revoke Dialog */}
         <Dialog open={isRevokeDialogOpen} onOpenChange={setIsRevokeDialogOpen}>

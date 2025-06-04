@@ -10,6 +10,11 @@ const nextConfig = {
   async redirects() {
     return [
       {
+        source: '/',
+        destination: '/dashboard',
+        permanent: true,
+      },
+      {
         source: '/android',
         destination: 'https://dl.textbee.dev',
         permanent: false,

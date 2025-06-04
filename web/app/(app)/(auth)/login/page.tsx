@@ -50,7 +50,7 @@ export default function LoginPage() {
         <CardFooter className='flex flex-col space-y-2 text-center'>
           <Link
             href={Routes.resetPassword}
-            className='text-sm text-blue-600 hover:underline'
+            className='text-sm text-brand-600 hover:underline'
           >
             Forgot your password?
           </Link>
@@ -63,7 +63,7 @@ export default function LoginPage() {
                   redirect: redirect ? decodeURIComponent(redirect) : undefined,
                 },
               }}
-              className='font-medium text-blue-600 hover:underline'
+              className='font-medium text-brand-600 hover:underline'
             >
               Sign up
             </Link>
