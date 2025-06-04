@@ -59,8 +59,8 @@ export class SMS {
   // @Prop({ type: String })
   // failureReason: string
 
-  @Prop({ type: String, default: 'PENDING' })
-  status: 'PENDING' | 'SENT' | 'DELIVERED' | 'FAILED'
+  @Prop({ type: String, default: 'pending' })
+  status: 'pending' | 'sent' | 'delivered' | 'failed'
 
   // misc metadata for debugging
   @Prop({ type: Object })
