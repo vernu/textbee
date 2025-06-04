@@ -29,8 +29,6 @@ COPY . .
 # Set environment variables for building
 ENV NEXT_TELEMETRY_DISABLED 1
 
-# Generate prisma client - make sure it exists
-RUN pnpm prisma generate
 
 # Build the application
 RUN pnpm build
@@ -65,8 +63,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/package.json ./
 COPY --from=builder --chown=nextjs:nodejs /app/pnpm-lock.yaml ./
 
 # Install only production dependencies, including Prisma, and generate Prisma client
-RUN pnpm install --prod --frozen-lockfile && \
-    pnpm prisma generate
+RUN pnpm install --prod --frozen-lockfile
 
 # Switch to non-root user
 USER nextjs
