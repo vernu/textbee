@@ -20,10 +20,10 @@ export default function LoginWithGoogle() {
       variant: 'default',
     })
     await signIn('google-id-token-login', {
-      redirect: false,
+      redirect: true,
+      callbackUrl: redirect ? decodeURIComponent(redirect) : Routes.dashboard,
       idToken: credentialResponse.credential,
     })
-    router.push(redirect ? decodeURIComponent(redirect) : Routes.dashboard)
   }
 
   const onGoogleLoginError = () => {
