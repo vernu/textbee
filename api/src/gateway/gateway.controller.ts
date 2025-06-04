@@ -25,6 +25,7 @@ import {
   RetrieveSMSResponseDTO,
   SendBulkSMSInputDTO,
   SendSMSInputDTO,
+  UpdateSMSStatusDTO,
 } from './gateway.dto'
 import { GatewayService } from './gateway.service'
 import { CanModifyDevice } from './guards/can-modify-device.guard'
@@ -148,5 +149,39 @@ export class GatewayController {
     
     const result = await this.gatewayService.getMessages(deviceId, type, page, limit);
     return result;
+  }
+
+  @ApiOperation({ summary: 'Update SMS status' })
+  @UseGuards(AuthGuard, CanModifyDevice)
+  @HttpCode(HttpStatus.OK)
+  @Patch('/devices/:id/sms-status')
+  async updateSMSStatus(
+    @Param('id') deviceId: string,
+    @Body() dto: UpdateSMSStatusDTO,
+  ) {
+    const data = await this.gatewayService.updateSMSStatus(deviceId, dto);
+    return { data };
+  }
+
+  @ApiOperation({ summary: 'Get a single SMS by ID' })
+  @UseGuards(AuthGuard, CanModifyDevice)
+  @Get('/devices/:id/sms/:smsId')
+  async getSMSById(
+    @Param('id') deviceId: string,
+    @Param('smsId') smsId: string,
+  ) {
+    const data = await this.gatewayService.getSMSById(deviceId, smsId);
+    return { data };
+  }
+
+  @ApiOperation({ summary: 'Get an SMS batch by ID with all its SMS messages' })
+  @UseGuards(AuthGuard, CanModifyDevice)
+  @Get('/devices/:id/sms-batch/:smsBatchId')
+  async getSmsBatchById(
+    @Param('id') deviceId: string,
+    @Param('smsBatchId') smsBatchId: string,
+  ) {
+    const data = await this.gatewayService.getSmsBatchById(deviceId, smsBatchId);
+    return { data };
   }
 }
