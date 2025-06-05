@@ -1,11 +1,11 @@
-# TextBee - Android SMS Gateway
+# textbee.dev - android sms gateway
 
-TextBee is an open-source SMS gateway that enables users to send and receive SMS messages via a web dashboard or a REST API. Perfect for businesses, developers, and hobbyists who need a reliable and cost-effective way to automate SMS messaging.
+textbee.dev is an open-source SMS gateway that enables users to send and receive SMS messages via a web dashboard or a REST API. Perfect for businesses, developers, and hobbyists who need a reliable and cost-effective way to automate SMS messaging.
 
 - **Technology stack**: React, Next.js, Node.js, NestJs, MongoDB, Android, Java
 - **Link**: [https://textbee.dev](https://textbee.dev/)
 
-![](https://ik.imagekit.io/vernu/textbee/texbee-landing-light.png?updatedAt=1687076964687)
+![](https://ik.imagekit.io/vernu/textbee/textbee.dev-landingpage-screenshot.png?updatedAt=1749102564772)
 
 
 ## Features
@@ -25,7 +25,7 @@ TextBee is an open-source SMS gateway that enables users to send and receive SMS
 ## Getting Started
 
 1. Go to [textbee.dev](https://textbee.dev) and register or login with your account
-2. Install the app on your android phone from [dl.textbee.dev](https://dl.textbee.dev)
+2. Install the app on your android phone from [textbee.dev/download](https://textbee.dev/download)
 3. Open the app and grant the permissions for SMS
 4. Go to [textbee.dev/dashboard](https://textbee.dev/dashboard) and click register device/ generate API Key
 5. Scan the QR code with the app or enter the API key manually
