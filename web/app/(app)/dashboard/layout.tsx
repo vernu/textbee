@@ -107,6 +107,7 @@ function NavItem({
   return (
     <Link
       href={href}
+      prefetch={true}
       className={`flex flex-col items-center p-2 rounded-md transition-colors w-20 ${
         isActive
           ? 'border border-brand-500 dark:border-brand-400 bg-brand-100/20 dark:bg-brand-900/10 text-brand-600 dark:text-brand-400'
@@ -142,6 +143,7 @@ function MobileNavItem({
   return (
     <Link
       href={href}
+      prefetch={true}
       className={`flex flex-col items-center justify-center p-2 rounded-md w-[23%] ${
         isActive
           ? 'border border-brand-500 dark:border-brand-400 bg-brand-100/20 dark:bg-brand-900/10 text-brand-600 dark:text-brand-400'
