@@ -77,6 +77,10 @@ export class GatewayService {
       )
     }
 
+    if (input.enabled !== false) {
+      input.enabled = true;
+    }
+    
     return await this.deviceModel.findByIdAndUpdate(
       deviceId,
       { $set: input },
