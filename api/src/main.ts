@@ -5,9 +5,10 @@ import { AppModule } from './app.module'
 import * as firebase from 'firebase-admin'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
 import * as express from 'express'
+import { NestExpressApplication } from '@nestjs/platform-express'
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule)
+  const app: NestExpressApplication = await NestFactory.create(AppModule)
   const PORT = process.env.PORT || 3001
 
   app.setGlobalPrefix('api')
@@ -55,6 +56,7 @@ async function bootstrap() {
     '/api/v1/billing/webhook/polar',
     express.raw({ type: 'application/json' }),
   )
+  app.useBodyParser('json', { limit: '2mb' });
   app.enableCors()
   await app.listen(PORT)
 }
