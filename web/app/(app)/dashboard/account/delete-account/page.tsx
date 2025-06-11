@@ -1,6 +1,6 @@
 import { AlertTriangleIcon } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import DangerZoneForm from '../../(components)/danger-zone-form'
+import DeleteAccountForm from '../../(components)/delete-account-form'
 
 export default function DangerZonePage() {
   return (
@@ -25,7 +25,7 @@ export default function DangerZonePage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <DangerZoneForm />
+            <DeleteAccountForm />
           </CardContent>
         </Card>
       </div>
