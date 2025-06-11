@@ -533,7 +533,7 @@ function StatusDetailsDialog({ message }: { message: any }) {
   );
 }
 
-function MessageCard({ message, type }) {
+function MessageCard({ message, type, device }) {
   const isSent = type === 'sent'
 
   const formattedDate = new Date(
@@ -545,6 +545,8 @@ function MessageCard({ message, type }) {
     month: 'short',
     year: 'numeric',
   })
+
+  const shouldShowStatus = device?.appVersionCode >= 14 &&  new Date(message?.createdAt) > new Date('2025-04-11')
 
   return (
     <Card
@@ -586,7 +588,7 @@ function MessageCard({ message, type }) {
           </div>
 
           <div className='flex justify-between items-center'>
-            {isSent && (
+            {isSent && shouldShowStatus && (
               <div className='flex items-center'>
                 <StatusDetailsDialog message={message} />
               </div>
@@ -906,6 +908,7 @@ export default function MessageHistory() {
             key={message._id}
             message={message}
             type={message.sender ? 'received' : 'sent'}
+            device={devices?.data?.find((device) => device._id === currentDevice)}
           />
         ))}
       </div>
