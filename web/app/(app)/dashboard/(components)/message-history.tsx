@@ -546,7 +546,7 @@ function MessageCard({ message, type, device }) {
     year: 'numeric',
   })
 
-  const shouldShowStatus = device?.appVersionCode >= 14 &&  new Date(message?.createdAt) > new Date('2025-04-11')
+  const shouldShowStatus = device?.appVersionCode >= 14 &&  new Date(message?.createdAt) > new Date('2025-06-05')
 
   return (
     <Card
