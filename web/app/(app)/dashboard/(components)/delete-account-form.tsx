@@ -19,7 +19,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 
-export default function DangerZoneForm() {
+export default function DeleteAccountForm() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [deleteConfirmEmail, setDeleteConfirmEmail] = useState('')
   const [deleteReason, setDeleteReason] = useState('')
@@ -37,6 +37,11 @@ export default function DangerZoneForm() {
     if (deleteConfirmEmail !== currentUser?.email) {
       toast({
         title: 'Please enter your correct email address',
+      })
+      return
+    } else if (deleteReason.length < 4) {
+      toast({
+        title: 'Please enter a reason for deletion',
       })
       return
     }
