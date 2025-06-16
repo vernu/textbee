@@ -547,6 +547,7 @@ export class GatewayService {
       device: device._id,
       message: dto.message,
       type: SMSType.RECEIVED,
+      status: 'received',
       sender: dto.sender,
       receivedAt,
     })
@@ -763,8 +764,9 @@ export class GatewayService {
         const allHaveSameStatus = allSmsInBatch.every(sms => sms.status.toLowerCase() === normalizedStatus);
         
         if (allHaveSameStatus) {
+          const smsBatchStatus = normalizedStatus === 'failed' ? 'failed' : 'completed';
           await this.smsBatchModel.findByIdAndUpdate(dto.smsBatchId, { 
-            $set: { status: normalizedStatus } 
+            $set: { status: smsBatchStatus } 
           });
         }
       }

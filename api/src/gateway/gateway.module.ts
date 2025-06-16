@@ -13,6 +13,7 @@ import { BullModule } from '@nestjs/bull'
 import { ConfigModule } from '@nestjs/config'
 import { SmsQueueService } from './queue/sms-queue.service'
 import { SmsQueueProcessor } from './queue/sms-queue.processor'
+import { SmsStatusUpdateTask } from './tasks/sms-status-update.task'
 
 @Module({
   imports: [
@@ -49,7 +50,7 @@ import { SmsQueueProcessor } from './queue/sms-queue.processor'
     ConfigModule,
   ],
   controllers: [GatewayController],
-  providers: [GatewayService, SmsQueueService, SmsQueueProcessor],
+  providers: [GatewayService, SmsQueueService, SmsQueueProcessor, SmsStatusUpdateTask],
   exports: [MongooseModule, GatewayService, SmsQueueService],
 })
 export class GatewayModule {}
