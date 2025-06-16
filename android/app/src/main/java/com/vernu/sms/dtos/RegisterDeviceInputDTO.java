@@ -2,7 +2,7 @@ package com.vernu.sms.dtos;
 
 public class RegisterDeviceInputDTO {
     private String fcmToken;
-    private boolean enabled;
+    private Boolean enabled;
     private String brand;
     private String manufacturer;
     private String model;
@@ -28,11 +28,11 @@ public class RegisterDeviceInputDTO {
         this.fcmToken = fcmToken;
     }
 
-    public boolean isEnabled() {
+    public Boolean isEnabled() {
         return enabled;
     }
 
-    public void setEnabled(boolean enabled) {
+    public void setEnabled(Boolean enabled) {
         this.enabled = enabled;
     }
 
