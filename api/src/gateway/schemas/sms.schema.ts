@@ -50,8 +50,8 @@ export class SMS {
   @Prop({ type: Date })
   failedAt: Date
   
-  @Prop({ type: Number, required: false })
-  errorCode: number
+  @Prop({ type: String, required: false })
+  errorCode: string
 
   @Prop({ type: String, required: false })
   errorMessage: string
@@ -60,7 +60,7 @@ export class SMS {
   // failureReason: string
 
   @Prop({ type: String, default: 'pending' })
-  status: 'pending' | 'sent' | 'delivered' | 'failed'
+  status: 'pending' | 'sent' | 'delivered' | 'failed' | 'unknown' | 'received'
 
   // misc metadata for debugging
   @Prop({ type: Object })
