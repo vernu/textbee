@@ -11,8 +11,8 @@ android {
         applicationId "com.vernu.sms"
         minSdk 24
         targetSdk 32
-        versionCode 14
-        versionName "2.6.1"
+        versionCode 15
+        versionName "2.6.2"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
@@ -54,6 +54,8 @@ dependencies {
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'
     implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
     implementation 'com.journeyapps:zxing-android-embedded:4.1.0'
+    
+    implementation 'androidx.work:work-runtime:2.7.1'
 
 //    def room_version = "2.4.2"
 //    implementation "androidx.room:room-runtime:$room_version"
