@@ -6,17 +6,13 @@ import android.content.Intent;
 import android.provider.Telephony;
 import android.telephony.SmsMessage;
 import android.util.Log;
-import com.vernu.sms.ApiManager;
 import com.vernu.sms.AppConstants;
 import com.vernu.sms.dtos.SMSDTO;
-import com.vernu.sms.dtos.SMSForwardResponseDTO;
 import com.vernu.sms.helpers.SharedPreferenceHelper;
+import com.vernu.sms.workers.SMSReceivedWorker;
 
-import java.util.Date;
 import java.util.Objects;
 
-import retrofit2.Call;
-import retrofit2.Response;
 
 public class SMSBroadcastReceiver extends BroadcastReceiver {
     private static final String TAG = "SMSBroadcastReceiver";
@@ -64,32 +60,7 @@ public class SMSBroadcastReceiver extends BroadcastReceiver {
 //        receivedSMSDTO.setMessage(receivedSMS.getMessage());
 //        receivedSMSDTO.setReceivedAt(receivedSMS.getReceivedAt());
 
-        Call<SMSForwardResponseDTO> apiCall = ApiManager.getApiService().sendReceivedSMS(deviceId, apiKey, receivedSMSDTO);
-        apiCall.enqueue(new retrofit2.Callback<SMSForwardResponseDTO>() {
-            @Override
-            public void onResponse(Call<SMSForwardResponseDTO> call, Response<SMSForwardResponseDTO> response) {
-//                Date now = new Date();
-                if (response.isSuccessful()) {
-                    Log.d(TAG, "SMS sent to server successfully");
-//                    receivedSMS.setLastAcknowledgedRequestAt(now);
-//                    receivedSMS.setServerAcknowledgedAt(now);
-//                    updateLocalReceivedSMS(receivedSMS, context);
-                } else {
-                    Log.e(TAG, "Failed to send SMS to server");
-//                    receivedSMS.setServerAcknowledgedAt(null);
-//                    receivedSMS.setLastAcknowledgedRequestAt(now);
-//                    receivedSMS.setRetryCount(localReceivedSMS.getRetryCount() + 1);
-//                    updateLocalReceivedSMS(receivedSMS, context);
-                }
-            }
-            @Override
-            public void onFailure(Call<SMSForwardResponseDTO> call, Throwable t) {
-                Log.e(TAG, "Failed to send SMS to server", t);
-//                receivedSMS.setServerAcknowledgedAt(null);
-//                receivedSMS.setLastAcknowledgedRequestAt(new Date());
-//                updateLocalReceivedSMS(receivedSMS, context);
-            }
-        });
+        SMSReceivedWorker.enqueueWork(context, deviceId, apiKey, receivedSMSDTO);
     }
 
 //    private void updateLocalReceivedSMS(SMS localReceivedSMS, Context context) {
