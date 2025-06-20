@@ -160,6 +160,20 @@ export class AuthService {
       }
     }
 
+    // Check if user has requested password reset more than 5 times in the last 24 hours
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
+    const resetCount = await this.passwordResetModel.countDocuments({
+      user: user._id,
+      createdAt: { $gte: twentyFourHoursAgo }
+    })
+
+    if (resetCount >= 5) {
+      throw new HttpException(
+        { error: 'Too many password reset requests. Please try again later.' },
+        HttpStatus.TOO_MANY_REQUESTS
+      )
+    }
+
     const otp = Math.floor(100000 + Math.random() * 900000).toString()
     const expiresAt = new Date(Date.now() + 20 * 60 * 1000)
 
@@ -169,7 +183,7 @@ export class AuthService {
       otp: hashedOtp,
       expiresAt,
     })
-    passwordReset.save()
+    await passwordReset.save()
 
     const resetLink = `${process.env.FRONTEND_URL || 'https://textbee.dev'}/reset-password?email=${encodeURIComponent(user.email)}&otp=${otp}`
 
