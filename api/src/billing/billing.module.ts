@@ -10,6 +10,7 @@ import { AuthModule } from 'src/auth/auth.module'
 import { UsersModule } from 'src/users/users.module'
 import { GatewayModule } from 'src/gateway/gateway.module'
 import { PolarWebhookPayload, PolarWebhookPayloadSchema } from './schemas/polar-webhook-payload.schema'
+import { Device, DeviceSchema } from '../gateway/schemas/device.schema'
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { PolarWebhookPayload, PolarWebhookPayloadSchema } from './schemas/polar-
       { name: Plan.name, schema: PlanSchema },
       { name: Subscription.name, schema: SubscriptionSchema },
       { name: PolarWebhookPayload.name, schema: PolarWebhookPayloadSchema },
+      { name: Device.name, schema: DeviceSchema },
     ]),
     forwardRef(() => AuthModule),
     forwardRef(() => UsersModule),
