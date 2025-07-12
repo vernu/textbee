@@ -257,6 +257,20 @@ export class AuthService {
   }
 
   async sendEmailVerificationEmail(user: UserDocument) {
+    // Check if user has requested email verification more than 5 times in the last 24 hours
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
+    const verificationCount = await this.emailVerificationModel.countDocuments({
+      user: user._id,
+      createdAt: { $gte: twentyFourHoursAgo }
+    })
+
+    if (verificationCount >= 5) {
+      throw new HttpException(
+        { error: 'Too many email verification requests. Please try again later.' },
+        HttpStatus.TOO_MANY_REQUESTS
+      )
+    }
+
     const verificationCode = uuidv4()
     const expiresAt = new Date(Date.now() + 20 * 60 * 1000) // 20 minutes
 
