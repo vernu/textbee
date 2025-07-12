@@ -53,8 +53,37 @@ export class BillingService {
       })
       .populate('plan')
 
+    // Get user's devices and usage data
+    const userDevices = await this.deviceModel.find({ user: user._id }, '_id')
+    const deviceIds = userDevices.map(d => d._id)
+
+    const processedSmsToday = await this.smsModel.countDocuments({
+      device: { $in: deviceIds },
+      createdAt: { $gte: new Date(new Date().setHours(0, 0, 0, 0)) },
+    })
+
+    const processedSmsLastMonth = await this.smsModel.countDocuments({
+      device: { $in: deviceIds },
+      createdAt: {
+        $gte: new Date(new Date().setMonth(new Date().getMonth() - 1)),
+      },
+    })
+
     if (subscription) {
-      return subscription
+      const plan = subscription.plan
+      return {
+        ...subscription.toObject(),
+        usage: {
+          processedSmsToday,
+          processedSmsLastMonth,
+          dailyLimit: plan.dailyLimit,
+          monthlyLimit: plan.monthlyLimit,
+          dailyRemaining: plan.dailyLimit === -1 ? -1 : plan.dailyLimit - processedSmsToday,
+          monthlyRemaining: plan.monthlyLimit === -1 ? -1 : plan.monthlyLimit - processedSmsLastMonth,
+          dailyUsagePercentage: plan.dailyLimit === -1 ? 0 : Math.round((processedSmsToday / plan.dailyLimit) * 100),
+          monthlyUsagePercentage: plan.monthlyLimit === -1 ? 0 : Math.round((processedSmsLastMonth / plan.monthlyLimit) * 100),
+        }
+      }
     }
 
     const plan = await this.planModel.findOne({ name: 'free' })
@@ -62,6 +91,16 @@ export class BillingService {
     return {
       plan,
       isActive: true,
+      usage: {
+        processedSmsToday,
+        processedSmsLastMonth,
+        dailyLimit: plan.dailyLimit,
+        monthlyLimit: plan.monthlyLimit,
+        dailyRemaining: plan.dailyLimit === -1 ? -1 : plan.dailyLimit - processedSmsToday,
+        monthlyRemaining: plan.monthlyLimit === -1 ? -1 : plan.monthlyLimit - processedSmsLastMonth,
+        dailyUsagePercentage: plan.dailyLimit === -1 ? 0 : Math.round((processedSmsToday / plan.dailyLimit) * 100),
+        monthlyUsagePercentage: plan.monthlyLimit === -1 ? 0 : Math.round((processedSmsLastMonth / plan.monthlyLimit) * 100),
+      }
     }
   }
 
