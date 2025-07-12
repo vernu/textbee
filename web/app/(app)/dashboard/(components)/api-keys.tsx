@@ -169,7 +169,7 @@ export default function ApiKeys() {
             )}
 
             {apiKeys?.data?.map((apiKey) => (
-              <Card key={apiKey.id} className='border-0 shadow-none'>
+              <Card key={apiKey._id} className='border-0 shadow-none'>
                 <CardContent className='flex items-center p-3'>
                   <Key className='h-6 w-6 mr-3' />
                   <div className='flex-1'>

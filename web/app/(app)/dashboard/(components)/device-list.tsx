@@ -77,7 +77,7 @@ export default function DeviceList() {
             )}
 
             {devices?.data?.map((device) => (
-              <Card key={device.id} className='border-0 shadow-none'>
+              <Card key={device._id} className='border-0 shadow-none'>
                 <CardContent className='flex items-center p-3'>
                   <Smartphone className='h-6 w-6 mr-3' />
                   <div className='flex-1'>
