@@ -297,7 +297,7 @@ export class BillingService {
           {
             message: 'Sorry, we cannot process your request at the moment',
           },
-          HttpStatus.BAD_REQUEST,
+          HttpStatus.INTERNAL_SERVER_ERROR,
         )
       }
 
@@ -332,7 +332,7 @@ export class BillingService {
       let message = ''
 
       // Get user's devices and then count SMS
-      const userDevices = await this.deviceModel.find({ user: userId }, '_id')
+      const userDevices = await this.deviceModel.find({ user: user._id }, '_id')
       const deviceIds = userDevices.map(d => d._id)
 
       const processedSmsToday = await this.smsModel.countDocuments({
@@ -421,14 +421,14 @@ export class BillingService {
 
   async getUsage(userId: string) {
     const subscription = await this.subscriptionModel.findOne({
-      user: userId,
+      user: new Types.ObjectId(userId),
       isActive: true,
     })
 
     const plan = await this.planModel.findById(subscription.plan)
 
     // First get all devices belonging to the user
-    const userDevices = await this.deviceModel.find({ user: userId }).select('_id')
+    const userDevices = await this.deviceModel.find({ user: new Types.ObjectId(userId) }).select('_id')
     const deviceIds = userDevices.map(device => device._id)
 
     const processedSmsToday = await this.smsModel.countDocuments({
