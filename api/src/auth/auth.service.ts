@@ -251,6 +251,8 @@ export class AuthService {
       )
     }
 
+    this.validatePassword(input.newPassword)
+
     const hashedPassword = await bcrypt.hash(input.newPassword, 10)
     userToUpdate.password = hashedPassword
     await userToUpdate.save()
@@ -450,9 +452,9 @@ export class AuthService {
     }
   }
   async validatePassword(password: string) {
-    if (password.length < 6) {
+    if (password.length < 6 || password.length > 128) {
       throw new HttpException(
-        { error: 'Password must be at least 6 characters' },
+        { error: 'Password must be between 6 and 128 characters' },
         HttpStatus.BAD_REQUEST,
       )
     }
