@@ -1,12 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Github, Heart, MessageSquare } from 'lucide-react'
+import { Github, Heart, MessageSquare, Linkedin, Twitter } from 'lucide-react'
 import Link from 'next/link'
 import { ExternalLinks } from '@/config/external-links'
 
 export default function CommunityLinks() {
   return (
-    <div className='grid gap-4 md:grid-cols-2'>
+    <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-2'>
       {/* <Card>
         <CardHeader>
           <CardTitle>One-time Donation</CardTitle>
@@ -70,6 +70,40 @@ export default function CommunityLinks() {
             <Button className='w-full' variant='outline'>
               <MessageSquare className='mr-2 h-4 w-4' />
               Join Discord
+            </Button>
+          </Link>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>X (Twitter)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className='text-sm text-muted-foreground mb-4'>
+            Follow us on X for the latest updates and announcements.
+          </p>
+          <Link href={ExternalLinks.twitter} prefetch={false} target='_blank'>
+            <Button className='w-full' variant='outline'>
+              <Twitter className='mr-2 h-4 w-4' />
+              Follow on X
+            </Button>
+          </Link>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>LinkedIn</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className='text-sm text-muted-foreground mb-4'>
+            Connect with us on LinkedIn for updates and news.
+          </p>
+          <Link href={ExternalLinks.linkedin} prefetch={false} target='_blank'>
+            <Button className='w-full' variant='outline'>
+              <Linkedin className='mr-2 h-4 w-4' />
+              Connect on LinkedIn
             </Button>
           </Link>
         </CardContent>
