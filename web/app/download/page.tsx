@@ -42,12 +42,10 @@ interface Release {
   }>
   prerelease: boolean
 }
-
 export default function DownloadPage() {
   const [releases, setReleases] = useState<Release[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-
   useEffect(() => {
     async function fetchReleases() {
       try {
@@ -365,7 +363,7 @@ export default function DownloadPage() {
                   value={release.id.toString()}
                   className='bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden'
                 >
-                  <AccordionTrigger className='px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors'>
+                  <AccordionTrigger className='px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors'>
                     <div className='flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-left'>
                       <div className='flex items-center gap-2'>
                         <h3 className='text-lg font-semibold text-gray-900 dark:text-white'>
@@ -435,7 +433,7 @@ export default function DownloadPage() {
                             {release.assets.map((asset) => (
                               <div
                                 key={asset.id}
-                                className='flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-gray-50 dark:bg-gray-850 rounded-md'
+                                className='flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-gray-50 dark:bg-gray-900 rounded-md'
                               >
                                 <div className='flex items-center'>
                                   <FileDown className='h-4 w-4 text-gray-500 dark:text-gray-400 mr-2' />
@@ -499,7 +497,7 @@ export default function DownloadPage() {
         </div>
 
         {/* Requirements section */}
-        <div className='mt-16 bg-gray-50 dark:bg-gray-850 rounded-xl p-6 sm:p-8 border border-gray-200 dark:border-gray-700'>
+        <div className='mt-16 bg-gray-50 dark:bg-gray-900 rounded-xl p-6 sm:p-8 border border-gray-200 dark:border-gray-700'>
           <div className='flex items-start'>
             <Info className='h-5 w-5 text-brand-600 dark:text-brand-400 mt-0.5 mr-3 flex-shrink-0' />
             <div>
