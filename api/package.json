@@ -33,7 +33,7 @@
     "@nestjs/schedule": "^4.1.1",
     "@nestjs/swagger": "^7.4.2",
     "@nestjs/throttler": "^6.2.1",
-    "@polar-sh/sdk": "^0.32.3",
+    "@polar-sh/sdk": "^0.34.9",
     "axios": "^1.8.2",
     "bcryptjs": "^2.4.3",
     "bull": "^4.16.5",
