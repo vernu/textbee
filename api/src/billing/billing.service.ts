@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common'
+import { BadRequestException, HttpException, HttpStatus, Injectable } from '@nestjs/common'
 import { InjectModel } from '@nestjs/mongoose'
 import { Model, Types } from 'mongoose'
 import { Plan, PlanDocument } from './schemas/plan.schema'
@@ -17,6 +17,7 @@ import {
   PolarWebhookPayload,
   PolarWebhookPayloadDocument,
 } from './schemas/polar-webhook-payload.schema'
+import { CheckoutSession, CheckoutSessionDocument } from './schemas/checkout-session.schema'
 
 @Injectable()
 export class BillingService {
@@ -31,6 +32,8 @@ export class BillingService {
     @InjectModel(Device.name) private deviceModel: Model<DeviceDocument>,
     @InjectModel(PolarWebhookPayload.name)
     private polarWebhookPayloadModel: Model<PolarWebhookPayloadDocument>,
+    @InjectModel(CheckoutSession.name)
+    private checkoutSessionModel: Model<CheckoutSessionDocument>,
   ) {
     this.polarApi = new Polar({
       accessToken: process.env.POLAR_ACCESS_TOKEN ?? '',
@@ -115,6 +118,15 @@ export class BillingService {
   }): Promise<CheckoutResponseDTO> {
     const isYearly = payload.isYearly
 
+    const existingCheckoutSession = await this.checkoutSessionModel.findOne({
+      user: user._id,
+      expiresAt: { $gt: new Date() },
+    })
+
+    if (existingCheckoutSession) {
+      return { redirectUrl: existingCheckoutSession.checkoutUrl }
+    }
+
     const selectedPlan = await this.planModel.findOne({
       name: payload.planName,
     })
@@ -123,13 +135,12 @@ export class BillingService {
       !selectedPlan?.polarMonthlyProductId &&
       !selectedPlan?.polarYearlyProductId
     ) {
-      throw new Error('Plan cannot be purchased')
+      throw new BadRequestException('Plan cannot be purchased')
     }
 
     // const product = await this.polarApi.products.get(selectedPlan.polarProductId)
 
-    const discountId =
-      payload.discountId ?? '48f62ff7-3cd8-46ec-8ca7-2e570dc9c522'
+    const discountId = payload.discountId ?? process.env.POLAR_DEFAULT_DISCOUNT_ID
 
     try {
       const checkoutOptions: any = {
@@ -146,16 +157,36 @@ export class BillingService {
         metadata: {
           userId: user._id?.toString(),
         },
-      }
-      const discount = await this.polarApi.discounts.get({
-        id: discountId,
-      })
-      if (discount) {
-        checkoutOptions.discountId = discount.id
+        externalCustomerId: user._id?.toString(),
       }
 
+      try {
+        const discount = await this.polarApi.discounts.get({
+          id: discountId,
+        })
+        if (discount) {
+          checkoutOptions.discountId = discount.id
+        }
+      } catch (error) {
+        console.error('failed to get discount', error)
+      }
+      
+
       const checkout = await this.polarApi.checkouts.create(checkoutOptions)
-      console.log(checkout)
+      
+      
+      this.checkoutSessionModel.updateOne({
+        user: user._id,
+      },{
+        user: user._id,
+        checkoutSessionId: checkout.id,
+        checkoutUrl: checkout.url,
+        expiresAt: new Date(checkout.expiresAt),
+        payload: checkout,
+      }, { upsert: true }).catch((error) => {
+        console.error(error)
+      })
+
       return { redirectUrl: checkout.url }
     } catch (error) {
       console.error(error)

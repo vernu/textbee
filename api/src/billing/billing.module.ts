@@ -11,6 +11,7 @@ import { UsersModule } from 'src/users/users.module'
 import { GatewayModule } from 'src/gateway/gateway.module'
 import { PolarWebhookPayload, PolarWebhookPayloadSchema } from './schemas/polar-webhook-payload.schema'
 import { Device, DeviceSchema } from '../gateway/schemas/device.schema'
+import { CheckoutSession, CheckoutSessionSchema } from './schemas/checkout-session.schema'
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { Device, DeviceSchema } from '../gateway/schemas/device.schema'
       { name: Subscription.name, schema: SubscriptionSchema },
       { name: PolarWebhookPayload.name, schema: PolarWebhookPayloadSchema },
       { name: Device.name, schema: DeviceSchema },
+      { name: CheckoutSession.name, schema: CheckoutSessionSchema },
     ]),
     forwardRef(() => AuthModule),
     forwardRef(() => UsersModule),
