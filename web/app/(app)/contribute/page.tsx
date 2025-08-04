@@ -19,6 +19,8 @@ import {
   Wallet,
   Shield,
   Coins,
+  Twitter,
+  Linkedin,
 } from 'lucide-react'
 import Link from 'next/link'
 import { ExternalLinks } from '@/config/external-links'
@@ -54,7 +56,7 @@ export default function ContributePage() {
       </div>
 
       <div className='space-y-6 max-w-5xl mx-auto'>
-        <Card className='overflow-hidden'>
+        <Card className='overflow-hidden hidden'>
           <CardHeader>
             <CardTitle className='flex items-center gap-2'>
               <CircleDollarSign className='h-5 w-5' />
@@ -244,16 +246,31 @@ export default function ContributePage() {
               Join the Community
             </CardTitle>
             <CardDescription>
-              Connect with other contributors and users
+              Follow our socials and connect with other contributors to get
+              early access to new features and updates.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button className='w-full md:w-auto' variant='outline' asChild>
-              <Link href={ExternalLinks.discord} target='_blank'>
-                <MessageSquare className='mr-2 h-4 w-4' />
-                Join Discord
-              </Link>
-            </Button>
+            <div className='grid grid-cols-1 md:grid-cols-3 gap-3'>
+              <Button variant='outline' asChild>
+                <Link href={ExternalLinks.discord} target='_blank'>
+                  <MessageSquare className='mr-2 h-4 w-4' />
+                  Join Discord
+                </Link>
+              </Button>
+              <Button variant='outline' asChild>
+                <Link href={ExternalLinks.twitter} target='_blank'>
+                  <Twitter className='mr-2 h-4 w-4' />
+                  Follow us on X (Twitter)
+                </Link>
+              </Button>
+              <Button variant='outline' asChild>
+                <Link href={ExternalLinks.linkedin} target='_blank'>
+                  <Linkedin className='mr-2 h-4 w-4' />
+                  Connect on LinkedIn
+                </Link>
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
