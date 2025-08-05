@@ -1,8 +1,8 @@
 export const Routes = {
-  landingPage: '/',
+  landingPage: 'https://textbee.dev',
   contribute: '/contribute',
-  useCases: '/use-cases',
-  quickstart: '/quickstart',
+  useCases: 'https://textbee.dev/use-cases',
+  quickstart: 'https://textbee.dev/quickstart',
   login: '/login',
   register: '/register',
   logout: '/logout',
@@ -11,9 +11,9 @@ export const Routes = {
 
   dashboard: '/dashboard',
 
-  downloadAndroidApp: 'https://dl.textbee.dev',
-  privacyPolicy: '/privacy-policy',
-  refundPolicy: '/refund-policy',
-  termsOfService: '/terms-of-service',
+  downloadAndroidApp: 'https://textbee.dev/download',
+  privacyPolicy: 'https://textbee.dev/privacy-policy',
+  refundPolicy: 'https://textbee.dev/refund-policy',
+  termsOfService: 'https://textbee.dev/terms-of-service',
   statusPage: 'https://status.textbee.dev',
 }
