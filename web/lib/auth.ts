@@ -8,12 +8,14 @@ import { Routes } from '@/config/routes'
 declare module 'next-auth' {
   interface Session {
     user: {
+      phone?: string
       avatar?: string
       accessToken?: string
     } & DefaultSession['user']
   }
 
   interface User {
+    phone?: string
     avatar?: string
     accessToken?: string
   }
@@ -139,6 +141,7 @@ export const authOptions = {
         token.role = user.role
         token.accessToken = user.accessToken
         token.avatar = user.avatar
+        token.phone = user.phone
       }
       return token
     },
@@ -147,6 +150,7 @@ export const authOptions = {
       session.user.role = token.role
       session.user.accessToken = token.accessToken
       session.user.avatar = token.avatar
+      session.user.phone = token.phone
       return session
     },
   },

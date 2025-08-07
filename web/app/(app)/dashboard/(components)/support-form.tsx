@@ -27,6 +27,7 @@ import { toast } from '@/hooks/use-toast'
 import httpBrowserClient from '@/lib/httpBrowserClient'
 import { ApiEndpoints } from '@/config/api'
 import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 
 const SupportFormSchema = z.object({
   name: z.string().min(1, { message: 'Name is required' }),
@@ -44,12 +45,14 @@ export default function SupportForm() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const router = useRouter()
 
+  const { data: session } = useSession()
+
   const form = useForm({
     resolver: zodResolver(SupportFormSchema),
     defaultValues: {
-      name: '',
-      email: '',
-      phone: '',
+      name: session?.user?.name || '',
+      email: session?.user?.email || '',
+      phone: session?.user?.phone || '',
       category: 'general',
       message: '',
     },
