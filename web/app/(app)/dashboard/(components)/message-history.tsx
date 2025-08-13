@@ -415,28 +415,28 @@ function StatusDetailsDialog({ message }: { message: any }) {
   
   // Get status badge color and icon based on message status
   const getStatusBadge = () => {
-    const status = message.status || 'pending';
+    const status = message.status?.toLowerCase() || 'pending';
     
     switch (status) {
-      case 'PENDING':
+      case 'pending':
         return {
           color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
           icon: <Timer className="h-3 w-3 mr-1" />,
           label: 'Pending'
         };
-      case 'SENT':
+      case 'sent':
         return {
           color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
           icon: <Check className="h-3 w-3 mr-1" />,
           label: 'Sent'
         };
-      case 'DELIVERED':
+      case 'delivered':
         return {
           color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
           icon: <Check className="h-3 w-3 mr-1" />,
           label: 'Delivered'
         };
-      case 'FAILED':
+      case 'failed':
         return {
           color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
           icon: <X className="h-3 w-3 mr-1" />,
@@ -486,7 +486,7 @@ function StatusDetailsDialog({ message }: { message: any }) {
             <div className="font-medium">Delivered At</div>
             <div>{formatTimestamp(message.deliveredAt)}</div>
             
-            {message.status === 'FAILED' && (
+            {message.status?.toLowerCase() === 'failed' && (
               <>
                 <div className="font-medium">Failed At</div>
                 <div>{formatTimestamp(message.failedAt)}</div>
