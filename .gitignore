@@ -1,3 +1,7 @@
 .vercel
 .DS_Store
 *-monitor
+android/key.properties
+.idea/
+*.keystore
+android/app/google-services.json

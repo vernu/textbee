@@ -4,11 +4,26 @@ plugins {
     id 'com.google.firebase.crashlytics'
 }
 
+def keyPropertiesFile = rootProject.file("key.properties")
+def keyProperties = new Properties()
+if (keyPropertiesFile.exists()) {
+    keyProperties.load(new FileInputStream(keyPropertiesFile))
+}
+
 android {
     compileSdk 32
 
+    signingConfigs {
+        release {
+            storeFile keyProperties.containsKey('storeFile') ? file(keyProperties['storeFile']) : null
+            storePassword keyProperties['storePassword']
+            keyAlias keyProperties['keyAlias']
+            keyPassword keyProperties['keyPassword']
+        }
+    }
+
     defaultConfig {
-        applicationId "com.vernu.sms"
+        applicationId "com.vernu.textbee"
         minSdk 24
         targetSdk 32
         versionCode 15
@@ -25,6 +40,7 @@ android {
 
     buildTypes {
         release {
+            signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
