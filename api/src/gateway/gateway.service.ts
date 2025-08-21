@@ -1,7 +1,7 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common'
 import { InjectModel } from '@nestjs/mongoose'
 import { Device, DeviceDocument } from './schemas/device.schema'
-import { Model } from 'mongoose'
+import { Model, Types } from 'mongoose'
 import * as firebaseAdmin from 'firebase-admin'
 import {
   ReceivedSMSDTO,
@@ -828,24 +828,9 @@ export class GatewayService {
     }
   }
 
-  async getSMSById(deviceId: string, smsId: string): Promise<any> {
-    // Check if device exists and is enabled
-    const device = await this.deviceModel.findById(deviceId);
-    if (!device) {
-      throw new HttpException(
-        {
-          success: false,
-          error: 'Device not found',
-        },
-        HttpStatus.NOT_FOUND,
-      );
-    }
+  async getSMSById(smsId: string): Promise<any> {
 
-    // Find the SMS that belongs to this device
-    const sms = await this.smsModel.findOne({ 
-      _id: smsId,
-      device: deviceId
-    });
+    const sms = await this.smsModel.findById(smsId);
 
     if (!sms) {
       throw new HttpException(
@@ -860,24 +845,9 @@ export class GatewayService {
     return sms;
   }
 
-  async getSmsBatchById(deviceId: string, smsBatchId: string): Promise<any> {
-    // Check if device exists
-    const device = await this.deviceModel.findById(deviceId);
-    if (!device) {
-      throw new HttpException(
-        {
-          success: false,
-          error: 'Device not found',
-        },
-        HttpStatus.NOT_FOUND,
-      );
-    }
+  async getSmsBatchById(smsBatchId: string): Promise<any> {
 
-    // Find the SMS batch that belongs to this device
-    const smsBatch = await this.smsBatchModel.findOne({ 
-      _id: smsBatchId,
-      device: deviceId
-    });
+    const smsBatch = await this.smsBatchModel.findById(smsBatchId);
 
     if (!smsBatch) {
       throw new HttpException(
@@ -891,8 +861,8 @@ export class GatewayService {
 
     // Find all SMS messages that belong to this batch
     const smsMessages = await this.smsModel.find({ 
-      smsBatch: smsBatchId,
-      device: deviceId
+      smsBatch: new Types.ObjectId(smsBatchId),
+      device: smsBatch.device
     });
 
     // Return both the batch and its SMS messages
