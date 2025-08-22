@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "textbee.fullname" .}}-api
+  labels:
+    app: {{ include "textbee.fullname" .}}-api
+    {{- include "textbee.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.api.autoscaling.enabled }}
+  replicas: {{ .Values.api.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      app: {{ include "textbee.fullname" .}}-api
+  template:
+    metadata:
+      labels:
+        app: {{ include "textbee.fullname" .}}-api
+    spec:
+      containers:
+        - name: {{ include "textbee.fullname" .}}-api
+          image: "{{ .Values.api.image.repository }}:{{ .Values.api.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.api.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.api.service.port }}
+          env:
+            - name: PORT
+              value: "{{ .Values.api.service.port }}"
+            {{- if .Values.web.enabled }}
+            - name: FRONTEND_URL
+              value: "http://{{ include "textbee.fullname" .}}-web:{{ .Values.web.service.port }}"
+            {{- end}}
+            {{- if .Values.api.redis.enabled }}
+            - name: REDIS_URL
+              value:  "{{ .Values.api.redis.dsn }}"
+            - name: USE_SMS_QUEUE
+              value: "true"
+            {{- else }}
+            - name: USE_SMS_QUEUE
+              value: "false"
+            {{- end }}
+            - name: MONGO_URI
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.globals.mongo_uri.secretName }} 
+                  key: {{ .Values.globals.mongo_uri.secretKey }}
+          envFrom:
+            - secretRef:
+                name: {{ .Values.api.envSecretName | default (include "textbee.fullname" .) }}-api-secrets
+          {{- with .Values.api.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.api.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.api.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.api.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.api.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.api.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.api.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.api.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -1,44 +1,84 @@
-Text Bee is ready !
 
-Don't forget to create a secret
+########################
+#       IMPORTANT      # 
+########################
 
+TextBee is almost ready !
+
+Create those secrets below: 
+---
 apiVersion: v1
 kind: Secret
 metadata:
-    name: textbee-api-secrets
+    name: {{ include "textbee.fullname" . }}-secrets
+    namespace: {{ .Release.Namespace }}
 type: Opaque
 stringData:
-    MONGO_URI: mongodb://adminUser:adminPassword@textbee-db:27017/textbee?authSource=admin
-    JWT_SECRET: supersecret
+    JWT_SECRET: "" # https://generate-secret.vercel.app/32
     JWT_EXPIRATION: 60d
-    FIREBASE_PROJECT_ID:
-    FIREBASE_PRIVATE_KEY_ID:
-    FIREBASE_PRIVATE_KEY:
-    FIREBASE_CLIENT_EMAIL:
-    FIREBASE_CLIENT_ID:
-    FIREBASE_CLIENT_C509_CERT_URL:
-    MAIL_HOST:
-    MAIL_PORT:
-    MAIL_USER:
-    MAIL_PASS:
-    MAIL_FROM:
-    MAIL_REPLY_TO:
+    # Go to Firebase Console -> Press on cog (Project Settings) -> Service Accounts -> Generate new private key
+    FIREBASE_PROJECT_ID: ""
+    FIREBASE_PRIVATE_KEY_ID: ""
+    FIREBASE_PRIVATE_KEY: ""
+    FIREBASE_CLIENT_EMAIL: ""
+    FIREBASE_CLIENT_ID: ""
+    FIREBASE_CLIENT_C509_CERT_URL: ""
+    MAIL_HOST: ""
+    MAIL_PORT: ""
+    MAIL_USER: ""
+    MAIL_PASS: ""
+    MAIL_FROM: ""
+    MAIL_REPLY_TO: ""
 
+---
+apiVersion: v1
+kind: Secret
+metadata:
+    name: {{ include "textbee.fullname" . }}-web-secrets
+    namespace: {{ .Release.Namespace }}
+type: Opaque
+stringData:
+    NEXT_PUBLIC_GOOGLE_CLIENT_ID: ""
+    NEXT_PUBLIC_TAWKTO_EMBED_URL: ""
+    MAIL_HOST: ""
+    MAIL_PORT: ""
+    MAIL_USER: ""
+    MAIL_PASS: ""
+    MAIL_FROM: ""
+    ADMIN_EMAIL: ""
+
+---
 
 apiVersion: v1
 kind: Secret
 metadata:
-    name: textbee-web-secrets
+    name: {{ include "textbee.fullname" . }}-web-secrets
+    namespace: {{ .Release.Namespace }}
 type: Opaque
 stringData:
-    AUTH_SECRET= # https://generate-secret.vercel.app/32
-    NEXT_PUBLIC_SITE_URL: http://localhost:80
-    NEXT_PUBLIC_GOOGLE_CLIENT_ID:
-    NEXT_PUBLIC_TAWKTO_EMBED_URL:
-    DATABASE_URL: mongodb://adminUser:adminPassword@textbee-db:27017/textbee?authSource=admin
-    MAIL_HOST:
-    MAIL_PORT:
-    MAIL_USER:
-    MAIL_PASS:
-    MAIL_FROM:
-    ADMIN_EMAIL:
+    NEXT_PUBLIC_GOOGLE_CLIENT_ID: ""
+    NEXT_PUBLIC_TAWKTO_EMBED_URL: ""
+    MAIL_HOST: ""
+    MAIL_PORT: ""
+    MAIL_USER: ""
+    MAIL_PASS: ""
+    MAIL_FROM: ""
+    ADMIN_EMAIL: ""
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+    name: {{ .Values.globals.mongo_uri.secretName }}
+    namespace: {{ .Release.Namespace }}
+type: Opaque
+stringData:
+    uri: "" # mongodb://user:password@host:port/database
+
+--- 
+
+########################
+#       IMPORTANT      # 
+########################
+
+Create those secrets above!

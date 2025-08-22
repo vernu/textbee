@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "textbee.fullname" .}}-web
+  labels:
+    app: {{ include "textbee.fullname" .}}-web
+    {{- include "textbee.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "textbee.fullname" .}}-web
+  template:
+    metadata:
+      labels:
+        app: {{ include "textbee.fullname" .}}-web
+    spec:
+      containers:
+        - name: {{ include "textbee.fullname" .}}-web
+          image: "{{ .Values.web.image.repository }}:{{ .Values.web.image.tag | default .Chart.AppVersion }}"
+          ports:
+            - name: http
+              containerPort: {{ .Values.web.service.port }}
+          env:
+            - name: HOSTNAME
+              value: 0.0.0.0
+            {{- if .Values.web.ingress.enabled }}
+            - name: NEXT_PUBLIC_SITE_URL
+              value: "https://{{ .Values.web.ingress.url }}"
+            {{- end }}
+            - name: PORT
+              value: "{{ .Values.web.service.port }}"
+            - name: NEXT_PUBLIC_API_BASE_URL
+              value: "http://{{ include "textbee.fullname" .}}-api:{{ .Values.web.service.port }}/api/v1"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.globals.mongo_uri.secretName | default (include "textbee.fullname" .) }}-mongo-uri
+                  key: {{ .Values.globals.mongo_uri.secretKey }}
+          envFrom:
+            - secretRef:
+                name: {{ .Values.web.envSecretName | default (include "textbee.fullname" .) }}-web-secrets
+          {{- with .Values.web.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.web.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.web.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.web.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.web.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.web.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.web.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.web.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

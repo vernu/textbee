@@ -46,7 +46,6 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 Selector labels
 */}}
 {{- define "textbee.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "textbee.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 

@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: svc-{{ include "textbee.fullname" .}}-api
+  labels:
+    app: textbee-api
+    {{- include "textbee.labels" . | nindent 4 }}
+  {{- if .Values.api.service.labels }}
+    {{- toYaml .Values.api.service.labels | nindent 4 }}
+  {{- end }}
+  {{- if .Values.api.service.annotations }}
+  annotations:
+    {{- toYaml .Values.api.service.annotations | nindent 4 }}
+  {{- end }}
+spec:
+  selector:
+    app: {{ include "textbee.fullname" .}}-api
+  ports:
+    - port: {{ .Values.api.service.port }}
+      targetPort: {{ .Values.api.service.port }}
+  type: {{ .Values.api.service.type }}
