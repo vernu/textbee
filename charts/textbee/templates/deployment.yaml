@@ -6,7 +6,7 @@ metadata:
   labels:
     {{- include "textbee.labels" . | nindent 4 }}
 spec:
-  {{- if not .Values.api.autoscaling.enabled }}
+  {{- if .Values.api.autoscaling.enabled }}
   replicas: {{ .Values.api.replicaCount }}
   {{- end }}
   selector:
@@ -97,7 +97,7 @@ spec:
       {{- end }}
 
 ---
-{{- if not .Values.web.enabled -}}
+{{- if .Values.web.enabled -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
