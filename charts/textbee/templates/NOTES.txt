@@ -64,6 +64,7 @@ stringData:
     MAIL_PASS: ""
     MAIL_FROM: ""
     ADMIN_EMAIL: ""
+    AUTH_SECRET: "" https://generate-secret.vercel.app/32
 
 ---
 apiVersion: v1
