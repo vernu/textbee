@@ -35,7 +35,7 @@ spec:
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.globals.mongo_uri.secretName | default (include "textbee.fullname" .) }}-mongo-uri
+                  name: {{ .Values.globals.mongo_uri.secretName }} 
                   key: {{ .Values.globals.mongo_uri.secretKey }}
           envFrom:
             - secretRef:
