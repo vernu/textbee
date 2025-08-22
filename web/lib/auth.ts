@@ -125,6 +125,13 @@ export const authOptions = {
     strategy: 'jwt',
   },
   callbacks: {
+    async redirect({ url, baseUrl }) {
+      // Always return relative redirects (avoids needing NEXTAUTH_URL)
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      // Ensure only safe redirects
+      if (new URL(url).origin === baseUrl) return url;
+      return baseUrl;
+    },
     async jwt({ token, user, trigger, session }) {
       if (trigger === 'update') {
         if (session.name !== token.name) {
