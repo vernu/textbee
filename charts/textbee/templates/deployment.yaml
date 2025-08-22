@@ -6,7 +6,7 @@ metadata:
   labels:
     {{- include "textbee.labels" . | nindent 4 }}
 spec:
-  {{- if .Values.api.autoscaling.enabled }}
+  {{- if not .Values.api.autoscaling.enabled }}
   replicas: {{ .Values.api.replicaCount }}
   {{- end }}
   selector:
