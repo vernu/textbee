@@ -1,0 +1,8 @@
+apiVersion: v2
+name: textbee
+description: A Helm chart to deploy TextBee.
+type: application
+
+version: 0.1.0
+
+appVersion: "v2.6.2"

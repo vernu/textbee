@@ -1,0 +1,41 @@
+---
+{{- if .Values.web.service.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "textbee.fullname" . }}-web
+  labels:
+    {{- include "textbee.labels" . | nindent 4 }}
+spec:
+  selector:
+    app: {{ include "textbee.fullname" . }}-web
+  {{- if .Values.web.service.annotations }}
+  annotations:
+    {{- toYaml .Values.web.service.annotations | nindent 4 }}
+  {{- end }}
+  ports:
+    - port: {{ .Values.web.service.port | default 80 }}
+      targetPort: {{ .Values.web.service.targetPort | default 80 }}
+  type: {{ .Values.web.service.type | default "ClusterIP" }}
+
+{{- end }}
+---
+{{- if .Values.api.service.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "textbee.fullname" . }}-api
+  labels:
+    {{- include "textbee.labels" . | nindent 4 }}
+spec:
+  selector:
+    app: {{ include "textbee.fullname" . }}-web
+  {{- if .Values.api.service.annotations }}
+  annotations:
+    {{- toYaml .Values.api.service.annotations | nindent 4 }}
+  {{- end }}
+  ports:
+    - port: {{ .Values.api.service.port | default 80 }}
+      targetPort: {{ .Values.api.service.targetPort | default 80 }}
+  type: {{ .Values.api.service.type | default "ClusterIP" }}
+{{- end }}

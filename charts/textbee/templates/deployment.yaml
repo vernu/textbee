@@ -1,0 +1,131 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "textbee.fullname" .}}-api
+  labels:
+    {{- include "textbee.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.api.autoscaling.enabled }}
+  replicas: {{ .Values.api.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "textbee.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.api.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "textbee.labels" . | nindent 8 }}
+        {{- with .Values.api.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      containers:
+      {{- with .Values.api.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+        - name: {{ .Chart.Name }}-api
+        {{- with .Values.api.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          image: "{{ .Values.api.image.repository }}:{{ .Values.api.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.api.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.api.service.port }}
+              protocol: TCP
+          env:
+            - name: PORT
+              value: "{{ .Values.api.service.port }}"
+            {{- if .Values.api.redis.enabled }}
+            - name: REDIS_URL
+              value:  "{{ .Values.api.redis.dsn }}"
+            - name: USE_SMS_QUEUE
+              value: "true"
+            {{- else }}
+            - name: USE_SMS_QUEUE
+              value: "false"
+            {{- end }}
+            {{- if .Values.web.enabled }}
+            - name: FRONTEND_URL
+              value: "http://{{ include "textbee.fullname" .}}-web:{{ .Values.web.service.port }}"
+            {{- end}}
+          envFrom:
+            - secretRef:
+                name: {{ include "textbee.fullname" .}}-api-secrets
+          {{- with .Values.api.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.api.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.api.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.api.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.api.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.api.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.api.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.api.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+---
+{{- if not .Values.web.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "textbee.fullname" .}}-web
+  labels:
+    {{- include "textbee.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ include "textbee.fullname" .}}-web
+  template:
+    metadata:
+      labels:
+        app: {{ include "textbee.fullname" .}}-web
+    spec:
+      containers:
+        - name: {{ include "textbee.fullname" .}}-web
+          image: "{{ .Values.web.image.repository }}:{{ .Values.web.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.api.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.web.service.port }}
+          env:
+            - name: PORT
+              value: "{{ .Values.web.service.port }}"
+            - name: NEXT_PUBLIC_API_BASE_URL
+              value: "http://{{ include "textbee.fullname" .}}-api:{{ .Values.web.service.port }}/api/v1"
+          envFrom:
+            - secretRef:
+                name: {{ include "textbee.fullname" .}}-web-secrets
+{{- end }}
