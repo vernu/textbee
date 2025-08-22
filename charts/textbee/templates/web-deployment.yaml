@@ -26,7 +26,7 @@ spec:
               value: 0.0.0.0
             {{- if .Values.web.ingress.enabled }}
             - name: NEXT_PUBLIC_SITE_URL
-              value: "https://{{ .Values.web.ingress.url }}"
+              value: "https://{{ .Values.globals.domain }}"
             {{- end }}
             - name: PORT
               value: "{{ .Values.web.service.port }}"

@@ -2,6 +2,8 @@ globals:
   mongo_uri:
     secretName: "textbee-mongo-uri-secret"
     secretKey: "uri"
+  domain: "https://chart-example.local"
+
 api: 
   # This will set the replicaset count more information can be found here: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
   replicaCount: 1
