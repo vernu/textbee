@@ -29,7 +29,7 @@ spec:
               value: "{{ .Values.api.service.port }}"
             {{- if .Values.web.enabled }}
             - name: FRONTEND_URL
-              value: "http://{{ include "textbee.fullname" .}}-web:{{ .Values.web.service.port }}"
+              value: "http://svc-{{ include "textbee.fullname" .}}-web:{{ .Values.web.service.port }}"
             {{- end}}
             {{- if .Values.api.redis.enabled }}
             - name: REDIS_URL

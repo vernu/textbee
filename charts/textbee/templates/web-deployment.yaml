@@ -31,7 +31,7 @@ spec:
             - name: PORT
               value: "{{ .Values.web.service.port }}"
             - name: NEXT_PUBLIC_API_BASE_URL
-              value: "http://{{ include "textbee.fullname" .}}-api:{{ .Values.web.service.port }}/api/v1"
+              value: "http://svc-{{ include "textbee.fullname" .}}-api:{{ .Values.api.service.port }}/api/v1"
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
