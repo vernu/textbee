@@ -100,6 +100,11 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x android/gradlew
       
+      - name: Create debug keystore
+        run: |
+          mkdir -p ~/.android
+          keytool -genkey -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+      
       - name: Create google-services.json for dev
         if: matrix.variant == 'dev'
         run: |
