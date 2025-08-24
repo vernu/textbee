@@ -14,3 +14,10 @@
 .cxx
 local.properties
 /app/release/*
+
+*.apk
+
+# Firebase configuration files
+/app/src/dev/google-services.json
+/app/src/prod/google-services.json
+/app/google-services.json
