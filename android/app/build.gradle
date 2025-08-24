@@ -1,6 +1,5 @@
 plugins {
     id 'com.android.application'
-    id 'com.google.gms.google-services'
     id 'com.google.firebase.crashlytics'
 }
 
@@ -8,7 +7,6 @@ android {
     compileSdk 32
 
     defaultConfig {
-        applicationId "com.vernu.sms"
         minSdk 24
         targetSdk 32
         versionCode 15
@@ -22,13 +20,50 @@ android {
 //            }
 //        }
     }
+    signingConfigs {
+        debug {
+            storeFile file("${System.getenv("HOME")}/.android/debug.keystore")
+            storePassword "android"
+            keyAlias "androiddebugkey"
+            keyPassword "android"
+        }
+    }
 
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            // TODO: Change to release signing config
+            signingConfig signingConfigs.debug
+        }
+        debug {
+            minifyEnabled false
+            debuggable true
+            signingConfig signingConfigs.debug
         }
     }
+
+    flavorDimensions "environment"
+    
+    productFlavors {
+        dev {
+            dimension "environment"
+            applicationId "com.vernu.sms.dev"
+            versionNameSuffix "-dev"
+            buildConfigField "String", "API_BASE_URL", '"https://api.dev.textbee.dev/api/v1/"'
+            buildConfigField "String", "ENVIRONMENT", '"development"'
+            resValue "string", "app_name", "textbee.dev (Dev)"
+        }
+        
+        prod {
+            dimension "environment"
+            applicationId "com.vernu.sms"
+            buildConfigField "String", "API_BASE_URL", '"https://api.textbee.dev/api/v1/"'
+            buildConfigField "String", "ENVIRONMENT", '"production"'
+            resValue "string", "app_name", "textbee.dev"
+        }
+    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
@@ -62,3 +97,4 @@ dependencies {
 //    annotationProcessor "androidx.room:room-compiler:$room_version"
 }
 
+apply plugin: 'com.google.gms.google-services'

@@ -1,3 +1,5 @@
 .vercel
 .DS_Store
 *-monitor
+
+.cursor
