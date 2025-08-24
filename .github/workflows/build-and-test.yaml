@@ -15,6 +15,14 @@ on:
         required: true
         default: 'main'
         type: string
+      android_variant:
+        description: 'Android build variant'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - prod
 
 jobs:
   build-and-test-web-and-api:
@@ -67,6 +75,9 @@ jobs:
   build-and-test-android:
     name: Build and Test Android
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        variant: [dev, prod]
     
     steps:
       - name: Checkout repository
@@ -89,19 +100,35 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x android/gradlew
       
+      - name: Create google-services.json for dev
+        if: matrix.variant == 'dev'
+        run: |
+          mkdir -p android/app/src/dev
+          echo '${{ secrets.GOOGLE_SERVICES_JSON_DEV }}' > android/app/src/dev/google-services.json
+
+      - name: Create google-services.json for prod
+        if: matrix.variant == 'prod'
+        run: |
+          mkdir -p android/app/src/prod
+          echo '${{ secrets.GOOGLE_SERVICES_JSON_PROD }}' > android/app/src/prod/google-services.json
+
       - name: Build Android app
         run: |
           cd android
-          ./gradlew assembleDebug
+          ./gradlew assemble${{ matrix.variant }}Debug
       
       # - name: Run Android tests
       #   run: |
       #     cd android
-      #     ./gradlew testDebugUnitTest
+      #     ./gradlew test${{ matrix.variant }}DebugUnitTest
+      
+      - name: Sanitize ref name for artifact
+        shell: bash
+        run: echo "SAFE_REF_NAME=${GITHUB_REF_NAME//\//-}" >> $GITHUB_ENV
       
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: textbee.dev-build-${{ github.ref_name }}-${{ github.sha }}.apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: textbee-${{ matrix.variant }}-build-${{ env.SAFE_REF_NAME }}-${{ github.sha }}.apk
+          path: android/app/build/outputs/apk/${{ matrix.variant }}/debug/app-${{ matrix.variant }}-debug.apk
           retention-days: 7 
