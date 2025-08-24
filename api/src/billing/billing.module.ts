@@ -1,6 +1,7 @@
 import { Module, forwardRef } from '@nestjs/common'
 import { BillingController } from './billing.controller'
 import { BillingService } from './billing.service'
+import { AbandonedCheckoutService } from './abandoned-checkout.service'
 import { PlanSchema } from './schemas/plan.schema'
 import { SubscriptionSchema } from './schemas/subscription.schema'
 import { Plan } from './schemas/plan.schema'
@@ -9,6 +10,7 @@ import { MongooseModule } from '@nestjs/mongoose'
 import { AuthModule } from 'src/auth/auth.module'
 import { UsersModule } from 'src/users/users.module'
 import { GatewayModule } from 'src/gateway/gateway.module'
+import { MailModule } from 'src/mail/mail.module'
 import { PolarWebhookPayload, PolarWebhookPayloadSchema } from './schemas/polar-webhook-payload.schema'
 import { Device, DeviceSchema } from '../gateway/schemas/device.schema'
 import { CheckoutSession, CheckoutSessionSchema } from './schemas/checkout-session.schema'
@@ -25,9 +27,10 @@ import { CheckoutSession, CheckoutSessionSchema } from './schemas/checkout-sessi
     forwardRef(() => AuthModule),
     forwardRef(() => UsersModule),
     forwardRef(() => GatewayModule),
+    MailModule,
   ],
   controllers: [BillingController],
-  providers: [BillingService],
-  exports: [BillingService],
+  providers: [BillingService, AbandonedCheckoutService],
+  exports: [BillingService, AbandonedCheckoutService],
 })
 export class BillingModule {}
