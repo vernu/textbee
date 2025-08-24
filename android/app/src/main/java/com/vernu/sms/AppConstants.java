@@ -3,7 +3,7 @@ package com.vernu.sms;
 import android.Manifest;
 
 public class AppConstants {
-    public static final String API_BASE_URL = "https://api.textbee.dev/api/v1/";
+    public static final String API_BASE_URL = BuildConfig.API_BASE_URL;
     public static final String[] requiredPermissions = new String[]{
             Manifest.permission.SEND_SMS,
             Manifest.permission.READ_SMS,
