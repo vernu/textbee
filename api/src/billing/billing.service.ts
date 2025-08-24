@@ -199,7 +199,8 @@ export class BillingService {
     const plans = await this.planModel.find()
 
     const customPlans = plans.filter((plan) => plan.name?.startsWith('custom'))
-    const proPlan = plans.find((plan) => plan.name === 'pro')
+    console.log('plans', plans);
+    const megaPlan = plans.find((plan) => plan.name === 'mega')
     const freePlan = plans.find((plan) => plan.name === 'free')
 
     const customPlanSubscription = await this.subscriptionModel.findOne({
@@ -212,14 +213,14 @@ export class BillingService {
       return customPlanSubscription.populate('plan')
     }
 
-    const proPlanSubscription = await this.subscriptionModel.findOne({
+    const megaPlanSubscription = await this.subscriptionModel.findOne({
       user: user._id,
-      plan: proPlan._id,
+      plan: megaPlan._id,
       isActive: true,
     })
 
-    if (proPlanSubscription) {
-      return proPlanSubscription.populate('plan')
+    if (megaPlanSubscription) {
+      return megaPlanSubscription.populate('plan')
     }
 
     const freePlanSubscription = await this.subscriptionModel.findOne({

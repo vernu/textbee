@@ -5,7 +5,8 @@ import { AppModule } from './app.module'
 import * as firebase from 'firebase-admin'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
 import * as express from 'express'
-import { NestExpressApplication } from '@nestjs/platform-express'
+import { NestExpressApplication } from '@nestjs/platform-express';
+
 
 async function bootstrap() {
   const app: NestExpressApplication = await NestFactory.create(AppModule)
@@ -58,6 +59,7 @@ async function bootstrap() {
   )
   app.useBodyParser('json', { limit: '2mb' });
   app.enableCors()
+  
   await app.listen(PORT)
 }
 bootstrap()

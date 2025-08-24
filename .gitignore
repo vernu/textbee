@@ -5,3 +5,6 @@ android/key.properties
 .idea/
 *.keystore
 android/app/google-services.json
+web/.env
+api/.env
+.env

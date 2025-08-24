@@ -9,7 +9,7 @@ const getServerSideBaseUrl = () => {
   // When running server-side in Docker, use the service name from docker-compose
   if (process.env.CONTAINER_RUNTIME === 'docker') {
     console.log('Running in Docker container')
-    return 'http://textbee-api:3001/api/v1'
+    return 'http://textbee-api:4001/api/v1'
   }
   // Otherwise use the public URL
   return process.env.NEXT_PUBLIC_API_BASE_URL || ''

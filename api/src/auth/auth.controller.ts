@@ -43,12 +43,12 @@ export class AuthController {
     return { data }
   }
 
-  @ApiOperation({ summary: 'Register' })
-  @Post('/register')
-  async register(@Body() input: RegisterInputDTO) {
-    const data = await this.authService.register(input)
-    return { data }
-  }
+  // @ApiOperation({ summary: 'Register' })
+  // @Post('/register')
+  // async register(@Body() input: RegisterInputDTO) {
+  //   const data = await this.authService.register(input)
+  //   return { data }
+  // }
 
   @ApiOperation({ summary: 'Get current logged in user' })
   @ApiBearerAuth()

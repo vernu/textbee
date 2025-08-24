@@ -47,6 +47,7 @@ export class GatewayController {
   @ApiOperation({ summary: 'Register device' })
   @Post('/devices')
   async registerDevice(@Body() input: RegisterDeviceInputDTO, @Request() req) {
+    console.log('Hello World 2')
     const data = await this.gatewayService.registerDevice(input, req.user)
     return { data }
   }
@@ -55,6 +56,7 @@ export class GatewayController {
   @ApiOperation({ summary: 'List of registered devices' })
   @Get('/devices')
   async getDevices(@Request() req) {
+    console.log('Hello World 1')
     const data = await this.gatewayService.getDevicesForUser(req.user)
     return { data }
   }
@@ -66,6 +68,7 @@ export class GatewayController {
     @Param('id') deviceId: string,
     @Body() input: RegisterDeviceInputDTO,
   ) {
+    console.log('Hello World')
     const data = await this.gatewayService.updateDevice(deviceId, input)
     return { data }
   }

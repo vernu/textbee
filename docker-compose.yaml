@@ -5,8 +5,8 @@ services:
     image: mongo:latest
     restart: always
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USER:-adminUser}
-      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASS:-adminPassword}
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USER}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASS}
       - MONGO_INITDB_DATABASE=textbee
     volumes:
       # - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
@@ -30,8 +30,8 @@ services:
     ports:
       - "${MONGO_EXPRESS_PORT:-8081}:8081"
     environment:
-      - ME_CONFIG_MONGODB_ADMINUSERNAME=${MONGO_ROOT_USER:-adminUser}
-      - ME_CONFIG_MONGODB_ADMINPASSWORD=${MONGO_ROOT_PASS:-adminPassword}
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=${MONGO_ROOT_USER}
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=${MONGO_ROOT_PASS}
       - ME_CONFIG_MONGODB_SERVER=textbee-db
     depends_on:
       textbee-db:
@@ -48,12 +48,18 @@ services:
       dockerfile: Dockerfile
     restart: always
     ports:
-      - "${PORT:-3001}:3001"
+      - "${API_PORT}:4001"
     env_file:
       - ./api/.env
     environment:
-      - PORT=${PORT:-3001}
-      - REDIS_URL=${REDIS_URL:-redis://textbee-redis:6379}
+      - PORT=${API_PORT}
+      - REDIS_URL=redis://textbee-redis:6379
+    healthcheck:
+      test: ["CMD", "ps", "aux", "| grep", "node"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
 
     depends_on:
       textbee-db:
@@ -70,12 +76,12 @@ services:
       dockerfile: Dockerfile
     restart: always
     ports:
-      - "${PORT:-3000}:3000"
+      - "${WEB_PORT}:3000"
     env_file:
       - ./web/.env
     environment:
-      - PORT=${PORT:-3000}
-      - NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL:-http://localhost:3001/api/v1}
+      - PORT=3000
+      - NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
 
     depends_on:
       - textbee-api
