@@ -13,7 +13,8 @@ import { BillingService } from './billing.service'
 interface EmailConfig {
   template: string
   subject: string
-  hoursAfterExpiry: number
+  minutesBeforeExpiry?: number // Send X minutes before expiry
+  minutesAfterExpiry?: number  // Send X minutes after expiry
   emailType:
     | 'first_reminder'
     | 'second_reminder'
@@ -30,9 +31,10 @@ export class AbandonedCheckoutService {
     {
       template: 'abandoned-checkout-10-minutes',
       subject: '⏰ Your textbee pro upgrade is waiting!',
-      hoursAfterExpiry: -0.167, // 10 minutes before expiry (-10/60 hours)
+      minutesBeforeExpiry: 15,
       emailType: 'first_reminder',
     },
+
   ]
 
   constructor(
@@ -62,42 +64,41 @@ export class AbandonedCheckoutService {
    * Send reminder emails for a specific email configuration
    */
   private async sendReminderEmails(emailConfig: EmailConfig) {
+    const now = new Date()
     let windowStart: Date, windowEnd: Date
     let query: any
 
-    if (emailConfig.hoursAfterExpiry < 0) {
-      // Before expiry: find sessions that will expire soon
-      const targetTime = new Date()
-      targetTime.setHours(
-        targetTime.getHours() + Math.abs(emailConfig.hoursAfterExpiry),
-      )
-
-      windowStart = new Date(targetTime.getTime() - 60 * 60 * 1000) // 1 hour window
-      windowEnd = new Date(targetTime.getTime() + 60 * 60 * 1000)
+    if (emailConfig.minutesBeforeExpiry !== undefined) {
+      // BEFORE EXPIRY: Find sessions that will expire in X minutes
+      const targetExpiryTime = new Date(now.getTime() + emailConfig.minutesBeforeExpiry * 60 * 1000)
+      
+      windowStart = new Date(targetExpiryTime.getTime() - 10 * 60 * 1000)
+      windowEnd = new Date(targetExpiryTime.getTime() + 10 * 60 * 1000)
 
       query = {
         expiresAt: {
           $gte: windowStart,
           $lte: windowEnd,
-          $gt: new Date(), // Only send to sessions that haven't expired yet
         },
-        'abandonedEmails.emailType': { $ne: emailConfig.emailType },
+        'abandonedEmails.emailType': { $ne: emailConfig.emailType }, // Don't send duplicate emails
+      }
+    } else if (emailConfig.minutesAfterExpiry !== undefined) {
+      // AFTER EXPIRY: Find sessions that expired X minutes ago
+      const targetExpiryTime = new Date(now.getTime() - emailConfig.minutesAfterExpiry * 60 * 1000)
+      
+      windowStart = new Date(targetExpiryTime.getTime() - 10 * 60 * 1000)
+      windowEnd = new Date(targetExpiryTime.getTime() + 10 * 60 * 1000)
+
+      query = {
+        expiresAt: {
+          $gte: windowStart,
+          $lte: windowEnd,
+        },
+        'abandonedEmails.emailType': { $ne: emailConfig.emailType }, // Don't send duplicate emails
       }
     } else {
-      // After expiry: find sessions that expired the specified time ago
-      const targetTime = new Date()
-      targetTime.setHours(targetTime.getHours() - emailConfig.hoursAfterExpiry)
-
-      windowStart = new Date(targetTime.getTime() - 60 * 60 * 1000)
-      windowEnd = new Date(targetTime.getTime() + 60 * 60 * 1000)
-
-      query = {
-        expiresAt: {
-          $gte: windowStart,
-          $lte: windowEnd,
-        },
-        'abandonedEmails.emailType': { $ne: emailConfig.emailType },
-      }
+      this.logger.error(`Invalid email config: must specify either minutesBeforeExpiry or minutesAfterExpiry`)
+      return
     }
 
     const abandonedSessions = await this.checkoutSessionModel
