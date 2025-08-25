@@ -171,7 +171,8 @@ export class GatewayService {
 
     const fcmMessages: Message[] = []
 
-    for (const recipient of recipients) {
+    for (let recipient of recipients) {
+      recipient = recipient.replace(/\s+/g, "")
       const sms = await this.smsModel.create({
         device: device._id,
         smsBatch: smsBatch._id,
@@ -366,13 +367,14 @@ export class GatewayService {
         continue
       }
 
-      for (const recipient of recipients) {
+      for (let recipient of recipients) {
+        recipient =  recipient.replace(/\s+/g, "")
         const sms = await this.smsModel.create({
           device: device._id,
           smsBatch: smsBatch._id,
           message: message,
           type: SMSType.SENT,
-          recipient,
+recipient,
           requestedAt: new Date(),
           status: 'pending',
         })
