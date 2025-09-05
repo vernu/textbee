@@ -25,7 +25,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="textbee.dev - sms gateway"
+                android:text="SMS Gateway"
                 android:textAlignment="center"
                 android:textColor="@color/white"
                 android:textSize="22sp"
@@ -500,7 +500,7 @@
                             android:id="@+id/dashboardLinkText"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Go to https://textbee.dev/dashboard"
+                            android:text="Go to http://3.147.76.130:3001/dashboard"
                             android:textColor="?attr/colorPrimary"
                             android:autoLink="web"
                             android:linksClickable="true"
