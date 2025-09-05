@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.provider.Telephony;
 import android.telephony.SmsMessage;
 import android.util.Log;
+import android.widget.Toast;
 import com.vernu.sms.AppConstants;
 import com.vernu.sms.dtos.SMSDTO;
 import com.vernu.sms.helpers.SharedPreferenceHelper;
@@ -20,9 +21,11 @@ public class SMSBroadcastReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         Log.d(TAG, "onReceive: " + intent.getAction());
+        Toast.makeText(context, "SMS Broadcast Receiver Triggered!", Toast.LENGTH_SHORT).show();
 
         if (!Objects.equals(intent.getAction(), Telephony.Sms.Intents.SMS_RECEIVED_ACTION)) {
             Log.d(TAG, "Not Valid intent");
+            Toast.makeText(context, "Not a valid SMS intent", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -38,6 +41,7 @@ public class SMSBroadcastReceiver extends BroadcastReceiver {
 
         if (deviceId.isEmpty() || apiKey.isEmpty() || !receiveSMSEnabled) {
             Log.d(TAG, "Device ID or API Key is empty or Receive SMS Feature is disabled");
+            Toast.makeText(context, "SMS Gateway not configured properly", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -60,6 +64,7 @@ public class SMSBroadcastReceiver extends BroadcastReceiver {
 //        receivedSMSDTO.setMessage(receivedSMS.getMessage());
 //        receivedSMSDTO.setReceivedAt(receivedSMS.getReceivedAt());
 
+        Toast.makeText(context, "SMS received from " + receivedSMSDTO.getSender() + " - forwarding to server", Toast.LENGTH_LONG).show();
         SMSReceivedWorker.enqueueWork(context, deviceId, apiKey, receivedSMSDTO);
     }
 
