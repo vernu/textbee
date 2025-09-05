@@ -2,6 +2,8 @@ package com.vernu.sms;
 
 import com.vernu.sms.services.GatewayApiService;
 
+import okhttp3.OkHttpClient;
+import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
@@ -16,14 +18,14 @@ public class ApiManager {
     }
 
     private static GatewayApiService createApiService() {
-//        OkHttpClient.Builder httpClient = new OkHttpClient.Builder();
-//        HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
-//        loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-//        httpClient.addInterceptor(loggingInterceptor);
+        OkHttpClient.Builder httpClient = new OkHttpClient.Builder();
+        HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
+        loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+        httpClient.addInterceptor(loggingInterceptor);
 
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(AppConstants.API_BASE_URL)
-//                .client(httpClient.build())
+                .client(httpClient.build())
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
         apiService = retrofit.create(GatewayApiService.class);

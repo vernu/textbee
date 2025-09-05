@@ -50,7 +50,7 @@ android {
             dimension "environment"
             applicationId "com.vernu.sms.dev"
             versionNameSuffix "-dev"
-            buildConfigField "String", "API_BASE_URL", '"http://3.147.76.130:3000/api/v1/"'
+            buildConfigField "String", "API_BASE_URL", '"http://3.147.76.130:3001/api/v1/"'
             buildConfigField "String", "ENVIRONMENT", '"development"'
             resValue "string", "app_name", "SMS Gateway (Dev)"
         }
@@ -58,7 +58,7 @@ android {
         prod {
             dimension "environment"
             applicationId "com.vernu.sms"
-            buildConfigField "String", "API_BASE_URL", '"http://3.147.76.130:3000/api/v1/"'
+            buildConfigField "String", "API_BASE_URL", '"http://3.147.76.130:3001/api/v1/"'
             buildConfigField "String", "ENVIRONMENT", '"production"'
             resValue "string", "app_name", "SMS Gateway"
         }
@@ -88,6 +88,7 @@ dependencies {
     implementation 'com.google.code.gson:gson:2.9.0'
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'
     implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
+    implementation 'com.squareup.okhttp3:logging-interceptor:4.9.3'
     implementation 'com.journeyapps:zxing-android-embedded:4.1.0'
     
     implementation 'androidx.work:work-runtime:2.7.1'
