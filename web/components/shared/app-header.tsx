@@ -3,7 +3,7 @@
 import { useMemo } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
-import { Menu, LogOut, LayoutDashboard, MessageSquarePlus } from 'lucide-react'
+import { Menu, LogOut, LayoutDashboard, MessageSquarePlus, Home, MessageSquareText, Users, UserCircle, ContactRound } from 'lucide-react'
 import { signOut, useSession } from 'next-auth/react'
 import { Routes } from '@/config/routes'
 import ThemeToggle from './theme-toggle'
@@ -22,6 +22,7 @@ import ThemeToggle from './theme-toggle'
 export default function AppHeader() {
   const session = useSession()
   const router = useRouter()
+  const pathname = usePathname()
 
   const handleLogout = () => {
     signOut()
@@ -31,6 +32,43 @@ export default function AppHeader() {
   const isAuthenticated = useMemo(
     () => session.status === 'authenticated' && session.data?.user,
     [session.status, session.data?.user]
+  )
+
+  const isDashboardPage = pathname?.startsWith('/dashboard')
+
+  const DashboardNavigation = () => (
+    <nav className='hidden md:flex items-center space-x-1 mx-8'>
+      <DashboardNavItem
+        href='/dashboard'
+        icon={<Home className='h-4 w-4 stroke-[1.5]' />}
+        label='Dashboard'
+        isActive={pathname === '/dashboard'}
+      />
+      <DashboardNavItem
+        href='/dashboard/messaging'
+        icon={<MessageSquareText className='h-4 w-4 stroke-[1.5]' />}
+        label='Messaging'
+        isActive={pathname === '/dashboard/messaging'}
+      />
+      <DashboardNavItem
+        href='/dashboard/contacts'
+        icon={<ContactRound className='h-4 w-4 stroke-[1.5]' />}
+        label='Contacts'
+        isActive={pathname === '/dashboard/contacts'}
+      />
+      <DashboardNavItem
+        href='/dashboard/community'
+        icon={<Users className='h-4 w-4 stroke-[1.5]' />}
+        label='Community'
+        isActive={pathname === '/dashboard/community'}
+      />
+      <DashboardNavItem
+        href='/dashboard/account'
+        icon={<UserCircle className='h-4 w-4 stroke-[1.5]' />}
+        label='Account'
+        isActive={pathname?.startsWith('/dashboard/account')}
+      />
+    </nav>
   )
 
   const AuthenticatedMenu = () => (
@@ -167,6 +205,10 @@ export default function AppHeader() {
             </span>
           </Link>
         </div>
+        
+        {/* Dashboard Navigation - only show on dashboard pages */}
+        {isAuthenticated && isDashboardPage && <DashboardNavigation />}
+        
         <div className='flex flex-1 items-center justify-end space-x-2'>
           <nav className='flex items-center space-x-6'>
             <ThemeToggle />
@@ -199,5 +241,33 @@ export default function AppHeader() {
         </div>
       </div>
     </header>
+  )
+}
+
+// Dashboard navigation item component
+function DashboardNavItem({
+  href,
+  icon,
+  label,
+  isActive,
+}: {
+  href: string
+  icon: React.ReactNode
+  label: string
+  isActive: boolean
+}) {
+  return (
+    <Link
+      href={href}
+      prefetch={true}
+      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-colors text-sm ${
+        isActive
+          ? 'bg-primary/10 text-primary border border-primary/20'
+          : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+      }`}
+    >
+      {icon}
+      <span className='font-medium'>{label}</span>
+    </Link>
   )
 }
