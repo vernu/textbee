@@ -4,6 +4,8 @@ import android.Manifest;
 
 public class AppConstants {
     public static final String API_BASE_URL = BuildConfig.API_BASE_URL;
+    public static final String DASHBOARD_URL = BuildConfig.DASHBOARD_URL;
+    public static final String DOWNLOAD_URL = BuildConfig.DOWNLOAD_URL;
     public static final String[] requiredPermissions = new String[]{
             Manifest.permission.SEND_SMS,
             Manifest.permission.READ_SMS,

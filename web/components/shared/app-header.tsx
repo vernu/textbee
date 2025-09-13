@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
-import { Menu, LogOut, LayoutDashboard, MessageSquarePlus, Home, MessageSquareText, Users, UserCircle, ContactRound } from 'lucide-react'
+import { Menu, LogOut, LayoutDashboard, MessageSquarePlus, Home, MessageSquareText, Users, UserCircle, ContactRound, Inbox } from 'lucide-react'
 import { signOut, useSession } from 'next-auth/react'
 import { Routes } from '@/config/routes'
 import ThemeToggle from './theme-toggle'
@@ -49,6 +49,12 @@ export default function AppHeader() {
         icon={<MessageSquareText className='h-4 w-4 stroke-[1.5]' />}
         label='Messaging'
         isActive={pathname === '/dashboard/messaging'}
+      />
+      <DashboardNavItem
+        href='/dashboard/inbox'
+        icon={<Inbox className='h-4 w-4 stroke-[1.5]' />}
+        label='Inbox'
+        isActive={pathname === '/dashboard/inbox'}
       />
       <DashboardNavItem
         href='/dashboard/contacts'

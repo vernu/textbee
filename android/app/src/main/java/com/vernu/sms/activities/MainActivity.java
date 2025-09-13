@@ -214,7 +214,7 @@ public class MainActivity extends AppCompatActivity {
         });
         scanQRBtn.setOnClickListener(view -> {
             IntentIntegrator intentIntegrator = new IntentIntegrator(MainActivity.this);
-            intentIntegrator.setPrompt("Go to http://3.147.76.130:3001/dashboard and click Register Device to generate QR Code");
+            intentIntegrator.setPrompt("Go to " + AppConstants.DASHBOARD_URL + " and click Register Device to generate QR Code");
             intentIntegrator.setRequestCode(SCAN_QR_REQUEST_CODE);
             intentIntegrator.initiateScan();
         });
@@ -222,7 +222,7 @@ public class MainActivity extends AppCompatActivity {
         checkUpdatesBtn.setOnClickListener(view -> {
             String versionInfo = BuildConfig.VERSION_NAME + "(" + BuildConfig.VERSION_CODE + ")";
             String encodedVersionInfo = android.net.Uri.encode(versionInfo);
-            String downloadUrl = "http://3.147.76.130:3001/download?currentVersion=" + encodedVersionInfo;
+            String downloadUrl = AppConstants.DOWNLOAD_URL + "?currentVersion=" + encodedVersionInfo;
             Intent browserIntent = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(downloadUrl));
             startActivity(browserIntent);
         });

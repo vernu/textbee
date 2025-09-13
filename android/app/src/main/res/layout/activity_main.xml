@@ -500,7 +500,7 @@
                             android:id="@+id/dashboardLinkText"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Go to http://3.147.76.130:3001/dashboard"
+                            android:text="@string/dashboard_link_text"
                             android:textColor="?attr/colorPrimary"
                             android:autoLink="web"
                             android:linksClickable="true"

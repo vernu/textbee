@@ -4,11 +4,12 @@ plugins {
 }
 
 android {
-    compileSdk 32
+    namespace 'com.vernu.sms'
+    compileSdk 34
 
     defaultConfig {
         minSdk 24
-        targetSdk 32
+        targetSdk 34
         versionCode 15
         versionName "2.6.2"
 
@@ -20,47 +21,56 @@ android {
 //            }
 //        }
     }
-    signingConfigs {
-        debug {
-            storeFile file("${System.getenv("HOME")}/.android/debug.keystore")
-            storePassword "android"
-            keyAlias "androiddebugkey"
-            keyPassword "android"
-        }
-    }
-
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            // TODO: Change to release signing config
-            signingConfig signingConfigs.debug
         }
         debug {
             minifyEnabled false
             debuggable true
-            signingConfig signingConfigs.debug
+        }
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    // Read from local.properties
+    def localProperties = new Properties()
+    def localPropertiesFile = rootProject.file('local.properties')
+    if (localPropertiesFile.exists()) {
+        localPropertiesFile.withInputStream { stream ->
+            localProperties.load(stream)
         }
     }
 
     flavorDimensions "environment"
-    
+
     productFlavors {
         dev {
             dimension "environment"
-            applicationId "com.vernu.sms.dev"
+            applicationId "com.vernu.sms"
             versionNameSuffix "-dev"
-            buildConfigField "String", "API_BASE_URL", '"http://3.147.76.130:3001/api/v1/"'
+            buildConfigField "String", "API_BASE_URL", "\"${localProperties.getProperty('dev.api.base.url', 'http://localhost:3001/api/v1/')}\""
+            buildConfigField "String", "DASHBOARD_URL", "\"${localProperties.getProperty('dev.dashboard.url', 'http://localhost:3001/dashboard')}\""
+            buildConfigField "String", "DOWNLOAD_URL", "\"${localProperties.getProperty('dev.download.url', 'http://localhost:3001/download')}\""
             buildConfigField "String", "ENVIRONMENT", '"development"'
             resValue "string", "app_name", "SMS Gateway (Dev)"
+            resValue "string", "dashboard_url", "${localProperties.getProperty('dev.dashboard.url', 'http://localhost:3001/dashboard')}"
+            resValue "string", "dashboard_link_text", "Go to ${localProperties.getProperty('dev.dashboard.url', 'http://localhost:3001/dashboard')}"
         }
-        
+
         prod {
             dimension "environment"
             applicationId "com.vernu.sms"
-            buildConfigField "String", "API_BASE_URL", '"http://3.147.76.130:3001/api/v1/"'
+            buildConfigField "String", "API_BASE_URL", "\"${localProperties.getProperty('prod.api.base.url', 'http://3.147.76.130:3001/api/v1/')}\""
+            buildConfigField "String", "DASHBOARD_URL", "\"${localProperties.getProperty('prod.dashboard.url', 'http://3.147.76.130:3001/dashboard')}\""
+            buildConfigField "String", "DOWNLOAD_URL", "\"${localProperties.getProperty('prod.download.url', 'http://3.147.76.130:3001/download')}\""
             buildConfigField "String", "ENVIRONMENT", '"production"'
             resValue "string", "app_name", "SMS Gateway"
+            resValue "string", "dashboard_url", "${localProperties.getProperty('prod.dashboard.url', 'http://3.147.76.130:3001/dashboard')}"
+            resValue "string", "dashboard_link_text", "Go to ${localProperties.getProperty('prod.dashboard.url', 'http://3.147.76.130:3001/dashboard')}"
         }
     }
 
