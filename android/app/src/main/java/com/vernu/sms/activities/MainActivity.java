@@ -32,7 +32,9 @@ import com.vernu.sms.dtos.RegisterDeviceInputDTO;
 import com.vernu.sms.dtos.RegisterDeviceResponseDTO;
 import com.vernu.sms.helpers.SharedPreferenceHelper;
 import com.vernu.sms.helpers.VersionTracker;
+import com.vernu.sms.observers.SmsObserver;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
+import android.provider.Telephony;
 import java.util.Arrays;
 import java.util.Objects;
 import retrofit2.Call;
@@ -48,6 +50,7 @@ public class MainActivity extends AppCompatActivity {
     private ImageButton copyDeviceIdImgBtn;
     private TextView deviceBrandAndModelTxt, deviceIdTxt, appVersionNameTxt, appVersionCodeTxt;
     private RadioGroup defaultSimSlotRadioGroup;
+    private SmsObserver smsObserver;
     private static final int SCAN_QR_REQUEST_CODE = 49374;
     private static final int PERMISSION_REQUEST_CODE = 0;
     private String deviceId = null;
@@ -185,8 +188,21 @@ public class MainActivity extends AppCompatActivity {
             View view = compoundButton.getRootView();
             SharedPreferenceHelper.setSharedPreferenceBoolean(mContext, AppConstants.SHARED_PREFS_RECEIVE_SMS_ENABLED_KEY, isCheked);
             compoundButton.setChecked(isCheked);
+
+            // Register or unregister SMS observer
+            if (isCheked) {
+                registerSmsObserver();
+            } else {
+                unregisterSmsObserver();
+            }
+
             Snackbar.make(view, "Receive SMS " + (isCheked ? "enabled" : "disabled"), Snackbar.LENGTH_LONG).show();
         });
+
+        // Initialize SMS observer if receive SMS is enabled
+        if (SharedPreferenceHelper.getSharedPreferenceBoolean(mContext, AppConstants.SHARED_PREFS_RECEIVE_SMS_ENABLED_KEY, false)) {
+            registerSmsObserver();
+        }
 
         // Setup sticky notification switch
         stickyNotificationSwitch.setChecked(SharedPreferenceHelper.getSharedPreferenceBoolean(mContext, AppConstants.SHARED_PREFS_STICKY_NOTIFICATION_ENABLED_KEY, false));
@@ -554,6 +570,39 @@ public class MainActivity extends AppCompatActivity {
                 handleUpdateDevice();
             }
         }
+    }
+
+    private void registerSmsObserver() {
+        if (smsObserver == null) {
+            smsObserver = new SmsObserver(mContext);
+        }
+        try {
+            getContentResolver().registerContentObserver(
+                Telephony.Sms.CONTENT_URI,
+                true,
+                smsObserver
+            );
+            Log.d(TAG, "SMS Observer registered successfully");
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to register SMS Observer", e);
+        }
+    }
+
+    private void unregisterSmsObserver() {
+        if (smsObserver != null) {
+            try {
+                getContentResolver().unregisterContentObserver(smsObserver);
+                Log.d(TAG, "SMS Observer unregistered successfully");
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to unregister SMS Observer", e);
+            }
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unregisterSmsObserver();
     }
 
 }
