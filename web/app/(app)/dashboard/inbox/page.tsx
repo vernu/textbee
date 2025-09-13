@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Inbox as InboxIcon, Calendar, ChevronDown, Search } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
@@ -23,10 +23,11 @@ import {
 import { ApiEndpoints } from '@/config/api'
 import httpBrowserClient from '@/lib/httpBrowserClient'
 import { contactsApi } from '@/lib/api/contacts'
-import { cn } from '@/lib/utils'
+import { cn, normalizePhoneNumber } from '@/lib/utils'
 
 interface Conversation {
   phoneNumber: string
+  normalizedPhoneNumber: string
   contact?: {
     firstName?: string
     lastName?: string
@@ -299,9 +300,9 @@ function ConversationList({
         ) : (
           filteredAndSortedConversations.map((conversation, index) => (
             <ConversationRow
-              key={`${conversation.phoneNumber}-${index}`}
+              key={`${conversation.normalizedPhoneNumber}-${index}`}
               conversation={conversation}
-              isSelected={selectedConversation?.phoneNumber === conversation.phoneNumber}
+              isSelected={selectedConversation?.normalizedPhoneNumber === conversation.normalizedPhoneNumber}
               onClick={() => onSelectConversation(conversation)}
             />
           ))
@@ -311,15 +312,22 @@ function ConversationList({
   )
 }
 
-function MessengerInterface({ 
-  conversation, 
-  allMessages = [] 
-}: { 
+function MessengerInterface({
+  conversation,
+  allMessages = []
+}: {
   conversation: Conversation
   allMessages?: Message[]
 }) {
   const [activeTab, setActiveTab] = useState('messages')
   const [newMessage, setNewMessage] = useState('')
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
+
+  const scrollToBottom = () => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight
+    }
+  }
 
   const displayName = conversation.contact?.firstName || conversation.contact?.lastName
     ? `${conversation.contact.firstName || ''} ${conversation.contact.lastName || ''}`.trim()
@@ -328,16 +336,30 @@ function MessengerInterface({
   // Filter messages for this conversation
   const conversationMessages = useMemo(() => {
     return allMessages
-      .filter(msg => 
-        (msg.sender === conversation.phoneNumber) || 
-        (msg.recipient === conversation.phoneNumber)
-      )
+      .filter(msg => {
+        const messageSenderNormalized = msg.sender ? normalizePhoneNumber(msg.sender) : null
+        const messageRecipientNormalized = msg.recipient ? normalizePhoneNumber(msg.recipient) : null
+
+        return (
+          messageSenderNormalized === conversation.normalizedPhoneNumber ||
+          messageRecipientNormalized === conversation.normalizedPhoneNumber
+        )
+      })
       .sort((a, b) => {
         const dateA = new Date(a.receivedAt || a.requestedAt || 0)
         const dateB = new Date(b.receivedAt || b.requestedAt || 0)
         return dateA.getTime() - dateB.getTime()
       })
-  }, [allMessages, conversation.phoneNumber])
+  }, [allMessages, conversation.normalizedPhoneNumber])
+
+  // Scroll to bottom when conversation changes or new messages arrive
+  useEffect(() => {
+    scrollToBottom()
+  }, [conversation.normalizedPhoneNumber])
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [conversationMessages.length])
 
   const handleSendMessage = () => {
     if (!newMessage.trim()) return
@@ -404,51 +426,56 @@ function MessengerInterface({
       </div>
 
       {/* Tab Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-h-0">
         {activeTab === 'messages' && (
           <>
-            {/* Messages area */}
-            <div className="flex-1 p-4 overflow-y-auto bg-muted/20 space-y-3">
-              {conversationMessages.length === 0 ? (
-                <div className="text-center text-muted-foreground">
-                  No messages found
-                </div>
-              ) : (
-                conversationMessages.map((message, index) => {
-                  const isIncoming = !!message.sender
-                  const messageDate = new Date(message.receivedAt || message.requestedAt || 0)
-                  
-                  return (
-                    <div key={`${message._id}-${index}`} className={cn(
-                      "flex",
-                      isIncoming ? "justify-start" : "justify-end"
-                    )}>
-                      <div className={cn(
-                        "max-w-[80%] rounded-lg px-3 py-2 text-sm",
-                        isIncoming 
-                          ? "bg-background border text-foreground" 
-                          : "bg-primary text-primary-foreground"
+            {/* Messages area - takes remaining space and scrolls */}
+            <div
+              ref={messagesContainerRef}
+              className="flex-1 min-h-0 overflow-y-auto bg-muted/20"
+            >
+              <div className="p-4 space-y-3">
+                {conversationMessages.length === 0 ? (
+                  <div className="text-center text-muted-foreground">
+                    No messages found
+                  </div>
+                ) : (
+                  conversationMessages.map((message, index) => {
+                    const isIncoming = !!message.sender
+                    const messageDate = new Date(message.receivedAt || message.requestedAt || 0)
+
+                    return (
+                      <div key={`${message._id}-${index}`} className={cn(
+                        "flex",
+                        isIncoming ? "justify-start" : "justify-end"
                       )}>
-                        <p>{message.message}</p>
                         <div className={cn(
-                          "text-xs mt-1",
-                          isIncoming ? "text-muted-foreground" : "text-primary-foreground/70"
+                          "max-w-[80%] rounded-lg px-3 py-2 text-sm",
+                          isIncoming
+                            ? "bg-background border text-foreground"
+                            : "bg-primary text-primary-foreground"
                         )}>
-                          {formatMessageTime(messageDate)}
+                          <p>{message.message}</p>
+                          <div className={cn(
+                            "text-xs mt-1",
+                            isIncoming ? "text-muted-foreground" : "text-primary-foreground/70"
+                          )}>
+                            {formatMessageTime(messageDate)}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )
-                })
-              )}
+                    )
+                  })
+                )}
+              </div>
             </div>
 
-            {/* Message input area */}
-            <div className="p-4 border-t bg-background">
+            {/* Message input area - fixed at bottom */}
+            <div className="flex-shrink-0 p-4 border-t bg-background">
               <div className="flex space-x-2">
-                <Input 
-                  placeholder="Type a message..." 
-                  className="flex-1" 
+                <Input
+                  placeholder="Type a message..."
+                  className="flex-1"
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyPress={(e) => {
@@ -575,16 +602,27 @@ export default function InboxPage() {
     const contacts = contactsData?.data || []
 
     messagesData.forEach((message: Message) => {
-      const phoneNumber = message.sender || message.recipient || 'unknown'
-      if (phoneNumber === 'unknown') return
+      const rawPhoneNumber = message.sender || message.recipient || 'unknown'
+      if (rawPhoneNumber === 'unknown') return
 
-      const contact = contacts.find(c => c.phone === phoneNumber)
+      const normalizedPhoneNumber = normalizePhoneNumber(rawPhoneNumber)
+
+      // Try to find contact by both original and normalized phone numbers
+      const contact = contacts.find(c =>
+        c.phone === rawPhoneNumber ||
+        c.phone === normalizedPhoneNumber ||
+        normalizePhoneNumber(c.phone) === normalizedPhoneNumber
+      )
+
       const messageDate = new Date(message.receivedAt || message.requestedAt || new Date())
-      
-      const existing = conversationMap.get(phoneNumber)
+
+      const existing = conversationMap.get(normalizedPhoneNumber)
       if (!existing || messageDate > existing.lastMessageDate) {
-        conversationMap.set(phoneNumber, {
-          phoneNumber,
+        // Use the original phone number format for display, but group by normalized
+        const displayPhoneNumber = existing?.phoneNumber || rawPhoneNumber
+        conversationMap.set(normalizedPhoneNumber, {
+          phoneNumber: displayPhoneNumber,
+          normalizedPhoneNumber,
           contact,
           lastMessage: {
             message: message.message || '',
