@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsEnum } from 'class-validator'
+import { IsString, IsOptional, IsEnum, IsObject, IsNumber } from 'class-validator'
 import { ApiProperty } from '@nestjs/swagger'
 
 export class UploadSpreadsheetDto {
@@ -15,6 +15,68 @@ export class UploadSpreadsheetDto {
 
   @ApiProperty({ description: 'File size in bytes' })
   fileSize: number
+}
+
+export class PreviewCsvDto {
+  @ApiProperty({ description: 'Base64 encoded file content' })
+  @IsString()
+  fileContent: string
+
+  @ApiProperty({ description: 'Number of rows to preview', required: false })
+  @IsOptional()
+  @IsNumber()
+  previewRows?: number
+}
+
+export class ProcessSpreadsheetDto {
+  @ApiProperty({ description: 'Column mapping from CSV headers to contact fields' })
+  @IsObject()
+  columnMapping: Record<string, string>
+
+  @ApiProperty({ description: 'Template ID to save mapping as', required: false })
+  @IsOptional()
+  @IsString()
+  templateId?: string
+}
+
+export class CreateTemplateDto {
+  @ApiProperty({ description: 'Template name' })
+  @IsString()
+  name: string
+
+  @ApiProperty({ description: 'Column mapping from CSV headers to contact fields' })
+  @IsObject()
+  columnMapping: Record<string, string>
+}
+
+export class GetContactsDto {
+  @ApiProperty({ description: 'Search query for contact names or phone', required: false })
+  @IsOptional()
+  @IsString()
+  search?: string
+
+  @ApiProperty({ description: 'Sort field', required: false, enum: ['newest', 'oldest', 'firstName', 'lastName', 'phone', 'email', 'propertyAddress', 'propertyCity', 'propertyState'] })
+  @IsOptional()
+  @IsEnum(['newest', 'oldest', 'firstName', 'lastName', 'phone', 'email', 'propertyAddress', 'propertyCity', 'propertyState'])
+  sortBy?: 'newest' | 'oldest' | 'firstName' | 'lastName' | 'phone' | 'email' | 'propertyAddress' | 'propertyCity' | 'propertyState'
+
+  @ApiProperty({ description: 'Sort order', required: false, enum: ['asc', 'desc'] })
+  @IsOptional()
+  @IsEnum(['asc', 'desc'])
+  sortOrder?: 'asc' | 'desc'
+
+  @ApiProperty({ description: 'Number of items per page', required: false })
+  @IsOptional()
+  limit?: number
+
+  @ApiProperty({ description: 'Page number', required: false })
+  @IsOptional()
+  page?: number
+
+  @ApiProperty({ description: 'Filter by spreadsheet ID', required: false })
+  @IsOptional()
+  @IsString()
+  spreadsheetId?: string
 }
 
 export class GetSpreadsheetsDto {
@@ -47,5 +109,39 @@ export class ContactSpreadsheetResponseDto {
   contactCount: number
   uploadDate: string
   fileSize: number
-  isDeleted: boolean
+  status: string
+  templateId?: string
+}
+
+export class ContactTemplateResponseDto {
+  id: string
+  name: string
+  columnMapping: Record<string, string>
+  createdAt: string
+}
+
+export class CsvPreviewResponseDto {
+  headers: string[]
+  rows: string[][]
+  totalRows: number
+}
+
+export class ContactResponseDto {
+  id: string
+  firstName: string
+  lastName: string
+  phone: string
+  email?: string
+  propertyAddress?: string
+  propertyCity?: string
+  propertyState?: string
+  propertyZip?: string
+  parcelCounty?: string
+  parcelState?: string
+  parcelAcres?: number
+  apn?: string
+  mailingAddress?: string
+  mailingCity?: string
+  mailingState?: string
+  mailingZip?: string
 }

@@ -16,7 +16,14 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'
 import { ContactsService } from './contacts.service'
-import { UploadSpreadsheetDto, GetSpreadsheetsDto } from './contacts.dto'
+import { 
+  UploadSpreadsheetDto, 
+  GetSpreadsheetsDto, 
+  PreviewCsvDto, 
+  ProcessSpreadsheetDto,
+  CreateTemplateDto,
+  GetContactsDto
+} from './contacts.dto'
 import { Response as ExpressResponse } from 'express'
 
 @ApiTags('contacts')
@@ -57,7 +64,6 @@ export class ContactsController {
       contactCount: spreadsheet.contactCount,
       uploadDate: spreadsheet.uploadDate.toISOString().split('T')[0],
       fileSize: spreadsheet.fileSize,
-      isDeleted: spreadsheet.isDeleted,
     }
   }
 
@@ -69,6 +75,19 @@ export class ContactsController {
     @Param('id') id: string,
   ) {
     return this.contactsService.deleteSpreadsheet(req.user.id, id)
+  }
+
+  @Post('spreadsheets/delete-multiple')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Delete multiple contact spreadsheets' })
+  async deleteMultipleSpreadsheets(
+    @Request() req,
+    @Body('ids') ids: string[],
+  ) {
+    if (!ids || ids.length === 0) {
+      throw new BadRequestException('No spreadsheet IDs provided')
+    }
+    return this.contactsService.deleteMultipleSpreadsheets(req.user.id, ids)
   }
 
   @Get('spreadsheets/:id/download')
@@ -119,6 +138,68 @@ export class ContactsController {
       // TODO: Implement ZIP creation for multiple files
       throw new BadRequestException('Multiple file download not yet implemented')
     }
+  }
+
+  @Post('spreadsheets/preview')
+  @ApiOperation({ summary: 'Preview CSV file content' })
+  async previewCsv(
+    @Request() req,
+    @Body() previewData: PreviewCsvDto,
+  ) {
+    return this.contactsService.previewCsv(previewData)
+  }
+
+  @Post('spreadsheets/:id/process')
+  @ApiOperation({ summary: 'Process uploaded spreadsheet with column mapping' })
+  async processSpreadsheet(
+    @Request() req,
+    @Param('id') id: string,
+    @Body() processData: ProcessSpreadsheetDto,
+  ) {
+    return this.contactsService.processSpreadsheet(req.user.id, id, processData)
+  }
+
+  @Get('templates')
+  @ApiOperation({ summary: 'Get user contact templates' })
+  async getTemplates(@Request() req) {
+    return this.contactsService.getTemplates(req.user.id)
+  }
+
+  @Post('templates')
+  @ApiOperation({ summary: 'Create a new contact template' })
+  async createTemplate(
+    @Request() req,
+    @Body() templateData: CreateTemplateDto,
+  ) {
+    return this.contactsService.createTemplate(req.user.id, templateData)
+  }
+
+  @Get('templates/:id')
+  @ApiOperation({ summary: 'Get a specific template' })
+  async getTemplate(
+    @Request() req,
+    @Param('id') id: string,
+  ) {
+    return this.contactsService.getTemplateById(req.user.id, id)
+  }
+
+  @Delete('templates/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Delete a template' })
+  async deleteTemplate(
+    @Request() req,
+    @Param('id') id: string,
+  ) {
+    return this.contactsService.deleteTemplate(req.user.id, id)
+  }
+
+  @Get('')
+  @ApiOperation({ summary: 'Get individual contacts' })
+  async getContacts(
+    @Request() req,
+    @Query() query: GetContactsDto,
+  ) {
+    return this.contactsService.getContacts(req.user.id, query)
   }
 
   @Get('stats')

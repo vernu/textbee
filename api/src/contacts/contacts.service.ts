@@ -1,14 +1,31 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common'
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common'
 import { InjectModel } from '@nestjs/mongoose'
 import { Model, Types } from 'mongoose'
 import { ContactSpreadsheet, ContactSpreadsheetDocument } from './schemas/contact-spreadsheet.schema'
-import { UploadSpreadsheetDto, GetSpreadsheetsDto, ContactSpreadsheetResponseDto } from './contacts.dto'
+import { Contact, ContactDocument } from './schemas/contact.schema'
+import { ContactTemplate, ContactTemplateDocument } from './schemas/contact-template.schema'
+import { 
+  UploadSpreadsheetDto, 
+  GetSpreadsheetsDto, 
+  ContactSpreadsheetResponseDto, 
+  PreviewCsvDto,
+  CsvPreviewResponseDto,
+  ProcessSpreadsheetDto,
+  CreateTemplateDto,
+  ContactTemplateResponseDto,
+  GetContactsDto,
+  ContactResponseDto
+} from './contacts.dto'
 
 @Injectable()
 export class ContactsService {
   constructor(
     @InjectModel(ContactSpreadsheet.name)
     private contactSpreadsheetModel: Model<ContactSpreadsheetDocument>,
+    @InjectModel(Contact.name)
+    private contactModel: Model<ContactDocument>,
+    @InjectModel(ContactTemplate.name)
+    private contactTemplateModel: Model<ContactTemplateDocument>,
   ) {}
 
   async uploadSpreadsheet(
@@ -43,12 +60,6 @@ export class ContactsService {
 
     // Build filter
     const filter: any = { userId: new Types.ObjectId(userId) }
-    
-    if (!includeDeleted) {
-      filter.isDeleted = { $ne: true }
-    } else if (includeDeleted === true) {
-      filter.isDeleted = true
-    }
 
     if (search) {
       filter.originalFileName = { $regex: search, $options: 'i' }
@@ -82,15 +93,10 @@ export class ContactsService {
       this.contactSpreadsheetModel.countDocuments(filter).exec(),
     ])
 
-    // Calculate total contacts
-    const totalContactsResult = await this.contactSpreadsheetModel
-      .aggregate([
-        { $match: { userId: new Types.ObjectId(userId), isDeleted: { $ne: true } } },
-        { $group: { _id: null, totalContacts: { $sum: '$contactCount' } } },
-      ])
+    // Calculate total actual contacts (processed individual contacts, not CSV row count)
+    const totalContacts = await this.contactModel
+      .countDocuments({ userId: new Types.ObjectId(userId) })
       .exec()
-
-    const totalContacts = totalContactsResult[0]?.totalContacts || 0
 
     return {
       data: spreadsheets.map(this.mapToResponseDto),
@@ -129,9 +135,42 @@ export class ContactsService {
       throw new NotFoundException('Contact spreadsheet not found')
     }
 
-    // Soft delete
-    spreadsheet.isDeleted = true
-    await spreadsheet.save()
+    // Delete all contacts associated with this spreadsheet
+    await this.contactModel.deleteMany({
+      spreadsheetId: new Types.ObjectId(spreadsheetId),
+      userId: new Types.ObjectId(userId),
+    }).exec()
+
+    // Delete the spreadsheet itself
+    await spreadsheet.deleteOne()
+  }
+
+  async deleteMultipleSpreadsheets(userId: string, spreadsheetIds: string[]): Promise<void> {
+    const objectIds = spreadsheetIds.map(id => new Types.ObjectId(id))
+    
+    // Verify all spreadsheets belong to the user
+    const spreadsheets = await this.contactSpreadsheetModel
+      .find({
+        _id: { $in: objectIds },
+        userId: new Types.ObjectId(userId),
+      })
+      .exec()
+
+    if (spreadsheets.length !== spreadsheetIds.length) {
+      throw new NotFoundException('One or more spreadsheets not found')
+    }
+
+    // Delete all contacts associated with these spreadsheets
+    await this.contactModel.deleteMany({
+      spreadsheetId: { $in: objectIds },
+      userId: new Types.ObjectId(userId),
+    }).exec()
+
+    // Delete all spreadsheets
+    await this.contactSpreadsheetModel.deleteMany({
+      _id: { $in: objectIds },
+      userId: new Types.ObjectId(userId),
+    }).exec()
   }
 
   async downloadSpreadsheet(
@@ -154,7 +193,6 @@ export class ContactsService {
       .find({
         _id: { $in: spreadsheetIds.map(id => new Types.ObjectId(id)) },
         userId: new Types.ObjectId(userId),
-        isDeleted: { $ne: true },
       })
       .exec()
 
@@ -168,6 +206,286 @@ export class ContactsService {
     }))
   }
 
+  async previewCsv(previewData: PreviewCsvDto): Promise<CsvPreviewResponseDto> {
+    const { fileContent, previewRows = 10 } = previewData
+    
+    try {
+      const csvContent = Buffer.from(fileContent, 'base64').toString('utf-8')
+      const lines = csvContent.split('\n').filter(line => line.trim() !== '')
+      
+      if (lines.length === 0) {
+        throw new BadRequestException('CSV file is empty')
+      }
+
+      const headers = this.parseCsvRow(lines[0])
+      const rows = lines.slice(1, Math.min(previewRows + 1, lines.length))
+        .map(line => this.parseCsvRow(line))
+
+      return {
+        headers,
+        rows,
+        totalRows: lines.length - 1, // Subtract header row
+      }
+    } catch (error) {
+      throw new BadRequestException('Invalid CSV file format')
+    }
+  }
+
+  async processSpreadsheet(
+    userId: string,
+    spreadsheetId: string,
+    processData: ProcessSpreadsheetDto,
+  ): Promise<{ processed: number; errors: string[] }> {
+    const spreadsheet = await this.getSpreadsheetById(userId, spreadsheetId)
+    
+    if (spreadsheet.status === 'processed') {
+      throw new BadRequestException('Spreadsheet has already been processed')
+    }
+
+    const { columnMapping, templateId } = processData
+    
+    // Validate required fields
+    const requiredFields = ['firstName', 'lastName', 'phone']
+    const mappedFields = Object.values(columnMapping)
+    const missingFields = requiredFields.filter(field => !mappedFields.includes(field))
+    
+    if (missingFields.length > 0) {
+      throw new BadRequestException(`Missing required fields: ${missingFields.join(', ')}`)
+    }
+
+    try {
+      const csvContent = Buffer.from(spreadsheet.fileContent, 'base64').toString('utf-8')
+      const lines = csvContent.split('\n').filter(line => line.trim() !== '')
+      const headers = this.parseCsvRow(lines[0])
+      const dataRows = lines.slice(1)
+
+      const contacts = []
+      const errors = []
+
+      for (let i = 0; i < dataRows.length; i++) {
+        try {
+          const row = this.parseCsvRow(dataRows[i])
+          const contact = this.mapRowToContact(userId, spreadsheetId, headers, row, columnMapping)
+          contacts.push(contact)
+        } catch (error) {
+          errors.push(`Row ${i + 2}: ${error.message}`)
+        }
+      }
+
+      // Save contacts
+      await this.contactModel.insertMany(contacts)
+
+      // Update spreadsheet status
+      spreadsheet.status = 'processed'
+      if (templateId) {
+        spreadsheet.templateId = new Types.ObjectId(templateId)
+      }
+      await spreadsheet.save()
+
+      return {
+        processed: contacts.length,
+        errors,
+      }
+    } catch (error) {
+      throw new BadRequestException(`Failed to process spreadsheet: ${error.message}`)
+    }
+  }
+
+  async getTemplates(userId: string): Promise<ContactTemplateResponseDto[]> {
+    const templates = await this.contactTemplateModel
+      .find({ userId: new Types.ObjectId(userId) })
+      .sort({ createdAt: -1 })
+      .exec()
+
+    return templates.map(this.mapTemplateToResponseDto)
+  }
+
+  async createTemplate(
+    userId: string,
+    templateData: CreateTemplateDto,
+  ): Promise<ContactTemplateResponseDto> {
+    const template = new this.contactTemplateModel({
+      userId: new Types.ObjectId(userId),
+      name: templateData.name,
+      columnMapping: new Map(Object.entries(templateData.columnMapping)),
+    })
+
+    const savedTemplate = await template.save()
+    return this.mapTemplateToResponseDto(savedTemplate)
+  }
+
+  async getTemplateById(userId: string, templateId: string): Promise<ContactTemplateResponseDto> {
+    const template = await this.contactTemplateModel
+      .findOne({
+        _id: new Types.ObjectId(templateId),
+        userId: new Types.ObjectId(userId),
+      })
+      .exec()
+
+    if (!template) {
+      throw new NotFoundException('Template not found')
+    }
+
+    return this.mapTemplateToResponseDto(template)
+  }
+
+  async deleteTemplate(userId: string, templateId: string): Promise<void> {
+    const template = await this.contactTemplateModel
+      .findOne({
+        _id: new Types.ObjectId(templateId),
+        userId: new Types.ObjectId(userId),
+      })
+      .exec()
+
+    if (!template) {
+      throw new NotFoundException('Template not found')
+    }
+
+    await template.deleteOne()
+  }
+
+  async getContacts(
+    userId: string,
+    query: GetContactsDto,
+  ): Promise<{ data: ContactResponseDto[]; total: number }> {
+    const {
+      search,
+      sortBy = 'firstName',
+      sortOrder = 'asc',
+      limit = 25,
+      page = 1,
+      spreadsheetId,
+    } = query
+
+    // Build filter
+    const filter: any = { userId: new Types.ObjectId(userId) }
+
+    if (spreadsheetId) {
+      filter.spreadsheetId = new Types.ObjectId(spreadsheetId)
+    }
+
+    if (search) {
+      filter.$or = [
+        { firstName: { $regex: search, $options: 'i' } },
+        { lastName: { $regex: search, $options: 'i' } },
+        { phone: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+      ]
+    }
+
+    // Build sort
+    const sort: any = {}
+    const sortDirection = sortOrder === 'desc' ? -1 : 1
+    
+    switch (sortBy) {
+      case 'newest':
+        sort.createdAt = -1
+        break
+      case 'oldest':
+        sort.createdAt = 1
+        break
+      case 'firstName':
+        sort.firstName = sortDirection
+        break
+      case 'lastName':
+        sort.lastName = sortDirection
+        break
+      case 'phone':
+        sort.phone = sortDirection
+        break
+      case 'email':
+        sort.email = sortDirection
+        break
+      case 'propertyAddress':
+        sort.propertyAddress = sortDirection
+        break
+      case 'propertyCity':
+        sort.propertyCity = sortDirection
+        break
+      case 'propertyState':
+        sort.propertyState = sortDirection
+        break
+    }
+
+    // Execute queries
+    const [contacts, total] = await Promise.all([
+      this.contactModel
+        .find(filter)
+        .sort(sort)
+        .limit(limit)
+        .skip((page - 1) * limit)
+        .exec(),
+      this.contactModel.countDocuments(filter).exec(),
+    ])
+
+    return {
+      data: contacts.map(this.mapContactToResponseDto),
+      total,
+    }
+  }
+
+  private parseCsvRow(row: string): string[] {
+    const result = []
+    let current = ''
+    let inQuotes = false
+    
+    for (let i = 0; i < row.length; i++) {
+      const char = row[i]
+      
+      if (char === '"') {
+        if (inQuotes && row[i + 1] === '"') {
+          current += '"'
+          i++
+        } else {
+          inQuotes = !inQuotes
+        }
+      } else if (char === ',' && !inQuotes) {
+        result.push(current.trim())
+        current = ''
+      } else {
+        current += char
+      }
+    }
+    
+    result.push(current.trim())
+    return result
+  }
+
+  private mapRowToContact(
+    userId: string,
+    spreadsheetId: string,
+    headers: string[],
+    row: string[],
+    columnMapping: Record<string, string>,
+  ): any {
+    const contact: any = {
+      userId: new Types.ObjectId(userId),
+      spreadsheetId: new Types.ObjectId(spreadsheetId),
+    }
+
+    // Map CSV columns to contact fields
+    headers.forEach((header, index) => {
+      const contactField = columnMapping[header]
+      if (contactField && row[index]) {
+        let value: any = row[index].trim()
+        
+        // Convert numeric fields
+        if (contactField === 'parcelAcres' && value) {
+          value = parseFloat(value) || 0
+        }
+        
+        contact[contactField] = value
+      }
+    })
+
+    // Validate required fields
+    if (!contact.firstName || !contact.lastName || !contact.phone) {
+      throw new Error('Missing required fields: firstName, lastName, or phone')
+    }
+
+    return contact
+  }
+
   private mapToResponseDto(spreadsheet: ContactSpreadsheetDocument): ContactSpreadsheetResponseDto {
     return {
       id: spreadsheet._id.toString(),
@@ -175,7 +493,39 @@ export class ContactsService {
       contactCount: spreadsheet.contactCount,
       uploadDate: spreadsheet.uploadDate.toISOString().split('T')[0],
       fileSize: spreadsheet.fileSize,
-      isDeleted: spreadsheet.isDeleted,
+      status: spreadsheet.status,
+      templateId: spreadsheet.templateId?.toString(),
+    }
+  }
+
+  private mapTemplateToResponseDto(template: ContactTemplateDocument): ContactTemplateResponseDto {
+    return {
+      id: template._id.toString(),
+      name: template.name,
+      columnMapping: Object.fromEntries(template.columnMapping),
+      createdAt: template.createdAt.toISOString(),
+    }
+  }
+
+  private mapContactToResponseDto = (contact: ContactDocument): ContactResponseDto => {
+    return {
+      id: contact._id.toString(),
+      firstName: contact.firstName,
+      lastName: contact.lastName,
+      phone: contact.phone,
+      email: contact.email,
+      propertyAddress: contact.propertyAddress,
+      propertyCity: contact.propertyCity,
+      propertyState: contact.propertyState,
+      propertyZip: contact.propertyZip,
+      parcelCounty: contact.parcelCounty,
+      parcelState: contact.parcelState,
+      parcelAcres: contact.parcelAcres,
+      apn: contact.apn,
+      mailingAddress: contact.mailingAddress,
+      mailingCity: contact.mailingCity,
+      mailingState: contact.mailingState,
+      mailingZip: contact.mailingZip,
     }
   }
 }

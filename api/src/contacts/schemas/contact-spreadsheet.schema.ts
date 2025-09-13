@@ -25,8 +25,11 @@ export class ContactSpreadsheet {
   @Prop({ type: Number, required: true })
   fileSize: number
 
-  @Prop({ type: Boolean, default: false })
-  isDeleted: boolean
+  @Prop({ type: String, enum: ['pending', 'processed'], default: 'pending' })
+  status: string
+
+  @Prop({ type: Types.ObjectId, ref: 'ContactTemplate' })
+  templateId?: Types.ObjectId
 }
 
 export const ContactSpreadsheetSchema = SchemaFactory.createForClass(ContactSpreadsheet)

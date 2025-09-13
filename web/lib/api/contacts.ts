@@ -6,7 +6,8 @@ export interface ContactSpreadsheet {
   contactCount: number
   uploadDate: string
   fileSize: number
-  isDeleted: boolean
+  status: string
+  templateId?: string
 }
 
 export interface GetSpreadsheetsParams {
@@ -30,6 +31,68 @@ export interface UploadSpreadsheetData {
   fileSize: number
 }
 
+export interface CsvPreview {
+  headers: string[]
+  rows: string[][]
+  totalRows: number
+}
+
+export interface ContactTemplate {
+  id: string
+  name: string
+  columnMapping: Record<string, string>
+  createdAt: string
+}
+
+export interface PreviewCsvData {
+  fileContent: string
+  previewRows?: number
+}
+
+export interface ProcessSpreadsheetData {
+  columnMapping: Record<string, string>
+  templateId?: string
+}
+
+export interface CreateTemplateData {
+  name: string
+  columnMapping: Record<string, string>
+}
+
+export interface Contact {
+  id: string
+  firstName: string
+  lastName: string
+  phone: string
+  email?: string
+  propertyAddress?: string
+  propertyCity?: string
+  propertyState?: string
+  propertyZip?: string
+  parcelCounty?: string
+  parcelState?: string
+  parcelAcres?: number
+  apn?: string
+  mailingAddress?: string
+  mailingCity?: string
+  mailingState?: string
+  mailingZip?: string
+}
+
+export interface GetContactsParams {
+  search?: string
+  sortBy?: 'newest' | 'oldest' | 'firstName' | 'lastName' | 'phone' | 'email' | 'propertyAddress' | 'propertyCity' | 'propertyState'
+  sortOrder?: 'asc' | 'desc'
+  limit?: number
+  page?: number
+  spreadsheetId?: string
+}
+
+export interface GetContactsResponse {
+  data: Contact[]
+  total: number
+}
+
 export const contactsApi = {
   async uploadSpreadsheet(data: UploadSpreadsheetData): Promise<ContactSpreadsheet> {
     const response = await httpBrowserClient.post('/contacts/spreadsheets', data)
@@ -50,6 +113,10 @@ export const contactsApi = {
     await httpBrowserClient.delete(`/contacts/spreadsheets/${id}`)
   },
 
+  async deleteMultipleSpreadsheets(ids: string[]): Promise<void> {
+    await httpBrowserClient.post('/contacts/spreadsheets/delete-multiple', { ids })
+  },
+
   async downloadSpreadsheet(id: string): Promise<Blob> {
     const response = await httpBrowserClient.get(`/contacts/spreadsheets/${id}/download`, {
       responseType: 'blob',
@@ -67,6 +134,40 @@ export const contactsApi = {
 
   async getStats(): Promise<{ totalContacts: number; totalSpreadsheets: number }> {
     const response = await httpBrowserClient.get('/contacts/stats')
+    return response.data
+  },
+
+  async previewCsv(data: PreviewCsvData): Promise<CsvPreview> {
+    const response = await httpBrowserClient.post('/contacts/spreadsheets/preview', data)
+    return response.data
+  },
+
+  async processSpreadsheet(spreadsheetId: string, data: ProcessSpreadsheetData): Promise<{ processed: number; errors: string[] }> {
+    const response = await httpBrowserClient.post(`/contacts/spreadsheets/${spreadsheetId}/process`, data)
+    return response.data
+  },
+
+  async getTemplates(): Promise<ContactTemplate[]> {
+    const response = await httpBrowserClient.get('/contacts/templates')
+    return response.data
+  },
+
+  async createTemplate(data: CreateTemplateData): Promise<ContactTemplate> {
+    const response = await httpBrowserClient.post('/contacts/templates', data)
+    return response.data
+  },
+
+  async getTemplate(id: string): Promise<ContactTemplate> {
+    const response = await httpBrowserClient.get(`/contacts/templates/${id}`)
+    return response.data
+  },
+
+  async deleteTemplate(id: string): Promise<void> {
+    await httpBrowserClient.delete(`/contacts/templates/${id}`)
+  },
+
+  async getContacts(params: GetContactsParams = {}): Promise<GetContactsResponse> {
+    const response = await httpBrowserClient.get('/contacts', { params })
     return response.data
   },
 }
