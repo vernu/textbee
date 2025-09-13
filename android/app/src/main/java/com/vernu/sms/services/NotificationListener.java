@@ -6,6 +6,9 @@ import android.app.Notification;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Toast;
+import android.database.Cursor;
+import android.net.Uri;
+import android.provider.Telephony;
 import com.vernu.sms.AppConstants;
 import com.vernu.sms.dtos.SMSDTO;
 import com.vernu.sms.helpers.SharedPreferenceHelper;
@@ -76,6 +79,12 @@ public class NotificationListener extends NotificationListenerService {
                 String sender = extractPhoneNumber(title);
 
                 if (sender != null) {
+                    // If sender is not a phone number (i.e., it's a contact name), try to resolve it to a phone number
+                    String actualPhoneNumber = resolveToPhoneNumber(sender, messageBody);
+                    if (actualPhoneNumber != null) {
+                        sender = actualPhoneNumber;
+                    }
+
                     Log.d(TAG, "Processing notification message from " + sender);
 
                     SMSDTO receivedSMSDTO = new SMSDTO();
@@ -105,6 +114,70 @@ public class NotificationListener extends NotificationListenerService {
 
         // If no phone number found, use the title as sender name
         return title;
+    }
+
+    private String resolveToPhoneNumber(String potentialContactName, String messageBody) {
+        // If the sender is already a phone number, return null (no resolution needed)
+        if (isPhoneNumber(potentialContactName)) {
+            return null;
+        }
+
+        Log.d(TAG, "Attempting to resolve contact name '" + potentialContactName + "' to phone number");
+
+        // Search recent SMS messages to find a phone number that matches this contact or message
+        Uri smsUri = Telephony.Sms.CONTENT_URI;
+        String[] projection = {
+            Telephony.Sms.ADDRESS,
+            Telephony.Sms.BODY,
+            Telephony.Sms.DATE
+        };
+
+        // Look for recent messages with similar content or from the same timeframe
+        Cursor cursor = getContentResolver().query(
+            smsUri,
+            projection,
+            Telephony.Sms.TYPE + " = ? AND " + Telephony.Sms.DATE + " > ?",
+            new String[]{
+                String.valueOf(Telephony.Sms.MESSAGE_TYPE_INBOX),
+                String.valueOf(System.currentTimeMillis() - 30000) // Last 30 seconds
+            },
+            Telephony.Sms.DATE + " DESC LIMIT 5"
+        );
+
+        if (cursor != null) {
+            try {
+                while (cursor.moveToNext()) {
+                    String address = cursor.getString(cursor.getColumnIndexOrThrow(Telephony.Sms.ADDRESS));
+                    String body = cursor.getString(cursor.getColumnIndexOrThrow(Telephony.Sms.BODY));
+
+                    // If we find a message with matching content and a phone number address
+                    if (body != null && messageBody != null &&
+                        body.trim().equals(messageBody.trim()) &&
+                        isPhoneNumber(address)) {
+
+                        Log.d(TAG, "Resolved contact name '" + potentialContactName + "' to phone number: " + address);
+                        return address;
+                    }
+                }
+            } finally {
+                cursor.close();
+            }
+        }
+
+        Log.d(TAG, "Could not resolve contact name '" + potentialContactName + "' to phone number, using original name");
+        return null;
+    }
+
+    private boolean isPhoneNumber(String input) {
+        if (input == null) return false;
+
+        // Remove all non-digit characters except + and count digits
+        String digitsOnly = input.replaceAll("[^+0-9]", "");
+        String numbersOnly = digitsOnly.replaceAll("[^0-9]", "");
+
+        // A phone number should have at least 10 digits
+        return numbersOnly.length() >= 10 &&
+               (digitsOnly.startsWith("+") || digitsOnly.matches("[0-9]+"));
     }
 
     @Override
