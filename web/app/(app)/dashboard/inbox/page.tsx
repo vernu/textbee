@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Inbox as InboxIcon, Calendar, ChevronDown, Search } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -24,10 +24,12 @@ import { ApiEndpoints } from '@/config/api'
 import httpBrowserClient from '@/lib/httpBrowserClient'
 import { contactsApi } from '@/lib/api/contacts'
 import { cn, normalizePhoneNumber } from '@/lib/utils'
+import { useToast } from '@/hooks/use-toast'
 
 interface Conversation {
   phoneNumber: string
   normalizedPhoneNumber: string
+  deviceId: string
   contact?: {
     firstName?: string
     lastName?: string
@@ -50,6 +52,7 @@ interface Message {
   requestedAt?: Date
   type: string
   status: string
+  device: string | { _id: string }
 }
 
 function ConversationRow({ 
@@ -322,6 +325,45 @@ function MessengerInterface({
   const [activeTab, setActiveTab] = useState('messages')
   const [newMessage, setNewMessage] = useState('')
   const messagesContainerRef = useRef<HTMLDivElement>(null)
+  const { toast } = useToast()
+  const queryClient = useQueryClient()
+
+  const sendSmsMutation = useMutation({
+    mutationFn: async (messageText: string) => {
+      if (!conversation.deviceId) {
+        throw new Error('No device available to send message')
+      }
+
+      const response = await httpBrowserClient.post(
+        ApiEndpoints.gateway.sendSMS(conversation.deviceId),
+        {
+          deviceId: conversation.deviceId,
+          recipients: [conversation.phoneNumber],
+          message: messageText
+        }
+      )
+      return response.data
+    },
+    onSuccess: () => {
+      toast({
+        title: "Message sent",
+        description: "Your message has been sent successfully."
+      })
+      queryClient.invalidateQueries({ queryKey: ['all-messages'] })
+    },
+    onError: (error: any) => {
+      console.error('SMS send error:', error)
+      console.error('Error response:', error.response?.data)
+      console.error('Conversation deviceId:', conversation.deviceId)
+      console.error('Phone number:', conversation.phoneNumber)
+
+      toast({
+        title: "Failed to send message",
+        description: error.response?.data?.message || error.message || "An error occurred while sending the message.",
+        variant: "destructive"
+      })
+    }
+  })
 
   const scrollToBottom = () => {
     if (messagesContainerRef.current) {
@@ -363,8 +405,7 @@ function MessengerInterface({
 
   const handleSendMessage = () => {
     if (!newMessage.trim()) return
-    // TODO: Implement send message functionality
-    console.log('Send message:', newMessage)
+    sendSmsMutation.mutate(newMessage.trim())
     setNewMessage('')
   }
 
@@ -472,21 +513,30 @@ function MessengerInterface({
 
             {/* Message input area - fixed at bottom */}
             <div className="flex-shrink-0 p-4 border-t bg-background">
+              {!conversation.deviceId && (
+                <div className="mb-2 text-sm text-yellow-600 bg-yellow-50 p-2 rounded">
+                  No device available to send messages
+                </div>
+              )}
               <div className="flex space-x-2">
                 <Input
-                  placeholder="Type a message..."
+                  placeholder={conversation.deviceId ? "Type a message..." : "No device available"}
                   className="flex-1"
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyPress={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
+                    if (e.key === 'Enter' && !e.shiftKey && conversation.deviceId && newMessage.trim()) {
                       e.preventDefault()
                       handleSendMessage()
                     }
                   }}
+                  disabled={!conversation.deviceId}
                 />
-                <Button onClick={handleSendMessage} disabled={!newMessage.trim()}>
-                  Send
+                <Button
+                  onClick={handleSendMessage}
+                  disabled={!newMessage.trim() || sendSmsMutation.isPending || !conversation.deviceId}
+                >
+                  {sendSmsMutation.isPending ? 'Sending...' : 'Send'}
                 </Button>
               </div>
             </div>
@@ -596,10 +646,11 @@ export default function InboxPage() {
 
   // Process messages into conversations
   const conversations = useMemo(() => {
-    if (!messagesData) return []
+    if (!messagesData || !devices?.data) return []
 
     const conversationMap = new Map<string, Conversation>()
     const contacts = contactsData?.data || []
+    const enabledDevices = devices.data.filter(d => d.enabled)
 
     messagesData.forEach((message: Message) => {
       const rawPhoneNumber = message.sender || message.recipient || 'unknown'
@@ -620,9 +671,21 @@ export default function InboxPage() {
       if (!existing || messageDate > existing.lastMessageDate) {
         // Use the original phone number format for display, but group by normalized
         const displayPhoneNumber = existing?.phoneNumber || rawPhoneNumber
+
+        // Determine which device to use for this conversation
+        // Priority: 1) Device from the latest message, 2) First enabled device
+        const messageDeviceId = typeof message.device === 'string' ? message.device : message.device?._id
+        const deviceId = messageDeviceId || existing?.deviceId || (enabledDevices[0]?._id)
+
+        // Debug logging
+        if (normalizedPhoneNumber && deviceId) {
+          console.log(`Device for ${normalizedPhoneNumber}: ${deviceId} (from message: ${messageDeviceId}, enabled devices: ${enabledDevices.map(d => d._id).join(', ')})`)
+        }
+
         conversationMap.set(normalizedPhoneNumber, {
           phoneNumber: displayPhoneNumber,
           normalizedPhoneNumber,
+          deviceId,
           contact,
           lastMessage: {
             message: message.message || '',
@@ -632,11 +695,14 @@ export default function InboxPage() {
           lastMessageDate: messageDate,
           messageCount: (existing?.messageCount || 0) + 1
         })
+      } else {
+        // Update message count for existing conversation
+        existing.messageCount += 1
       }
     })
 
     return Array.from(conversationMap.values())
-  }, [messagesData, contactsData])
+  }, [messagesData, contactsData, devices?.data])
 
   if (isLoading) {
     return (
