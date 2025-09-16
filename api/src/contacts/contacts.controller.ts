@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Delete,
   Body,
   Param,
@@ -16,13 +17,15 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'
 import { ContactsService } from './contacts.service'
-import { 
-  UploadSpreadsheetDto, 
-  GetSpreadsheetsDto, 
-  PreviewCsvDto, 
+import {
+  UploadSpreadsheetDto,
+  GetSpreadsheetsDto,
+  PreviewCsvDto,
   ProcessSpreadsheetDto,
   CreateTemplateDto,
-  GetContactsDto
+  GetContactsDto,
+  UpdateContactDto,
+  CreateContactDto
 } from './contacts.dto'
 import { Response as ExpressResponse } from 'express'
 
@@ -193,6 +196,15 @@ export class ContactsController {
     return this.contactsService.deleteTemplate(req.user.id, id)
   }
 
+  @Post('')
+  @ApiOperation({ summary: 'Create a new contact' })
+  async createContact(
+    @Request() req,
+    @Body() createData: CreateContactDto,
+  ) {
+    return this.contactsService.createContact(req.user.id, createData)
+  }
+
   @Get('')
   @ApiOperation({ summary: 'Get individual contacts' })
   async getContacts(
@@ -200,6 +212,25 @@ export class ContactsController {
     @Query() query: GetContactsDto,
   ) {
     return this.contactsService.getContacts(req.user.id, query)
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get a specific contact by ID' })
+  async getContact(
+    @Request() req,
+    @Param('id') id: string,
+  ) {
+    return this.contactsService.getContactById(req.user.id, id)
+  }
+
+  @Put(':id')
+  @ApiOperation({ summary: 'Update a contact' })
+  async updateContact(
+    @Request() req,
+    @Param('id') id: string,
+    @Body() updateData: UpdateContactDto,
+  ) {
+    return this.contactsService.updateContact(req.user.id, id, updateData)
   }
 
   @Get('stats')

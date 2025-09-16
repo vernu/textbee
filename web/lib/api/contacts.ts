@@ -166,8 +166,23 @@ export const contactsApi = {
     await httpBrowserClient.delete(`/contacts/templates/${id}`)
   },
 
+  async createContact(data: Partial<Contact> & { phone: string }): Promise<Contact> {
+    const response = await httpBrowserClient.post('/contacts', data)
+    return response.data
+  },
+
   async getContacts(params: GetContactsParams = {}): Promise<GetContactsResponse> {
     const response = await httpBrowserClient.get('/contacts', { params })
+    return response.data
+  },
+
+  async getContact(id: string): Promise<Contact> {
+    const response = await httpBrowserClient.get(`/contacts/${id}`)
+    return response.data
+  },
+
+  async updateContact(id: string, data: Partial<Contact>): Promise<Contact> {
+    const response = await httpBrowserClient.put(`/contacts/${id}`, data)
     return response.data
   },
 }

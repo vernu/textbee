@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Inbox as InboxIcon, Calendar, ChevronDown, Search } from 'lucide-react'
+import { Inbox as InboxIcon, Calendar, ChevronDown, Search, Edit, Save, X } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -31,8 +31,22 @@ interface Conversation {
   normalizedPhoneNumber: string
   deviceId: string
   contact?: {
+    id?: string
     firstName?: string
     lastName?: string
+    email?: string
+    propertyAddress?: string
+    propertyCity?: string
+    propertyState?: string
+    propertyZip?: string
+    parcelCounty?: string
+    parcelState?: string
+    parcelAcres?: number
+    apn?: string
+    mailingAddress?: string
+    mailingCity?: string
+    mailingState?: string
+    mailingZip?: string
   }
   lastMessage: {
     message: string
@@ -544,40 +558,16 @@ function MessengerInterface({
         )}
 
         {activeTab === 'info' && (
-          <div className="flex-1 p-4">
-            <div className="space-y-4">
-              <h3 className="font-semibold">Contact Information</h3>
-              <div className="space-y-2 text-sm">
-                <div>
-                  <span className="font-medium">Phone:</span> {conversation.phoneNumber}
-                </div>
-                {conversation.contact?.firstName && (
-                  <div>
-                    <span className="font-medium">First Name:</span> {conversation.contact.firstName}
-                  </div>
-                )}
-                {conversation.contact?.lastName && (
-                  <div>
-                    <span className="font-medium">Last Name:</span> {conversation.contact.lastName}
-                  </div>
-                )}
-                {conversation.contact?.email && (
-                  <div>
-                    <span className="font-medium">Email:</span> {conversation.contact.email}
-                  </div>
-                )}
-                <div>
-                  <span className="font-medium">Total Messages:</span> {conversationMessages.length}
-                </div>
-                {conversationMessages.length > 0 && (
-                  <div>
-                    <span className="font-medium">First Contact:</span>{' '}
-                    {new Date(conversationMessages[0].receivedAt || conversationMessages[0].requestedAt || 0).toLocaleDateString()}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+          <ContactInfoEditor
+            conversation={conversation}
+            conversationMessages={conversationMessages}
+            onContactUpdated={(updatedContact) => {
+              // Force refresh of all related data
+              queryClient.invalidateQueries({ queryKey: ['contacts-all'] })
+              queryClient.invalidateQueries({ queryKey: ['all-messages'] })
+              queryClient.invalidateQueries({ queryKey: ['devices'] })
+            }}
+          />
         )}
 
         {activeTab === 'notes' && (
@@ -588,6 +578,247 @@ function MessengerInterface({
                 Note-taking functionality will be implemented here.
               </p>
             </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function ContactInfoEditor({
+  conversation,
+  conversationMessages,
+  onContactUpdated
+}: {
+  conversation: Conversation
+  conversationMessages: Message[]
+  onContactUpdated: (contact: any) => void
+}) {
+  const [isEditing, setIsEditing] = useState(false)
+  const [localContact, setLocalContact] = useState(conversation.contact)
+  const [editData, setEditData] = useState({
+    firstName: localContact?.firstName || '',
+    lastName: localContact?.lastName || '',
+    email: localContact?.email || '',
+    propertyAddress: localContact?.propertyAddress || '',
+    propertyCity: localContact?.propertyCity || '',
+    propertyState: localContact?.propertyState || '',
+    propertyZip: localContact?.propertyZip || '',
+    parcelCounty: localContact?.parcelCounty || '',
+    parcelState: localContact?.parcelState || '',
+    parcelAcres: localContact?.parcelAcres || 0,
+    apn: localContact?.apn || '',
+    mailingAddress: localContact?.mailingAddress || '',
+    mailingCity: localContact?.mailingCity || '',
+    mailingState: localContact?.mailingState || '',
+    mailingZip: localContact?.mailingZip || '',
+  })
+
+  // Update local contact when conversation.contact changes
+  useEffect(() => {
+    setLocalContact(conversation.contact)
+  }, [conversation.contact])
+
+  // Update edit data when localContact changes
+  useEffect(() => {
+    setEditData({
+      firstName: localContact?.firstName || '',
+      lastName: localContact?.lastName || '',
+      email: localContact?.email || '',
+      propertyAddress: localContact?.propertyAddress || '',
+      propertyCity: localContact?.propertyCity || '',
+      propertyState: localContact?.propertyState || '',
+      propertyZip: localContact?.propertyZip || '',
+      parcelCounty: localContact?.parcelCounty || '',
+      parcelState: localContact?.parcelState || '',
+      parcelAcres: localContact?.parcelAcres || 0,
+      apn: localContact?.apn || '',
+      mailingAddress: localContact?.mailingAddress || '',
+      mailingCity: localContact?.mailingCity || '',
+      mailingState: localContact?.mailingState || '',
+      mailingZip: localContact?.mailingZip || '',
+    })
+  }, [localContact])
+  const { toast } = useToast()
+  const queryClient = useQueryClient()
+
+  const updateContactMutation = useMutation({
+    mutationFn: async (data: Partial<typeof editData>) => {
+      // Clean up the data - convert empty strings to undefined for optional fields
+      const cleanData = Object.fromEntries(
+        Object.entries(data).map(([key, value]) => [
+          key,
+          value === '' ? undefined : value
+        ])
+      )
+
+      if (localContact?.id) {
+        // Update existing contact
+        return contactsApi.updateContact(localContact.id, cleanData)
+      } else {
+        // Create new contact
+        return contactsApi.createContact({
+          phone: conversation.phoneNumber,
+          ...cleanData
+        })
+      }
+    },
+    onSuccess: (updatedContact) => {
+      toast({
+        title: localContact?.id ? "Contact updated" : "Contact created",
+        description: localContact?.id
+          ? "Contact information has been saved successfully."
+          : "Contact record has been created and saved successfully."
+      })
+      setIsEditing(false)
+      // Update local contact state immediately
+      setLocalContact(updatedContact)
+      onContactUpdated(updatedContact)
+      queryClient.invalidateQueries({ queryKey: ['contacts-all'] })
+      queryClient.invalidateQueries({ queryKey: ['all-messages'] })
+    },
+    onError: (error: any) => {
+      toast({
+        title: conversation.contact?.id ? "Failed to update contact" : "Failed to create contact",
+        description: error.response?.data?.message || error.message || "An error occurred while saving the contact.",
+        variant: "destructive"
+      })
+    }
+  })
+
+  const handleSave = () => {
+    updateContactMutation.mutate(editData)
+  }
+
+  const handleCancel = () => {
+    setEditData({
+      firstName: localContact?.firstName || '',
+      lastName: localContact?.lastName || '',
+      email: localContact?.email || '',
+      propertyAddress: localContact?.propertyAddress || '',
+      propertyCity: localContact?.propertyCity || '',
+      propertyState: localContact?.propertyState || '',
+      propertyZip: localContact?.propertyZip || '',
+      parcelCounty: localContact?.parcelCounty || '',
+      parcelState: localContact?.parcelState || '',
+      parcelAcres: localContact?.parcelAcres || 0,
+      apn: localContact?.apn || '',
+      mailingAddress: localContact?.mailingAddress || '',
+      mailingCity: localContact?.mailingCity || '',
+      mailingState: localContact?.mailingState || '',
+      mailingZip: localContact?.mailingZip || '',
+    })
+    setIsEditing(false)
+  }
+
+  const contactFields = [
+    { key: 'firstName', label: 'First Name', type: 'text' },
+    { key: 'lastName', label: 'Last Name', type: 'text' },
+    { key: 'email', label: 'Email', type: 'email' },
+    { key: 'propertyAddress', label: 'Property Address', type: 'text' },
+    { key: 'propertyCity', label: 'Property City', type: 'text' },
+    { key: 'propertyState', label: 'Property State', type: 'text' },
+    { key: 'propertyZip', label: 'Property Zip', type: 'text' },
+    { key: 'parcelCounty', label: 'Parcel County', type: 'text' },
+    { key: 'parcelState', label: 'Parcel State', type: 'text' },
+    { key: 'parcelAcres', label: 'Parcel Acres', type: 'number' },
+    { key: 'apn', label: 'APN', type: 'text' },
+    { key: 'mailingAddress', label: 'Mailing Address', type: 'text' },
+    { key: 'mailingCity', label: 'Mailing City', type: 'text' },
+    { key: 'mailingState', label: 'Mailing State', type: 'text' },
+    { key: 'mailingZip', label: 'Mailing Zip', type: 'text' },
+  ]
+
+  return (
+    <div className="flex-1 p-4">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold">Contact Information</h3>
+          {!isEditing ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsEditing(true)}
+              className="gap-2"
+            >
+              <Edit className="h-4 w-4" />
+              {localContact?.id ? 'Edit' : 'Add Info'}
+            </Button>
+          ) : (
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCancel}
+                disabled={updateContactMutation.isPending}
+                className="gap-2"
+              >
+                <X className="h-4 w-4" />
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleSave}
+                disabled={updateContactMutation.isPending}
+                className="gap-2"
+              >
+                <Save className="h-4 w-4" />
+                {updateContactMutation.isPending ? 'Saving...' : 'Save'}
+              </Button>
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-3 text-sm">
+          <div className="grid grid-cols-1 gap-3">
+            <div>
+              <span className="font-medium">Phone:</span> {conversation.phoneNumber}
+            </div>
+
+            {contactFields.map((field) => {
+              const value = isEditing ? editData[field.key] : localContact?.[field.key]
+              const displayValue = field.type === 'number' && value === 0 ? '' : value
+
+              return (
+                <div key={field.key}>
+                  <span className="font-medium">{field.label}:</span>{' '}
+                  {isEditing ? (
+                    <Input
+                      type={field.type}
+                      value={displayValue || ''}
+                      onChange={(e) => {
+                        const newValue = field.type === 'number'
+                          ? (e.target.value ? parseFloat(e.target.value) : 0)
+                          : e.target.value
+                        setEditData(prev => ({ ...prev, [field.key]: newValue }))
+                      }}
+                      className="mt-1"
+                      placeholder={`Enter ${field.label.toLowerCase()}`}
+                    />
+                  ) : (
+                    <span className="text-muted-foreground">
+                      {displayValue || '-'}
+                    </span>
+                  )}
+                </div>
+              )
+            })}
+
+            <div>
+              <span className="font-medium">Total Messages:</span> {conversationMessages.length}
+            </div>
+            {conversationMessages.length > 0 && (
+              <div>
+                <span className="font-medium">First Contact:</span>{' '}
+                {new Date(conversationMessages[0].receivedAt || conversationMessages[0].requestedAt || 0).toLocaleDateString()}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {!localContact?.id && !isEditing && (
+          <div className="text-sm text-muted-foreground bg-blue-50 p-3 rounded border border-blue-200">
+            This contact doesn't have a database record yet. Click "Add Info" to create one and save contact details.
           </div>
         )}
       </div>

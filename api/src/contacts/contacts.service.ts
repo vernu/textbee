@@ -4,17 +4,19 @@ import { Model, Types } from 'mongoose'
 import { ContactSpreadsheet, ContactSpreadsheetDocument } from './schemas/contact-spreadsheet.schema'
 import { Contact, ContactDocument } from './schemas/contact.schema'
 import { ContactTemplate, ContactTemplateDocument } from './schemas/contact-template.schema'
-import { 
-  UploadSpreadsheetDto, 
-  GetSpreadsheetsDto, 
-  ContactSpreadsheetResponseDto, 
+import {
+  UploadSpreadsheetDto,
+  GetSpreadsheetsDto,
+  ContactSpreadsheetResponseDto,
   PreviewCsvDto,
   CsvPreviewResponseDto,
   ProcessSpreadsheetDto,
   CreateTemplateDto,
   ContactTemplateResponseDto,
   GetContactsDto,
-  ContactResponseDto
+  ContactResponseDto,
+  UpdateContactDto,
+  CreateContactDto
 } from './contacts.dto'
 
 @Injectable()
@@ -344,6 +346,35 @@ export class ContactsService {
     await template.deleteOne()
   }
 
+  async createContact(
+    userId: string,
+    createData: CreateContactDto,
+  ): Promise<ContactResponseDto> {
+    const contact = new this.contactModel({
+      userId: new Types.ObjectId(userId),
+      firstName: createData.firstName,
+      lastName: createData.lastName,
+      phone: createData.phone,
+      email: createData.email,
+      propertyAddress: createData.propertyAddress,
+      propertyCity: createData.propertyCity,
+      propertyState: createData.propertyState,
+      propertyZip: createData.propertyZip,
+      parcelCounty: createData.parcelCounty,
+      parcelState: createData.parcelState,
+      parcelAcres: createData.parcelAcres,
+      apn: createData.apn,
+      mailingAddress: createData.mailingAddress,
+      mailingCity: createData.mailingCity,
+      mailingState: createData.mailingState,
+      mailingZip: createData.mailingZip,
+      // Note: spreadsheetId is not set for manually created contacts
+    })
+
+    const savedContact = await contact.save()
+    return this.mapContactToResponseDto(savedContact)
+  }
+
   async getContacts(
     userId: string,
     query: GetContactsDto,
@@ -376,7 +407,7 @@ export class ContactsService {
     // Build sort
     const sort: any = {}
     const sortDirection = sortOrder === 'desc' ? -1 : 1
-    
+
     switch (sortBy) {
       case 'newest':
         sort.createdAt = -1
@@ -422,6 +453,48 @@ export class ContactsService {
       data: contacts.map(this.mapContactToResponseDto),
       total,
     }
+  }
+
+  async getContactById(userId: string, contactId: string): Promise<ContactResponseDto> {
+    const contact = await this.contactModel
+      .findOne({
+        _id: new Types.ObjectId(contactId),
+        userId: new Types.ObjectId(userId),
+      })
+      .exec()
+
+    if (!contact) {
+      throw new NotFoundException('Contact not found')
+    }
+
+    return this.mapContactToResponseDto(contact)
+  }
+
+  async updateContact(
+    userId: string,
+    contactId: string,
+    updateData: UpdateContactDto,
+  ): Promise<ContactResponseDto> {
+    const contact = await this.contactModel
+      .findOne({
+        _id: new Types.ObjectId(contactId),
+        userId: new Types.ObjectId(userId),
+      })
+      .exec()
+
+    if (!contact) {
+      throw new NotFoundException('Contact not found')
+    }
+
+    // Update only provided fields
+    Object.keys(updateData).forEach((key) => {
+      if (updateData[key] !== undefined) {
+        contact[key] = updateData[key]
+      }
+    })
+
+    const updatedContact = await contact.save()
+    return this.mapContactToResponseDto(updatedContact)
   }
 
   private parseCsvRow(row: string): string[] {

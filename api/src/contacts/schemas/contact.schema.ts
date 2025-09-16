@@ -10,14 +10,14 @@ export class Contact {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   userId: Types.ObjectId
 
-  @Prop({ type: Types.ObjectId, ref: 'ContactSpreadsheet', required: true })
-  spreadsheetId: Types.ObjectId
+  @Prop({ type: Types.ObjectId, ref: 'ContactSpreadsheet' })
+  spreadsheetId?: Types.ObjectId
 
-  @Prop({ type: String, required: true })
-  firstName: string
+  @Prop({ type: String })
+  firstName?: string
 
-  @Prop({ type: String, required: true })
-  lastName: string
+  @Prop({ type: String })
+  lastName?: string
 
   @Prop({ type: String, required: true })
   phone: string

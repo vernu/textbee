@@ -49,6 +49,169 @@ export class CreateTemplateDto {
   columnMapping: Record<string, string>
 }
 
+export class CreateContactDto {
+  @ApiProperty({ description: 'First name', required: false })
+  @IsOptional()
+  @IsString()
+  firstName?: string
+
+  @ApiProperty({ description: 'Last name', required: false })
+  @IsOptional()
+  @IsString()
+  lastName?: string
+
+  @ApiProperty({ description: 'Phone number' })
+  @IsString()
+  phone: string
+
+  @ApiProperty({ description: 'Email address', required: false })
+  @IsOptional()
+  @IsString()
+  email?: string
+
+  @ApiProperty({ description: 'Property address', required: false })
+  @IsOptional()
+  @IsString()
+  propertyAddress?: string
+
+  @ApiProperty({ description: 'Property city', required: false })
+  @IsOptional()
+  @IsString()
+  propertyCity?: string
+
+  @ApiProperty({ description: 'Property state', required: false })
+  @IsOptional()
+  @IsString()
+  propertyState?: string
+
+  @ApiProperty({ description: 'Property zip', required: false })
+  @IsOptional()
+  @IsString()
+  propertyZip?: string
+
+  @ApiProperty({ description: 'Parcel county', required: false })
+  @IsOptional()
+  @IsString()
+  parcelCounty?: string
+
+  @ApiProperty({ description: 'Parcel state', required: false })
+  @IsOptional()
+  @IsString()
+  parcelState?: string
+
+  @ApiProperty({ description: 'Parcel acres', required: false })
+  @IsOptional()
+  @IsNumber()
+  parcelAcres?: number
+
+  @ApiProperty({ description: 'APN', required: false })
+  @IsOptional()
+  @IsString()
+  apn?: string
+
+  @ApiProperty({ description: 'Mailing address', required: false })
+  @IsOptional()
+  @IsString()
+  mailingAddress?: string
+
+  @ApiProperty({ description: 'Mailing city', required: false })
+  @IsOptional()
+  @IsString()
+  mailingCity?: string
+
+  @ApiProperty({ description: 'Mailing state', required: false })
+  @IsOptional()
+  @IsString()
+  mailingState?: string
+
+  @ApiProperty({ description: 'Mailing zip', required: false })
+  @IsOptional()
+  @IsString()
+  mailingZip?: string
+}
+
+export class UpdateContactDto {
+  @ApiProperty({ description: 'First name', required: false })
+  @IsOptional()
+  @IsString()
+  firstName?: string
+
+  @ApiProperty({ description: 'Last name', required: false })
+  @IsOptional()
+  @IsString()
+  lastName?: string
+
+  @ApiProperty({ description: 'Phone number', required: false })
+  @IsOptional()
+  @IsString()
+  phone?: string
+
+  @ApiProperty({ description: 'Email address', required: false })
+  @IsOptional()
+  @IsString()
+  email?: string
+
+  @ApiProperty({ description: 'Property address', required: false })
+  @IsOptional()
+  @IsString()
+  propertyAddress?: string
+
+  @ApiProperty({ description: 'Property city', required: false })
+  @IsOptional()
+  @IsString()
+  propertyCity?: string
+
+  @ApiProperty({ description: 'Property state', required: false })
+  @IsOptional()
+  @IsString()
+  propertyState?: string
+
+  @ApiProperty({ description: 'Property zip', required: false })
+  @IsOptional()
+  @IsString()
+  propertyZip?: string
+
+  @ApiProperty({ description: 'Parcel county', required: false })
+  @IsOptional()
+  @IsString()
+  parcelCounty?: string
+
+  @ApiProperty({ description: 'Parcel state', required: false })
+  @IsOptional()
+  @IsString()
+  parcelState?: string
+
+  @ApiProperty({ description: 'Parcel acres', required: false })
+  @IsOptional()
+  @IsNumber()
+  parcelAcres?: number
+
+  @ApiProperty({ description: 'APN', required: false })
+  @IsOptional()
+  @IsString()
+  apn?: string
+
+  @ApiProperty({ description: 'Mailing address', required: false })
+  @IsOptional()
+  @IsString()
+  mailingAddress?: string
+
+  @ApiProperty({ description: 'Mailing city', required: false })
+  @IsOptional()
+  @IsString()
+  mailingCity?: string
+
+  @ApiProperty({ description: 'Mailing state', required: false })
+  @IsOptional()
+  @IsString()
+  mailingState?: string
+
+  @ApiProperty({ description: 'Mailing zip', required: false })
+  @IsOptional()
+  @IsString()
+  mailingZip?: string
+}
+
 export class GetContactsDto {
   @ApiProperty({ description: 'Search query for contact names or phone', required: false })
   @IsOptional()
