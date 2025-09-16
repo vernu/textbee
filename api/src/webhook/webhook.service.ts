@@ -15,6 +15,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { Cron } from '@nestjs/schedule'
 import { CronExpression } from '@nestjs/schedule'
 import * as crypto from 'crypto'
+import mongoose from 'mongoose'
 
 @Injectable()
 export class WebhookService {
@@ -40,7 +41,107 @@ export class WebhookService {
   async findWebhooksForUser({ user }) {
     return await this.webhookSubscriptionModel.find({ user: user._id })
   }
+  async findWebhookNotificationsForUser({
+    user,
+    page,
+    limit,
+    eventType,
+    status,
+    start,
+    end,
+    deviceId,
+  }) {
+    const userWebhookSubscription = await this.webhookSubscriptionModel.findOne(
+      {
+        user: user._id,
+      },
+    )
 
+    if (!userWebhookSubscription) return []
+
+    // Base query
+    const query: any = { webhookSubscription: userWebhookSubscription._id }
+
+    if (eventType) {
+      query.event = eventType
+    }
+
+    if (
+      start &&
+      end &&
+      !Number.isNaN(new Date(start).getTime()) &&
+      !Number.isNaN(new Date(end).getTime())
+    ) {
+      query.createdAt = { $gte: new Date(start), $lte: new Date(end) }
+    }
+
+    // Status filtering
+    if (status) {
+      switch (status) {
+        case 'delivered':
+          query.deliveredAt = { $ne: null }
+          break
+        case 'failed':
+          query.deliveryAttemptAbortedAt = { $ne: null }
+          break
+        case 'retrying':
+          query.deliveredAt = null
+          query.deliveryAttemptAbortedAt = null
+          query.deliveryAttemptCount = { $gt: 0 }
+          query.nextDeliveryAttemptAt = { $ne: null }
+          break
+        case 'pending':
+          query.deliveredAt = null
+          query.deliveryAttemptAbortedAt = null
+          query.deliveryAttemptCount = 0
+          break
+      }
+    }
+
+    // Check if pagination is requested
+    const shouldPaginate = page !== undefined && limit !== undefined
+
+    // Validate pagination parameters only if provided
+    const pageNum = shouldPaginate ? Math.max(1, Number.parseInt(page) || 1) : 1
+    const limitNum = shouldPaginate
+      ? Math.max(1, Number.parseInt(limit) || 10)
+      : 0 // 0 means no limit
+    const skip = shouldPaginate ? (pageNum - 1) * limitNum : 0
+
+    // Build base query without pagination for device filtering
+    let baseQuery = this.webhookNotificationModel
+      .find(query)
+      .populate({
+        path: 'sms',
+        populate: { path: 'device' },
+      })
+      .populate('webhookSubscription')
+      .sort({ createdAt: -1 })
+
+    // If deviceId is provided, filter after population
+    if (deviceId) {
+      const allNotifications = await baseQuery
+      const filteredNotifications = allNotifications.filter(
+        (notification) =>
+          notification?.sms?.device?._id.toString() === deviceId,
+      )
+
+      // Apply pagination only if requested
+      if (shouldPaginate) {
+        return filteredNotifications.slice(skip, skip + limitNum)
+      }
+
+      return filteredNotifications
+    }
+
+    // If no deviceId filter, apply pagination directly to the query
+    if (shouldPaginate) {
+      baseQuery = baseQuery.skip(skip).limit(limitNum)
+    }
+
+    const res = await baseQuery
+    return res
+  }
   async create({ user, createWebhookDto }) {
     const { events, deliveryUrl, signingSecret } = createWebhookDto
 
@@ -164,9 +265,7 @@ export class WebhookService {
     )
 
     if (!webhookSubscription) {
-      console.log(
-        `Webhook subscription not found for ${webhookSubscriptionId}`,
-      )
+      console.log(`Webhook subscription not found for ${webhookSubscriptionId}`)
       return
     }
 
@@ -217,7 +316,6 @@ export class WebhookService {
 
       webhookSubscription.deliveryFailureCount += 1
       webhookSubscription.lastDeliveryFailureAt = now
-
     } finally {
       webhookSubscription.deliveryAttemptCount += 1
       await webhookSubscription.save()
@@ -250,7 +348,7 @@ export class WebhookService {
 
   // Check for notifications that need to be delivered every 3 minutes
   @Cron('0 */3 * * * *', {
-    disabled: process.env.NODE_ENV !== 'production'
+    disabled: process.env.NODE_ENV !== 'production',
   })
   async checkForNotificationsToDeliver() {
     const now = new Date()

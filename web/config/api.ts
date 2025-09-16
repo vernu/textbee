@@ -28,6 +28,7 @@ export const ApiEndpoints = {
     getMessages: (id: string) => `/gateway/devices/${id}/messages`,
 
     getWebhooks: () => '/webhooks',
+    getWebhookNotifications: () => '/webhooks/notifications',
     createWebhook: () => '/webhooks',
     updateWebhook: (id: string) => `/webhooks/${id}`,
     getStats: () => '/gateway/stats',
