@@ -558,16 +558,18 @@ function MessengerInterface({
         )}
 
         {activeTab === 'info' && (
-          <ContactInfoEditor
-            conversation={conversation}
-            conversationMessages={conversationMessages}
-            onContactUpdated={(updatedContact) => {
-              // Force refresh of all related data
-              queryClient.invalidateQueries({ queryKey: ['contacts-all'] })
-              queryClient.invalidateQueries({ queryKey: ['all-messages'] })
-              queryClient.invalidateQueries({ queryKey: ['devices'] })
-            }}
-          />
+          <div className="flex-1 min-h-0 overflow-y-auto">
+            <ContactInfoEditor
+              conversation={conversation}
+              conversationMessages={conversationMessages}
+              onContactUpdated={(updatedContact) => {
+                // Force refresh of all related data
+                queryClient.invalidateQueries({ queryKey: ['contacts-all'] })
+                queryClient.invalidateQueries({ queryKey: ['all-messages'] })
+                queryClient.invalidateQueries({ queryKey: ['devices'] })
+              }}
+            />
+          </div>
         )}
 
         {activeTab === 'notes' && (
@@ -730,7 +732,7 @@ function ContactInfoEditor({
   ]
 
   return (
-    <div className="flex-1 p-4">
+    <div className="p-4">
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="font-semibold">Contact Information</h3>

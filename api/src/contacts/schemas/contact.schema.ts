@@ -63,3 +63,5 @@ export class Contact {
 }
 
 export const ContactSchema = SchemaFactory.createForClass(Contact)
+
+ContactSchema.index({ userId: 1, phone: 1 }, { unique: true })

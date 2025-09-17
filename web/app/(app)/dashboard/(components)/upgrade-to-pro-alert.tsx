@@ -80,6 +80,11 @@ export default function UpgradeToProAlert() {
     return null
   }
 
+  // Only show alerts for critical usage warnings (80%+ usage)
+  if (monthlyUsagePercentage < 80) {
+    return null
+  }
+
   return (
     <Alert className={`${alertConfig.bgColor} text-white`}>
       <AlertDescription className='flex flex-col sm:flex-row flex-wrap items-center gap-2 md:gap-4'>
@@ -87,11 +92,7 @@ export default function UpgradeToProAlert() {
           {alertConfig.message}
         </span>
         <span className='w-full sm:flex-1 text-center sm:text-left text-xs md:text-sm'>
-          {alertConfig.urgency === 'normal' ? (
-            <>Use discount code <strong className="text-yellow-200">SAVE30P</strong> at checkout for a 30% discount!</>
-          ) : (
-            alertConfig.subMessage
-          )}
+          {alertConfig.subMessage}
         </span>
         <div className='w-full sm:w-auto mt-2 sm:mt-0 flex justify-center sm:justify-end flex-wrap gap-1 md:gap-2'>
           <Button
@@ -102,16 +103,6 @@ export default function UpgradeToProAlert() {
           >
             <Link href={'/checkout/pro'}>{alertConfig.buttonText}</Link>
           </Button>
-          {alertConfig.urgency === 'normal' && (
-            <Button
-              variant='outline'
-              size='sm'
-              asChild
-              className='bg-orange-500 text-white hover:bg-orange-600 text-xs md:text-sm'
-            >
-              <Link href={'/#pricing'}>Learn More</Link>
-            </Button>
-          )}
         </div>
       </AlertDescription>
     </Alert>

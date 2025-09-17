@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common'
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException, ConflictException } from '@nestjs/common'
+import { normalizePhoneNumber } from './utils/phone.utils'
 import { InjectModel } from '@nestjs/mongoose'
 import { Model, Types } from 'mongoose'
 import { ContactSpreadsheet, ContactSpreadsheetDocument } from './schemas/contact-spreadsheet.schema'
@@ -275,7 +276,14 @@ export class ContactsService {
       }
 
       // Save contacts
-      await this.contactModel.insertMany(contacts)
+      try {
+        await this.contactModel.insertMany(contacts)
+      } catch (error) {
+        if (error.code === 11000 && error.keyPattern?.phone) {
+          throw new ConflictException('One or more contacts have duplicate phone numbers')
+        }
+        throw error
+      }
 
       // Update spreadsheet status
       spreadsheet.status = 'processed'
@@ -354,7 +362,7 @@ export class ContactsService {
       userId: new Types.ObjectId(userId),
       firstName: createData.firstName,
       lastName: createData.lastName,
-      phone: createData.phone,
+      phone: normalizePhoneNumber(createData.phone),
       email: createData.email,
       propertyAddress: createData.propertyAddress,
       propertyCity: createData.propertyCity,
@@ -371,8 +379,15 @@ export class ContactsService {
       // Note: spreadsheetId is not set for manually created contacts
     })
 
-    const savedContact = await contact.save()
-    return this.mapContactToResponseDto(savedContact)
+    try {
+      const savedContact = await contact.save()
+      return this.mapContactToResponseDto(savedContact)
+    } catch (error) {
+      if (error.code === 11000 && error.keyPattern?.phone) {
+        throw new ConflictException('A contact with this phone number already exists')
+      }
+      throw error
+    }
   }
 
   async getContacts(
@@ -489,12 +504,23 @@ export class ContactsService {
     // Update only provided fields
     Object.keys(updateData).forEach((key) => {
       if (updateData[key] !== undefined) {
-        contact[key] = updateData[key]
+        if (key === 'phone') {
+          contact[key] = normalizePhoneNumber(updateData[key])
+        } else {
+          contact[key] = updateData[key]
+        }
       }
     })
 
-    const updatedContact = await contact.save()
-    return this.mapContactToResponseDto(updatedContact)
+    try {
+      const updatedContact = await contact.save()
+      return this.mapContactToResponseDto(updatedContact)
+    } catch (error) {
+      if (error.code === 11000 && error.keyPattern?.phone) {
+        throw new ConflictException('A contact with this phone number already exists')
+      }
+      throw error
+    }
   }
 
   private parseCsvRow(row: string): string[] {
@@ -554,6 +580,11 @@ export class ContactsService {
     // Validate required fields
     if (!contact.firstName || !contact.lastName || !contact.phone) {
       throw new Error('Missing required fields: firstName, lastName, or phone')
+    }
+
+    // Normalize phone number to ensure consistent format
+    if (contact.phone) {
+      contact.phone = normalizePhoneNumber(contact.phone)
     }
 
     return contact

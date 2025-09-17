@@ -1,7 +1,6 @@
 import { PropsWithChildren } from 'react'
 import '@/styles/main.css'
 import { Metadata } from 'next'
-import Footer from '@/components/shared/footer'
 import { Toaster } from '@/components/ui/toaster'
 import Analytics from '@/components/shared/analytics'
 import { Session } from 'next-auth'
@@ -22,7 +21,6 @@ export default async function RootLayout({ children }: PropsWithChildren) {
       <body>
         <main>{children}</main>
         <Analytics user={session?.user} />
-        <Footer />
         <Toaster />
       </body>
     </html>

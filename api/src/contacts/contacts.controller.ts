@@ -214,6 +214,18 @@ export class ContactsController {
     return this.contactsService.getContacts(req.user.id, query)
   }
 
+  @Get('stats')
+  @ApiOperation({ summary: 'Get contact statistics' })
+  async getStats(@Request() req) {
+    const { totalContacts } = await this.contactsService.getSpreadsheets(req.user.id, {})
+    const { total: totalSpreadsheets } = await this.contactsService.getSpreadsheets(req.user.id, {})
+    
+    return {
+      totalContacts,
+      totalSpreadsheets,
+    }
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get a specific contact by ID' })
   async getContact(
@@ -231,17 +243,5 @@ export class ContactsController {
     @Body() updateData: UpdateContactDto,
   ) {
     return this.contactsService.updateContact(req.user.id, id, updateData)
-  }
-
-  @Get('stats')
-  @ApiOperation({ summary: 'Get contact statistics' })
-  async getStats(@Request() req) {
-    const { totalContacts } = await this.contactsService.getSpreadsheets(req.user.id, {})
-    const { total: totalSpreadsheets } = await this.contactsService.getSpreadsheets(req.user.id, {})
-    
-    return {
-      totalContacts,
-      totalSpreadsheets,
-    }
   }
 }

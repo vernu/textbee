@@ -91,6 +91,30 @@ export class BillingService {
 
     const plan = await this.planModel.findOne({ name: 'free' })
 
+    if (!plan) {
+      return {
+        plan: {
+          name: 'free',
+          dailyLimit: -1,
+          monthlyLimit: -1,
+          bulkSendLimit: -1,
+          monthlyPrice: 0,
+          isActive: true,
+        },
+        isActive: true,
+        usage: {
+          processedSmsToday,
+          processedSmsLastMonth,
+          dailyLimit: -1,
+          monthlyLimit: -1,
+          dailyRemaining: -1,
+          monthlyRemaining: -1,
+          dailyUsagePercentage: 0,
+          monthlyUsagePercentage: 0,
+        }
+      }
+    }
+
     return {
       plan,
       isActive: true,
