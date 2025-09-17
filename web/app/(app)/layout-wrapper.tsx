@@ -36,7 +36,12 @@ export default function LayoutWrapper({ session, children }) {
 
   return (
     <>
-      <ThemeProvider attribute='class' defaultTheme='system' enableSystem>
+      <ThemeProvider
+        attribute='class'
+        defaultTheme='system'
+        enableSystem
+        disableTransitionOnChange
+      >
         <SessionProvider session={session}>
           <QueryClientProvider client={queryClient}>
             <GoogleOAuthProvider

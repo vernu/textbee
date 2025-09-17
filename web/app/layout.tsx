@@ -17,7 +17,7 @@ export default async function RootLayout({ children }: PropsWithChildren) {
   const session: Session | null = await getServerSession(authOptions as any)
 
   return (
-    <html lang='en'>
+    <html lang='en' suppressHydrationWarning>
       <body>
         <main>{children}</main>
         <Analytics user={session?.user} />
