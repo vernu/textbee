@@ -244,4 +244,27 @@ export class ContactsController {
   ) {
     return this.contactsService.updateContact(req.user.id, id, updateData)
   }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Delete a contact' })
+  async deleteContact(
+    @Request() req,
+    @Param('id') id: string,
+  ) {
+    return this.contactsService.deleteContact(req.user.id, id)
+  }
+
+  @Post('delete-multiple')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Delete multiple contacts' })
+  async deleteMultipleContacts(
+    @Request() req,
+    @Body('ids') ids: string[],
+  ) {
+    if (!ids || ids.length === 0) {
+      throw new BadRequestException('No contact IDs provided')
+    }
+    return this.contactsService.deleteMultipleContacts(req.user.id, ids)
+  }
 }

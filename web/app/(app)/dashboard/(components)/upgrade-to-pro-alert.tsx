@@ -4,9 +4,12 @@ import { ApiEndpoints } from '@/config/api'
 import httpBrowserClient from '@/lib/httpBrowserClient'
 import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import { X } from 'lucide-react'
 
 export default function UpgradeToProAlert() {
+  const [isDismissed, setIsDismissed] = useState(false)
+
   const {
     data: currentSubscription,
     isLoading: isLoadingSubscription,
@@ -18,6 +21,10 @@ export default function UpgradeToProAlert() {
         .get(ApiEndpoints.billing.currentSubscription())
         .then((res) => res.data),
   })
+
+  const handleDismiss = () => {
+    setIsDismissed(true)
+  }
 
   const monthlyUsagePercentage = currentSubscription?.usage?.monthlyUsagePercentage || 0
   const monthlyLimit = currentSubscription?.usage?.monthlyLimit || 0
@@ -72,7 +79,7 @@ export default function UpgradeToProAlert() {
     }
   }, [monthlyUsagePercentage, monthlyLimit, processedSmsLastMonth])
 
-  if (isLoadingSubscription || !currentSubscription || subscriptionError) {
+  if (isLoadingSubscription || !currentSubscription || subscriptionError || isDismissed) {
     return null
   }
 
@@ -86,8 +93,15 @@ export default function UpgradeToProAlert() {
   }
 
   return (
-    <Alert className={`${alertConfig.bgColor} text-white`}>
-      <AlertDescription className='flex flex-col sm:flex-row flex-wrap items-center gap-2 md:gap-4'>
+    <Alert className={`${alertConfig.bgColor} text-white relative`}>
+      <button
+        onClick={handleDismiss}
+        className='absolute left-2 top-1/2 -translate-y-1/2 text-white hover:text-gray-200 transition-colors'
+        aria-label='Dismiss alert'
+      >
+        <X className='h-4 w-4' />
+      </button>
+      <AlertDescription className='flex flex-col sm:flex-row flex-wrap items-center gap-2 md:gap-4 pl-4'>
         <span className='w-full sm:flex-1 text-center sm:text-left text-sm md:text-base font-medium'>
           {alertConfig.message}
         </span>

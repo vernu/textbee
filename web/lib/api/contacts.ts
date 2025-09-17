@@ -185,6 +185,14 @@ export const contactsApi = {
     const response = await httpBrowserClient.put(`/contacts/${id}`, data)
     return response.data
   },
+
+  async deleteContact(id: string): Promise<void> {
+    await httpBrowserClient.delete(`/contacts/${id}`)
+  },
+
+  async deleteMultipleContacts(ids: string[]): Promise<void> {
+    await httpBrowserClient.post('/contacts/delete-multiple', { ids })
+  },
 }
 
 export function downloadBlob(blob: Blob, filename: string) {

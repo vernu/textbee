@@ -14,11 +14,72 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname()
 
+  // Pages that need height-constrained layout (no scrolling)
+  const constrainedPages = ['/dashboard/contacts', '/dashboard/inbox']
+  const isConstrainedPage = constrainedPages.some(page => pathname.startsWith(page))
+
+  if (isConstrainedPage) {
+    return (
+      <div className='flex h-screen flex-col'>
+        {/* Main content - Height constrained */}
+        <main className='flex-1 min-w-0 overflow-hidden flex flex-col pt-14'>
+          <div className='space-y-2 px-4 [&:not(:empty)]:pt-4 [&:not(:empty)]:pb-2 flex-shrink-0'>
+            <VerifyEmailAlert />
+            <AccountDeletionAlert />
+            <UpgradeToProAlert />
+          </div>
+          <div className='flex-1 overflow-hidden'>
+            {children}
+          </div>
+        </main>
+
+        {/* Bottom navigation for mobile */}
+        <nav className='sm:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg z-10'>
+          <div className='flex items-center justify-around h-16'>
+            <MobileNavItem
+              href='/dashboard'
+              icon={<Home className='h-4 w-4 stroke-[1.5]' />}
+              label='Dashboard'
+              isActive={pathname === '/dashboard'}
+            />
+            <MobileNavItem
+              href='/dashboard/messaging'
+              icon={<MessageSquareText className='h-4 w-4 stroke-[1.5]' />}
+              label='Messaging'
+              isActive={pathname === '/dashboard/messaging'}
+            />
+            <MobileNavItem
+              href='/dashboard/contacts'
+              icon={<ContactRound className='h-4 w-4 stroke-[1.5]' />}
+              label='Contacts'
+              isActive={pathname === '/dashboard/contacts'}
+            />
+            <MobileNavItem
+              href='/dashboard/community'
+              icon={<Users className='h-4 w-4 stroke-[1.5]' />}
+              label='Community'
+              isActive={pathname === '/dashboard/community'}
+            />
+            <MobileNavItem
+              href='/dashboard/account'
+              icon={<UserCircle className='h-4 w-4 stroke-[1.5]' />}
+              label='Account'
+              isActive={pathname === '/dashboard/account'}
+            />
+          </div>
+        </nav>
+
+        {/* Bottom padding for mobile to account for the fixed navigation */}
+        <div className='h-16 sm:hidden'></div>
+      </div>
+    )
+  }
+
   return (
     <div className='flex min-h-screen flex-col'>
-      {/* Main content */}
-      <main className='flex-1 min-w-0 overflow-auto'>
-        <div className='space-y-2 p-4'>
+      {/* Main content - Scrollable */}
+      <main className='flex-1 min-w-0 pt-14'>
+        <div className='space-y-2 px-4 [&:not(:empty)]:pt-4 [&:not(:empty)]:pb-2'>
           <VerifyEmailAlert />
           <AccountDeletionAlert />
           <UpgradeToProAlert />

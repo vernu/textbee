@@ -4,10 +4,12 @@ import { ApiEndpoints } from '@/config/api'
 import httpBrowserClient from '@/lib/httpBrowserClient'
 import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
-import { useMemo } from 'react'
-import { Mail, ShieldAlert } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Mail, ShieldAlert, X } from 'lucide-react'
 
 export default function VerifyEmailAlert() {
+  const [isDismissed, setIsDismissed] = useState(false)
+
   const {
     data: userData,
     isLoading: isLoadingUserData,
@@ -19,6 +21,10 @@ export default function VerifyEmailAlert() {
         .get(ApiEndpoints.auth.whoAmI())
         .then((res) => res.data.data),
   })
+
+  const handleDismiss = () => {
+    setIsDismissed(true)
+  }
 
   const ctaMessages = useMemo(
     () => [
@@ -51,7 +57,7 @@ export default function VerifyEmailAlert() {
     return buttonTexts[randomIndex]
   }, [buttonTexts])
 
-  if (isLoadingUserData || !userData || userDataError) {
+  if (isLoadingUserData || !userData || userDataError || isDismissed) {
     return null
   }
 
@@ -61,8 +67,15 @@ export default function VerifyEmailAlert() {
   }
 
   return (
-    <Alert className='bg-gradient-to-r from-red-600 to-red-700 text-white'>
-      <AlertDescription className='flex flex-col sm:flex-row flex-wrap items-center gap-2 md:gap-4'>
+    <Alert className='bg-gradient-to-r from-red-600 to-red-700 text-white relative'>
+      <button
+        onClick={handleDismiss}
+        className='absolute left-2 top-1/2 -translate-y-1/2 text-white hover:text-gray-200 transition-colors'
+        aria-label='Dismiss alert'
+      >
+        <X className='h-4 w-4' />
+      </button>
+      <AlertDescription className='flex flex-col sm:flex-row flex-wrap items-center gap-2 md:gap-4 pl-4'>
         <span className='w-full sm:flex-1 text-center sm:text-left text-sm md:text-base font-medium flex items-center justify-center sm:justify-start gap-2'>
           <ShieldAlert className='h-5 w-5' />
           {randomCta}

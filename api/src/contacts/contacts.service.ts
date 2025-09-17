@@ -611,6 +611,37 @@ export class ContactsService {
     }
   }
 
+  async deleteContact(userId: string, contactId: string): Promise<void> {
+    const contact = await this.contactModel
+      .findOne({
+        _id: new Types.ObjectId(contactId),
+        userId: new Types.ObjectId(userId),
+      })
+      .exec()
+
+    if (!contact) {
+      throw new NotFoundException('Contact not found')
+    }
+
+    await this.contactModel.deleteOne({
+      _id: new Types.ObjectId(contactId),
+      userId: new Types.ObjectId(userId),
+    })
+  }
+
+  async deleteMultipleContacts(userId: string, contactIds: string[]): Promise<void> {
+    const objectIds = contactIds.map(id => new Types.ObjectId(id))
+
+    const result = await this.contactModel.deleteMany({
+      _id: { $in: objectIds },
+      userId: new Types.ObjectId(userId),
+    })
+
+    if (result.deletedCount === 0) {
+      throw new NotFoundException('No contacts found to delete')
+    }
+  }
+
   private mapContactToResponseDto = (contact: ContactDocument): ContactResponseDto => {
     return {
       id: contact._id.toString(),

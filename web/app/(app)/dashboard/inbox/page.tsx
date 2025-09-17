@@ -939,8 +939,58 @@ export default function InboxPage() {
 
   if (isLoading) {
     return (
-      <div className="flex-1 p-6 md:p-8">
-        <div className="space-y-1 mb-6">
+      <div className="flex flex-col h-full overflow-hidden">
+        <div className="flex-shrink-0 p-6 md:p-8 pb-4">
+          <div className="space-y-1">
+            <div className="flex items-center space-x-2">
+              <InboxIcon className="h-6 w-6 text-primary" />
+              <h2 className="text-3xl font-bold tracking-tight">Inbox</h2>
+            </div>
+            <p className="text-muted-foreground">
+              View and manage your message conversations
+            </p>
+          </div>
+        </div>
+
+        <div className="flex-1 px-6 md:px-8 pb-6 md:pb-8 overflow-hidden">
+          <Card className="h-full">
+            <CardContent className="p-0 h-full">
+              <div className="flex h-full">
+                <div className="w-1/2 border-r">
+                  <div className="p-4 space-y-4">
+                    <Skeleton className="h-8 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                    <div className="flex space-x-2">
+                      <Skeleton className="h-10 w-32" />
+                      <Skeleton className="h-10 w-32" />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    {Array.from({ length: 8 }).map((_, i) => (
+                      <div key={i} className="p-4 border-b">
+                        <Skeleton className="h-4 w-32 mb-2" />
+                        <Skeleton className="h-3 w-48" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="w-1/2">
+                  <div className="p-4">
+                    <Skeleton className="h-6 w-32" />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col h-full overflow-hidden">
+      <div className="flex-shrink-0 p-6 md:p-8 pb-4">
+        <div className="space-y-1">
           <div className="flex items-center space-x-2">
             <InboxIcon className="h-6 w-6 text-primary" />
             <h2 className="text-3xl font-bold tracking-tight">Inbox</h2>
@@ -949,84 +999,42 @@ export default function InboxPage() {
             View and manage your message conversations
           </p>
         </div>
+      </div>
 
-        <Card className="h-[600px]">
+      <div className="flex-1 px-6 md:px-8 pb-6 md:pb-8 overflow-hidden">
+        <Card className="h-full">
           <CardContent className="p-0 h-full">
             <div className="flex h-full">
-              <div className="w-1/2 border-r">
-                <div className="p-4 space-y-4">
-                  <Skeleton className="h-8 w-full" />
-                  <Skeleton className="h-10 w-full" />
-                  <div className="flex space-x-2">
-                    <Skeleton className="h-10 w-32" />
-                    <Skeleton className="h-10 w-32" />
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  {Array.from({ length: 8 }).map((_, i) => (
-                    <div key={i} className="p-4 border-b">
-                      <Skeleton className="h-4 w-32 mb-2" />
-                      <Skeleton className="h-3 w-48" />
-                    </div>
-                  ))}
-                </div>
+              {/* Conversation list panel */}
+              <div className={selectedConversation ? "w-1/2" : "w-full"}>
+                <ConversationList
+                  conversations={conversations}
+                  selectedConversation={selectedConversation}
+                  onSelectConversation={setSelectedConversation}
+                  sortBy={sortBy}
+                  setSortBy={setSortBy}
+                  dateFilter={dateFilter}
+                  setDateFilter={setDateFilter}
+                  dateRange={dateRange}
+                  setDateRange={setDateRange}
+                  searchQuery={searchQuery}
+                  setSearchQuery={setSearchQuery}
+                />
               </div>
-              <div className="w-1/2">
-                <div className="p-4">
-                  <Skeleton className="h-6 w-32" />
+
+              {/* Messenger interface panel */}
+              {selectedConversation && (
+                <div className="w-1/2">
+                  <MessengerInterface
+                    conversation={selectedConversation}
+                    allMessages={messagesData || []}
+                  />
                 </div>
-              </div>
+              )}
             </div>
           </CardContent>
         </Card>
       </div>
-    )
-  }
-
-  return (
-    <div className="flex-1 p-6 md:p-8">
-      <div className="space-y-1 mb-6">
-        <div className="flex items-center space-x-2">
-          <InboxIcon className="h-6 w-6 text-primary" />
-          <h2 className="text-3xl font-bold tracking-tight">Inbox</h2>
-        </div>
-        <p className="text-muted-foreground">
-          View and manage your message conversations
-        </p>
-      </div>
-
-      <Card className="h-[600px]">
-        <CardContent className="p-0 h-full">
-          <div className="flex h-full">
-            {/* Conversation list panel */}
-            <div className={selectedConversation ? "w-1/2" : "w-full"}>
-              <ConversationList
-                conversations={conversations}
-                selectedConversation={selectedConversation}
-                onSelectConversation={setSelectedConversation}
-                sortBy={sortBy}
-                setSortBy={setSortBy}
-                dateFilter={dateFilter}
-                setDateFilter={setDateFilter}
-                dateRange={dateRange}
-                setDateRange={setDateRange}
-                searchQuery={searchQuery}
-                setSearchQuery={setSearchQuery}
-              />
-            </div>
-
-            {/* Messenger interface panel */}
-            {selectedConversation && (
-              <div className="w-1/2">
-                <MessengerInterface 
-                  conversation={selectedConversation} 
-                  allMessages={messagesData || []}
-                />
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   )
 }
