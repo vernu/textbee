@@ -43,7 +43,8 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Spinner } from '@/components/ui/spinner'
-import { toast } from 'sonner'
+import { toast } from '@/hooks/use-toast'
+
 
 // Helper function to format timestamps
 const formatTimestamp = (timestamp: string | null | undefined) => {
@@ -95,6 +96,7 @@ const getStatusBadge = (status: string) => {
 }
 
 function ReplyDialog({ sms, onClose, open, onOpenChange }: { sms: any; onClose?: () => void; open: boolean; onOpenChange: (open: boolean) => void }) {
+
   const {
     mutate: sendSms,
     isPending: isSendingSms,
@@ -104,14 +106,17 @@ function ReplyDialog({ sms, onClose, open, onOpenChange }: { sms: any; onClose?:
     mutationFn: (data: SendSmsFormData) =>
       httpBrowserClient.post(ApiEndpoints.gateway.sendSMS(data.deviceId), data),
     onSuccess: () => {
-      toast.success('SMS sent successfully!')
+      toast({
+        title: 'SMS sent successfully!',
+      })
       setTimeout(() => {
         onOpenChange(false)
         if (onClose) onClose()
       }, 1500)
     },
     onError: (error: any) => {
-      toast.error('Failed to send SMS.', {
+      toast({
+        title: 'Failed to send SMS.',
         description: error.response?.data?.message || 'Please try again.',
       })
     },
@@ -250,14 +255,17 @@ function FollowUpDialog({ message, onClose, open, onOpenChange }: { message: any
     mutationFn: (data: SendSmsFormData) =>
       httpBrowserClient.post(ApiEndpoints.gateway.sendSMS(data.deviceId), data),
     onSuccess: () => {
-      toast.success('Follow-up SMS sent successfully!')
+      toast({
+        title: 'Follow-up SMS sent successfully!',
+      })
       setTimeout(() => {
         onOpenChange(false)
         if (onClose) onClose()
       }, 1500)
     },
     onError: (error: any) => {
-      toast.error('Failed to send follow-up SMS.', {
+      toast({
+        title: 'Failed to send follow-up SMS.',
         description: error.response?.data?.message || 'Please try again.',
       })
     },
@@ -416,7 +424,9 @@ function SmsDetailsDialog({
   const handleCopyMessage = () => {
     if (message?.message) {
       navigator.clipboard.writeText(message.message)
-      toast.success('Message copied to clipboard!')
+      toast({
+        title: 'Message copied to clipboard!',
+      })
     }
   }
 
