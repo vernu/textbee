@@ -240,18 +240,18 @@ export class ContactsService {
     processData: ProcessSpreadsheetDto,
   ): Promise<{ processed: number; errors: string[] }> {
     const spreadsheet = await this.getSpreadsheetById(userId, spreadsheetId)
-    
+
     if (spreadsheet.status === 'processed') {
       throw new BadRequestException('Spreadsheet has already been processed')
     }
 
-    const { columnMapping, templateId } = processData
-    
+    const { columnMapping, templateId, dncColumn, dncValue } = processData
+
     // Validate required fields
     const requiredFields = ['firstName', 'lastName', 'phone']
     const mappedFields = Object.values(columnMapping)
     const missingFields = requiredFields.filter(field => !mappedFields.includes(field))
-    
+
     if (missingFields.length > 0) {
       throw new BadRequestException(`Missing required fields: ${missingFields.join(', ')}`)
     }
@@ -268,7 +268,7 @@ export class ContactsService {
       for (let i = 0; i < dataRows.length; i++) {
         try {
           const row = this.parseCsvRow(dataRows[i])
-          const contact = this.mapRowToContact(userId, spreadsheetId, headers, row, columnMapping)
+          const contact = this.mapRowToContact(userId, spreadsheetId, headers, row, columnMapping, dncColumn, dncValue)
           contacts.push(contact)
         } catch (error) {
           errors.push(`Row ${i + 2}: ${error.message}`)
@@ -279,8 +279,13 @@ export class ContactsService {
       try {
         await this.contactModel.insertMany(contacts)
       } catch (error) {
-        if (error.code === 11000 && error.keyPattern?.phone) {
-          throw new ConflictException('One or more contacts have duplicate phone numbers')
+        if (error.code === 11000) {
+          if (error.keyPattern?.phone) {
+            // Extract the duplicate phone number from the error message if possible
+            const duplicatePhone = error.keyValue?.phone || 'unknown'
+            throw new ConflictException(`Duplicate phone number found: ${duplicatePhone}. Each contact must have a unique phone number.`)
+          }
+          throw new ConflictException('Duplicate data found. Please check your spreadsheet for duplicate entries.')
         }
         throw error
       }
@@ -318,6 +323,8 @@ export class ContactsService {
       userId: new Types.ObjectId(userId),
       name: templateData.name,
       columnMapping: new Map(Object.entries(templateData.columnMapping)),
+      dncColumn: templateData.dncColumn,
+      dncValue: templateData.dncValue,
     })
 
     const savedTemplate = await template.save()
@@ -376,6 +383,8 @@ export class ContactsService {
       mailingCity: createData.mailingCity,
       mailingState: createData.mailingState,
       mailingZip: createData.mailingZip,
+      dnc: createData.dnc,
+      dncUpdatedAt: createData.dnc !== undefined ? new Date() : undefined,
       // Note: spreadsheetId is not set for manually created contacts
     })
 
@@ -501,6 +510,9 @@ export class ContactsService {
       throw new NotFoundException('Contact not found')
     }
 
+    // Track if DNC status is changing
+    const isDncChanging = updateData.dnc !== undefined && updateData.dnc !== contact.dnc
+
     // Update only provided fields
     Object.keys(updateData).forEach((key) => {
       if (updateData[key] !== undefined) {
@@ -511,6 +523,11 @@ export class ContactsService {
         }
       }
     })
+
+    // Update DNC timestamp if DNC status changed
+    if (isDncChanging) {
+      contact.dncUpdatedAt = new Date()
+    }
 
     try {
       const updatedContact = await contact.save()
@@ -556,6 +573,8 @@ export class ContactsService {
     headers: string[],
     row: string[],
     columnMapping: Record<string, string>,
+    dncColumn?: string,
+    dncValue?: string,
   ): any {
     const contact: any = {
       userId: new Types.ObjectId(userId),
@@ -567,24 +586,48 @@ export class ContactsService {
       const contactField = columnMapping[header]
       if (contactField && row[index]) {
         let value: any = row[index].trim()
-        
+
         // Convert numeric fields
         if (contactField === 'parcelAcres' && value) {
           value = parseFloat(value) || 0
         }
-        
+
         contact[contactField] = value
       }
     })
+
+    // Handle DNC column processing
+    if (dncColumn && dncValue) {
+      const dncIndex = headers.indexOf(dncColumn)
+      if (dncIndex !== -1) {
+        // Always set DNC status based on column value, even if cell is empty
+        const cellValue = (row[dncIndex] || '').trim().toLowerCase()
+        const targetValue = dncValue.toLowerCase()
+        contact.dnc = cellValue === targetValue
+        // Always set the DNC updated date when processing CSV with DNC column
+        contact.dncUpdatedAt = new Date()
+      }
+    }
 
     // Validate required fields
     if (!contact.firstName || !contact.lastName || !contact.phone) {
       throw new Error('Missing required fields: firstName, lastName, or phone')
     }
 
+    // Check for invalid phone number values
+    const invalidPhoneValues = ['landline excluded', 'excluded', 'n/a', 'na', 'none', 'null', 'undefined']
+    if (invalidPhoneValues.includes(contact.phone.toLowerCase().trim())) {
+      throw new Error(`Invalid phone number: ${contact.phone}`)
+    }
+
     // Normalize phone number to ensure consistent format
     if (contact.phone) {
-      contact.phone = normalizePhoneNumber(contact.phone)
+      const normalized = normalizePhoneNumber(contact.phone)
+      // If normalization results in just a + sign or the original invalid value, reject it
+      if (normalized === '+' || normalized === contact.phone && !/^\+?[\d\s\-\(\)]+$/.test(contact.phone)) {
+        throw new Error(`Invalid phone number format: ${contact.phone}`)
+      }
+      contact.phone = normalized
     }
 
     return contact
@@ -607,6 +650,8 @@ export class ContactsService {
       id: template._id.toString(),
       name: template.name,
       columnMapping: Object.fromEntries(template.columnMapping),
+      dncColumn: template.dncColumn,
+      dncValue: template.dncValue,
       createdAt: template.createdAt.toISOString(),
     }
   }
@@ -661,6 +706,8 @@ export class ContactsService {
       mailingCity: contact.mailingCity,
       mailingState: contact.mailingState,
       mailingZip: contact.mailingZip,
+      dnc: contact.dnc,
+      dncUpdatedAt: contact.dncUpdatedAt?.toISOString(),
     }
   }
 }

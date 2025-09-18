@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Inbox as InboxIcon, Calendar, ChevronDown, Search, Edit, Save, X } from 'lucide-react'
+import { Inbox as InboxIcon, Calendar, ChevronDown, Search, Edit, Save, X, Plus, MessageSquarePlus } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -69,18 +69,18 @@ interface Message {
   device: string | { _id: string }
 }
 
-function ConversationRow({ 
-  conversation, 
-  isSelected, 
-  onClick 
-}: { 
+function ConversationRow({
+  conversation,
+  isSelected,
+  onClick
+}: {
   conversation: Conversation
   isSelected: boolean
-  onClick: () => void 
+  onClick: () => void
 }) {
   const displayName = conversation.contact?.firstName || conversation.contact?.lastName
     ? `${conversation.contact.firstName || ''} ${conversation.contact.lastName || ''}`.trim()
-    : conversation.phoneNumber
+    : conversation.normalizedPhoneNumber
 
   const formatDate = (date: Date) => {
     const now = new Date()
@@ -137,7 +137,8 @@ function ConversationList({
   dateRange,
   setDateRange,
   searchQuery,
-  setSearchQuery
+  setSearchQuery,
+  onNewMessage
 }: {
   conversations: Conversation[]
   selectedConversation: Conversation | null
@@ -150,6 +151,7 @@ function ConversationList({
   setDateRange: (range: { from?: Date; to?: Date } | undefined) => void
   searchQuery: string
   setSearchQuery: (query: string) => void
+  onNewMessage: () => void
 }) {
   const [showDatePicker, setShowDatePicker] = useState(false)
 
@@ -161,8 +163,9 @@ function ConversationList({
       filtered = filtered.filter(conv => {
         const displayName = conv.contact?.firstName || conv.contact?.lastName
           ? `${conv.contact.firstName || ''} ${conv.contact.lastName || ''}`.trim()
-          : conv.phoneNumber
+          : conv.normalizedPhoneNumber
         return displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+               conv.normalizedPhoneNumber.includes(searchQuery) ||
                conv.phoneNumber.includes(searchQuery)
       })
     }
@@ -185,12 +188,12 @@ function ConversationList({
         case 'newest':
           return b.lastMessageDate.getTime() - a.lastMessageDate.getTime()
         case 'firstName':
-          const nameA = a.contact?.firstName || a.phoneNumber
-          const nameB = b.contact?.firstName || b.phoneNumber
+          const nameA = a.contact?.firstName || a.normalizedPhoneNumber
+          const nameB = b.contact?.firstName || b.normalizedPhoneNumber
           return nameA.localeCompare(nameB)
         case 'lastName':
-          const lastNameA = a.contact?.lastName || a.phoneNumber
-          const lastNameB = b.contact?.lastName || b.phoneNumber
+          const lastNameA = a.contact?.lastName || a.normalizedPhoneNumber
+          const lastNameB = b.contact?.lastName || b.normalizedPhoneNumber
           return lastNameA.localeCompare(lastNameB)
         default:
           return b.lastMessageDate.getTime() - a.lastMessageDate.getTime()
@@ -204,9 +207,19 @@ function ConversationList({
     <div className="flex flex-col h-full">
       {/* Header with filters */}
       <div className="p-4 border-b space-y-4">
-        <div className="flex items-center space-x-2">
-          <InboxIcon className="h-5 w-5 text-primary" />
-          <h2 className="text-lg font-semibold">Conversations</h2>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <InboxIcon className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold">Conversations</h2>
+          </div>
+          <Button
+            size="sm"
+            onClick={onNewMessage}
+            className="gap-2"
+          >
+            <MessageSquarePlus className="h-4 w-4" />
+            New message
+          </Button>
         </div>
         
         {/* Search */}
@@ -387,7 +400,7 @@ function MessengerInterface({
 
   const displayName = conversation.contact?.firstName || conversation.contact?.lastName
     ? `${conversation.contact.firstName || ''} ${conversation.contact.lastName || ''}`.trim()
-    : conversation.phoneNumber
+    : conversation.normalizedPhoneNumber
 
   // Filter messages for this conversation
   const conversationMessages = useMemo(() => {
@@ -437,7 +450,7 @@ function MessengerInterface({
       <div className="p-4 border-b">
         <h2 className="text-lg font-semibold">{displayName}</h2>
         {conversation.contact?.firstName && (
-          <p className="text-sm text-muted-foreground">{conversation.phoneNumber}</p>
+          <p className="text-sm text-muted-foreground">{conversation.normalizedPhoneNumber}</p>
         )}
       </div>
 
@@ -602,6 +615,7 @@ function ContactInfoEditor({
     firstName: localContact?.firstName || '',
     lastName: localContact?.lastName || '',
     email: localContact?.email || '',
+    dnc: localContact?.dnc ?? null,
     propertyAddress: localContact?.propertyAddress || '',
     propertyCity: localContact?.propertyCity || '',
     propertyState: localContact?.propertyState || '',
@@ -627,6 +641,7 @@ function ContactInfoEditor({
       firstName: localContact?.firstName || '',
       lastName: localContact?.lastName || '',
       email: localContact?.email || '',
+      dnc: localContact?.dnc ?? null,
       propertyAddress: localContact?.propertyAddress || '',
       propertyCity: localContact?.propertyCity || '',
       propertyState: localContact?.propertyState || '',
@@ -697,6 +712,7 @@ function ContactInfoEditor({
       firstName: localContact?.firstName || '',
       lastName: localContact?.lastName || '',
       email: localContact?.email || '',
+      dnc: localContact?.dnc ?? null,
       propertyAddress: localContact?.propertyAddress || '',
       propertyCity: localContact?.propertyCity || '',
       propertyState: localContact?.propertyState || '',
@@ -774,7 +790,49 @@ function ContactInfoEditor({
         <div className="space-y-3 text-sm">
           <div className="grid grid-cols-1 gap-3">
             <div>
-              <span className="font-medium">Phone:</span> {conversation.phoneNumber}
+              <span className="font-medium">Phone:</span> {conversation.normalizedPhoneNumber}
+            </div>
+
+            {/* DNC Information */}
+            <div className="flex items-center gap-2">
+              <span className="font-medium">Do Not Call:</span>
+              {isEditing ? (
+                <div className="flex items-center gap-2">
+                  <select
+                    value={editData.dnc === null ? 'unknown' : editData.dnc ? 'yes' : 'no'}
+                    onChange={(e) => {
+                      const value = e.target.value === 'unknown' ? null : e.target.value === 'yes'
+                      setEditData(prev => ({ ...prev, dnc: value }))
+                    }}
+                    className="rounded border border-input px-2 py-1 text-sm"
+                  >
+                    <option value="unknown">Unknown</option>
+                    <option value="yes">Yes</option>
+                    <option value="no">No</option>
+                  </select>
+                </div>
+              ) : (
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  localContact?.dnc === true
+                    ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                    : localContact?.dnc === false
+                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                    : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                }`}>
+                  {localContact?.dnc === true ? 'Yes' : localContact?.dnc === false ? 'No' : 'Unknown'}
+                </span>
+              )}
+            </div>
+
+            {/* DNC Last Updated Date */}
+            <div className="pl-4">
+              <span className="text-xs text-muted-foreground">
+                DNC Last Updated: {
+                  localContact?.dncUpdatedAt
+                    ? new Date(localContact.dncUpdatedAt).toLocaleDateString()
+                    : 'Never'
+                }
+              </span>
             </div>
 
             {contactFields.map((field) => {
@@ -834,6 +892,8 @@ export default function InboxPage() {
   const [dateFilter, setDateFilter] = useState('all')
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date } | undefined>()
   const [searchQuery, setSearchQuery] = useState('')
+  const [showNewMessageSidebar, setShowNewMessageSidebar] = useState(false)
+  const [newConversation, setNewConversation] = useState<Conversation | null>(null)
 
   // Query devices to get message data
   const { data: devices } = useQuery({
@@ -902,8 +962,8 @@ export default function InboxPage() {
 
       const existing = conversationMap.get(normalizedPhoneNumber)
       if (!existing || messageDate > existing.lastMessageDate) {
-        // Use the original phone number format for display, but group by normalized
-        const displayPhoneNumber = existing?.phoneNumber || rawPhoneNumber
+        // Use the normalized phone number format for consistent display
+        const displayPhoneNumber = normalizedPhoneNumber
 
         // Determine which device to use for this conversation
         // Priority: 1) Device from the latest message, 2) First enabled device
@@ -934,8 +994,13 @@ export default function InboxPage() {
       }
     })
 
+    // Add new conversation if it doesn't exist in the map
+    if (newConversation && !conversationMap.has(newConversation.normalizedPhoneNumber)) {
+      conversationMap.set(newConversation.normalizedPhoneNumber, newConversation)
+    }
+
     return Array.from(conversationMap.values())
-  }, [messagesData, contactsData, devices?.data])
+  }, [messagesData, contactsData, devices?.data, newConversation])
 
   if (isLoading) {
     return (
@@ -1006,7 +1071,7 @@ export default function InboxPage() {
           <CardContent className="p-0 h-full">
             <div className="flex h-full">
               {/* Conversation list panel */}
-              <div className={selectedConversation ? "w-1/2" : "w-full"}>
+              <div className={selectedConversation || showNewMessageSidebar ? "w-1/2" : "w-full"}>
                 <ConversationList
                   conversations={conversations}
                   selectedConversation={selectedConversation}
@@ -1019,11 +1084,12 @@ export default function InboxPage() {
                   setDateRange={setDateRange}
                   searchQuery={searchQuery}
                   setSearchQuery={setSearchQuery}
+                  onNewMessage={() => setShowNewMessageSidebar(true)}
                 />
               </div>
 
               {/* Messenger interface panel */}
-              {selectedConversation && (
+              {selectedConversation && !showNewMessageSidebar && (
                 <div className="w-1/2">
                   <MessengerInterface
                     conversation={selectedConversation}
@@ -1031,9 +1097,478 @@ export default function InboxPage() {
                   />
                 </div>
               )}
+
+              {/* New Message Sidebar */}
+              {showNewMessageSidebar && (
+                <div className="w-1/2">
+                  <NewMessageSidebar
+                    onClose={() => setShowNewMessageSidebar(false)}
+                    onConversationCreated={(conversation) => {
+                      setNewConversation(conversation)
+                      setSelectedConversation(conversation)
+                      setShowNewMessageSidebar(false)
+                    }}
+                    allMessages={messagesData || []}
+                    contacts={contactsData?.data || []}
+                    devices={devices?.data || []}
+                  />
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
+
+      </div>
+    </div>
+  )
+}
+
+function NewMessageSidebar({
+  onClose,
+  onConversationCreated,
+  allMessages,
+  contacts,
+  devices
+}: {
+  onClose: () => void
+  onConversationCreated: (conversation: Conversation) => void
+  allMessages: Message[]
+  contacts: any[]
+  devices: any[]
+}) {
+  const [searchInput, setSearchInput] = useState('')
+  const [selectedContact, setSelectedContact] = useState<any>(null)
+  const [phoneNumber, setPhoneNumber] = useState('')
+  const [message, setMessage] = useState('')
+  const [filteredContacts, setFilteredContacts] = useState<any[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null)
+  const [hasSelectedRecipient, setHasSelectedRecipient] = useState(false)
+  const [selectedContactChip, setSelectedContactChip] = useState<any>(null)
+  const { toast } = useToast()
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [currentConversation])
+
+  // Get messages for current conversation
+  const conversationMessages = useMemo(() => {
+    if (!currentConversation) return []
+
+    return allMessages
+      .filter(msg => {
+        const messageSenderNormalized = msg.sender ? normalizePhoneNumber(msg.sender) : null
+        const messageRecipientNormalized = msg.recipient ? normalizePhoneNumber(msg.recipient) : null
+
+        return (
+          messageSenderNormalized === currentConversation.normalizedPhoneNumber ||
+          messageRecipientNormalized === currentConversation.normalizedPhoneNumber
+        )
+      })
+      .sort((a, b) => {
+        const dateA = new Date(a.receivedAt || a.requestedAt || 0)
+        const dateB = new Date(b.receivedAt || b.requestedAt || 0)
+        return dateA.getTime() - dateB.getTime()
+      })
+  }, [allMessages, currentConversation])
+
+  // Filter contacts based on search input
+  useEffect(() => {
+    if (searchInput.trim() === '') {
+      setFilteredContacts([])
+      setShowSuggestions(false)
+      return
+    }
+
+    const filtered = contacts.filter(contact => {
+      const searchLower = searchInput.toLowerCase()
+      const firstName = contact.firstName?.toLowerCase() || ''
+      const lastName = contact.lastName?.toLowerCase() || ''
+      const phone = contact.phone || ''
+
+      return firstName.includes(searchLower) ||
+             lastName.includes(searchLower) ||
+             phone.includes(searchInput) ||
+             normalizePhoneNumber(phone).includes(searchInput)
+    }).slice(0, 5) // Limit to 5 suggestions
+
+    setFilteredContacts(filtered)
+    setShowSuggestions(true)
+  }, [searchInput, contacts])
+
+  // Handle contact selection
+  const handleContactSelect = (contact: any) => {
+    setSelectedContact(contact)
+    setSelectedContactChip(contact)
+    setPhoneNumber(contact.phone)
+    setSearchInput('')
+    setShowSuggestions(false)
+    setHasSelectedRecipient(true)
+
+    // Create conversation with existing messages
+    const conversation = createConversation(contact.phone, contact)
+    setCurrentConversation(conversation)
+  }
+
+  // Handle manual phone number input
+  const handleSearchInputChange = (value: string) => {
+    setSearchInput(value)
+
+    // Clear previous state if not selecting from contacts
+    if (!selectedContact && !selectedContactChip) {
+      setCurrentConversation(null)
+      setPhoneNumber('')
+      setHasSelectedRecipient(false)
+    }
+  }
+
+  // Validate phone number format
+  const isValidPhoneNumber = (phoneStr: string) => {
+    const cleanInput = phoneStr.replace(/\D/g, '')
+    return cleanInput.length >= 10
+  }
+
+  // Handle phone number confirmation (called when user presses Enter or starts typing message)
+  const confirmPhoneNumberInput = () => {
+    if (!searchInput || selectedContact || selectedContactChip) return
+
+    if (isValidPhoneNumber(searchInput)) {
+      setPhoneNumber(searchInput)
+      setHasSelectedRecipient(true)
+      setShowSuggestions(false)
+
+      // Try to find matching contact by phone number
+      const normalizedInput = normalizePhoneNumber(searchInput)
+      const matchingContact = contacts.find(c =>
+        c.phone === searchInput ||
+        c.phone === normalizedInput ||
+        normalizePhoneNumber(c.phone) === normalizedInput
+      )
+
+      if (matchingContact) {
+        // If we found a matching contact, set it as selected
+        setSelectedContact(matchingContact)
+        setSelectedContactChip(matchingContact)
+      }
+
+      // Create conversation for phone number with matched contact (if any)
+      const conversation = createConversation(searchInput, matchingContact)
+      setCurrentConversation(conversation)
+    }
+  }
+
+  // Handle key presses for Tab selection, Enter confirmation, and backspace
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Tab' && filteredContacts.length > 0) {
+      e.preventDefault()
+      handleContactSelect(filteredContacts[0])
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      confirmPhoneNumberInput()
+    } else if (e.key === 'Backspace' && searchInput === '' && selectedContactChip) {
+      // Delete the selected contact chip
+      setSelectedContactChip(null)
+      setSelectedContact(null)
+      setPhoneNumber('')
+      setCurrentConversation(null)
+      setHasSelectedRecipient(false)
+    }
+  }
+
+  // Clear selection function
+  const clearSelection = () => {
+    setSelectedContactChip(null)
+    setSelectedContact(null)
+    setPhoneNumber('')
+    setCurrentConversation(null)
+    setHasSelectedRecipient(false)
+    setSearchInput('')
+  }
+
+  // Create conversation from contact or phone number
+  const createConversation = (targetPhone: string, contact?: any): Conversation => {
+    const normalizedPhone = normalizePhoneNumber(targetPhone)
+
+    // Find existing messages for this phone number
+    const existingMessages = allMessages.filter(msg => {
+      const msgSender = msg.sender ? normalizePhoneNumber(msg.sender) : null
+      const msgRecipient = msg.recipient ? normalizePhoneNumber(msg.recipient) : null
+      return msgSender === normalizedPhone || msgRecipient === normalizedPhone
+    })
+
+    // Get the most recent message for last message info
+    const sortedMessages = existingMessages.sort((a, b) => {
+      const dateA = new Date(a.receivedAt || a.requestedAt || 0)
+      const dateB = new Date(b.receivedAt || b.requestedAt || 0)
+      return dateB.getTime() - dateA.getTime()
+    })
+
+    const lastMessage = sortedMessages[0]
+    const deviceId = devices[0]?._id || ''
+
+    return {
+      phoneNumber: targetPhone,
+      normalizedPhoneNumber: normalizedPhone,
+      deviceId,
+      contact,
+      lastMessage: lastMessage ? {
+        message: lastMessage.message,
+        timestamp: new Date(lastMessage.receivedAt || lastMessage.requestedAt || new Date()),
+        isIncoming: !!lastMessage.sender
+      } : {
+        message: '',
+        timestamp: new Date(),
+        isIncoming: false
+      },
+      lastMessageDate: lastMessage
+        ? new Date(lastMessage.receivedAt || lastMessage.requestedAt || new Date())
+        : new Date(),
+      messageCount: existingMessages.length
+    }
+  }
+
+  // Send message mutation
+  const sendMessageMutation = useMutation({
+    mutationFn: async ({ phone, messageText }: { phone: string, messageText: string }) => {
+      const enabledDevice = devices.find(d => d.enabled)
+      if (!enabledDevice) {
+        throw new Error('No enabled device available to send message')
+      }
+
+      const response = await httpBrowserClient.post(
+        ApiEndpoints.gateway.sendSMS(enabledDevice._id),
+        {
+          deviceId: enabledDevice._id,
+          recipients: [phone],
+          message: messageText
+        }
+      )
+      return response.data
+    },
+    onSuccess: () => {
+      toast({
+        title: "Message sent",
+        description: "Your message has been sent successfully."
+      })
+
+      // Create and return the conversation (use current conversation if available)
+      const conversation = currentConversation || createConversation(phoneNumber, selectedContact)
+      onConversationCreated(conversation)
+
+      // Reset message and close sidebar after successful send
+      setMessage('')
+      onClose()
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to send message",
+        description: error.response?.data?.message || error.message || "An error occurred while sending the message.",
+        variant: "destructive"
+      })
+    }
+  })
+
+  const handleSendMessage = () => {
+    if (!currentConversation || !message.trim()) {
+      toast({
+        title: "Missing information",
+        description: "Please select a contact and enter a message.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    sendMessageMutation.mutate({ phone: currentConversation.phoneNumber, messageText: message })
+  }
+
+
+  const displayName = currentConversation?.contact?.firstName || currentConversation?.contact?.lastName
+    ? `${currentConversation.contact.firstName || ''} ${currentConversation.contact.lastName || ''}`.trim()
+    : currentConversation?.normalizedPhoneNumber || 'New Message'
+
+  const formatMessageTime = (date: Date) => {
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    })
+  }
+
+  const enabledDevice = devices.find(d => d.enabled)
+
+  return (
+    <div className="flex flex-col h-full border-l overflow-hidden">
+      {/* Header */}
+      <div className="p-4 border-b flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold">{displayName}</h2>
+          {currentConversation?.contact?.firstName && (
+            <p className="text-sm text-muted-foreground">{currentConversation.normalizedPhoneNumber}</p>
+          )}
+        </div>
+        <Button variant="ghost" size="sm" onClick={onClose}>
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {/* Recipient Selection */}
+      <div className="p-4 border-b">
+        <div className="relative">
+          <label className="text-sm font-medium mb-2 block">To:</label>
+
+          {/* Selected Contact Chip or Input */}
+          <div className="flex flex-wrap gap-2 min-h-[40px] items-center border border-gray-200 rounded-md p-2 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
+            {selectedContactChip && (
+              <div className="inline-flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm border border-blue-200">
+                <span>
+                  {selectedContactChip.firstName || selectedContactChip.lastName
+                    ? `${selectedContactChip.firstName || ''} ${selectedContactChip.lastName || ''}`.trim()
+                    : selectedContactChip.phone
+                  }
+                </span>
+                <button
+                  onClick={clearSelection}
+                  className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            )}
+
+            {phoneNumber && !selectedContactChip && (
+              <div className="inline-flex items-center gap-1 bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-sm border border-gray-200">
+                <span>{phoneNumber}</span>
+                <button
+                  onClick={clearSelection}
+                  className="ml-1 hover:bg-gray-200 rounded-full p-0.5"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            )}
+
+            {!selectedContactChip && !phoneNumber && (
+              <Input
+                placeholder="Enter phone number, first name, or last name"
+                value={searchInput}
+                onChange={(e) => handleSearchInputChange(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                onFocus={() => {if (filteredContacts.length > 0) setShowSuggestions(true)}}
+                className="border-0 focus:ring-0 flex-1 pl-2 pr-2 py-1 min-w-0"
+              />
+            )}
+          </div>
+
+          {/* Contact Suggestions */}
+          {showSuggestions && filteredContacts.length > 0 && !selectedContactChip && (
+            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-48 overflow-y-auto">
+              {filteredContacts.map((contact, index) => (
+                <div
+                  key={contact.id}
+                  className={cn(
+                    "p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0",
+                    index === 0 && "bg-blue-50"
+                  )}
+                  onClick={() => handleContactSelect(contact)}
+                >
+                  <div className="font-medium">
+                    {contact.firstName || contact.lastName
+                      ? `${contact.firstName || ''} ${contact.lastName || ''}`.trim()
+                      : contact.phone
+                    }
+                  </div>
+                  <div className="text-sm text-gray-500">{contact.phone}</div>
+                  {index === 0 && (
+                    <div className="text-xs text-blue-600 mt-1">Press Tab to select</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Messages Area */}
+      <div className="flex-1 min-h-0 overflow-y-auto bg-muted/20">
+        {currentConversation ? (
+          <div className="p-4 space-y-3">
+            {conversationMessages?.length === 0 ? (
+              <div className="text-center text-muted-foreground">
+                No messages yet. Start the conversation!
+              </div>
+            ) : (
+              conversationMessages?.map((message, index) => {
+                const isIncoming = !!message.sender
+                const messageDate = new Date(message.receivedAt || message.requestedAt || 0)
+
+                return (
+                  <div key={`${message._id}-${index}`} className={cn(
+                    "flex",
+                    isIncoming ? "justify-start" : "justify-end"
+                  )}>
+                    <div className={cn(
+                      "max-w-[80%] rounded-lg px-3 py-2 text-sm",
+                      isIncoming
+                        ? "bg-background border text-foreground"
+                        : "bg-primary text-primary-foreground"
+                    )}>
+                      <p>{message.message}</p>
+                      <div className={cn(
+                        "text-xs mt-1",
+                        isIncoming ? "text-muted-foreground" : "text-primary-foreground/70"
+                      )}>
+                        {formatMessageTime(messageDate)}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+        ) : (
+          <div className="flex items-center justify-center h-full text-muted-foreground text-center p-8">
+            <div>
+              <MessageSquarePlus className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+              <p className="text-lg font-medium mb-2">Start a new conversation</p>
+              <p className="text-sm">Enter a phone number or search for a contact above</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Message Input */}
+      <div className="flex-shrink-0 p-4 border-t bg-background">
+        {!enabledDevice && (
+          <div className="mb-2 text-sm text-yellow-600 bg-yellow-50 p-2 rounded">
+            No enabled device available to send messages
+          </div>
+        )}
+        <div className="flex space-x-2">
+          <Input
+            placeholder={enabledDevice ? "Type a message..." : "No device available"}
+            className="flex-1"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            onFocus={confirmPhoneNumberInput}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey && enabledDevice && message.trim() && hasSelectedRecipient) {
+                e.preventDefault()
+                handleSendMessage()
+              }
+            }}
+            disabled={!enabledDevice}
+          />
+          <Button
+            onClick={handleSendMessage}
+            disabled={!message.trim() || sendMessageMutation.isPending || !enabledDevice || !hasSelectedRecipient || (currentConversation && !isValidPhoneNumber(currentConversation?.phoneNumber || ''))}
+          >
+            {sendMessageMutation.isPending ? 'Sending...' : 'Send'}
+          </Button>
+        </div>
       </div>
     </div>
   )

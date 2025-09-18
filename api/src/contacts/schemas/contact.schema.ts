@@ -60,6 +60,12 @@ export class Contact {
 
   @Prop({ type: String })
   mailingZip?: string
+
+  @Prop({ type: Boolean })
+  dnc?: boolean
+
+  @Prop({ type: Date })
+  dncUpdatedAt?: Date
 }
 
 export const ContactSchema = SchemaFactory.createForClass(Contact)

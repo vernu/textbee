@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsEnum, IsObject, IsNumber } from 'class-validator'
+import { IsString, IsOptional, IsEnum, IsObject, IsNumber, IsBoolean } from 'class-validator'
 import { ApiProperty } from '@nestjs/swagger'
 
 export class UploadSpreadsheetDto {
@@ -37,6 +37,16 @@ export class ProcessSpreadsheetDto {
   @IsOptional()
   @IsString()
   templateId?: string
+
+  @ApiProperty({ description: 'DNC column name if specified', required: false })
+  @IsOptional()
+  @IsString()
+  dncColumn?: string
+
+  @ApiProperty({ description: 'Value that indicates DNC is true', required: false })
+  @IsOptional()
+  @IsString()
+  dncValue?: string
 }
 
 export class CreateTemplateDto {
@@ -47,6 +57,16 @@ export class CreateTemplateDto {
   @ApiProperty({ description: 'Column mapping from CSV headers to contact fields' })
   @IsObject()
   columnMapping: Record<string, string>
+
+  @ApiProperty({ description: 'DNC column name if specified', required: false })
+  @IsOptional()
+  @IsString()
+  dncColumn?: string
+
+  @ApiProperty({ description: 'Value that indicates DNC is true', required: false })
+  @IsOptional()
+  @IsString()
+  dncValue?: string
 }
 
 export class CreateContactDto {
@@ -128,6 +148,11 @@ export class CreateContactDto {
   @IsOptional()
   @IsString()
   mailingZip?: string
+
+  @ApiProperty({ description: 'Do Not Call flag', required: false })
+  @IsOptional()
+  @IsBoolean()
+  dnc?: boolean
 }
 
 export class UpdateContactDto {
@@ -210,6 +235,11 @@ export class UpdateContactDto {
   @IsOptional()
   @IsString()
   mailingZip?: string
+
+  @ApiProperty({ description: 'Do Not Call flag', required: false })
+  @IsOptional()
+  @IsBoolean()
+  dnc?: boolean
 }
 
 export class GetContactsDto {
@@ -280,6 +310,8 @@ export class ContactTemplateResponseDto {
   id: string
   name: string
   columnMapping: Record<string, string>
+  dncColumn?: string
+  dncValue?: string
   createdAt: string
 }
 
@@ -307,4 +339,6 @@ export class ContactResponseDto {
   mailingCity?: string
   mailingState?: string
   mailingZip?: string
+  dnc?: boolean
+  dncUpdatedAt?: string
 }

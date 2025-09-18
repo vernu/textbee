@@ -41,6 +41,8 @@ export interface ContactTemplate {
   id: string
   name: string
   columnMapping: Record<string, string>
+  dncColumn?: string
+  dncValue?: string
   createdAt: string
 }
 
@@ -52,11 +54,15 @@ export interface PreviewCsvData {
 export interface ProcessSpreadsheetData {
   columnMapping: Record<string, string>
   templateId?: string
+  dncColumn?: string
+  dncValue?: string
 }
 
 export interface CreateTemplateData {
   name: string
   columnMapping: Record<string, string>
+  dncColumn?: string
+  dncValue?: string
 }
 
 export interface Contact {
@@ -77,6 +83,8 @@ export interface Contact {
   mailingCity?: string
   mailingState?: string
   mailingZip?: string
+  dnc?: boolean | null
+  dncUpdatedAt?: string
 }
 
 export interface GetContactsParams {

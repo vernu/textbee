@@ -330,6 +330,7 @@ function ContactInfoEditor({
     firstName: localContact?.firstName || '',
     lastName: localContact?.lastName || '',
     email: localContact?.email || '',
+    dnc: localContact?.dnc ?? null,
     propertyAddress: localContact?.propertyAddress || '',
     propertyCity: localContact?.propertyCity || '',
     propertyState: localContact?.propertyState || '',
@@ -353,6 +354,7 @@ function ContactInfoEditor({
       firstName: localContact?.firstName || '',
       lastName: localContact?.lastName || '',
       email: localContact?.email || '',
+      dnc: localContact?.dnc ?? null,
       propertyAddress: localContact?.propertyAddress || '',
       propertyCity: localContact?.propertyCity || '',
       propertyState: localContact?.propertyState || '',
@@ -410,6 +412,7 @@ function ContactInfoEditor({
       firstName: localContact?.firstName || '',
       lastName: localContact?.lastName || '',
       email: localContact?.email || '',
+      dnc: localContact?.dnc ?? null,
       propertyAddress: localContact?.propertyAddress || '',
       propertyCity: localContact?.propertyCity || '',
       propertyState: localContact?.propertyState || '',
@@ -490,6 +493,48 @@ function ContactInfoEditor({
               <span className="font-medium">Phone:</span> {contact.phone}
             </div>
 
+            {/* DNC Information */}
+            <div className="flex items-center gap-2">
+              <span className="font-medium">Do Not Call:</span>
+              {isEditing ? (
+                <div className="flex items-center gap-2">
+                  <select
+                    value={editData.dnc === null ? 'unknown' : editData.dnc ? 'yes' : 'no'}
+                    onChange={(e) => {
+                      const value = e.target.value === 'unknown' ? null : e.target.value === 'yes'
+                      setEditData(prev => ({ ...prev, dnc: value }))
+                    }}
+                    className="rounded border border-input px-2 py-1 text-sm"
+                  >
+                    <option value="unknown">Unknown</option>
+                    <option value="yes">Yes</option>
+                    <option value="no">No</option>
+                  </select>
+                </div>
+              ) : (
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  localContact?.dnc === true
+                    ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                    : localContact?.dnc === false
+                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                    : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                }`}>
+                  {localContact?.dnc === true ? 'Yes' : localContact?.dnc === false ? 'No' : 'Unknown'}
+                </span>
+              )}
+            </div>
+
+            {/* DNC Last Updated Date */}
+            <div className="pl-4">
+              <span className="text-xs text-muted-foreground">
+                DNC Last Updated: {
+                  localContact?.dncUpdatedAt
+                    ? new Date(localContact.dncUpdatedAt).toLocaleDateString()
+                    : 'Never'
+                }
+              </span>
+            </div>
+
             {contactFields.map((field) => {
               const value = isEditing ? editData[field.key] : localContact?.[field.key]
               const displayValue = field.type === 'number' && value === 0 ? '' : value
@@ -555,6 +600,7 @@ export default function ContactsPage() {
     lastName: '',
     phone: '',
     email: '',
+    dnc: null as boolean | null,
     propertyAddress: '',
     propertyCity: '',
     propertyState: '',
@@ -697,6 +743,7 @@ export default function ContactsPage() {
         lastName: '',
         phone: '',
         email: '',
+        dnc: null,
         propertyAddress: '',
         propertyCity: '',
         propertyState: '',
@@ -786,6 +833,7 @@ export default function ContactsPage() {
     { key: 'lastName', label: 'Last Name', type: 'text', required: false },
     { key: 'phone', label: 'Phone', type: 'tel', required: true },
     { key: 'email', label: 'Email', type: 'email', required: false },
+    { key: 'dnc', label: 'Do Not Call', type: 'select', required: false },
     { key: 'propertyAddress', label: 'Property Address', type: 'text', required: false },
     { key: 'propertyCity', label: 'Property City', type: 'text', required: false },
     { key: 'propertyState', label: 'Property State', type: 'text', required: false },
@@ -1117,6 +1165,20 @@ export default function ContactsPage() {
                                   placeholder={`Enter ${field.label.toLowerCase()}`}
                                   rows={2}
                                 />
+                              ) : field.type === 'select' && field.key === 'dnc' ? (
+                                <select
+                                  id={field.key}
+                                  value={value === null ? 'unknown' : value ? 'yes' : 'no'}
+                                  onChange={(e) => {
+                                    const newValue = e.target.value === 'unknown' ? null : e.target.value === 'yes'
+                                    setCreateContactData(prev => ({ ...prev, [field.key]: newValue }))
+                                  }}
+                                  className='mt-1 rounded border border-input px-3 py-2 text-sm w-full'
+                                >
+                                  <option value="unknown">Unknown</option>
+                                  <option value="yes">Yes</option>
+                                  <option value="no">No</option>
+                                </select>
                               ) : (
                                 <Input
                                   id={field.key}

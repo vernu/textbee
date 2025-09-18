@@ -16,6 +16,12 @@ export class ContactTemplate {
   @Prop({ type: Map, of: String, required: true })
   columnMapping: Map<string, string>
 
+  @Prop({ type: String })
+  dncColumn?: string
+
+  @Prop({ type: String })
+  dncValue?: string
+
   @Prop({ type: Date, default: Date.now })
   createdAt: Date
 }

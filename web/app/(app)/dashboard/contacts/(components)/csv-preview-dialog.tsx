@@ -48,6 +48,7 @@ const CONTACT_FIELDS = [
   { value: 'mailingCity', label: 'Mailing city' },
   { value: 'mailingState', label: 'Mailing state' },
   { value: 'mailingZip', label: 'Mailing zip' },
+  { value: '__dnc__', label: 'Do Not Call' },
 ]
 
 const REQUIRED_FIELDS = ['firstName', 'lastName', 'phone']
@@ -69,6 +70,9 @@ export default function CsvPreviewDialog({
   const [showNewTemplate, setShowNewTemplate] = useState(false)
   const [processing, setProcessing] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [dncColumn, setDncColumn] = useState<string>('')
+  const [dncValue, setDncValue] = useState<string>('')
+  const [showDncWarning, setShowDncWarning] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -111,26 +115,45 @@ export default function CsvPreviewDialog({
     const template = templates.find(t => t.id === templateId)
     if (template) {
       setColumnMapping(template.columnMapping)
+      setDncColumn(template.dncColumn || '')
+      setDncValue(template.dncValue || '')
       setSelectedTemplate(templateId)
     }
   }
 
   const handleColumnMappingChange = (csvColumn: string, contactField: string) => {
-    setColumnMapping(prev => {
-      const newMapping = { ...prev }
-      if (contactField === '__not_mapped__') {
+    if (contactField === '__dnc__') {
+      // Handle DNC column selection
+      setDncColumn(csvColumn)
+      // Remove from regular column mapping
+      setColumnMapping(prev => {
+        const newMapping = { ...prev }
         delete newMapping[csvColumn]
-      } else {
-        newMapping[csvColumn] = contactField
+        return newMapping
+      })
+    } else {
+      // Handle regular field mapping
+      setColumnMapping(prev => {
+        const newMapping = { ...prev }
+        if (contactField === '__not_mapped__') {
+          delete newMapping[csvColumn]
+        } else {
+          newMapping[csvColumn] = contactField
+        }
+        return newMapping
+      })
+      // If this column was previously selected as DNC, clear DNC selection
+      if (dncColumn === csvColumn) {
+        setDncColumn('')
+        setDncValue('')
       }
-      return newMapping
-    })
+    }
   }
 
   const validateMapping = (): boolean => {
     const mappedFields = Object.values(columnMapping)
     const missingFields = REQUIRED_FIELDS.filter(field => !mappedFields.includes(field))
-    
+
     if (missingFields.length > 0) {
       toast({
         title: 'Missing required fields',
@@ -139,7 +162,12 @@ export default function CsvPreviewDialog({
       })
       return false
     }
-    
+
+    // Show warning if no DNC column is selected
+    if (!dncColumn) {
+      setShowDncWarning(true)
+    }
+
     return true
   }
 
@@ -159,13 +187,15 @@ export default function CsvPreviewDialog({
       await contactsApi.createTemplate({
         name: newTemplateName.trim(),
         columnMapping,
+        dncColumn: dncColumn || undefined,
+        dncValue: dncValue || undefined,
       })
-      
+
       toast({
         title: 'Template created',
         description: 'Template saved successfully',
       })
-      
+
       await loadTemplates()
       setShowNewTemplate(false)
       setNewTemplateName('')
@@ -182,11 +212,18 @@ export default function CsvPreviewDialog({
   const handleProcess = async () => {
     if (!validateMapping()) return
 
+    // If DNC warning is showing and user hasn't dismissed it, don't proceed
+    if (showDncWarning) {
+      return
+    }
+
     try {
       setProcessing(true)
       const result = await contactsApi.processSpreadsheet(spreadsheetId, {
         columnMapping,
         templateId: selectedTemplate || undefined,
+        dncColumn: dncColumn || undefined,
+        dncValue: dncValue || undefined,
       })
 
       toast({
@@ -289,6 +326,58 @@ export default function CsvPreviewDialog({
           </div>
         )}
 
+        {dncColumn && (
+          <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+            <div className="flex items-center gap-2 mb-2">
+              <Label className="text-sm font-medium">DNC Configuration</Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Label className="text-sm">Column: "{dncColumn}"</Label>
+              <Label className="text-sm">Value indicating DNC:</Label>
+              <Input
+                placeholder="e.g., Yes, 1, True"
+                value={dncValue}
+                onChange={(e) => setDncValue(e.target.value)}
+                className="w-32"
+                size="sm"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Contacts where "{dncColumn}" equals this value will be marked as Do Not Call
+            </p>
+          </div>
+        )}
+
+        {showDncWarning && (
+          <div className="p-3 bg-yellow-50 dark:bg-yellow-950 rounded-lg border border-yellow-200 dark:border-yellow-800">
+            <div className="flex items-start gap-2">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                  No DNC Column Selected
+                </p>
+                <p className="text-xs text-yellow-700 dark:text-yellow-300">
+                  Consider mapping a column to "Do Not Call" to track contacts who should not be contacted.
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowDncWarning(false)}
+                >
+                  Continue Anyway
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => setShowDncWarning(false)}
+                >
+                  Got It
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="flex-1 overflow-auto">
           <table className="w-full border-collapse border">
             <thead>
@@ -298,7 +387,11 @@ export default function CsvPreviewDialog({
                     <div className="space-y-2">
                       <div className="font-medium">{header}</div>
                       <Select
-                        value={columnMapping[header] || '__not_mapped__'}
+                        value={
+                          dncColumn === header
+                            ? '__dnc__'
+                            : columnMapping[header] || '__not_mapped__'
+                        }
                         onValueChange={(value) => handleColumnMappingChange(header, value)}
                       >
                         <SelectTrigger className="h-8">
