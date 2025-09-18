@@ -8,7 +8,14 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { X, Calendar, MessageSquare, Phone, CreditCard } from 'lucide-react'
+import {
+  X,
+  Calendar,
+  MessageSquare,
+  Phone,
+  CreditCard,
+  Bell,
+} from 'lucide-react'
 
 interface SmsData {
   _id: string
@@ -49,29 +56,19 @@ export function SmsModal({ isOpen, onClose, smsData }: SmsModalProps) {
       <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
         <DialogHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <DialogTitle className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5" />
-            SMS Message Details
+            <Bell className="h-5 w-5" />
+            Webhook Notification
           </DialogTitle>
-          {/* <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={onClose}
-          >
-            <X className="h-4 w-4" />
-          </Button> */}
         </DialogHeader>
 
+        <h3 className="font-semibold text-sm flex items-center gap-2">
+          <MessageSquare className="h-4 w-4" />
+          Message Content
+        </h3>
         <div className="space-y-4">
           {/* Message Content */}
-          <div className="bg-muted/50 rounded-lg p-4">
-            <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">
-              <MessageSquare className="h-4 w-4" />
-              Message Content
-            </h3>
-            <p className="text-sm whitespace-pre-wrap max-h-32 overflow-y-scroll scrollbar-hide">
-              {smsData.message}
-            </p>
+          <div className="bg-muted/50 rounded-lg p-4 max-h-32 overflow-y-scroll scrollbar-hide">
+            <p className="text-sm whitespace-pre-wrap">{smsData.message}</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -101,25 +98,13 @@ export function SmsModal({ isOpen, onClose, smsData }: SmsModalProps) {
                 {smsData.status}
               </p>
             </div>
-
-            {/* Encryption Status */}
             <div className="space-y-2">
-              <h3 className="font-semibold text-sm">Encryption</h3>
-              <p className="text-sm bg-muted/30 rounded-md p-2">
-                {smsData.encrypted ? 'Encrypted' : 'Not Encrypted'}
-              </p>
-            </div>
-          </div>
-
-          {/* Timestamps */}
-          <div className="space-y-3">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <h3 className="font-semibold text-sm flex items-center gap-2">
+              <h3 className="font-semibold text-sm flex items-center gap-x-2">
                 <Calendar className="h-4 w-4" />
                 Created At
               </h3>
-              <p className="text-sm bg-muted/30 rounded-md p-2">
-                {smsData.createdAt}
+              <p className="text-sm bg-muted/30 rounded-md p-2 capitalize">
+                {new Date(smsData.createdAt).toLocaleDateString('en-GB')}
               </p>
             </div>
           </div>
