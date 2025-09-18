@@ -14,19 +14,12 @@ export type ProductColumns = {
   event?: string
   deviceName?: string
   webhookEvent?: string
-  sms?: {
-    device: {
-      brand: string
-      model: string
-      _id: string
-    }
-    status: string
-  }
   deliveryUrl?: string
   webhookSubscription?: {
     deliveryUrl: string
   }
   createdAt?: string
+  status: string
 }
 
 export const columns: ColumnDef<ProductColumns>[] = [
@@ -55,11 +48,11 @@ export const columns: ColumnDef<ProductColumns>[] = [
     },
   },
   {
-    accessorKey: 'sms.status',
+    accessorKey: 'status',
     header: 'Status',
   },
   {
-    accessorKey: 'webhookSubscription.deliveryUrl',
+    accessorKey: 'webhookSubscriptionData.deliveryUrl',
     header: 'Delivery Url',
   },
   {
@@ -70,17 +63,18 @@ export const columns: ColumnDef<ProductColumns>[] = [
 const formatDate = (dateString: string) => {
   return format(new Date(dateString), 'MMM dd, yyyy h:mm a')
 }
-const ProductClient = ({ data, isLoading }) => {
+const ProductClient = ({ data, isLoading, status = 'delivered' }) => {
   const { storeId } = useParams()
   const router = useRouter()
 
   const formatted = data.map((d) => ({
     ...d,
     deviceName: [
-      `${d.sms.device.brand}   ${d.sms.device.model}`,
-      `  ${d.sms._id}`,
+      `${d.deviceData.brand}   ${d.deviceData.model}`,
+      `  ${d.smsData._id}`,
     ],
     createdAt: formatDate(d.createdAt.toString()),
+    status,
   }))
 
   return (

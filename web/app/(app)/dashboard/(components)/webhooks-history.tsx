@@ -40,49 +40,6 @@ import {
 import { Calendar } from 'lucide-react'
 import { truncate } from 'fs'
 
-const skeletons = [
-  {
-    createdAt: <Skeleton className="w-20 h-4" />,
-    event: <Skeleton className="w-20 h-4" />,
-    deviceId: <Skeleton className="w-20 h-4" />,
-    deviceName: <Skeleton className="w-20 h-4" />,
-    sms: { status: <Skeleton className="w-20 h-4" /> },
-    webhookSubscription: { deliveryUrl: <Skeleton className="w-20 h-4" /> },
-  },
-  {
-    createdAt: <Skeleton className="w-20 h-4" />,
-    event: <Skeleton className="w-20 h-4" />,
-    deviceId: <Skeleton className="w-20 h-4" />,
-    deviceName: <Skeleton className="w-20 h-4" />,
-    sms: { status: <Skeleton className="w-20 h-4" /> },
-    webhookSubscription: { deliveryUrl: <Skeleton className="w-20 h-4" /> },
-  },
-  {
-    createdAt: <Skeleton className="w-20 h-4" />,
-    event: <Skeleton className="w-20 h-4" />,
-    deviceId: <Skeleton className="w-20 h-4" />,
-    deviceName: <Skeleton className="w-20 h-4" />,
-    sms: { status: <Skeleton className="w-20 h-4" /> },
-    webhookSubscription: { deliveryUrl: <Skeleton className="w-20 h-4" /> },
-  },
-  {
-    createdAt: <Skeleton className="w-20 h-4" />,
-    event: <Skeleton className="w-20 h-4" />,
-    deviceId: <Skeleton className="w-20 h-4" />,
-    deviceName: <Skeleton className="w-20 h-4" />,
-    sms: { status: <Skeleton className="w-20 h-4" /> },
-    webhookSubscription: { deliveryUrl: <Skeleton className="w-20 h-4" /> },
-  },
-  {
-    createdAt: <Skeleton className="w-20 h-4" />,
-    event: <Skeleton className="w-20 h-4" />,
-    deviceId: <Skeleton className="w-20 h-4" />,
-    deviceName: <Skeleton className="w-20 h-4" />,
-    sms: { status: <Skeleton className="w-20 h-4" /> },
-    webhookSubscription: { deliveryUrl: <Skeleton className="w-20 h-4" /> },
-  },
-]
-
 const WebhooksHistory = () => {
   const {
     data: devices,
@@ -107,7 +64,6 @@ const WebhooksHistory = () => {
   })
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(10)
-  const [totalPages, setTotalPages] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
@@ -116,24 +72,6 @@ const WebhooksHistory = () => {
     }
   }, [devices])
 
-  useEffect(() => {
-    async function fetchNotifications() {
-      setIsLoading(true)
-      const res = await httpBrowserClient
-        .get(
-          `${ApiEndpoints.gateway.getWebhookNotifications()}?eventType=${eventType}&status=${status}&start=${
-            dateQuery.start
-          }&end=${dateQuery.end}&deviceId=${currentDevice}`
-        )
-        .then((res) => res.data)
-      console.log('total notifications', res.data.length)
-      setTotalPages(Math.max(Math.ceil(res.data.length / 10), 1))
-      setIsLoading(false)
-    }
-    fetchNotifications()
-  }, [eventType, status, dateQuery.start, dateQuery.end, currentDevice])
-
-  console.log('totalPages ', totalPages)
   const {
     data: webhookNotifications,
     isLoading: isLoadingNotifications,
@@ -154,12 +92,14 @@ const WebhooksHistory = () => {
         .get(
           `${ApiEndpoints.gateway.getWebhookNotifications()}?eventType=${eventType}&page=${page}&limit=${limit}&status=${status}&start=${
             dateQuery.start
-          }&end=${dateQuery.end}&deviceId=${currentDevice}`
+          }&end=${dateQuery.end}&deviceId=${
+            currentDevice === 'all' ? '' : currentDevice
+          }`
         )
         .then((res) => res.data),
   })
 
-  console.log(webhookNotifications)
+  const totalPages = webhookNotifications?.data?.meta?.totalPages
   const handlePageChange = (currentPage: number) => {
     setPage(currentPage)
   }
@@ -192,17 +132,15 @@ const WebhooksHistory = () => {
         return
     }
 
-    // Save ISO strings for easier API usage
     setDateQuery({ start: start.toISOString(), end: end.toISOString() })
-    setDateRange(range) // keep string for UI selection
-    setPage(1) // reset pagination
+    setDateRange(range)
+    setPage(1)
   }
 
   const handleDeviceChange = (deviceId: string) => {
     setCurrentDevice(deviceId)
     setPage(1)
   }
-  console.log(dateQuery)
   return (
     <div className="flex flex-col gap-y-4">
       <div className="bg-gradient-to-r from-brand-50 to-sky-50 dark:from-brand-950/30 dark:to-sky-950/30 rounded-lg shadow-sm border border-brand-100 dark:border-brand-800/50 p-4 mb-4">
@@ -235,6 +173,9 @@ const WebhooksHistory = () => {
                       </div>
                     </SelectItem>
                   ))}
+                  <SelectItem key="all" value="all">
+                    All devices
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -425,26 +366,12 @@ Custom should trigger a popover to set a custom date range ( two date inputs) */
             <ProductClient data={[]} isLoading={true} />
           ) : (
             <ProductClient
-              data={webhookNotifications?.data || []}
+              data={webhookNotifications?.data?.data || []}
               isLoading={false}
+              status={status}
             />
           )}
           <div className="flex justify-end gap-x-3">
-            {/* <Button
-              onClick={() => handlePageChange(Math.max(1, page - 1))}
-              disabled={page === 1}
-              variant={page === 1 ? "ghost" : "default"}
-            >
-              Previous
-            </Button>
-            <Button
-              onClick={() => handlePageChange(Math.min(totalPages, page + 1))}
-              disabled={page === totalPages}
-              variant={page === totalPages ? "ghost" : "default"}
-            >
-              Next
-            </Button> */}
-
             {totalPages > 1 && (
               <div className="flex justify-center mt-6 space-x-2">
                 <Button
@@ -479,7 +406,9 @@ Custom should trigger a popover to set a custom date range ( two date inputs) */
 
                   {/* Middle pages */}
                   {Array.from(
-                    { length: Math.min(6, totalPages - 2) },
+                    {
+                      length: Math.min(6, totalPages - 2),
+                    },
                     (_, i) => {
                       let pageToShow: number
 

@@ -43,27 +43,36 @@ export class WebhookService {
   }
   async findWebhookNotificationsForUser({
     user,
-    page,
-    limit,
+    page = 1,
+    limit = 10,
     eventType,
     status,
     start,
     end,
     deviceId,
-  }) {
+  }): Promise<{ data: any[]; meta: any }> {
     const userWebhookSubscription = await this.webhookSubscriptionModel.findOne(
       {
         user: user._id,
       },
     )
 
-    if (!userWebhookSubscription) return []
+    if (!userWebhookSubscription) {
+      return {
+        data: [],
+        meta: {
+          page: 1,
+          limit,
+          total: 0,
+          totalPages: 0,
+        },
+      }
+    }
 
-    // Base query
-    const query: any = { webhookSubscription: userWebhookSubscription._id }
+    const matchStage: any = { webhookSubscription: userWebhookSubscription._id }
 
     if (eventType) {
-      query.event = eventType
+      matchStage.event = eventType
     }
 
     if (
@@ -72,75 +81,117 @@ export class WebhookService {
       !Number.isNaN(new Date(start).getTime()) &&
       !Number.isNaN(new Date(end).getTime())
     ) {
-      query.createdAt = { $gte: new Date(start), $lte: new Date(end) }
+      matchStage.createdAt = { $gte: new Date(start), $lte: new Date(end) }
     }
 
-    // Status filtering
     if (status) {
       switch (status) {
         case 'delivered':
-          query.deliveredAt = { $ne: null }
+          matchStage.deliveredAt = { $ne: null }
           break
         case 'failed':
-          query.deliveryAttemptAbortedAt = { $ne: null }
+          matchStage.deliveryAttemptAbortedAt = { $ne: null }
           break
         case 'retrying':
-          query.deliveredAt = null
-          query.deliveryAttemptAbortedAt = null
-          query.deliveryAttemptCount = { $gt: 0 }
-          query.nextDeliveryAttemptAt = { $ne: null }
+          matchStage.deliveredAt = null
+          matchStage.deliveryAttemptAbortedAt = null
+          matchStage.deliveryAttemptCount = { $gt: 0 }
+          matchStage.nextDeliveryAttemptAt = { $ne: null }
           break
         case 'pending':
-          query.deliveredAt = null
-          query.deliveryAttemptAbortedAt = null
-          query.deliveryAttemptCount = 0
+          matchStage.deliveredAt = null
+          matchStage.deliveryAttemptAbortedAt = null
+          matchStage.deliveryAttemptCount = 0
           break
       }
     }
 
-    // Check if pagination is requested
-    const shouldPaginate = page !== undefined && limit !== undefined
+    const pageNum = Math.max(1, Number.parseInt(page.toString()) || 1)
+    const limitNum = Math.max(1, Number.parseInt(limit.toString()) || 10)
+    const skip = (pageNum - 1) * limitNum
 
-    // Validate pagination parameters only if provided
-    const pageNum = shouldPaginate ? Math.max(1, Number.parseInt(page) || 1) : 1
-    const limitNum = shouldPaginate
-      ? Math.max(1, Number.parseInt(limit) || 10)
-      : 0 // 0 means no limit
-    const skip = shouldPaginate ? (pageNum - 1) * limitNum : 0
+    const commonPipeline: any[] = [
+      { $match: matchStage },
+      {
+        $lookup: {
+          from: 'sms',
+          localField: 'sms',
+          foreignField: '_id',
+          as: 'smsData',
+        },
+      },
+      { $unwind: { path: '$smsData', preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: 'devices',
+          localField: 'smsData.device',
+          foreignField: '_id',
+          as: 'deviceData',
+        },
+      },
+      { $unwind: { path: '$deviceData', preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: 'webhooksubscriptions',
+          localField: 'webhookSubscription',
+          foreignField: '_id',
+          as: 'webhookSubscriptionData',
+        },
+      },
+      {
+        $unwind: {
+          path: '$webhookSubscriptionData',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+    ]
 
-    // Build base query without pagination for device filtering
-    let baseQuery = this.webhookNotificationModel
-      .find(query)
-      .populate({
-        path: 'sms',
-        populate: { path: 'device' },
-      })
-      .populate('webhookSubscription')
-      .sort({ createdAt: -1 })
-
-    // If deviceId is provided, filter after population
     if (deviceId) {
-      const allNotifications = await baseQuery
-      const filteredNotifications = allNotifications.filter(
-        (notification) =>
-          notification?.sms?.device?._id.toString() === deviceId,
-      )
-
-      // Apply pagination only if requested
-      if (shouldPaginate) {
-        return filteredNotifications.slice(skip, skip + limitNum)
-      }
-
-      return filteredNotifications
+      commonPipeline.push({
+        $match: {
+          'deviceData._id': new mongoose.Types.ObjectId(deviceId),
+        },
+      })
     }
 
-    // If no deviceId filter, apply pagination directly to the query
-    if (shouldPaginate) {
-      baseQuery = baseQuery.skip(skip).limit(limitNum)
-    }
+    const facetPipeline = [
+      ...commonPipeline,
+      {
+        $facet: {
+          totalCount: [{ $count: 'count' }],
+          data: [
+            { $sort: { createdAt: -1 } },
+            { $skip: skip },
+            { $limit: limitNum },
+          ],
+        },
+      },
+      {
+        $project: {
+          data: 1,
+          totalCount: {
+            $ifNull: [{ $arrayElemAt: ['$totalCount.count', 0] }, 0],
+          },
+        },
+      },
+    ]
 
-    const res = await baseQuery
-    return res
+    const [result] =
+      await this.webhookNotificationModel.aggregate(facetPipeline)
+
+    const total = result?.totalCount || 0
+    const data = result?.data || []
+    const totalPages = Math.ceil(total / limitNum)
+
+    return {
+      data,
+      meta: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages,
+      },
+    }
   }
   async create({ user, createWebhookDto }) {
     const { events, deliveryUrl, signingSecret } = createWebhookDto

@@ -1,8 +1,6 @@
 'use client'
 
 import { MessageSquareTextIcon } from 'lucide-react'
-import Messaging from '../(components)/messaging'
-import ApiGuide from './(components)/api-guide'
 import WebhooksHistory from '../(components)/webhooks-history'
 
 export default function MessagingPage() {

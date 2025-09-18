@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/table'
 import React from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
+import { SmsModal } from './sms-modal' // Import your modal
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -37,6 +38,9 @@ export function DataTable<TData, TValue>({
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
   )
+  const [selectedSms, setSelectedSms] = React.useState<any>(null)
+  const [isModalOpen, setIsModalOpen] = React.useState(false)
+
   const table = useReactTable({
     data,
     columns,
@@ -49,18 +53,21 @@ export function DataTable<TData, TValue>({
     },
   })
 
+  const handleRowClick = (row: any) => {
+    // Assuming your row data has smsData property
+    if (row.original.smsData) {
+      setSelectedSms(row.original.smsData)
+      setIsModalOpen(true)
+    }
+  }
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false)
+    setSelectedSms(null)
+  }
+
   return (
     <div>
-      {/* <div className="flex items-center py-4">
-				<Input
-					placeholder={`Filter by ${searchKey}...`}
-					value={(table.getColumn(searchKey)?.getFilterValue() as string) ?? ""}
-					onChange={(event) =>
-						table.getColumn(searchKey)?.setFilterValue(event.target.value)
-					}
-					className="max-w-sm"
-				/>
-			</div> */}
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -83,8 +90,8 @@ export function DataTable<TData, TValue>({
           </TableHeader>
           {isLoading ? (
             <TableBody>
-              {[1, 2, 3, 4, 5].map((id) => (
-                <TableRow key={id}>
+              {Array.from({ length: 10 }, (_, index) => (
+                <TableRow key={index}>
                   <TableCell colSpan={6}>
                     <Skeleton className="w-full h-8" />
                   </TableCell>
@@ -98,6 +105,8 @@ export function DataTable<TData, TValue>({
                   <TableRow
                     key={row.id}
                     data-state={row.getIsSelected() && 'selected'}
+                    onClick={() => handleRowClick(row)}
+                    className="cursor-pointer hover:bg-muted/50 transition-colors"
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id} className="h-16">
@@ -123,6 +132,13 @@ export function DataTable<TData, TValue>({
           )}
         </Table>
       </div>
+
+      {/* SMS Modal */}
+      <SmsModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        smsData={selectedSms}
+      />
     </div>
   )
 }
