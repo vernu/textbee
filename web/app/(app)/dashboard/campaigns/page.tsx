@@ -69,7 +69,7 @@ export default function CampaignsPage() {
     description: '',
     status: 'draft' as 'active' | 'draft' | 'inactive' | 'completed',
     selectedContacts: [] as string[],
-    messageTemplates: [] as string[],
+    messageTemplateGroups: [] as string[],
     sendDevices: [] as string[],
     scheduleType: 'now' as 'now' | 'later',
     scheduledDate: '',
@@ -305,7 +305,7 @@ export default function CampaignsPage() {
       description: '',
       status: 'draft',
       selectedContacts: [],
-      messageTemplates: [],
+      messageTemplateGroups: [],
       sendDevices: [],
       scheduleType: 'now',
       scheduledDate: '',
@@ -574,9 +574,9 @@ export default function CampaignsPage() {
                     </TabsContent>
 
                     <TabsContent value='configure' className='space-y-4 mt-6'>
-                      <div className='space-y-2'>
+                      <div className='w-1/2 space-y-2'>
                         <div className='flex items-center justify-between'>
-                          <Label className='text-sm font-medium'>Message Templates</Label>
+                          <Label className='text-sm font-medium'>Message Template Groups</Label>
                           <Button
                             variant='outline'
                             size='sm'
@@ -587,21 +587,74 @@ export default function CampaignsPage() {
                         </div>
                         <Select>
                           <SelectTrigger>
-                            <SelectValue placeholder='Select message templates' />
+                            <SelectValue
+                              placeholder={createCampaignData.messageTemplateGroups.length > 0
+                                ? `${createCampaignData.messageTemplateGroups.length} group(s) selected`
+                                : 'Select template groups'}
+                            />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className='max-h-60 overflow-y-auto'>
                             {mockTemplateGroups.map(group => (
-                              group.templates.map(template => (
-                                <SelectItem key={template.id} value={template.id}>
-                                  {template.name} ({group.name})
-                                </SelectItem>
-                              ))
+                              <div key={group.id} className='flex items-center space-x-2 px-2 py-2 cursor-pointer hover:bg-muted/50'
+                                   onClick={(e) => {
+                                     e.preventDefault()
+                                     const isSelected = createCampaignData.messageTemplateGroups.includes(group.id)
+                                     if (isSelected) {
+                                       setCreateCampaignData(prev => ({
+                                         ...prev,
+                                         messageTemplateGroups: prev.messageTemplateGroups.filter(id => id !== group.id)
+                                       }))
+                                     } else {
+                                       setCreateCampaignData(prev => ({
+                                         ...prev,
+                                         messageTemplateGroups: [...prev.messageTemplateGroups, group.id]
+                                       }))
+                                     }
+                                   }}>
+                                <Checkbox
+                                  checked={createCampaignData.messageTemplateGroups.includes(group.id)}
+                                  onChange={() => {}}
+                                />
+                                <div className='text-sm'>
+                                  <div className='font-medium'>{group.name}</div>
+                                  <div className='text-xs text-muted-foreground'>
+                                    {group.templates.length} template(s) • Random selection per contact
+                                  </div>
+                                </div>
+                              </div>
                             ))}
                           </SelectContent>
                         </Select>
+
+                        {/* Selected Templates List */}
+                        {createCampaignData.messageTemplateGroups.length > 0 && (
+                          <div className='space-y-2 mt-4'>
+                            <Label className='text-xs font-medium text-muted-foreground'>
+                              Selected Templates ({createCampaignData.messageTemplateGroups.reduce((sum, groupId) => {
+                                const group = mockTemplateGroups.find(g => g.id === groupId)
+                                return sum + (group?.templates.length || 0)
+                              }, 0)} total)
+                            </Label>
+                            <div className='max-h-32 overflow-y-auto border rounded-md p-2 bg-muted/20'>
+                              <div className='space-y-1'>
+                                {createCampaignData.messageTemplateGroups.map(groupId => {
+                                  const group = mockTemplateGroups.find(g => g.id === groupId)
+                                  return group?.templates.map(template => (
+                                    <div key={template.id} className='flex items-center justify-between px-2 py-1 text-xs rounded hover:bg-muted/50'>
+                                      <span className='font-medium'>{template.name}</span>
+                                      <Badge variant='outline' className='text-xs'>
+                                        {group.name}
+                                      </Badge>
+                                    </div>
+                                  ))
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
-                      <div className='space-y-2'>
+                      <div className='w-1/2 space-y-2'>
                         <Label className='text-sm font-medium'>Send Devices</Label>
                         <Select>
                           <SelectTrigger>
@@ -751,6 +804,27 @@ export default function CampaignsPage() {
                                     return sum + (contact?.contactCount || 0)
                                   }, 0).toLocaleString()} total contacts)
                                 </span>
+                              )}
+                            </p>
+                          </div>
+                          <div>
+                            <Label className='text-sm font-medium text-muted-foreground'>Template Groups</Label>
+                            <p className='text-sm'>
+                              {createCampaignData.messageTemplateGroups.length > 0 ? (
+                                <>
+                                  {createCampaignData.messageTemplateGroups.map(groupId => {
+                                    const group = mockTemplateGroups.find(g => g.id === groupId)
+                                    return group ? group.name : 'Unknown group'
+                                  }).join(', ')}
+                                  <span className='text-muted-foreground ml-1'>
+                                    ({createCampaignData.messageTemplateGroups.reduce((sum, groupId) => {
+                                      const group = mockTemplateGroups.find(g => g.id === groupId)
+                                      return sum + (group?.templates.length || 0)
+                                    }, 0)} total templates)
+                                  </span>
+                                </>
+                              ) : (
+                                'No template groups selected'
                               )}
                             </p>
                           </div>
