@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
-import { Menu, LogOut, LayoutDashboard, MessageSquarePlus, Home, MessageSquareText, Users, UserCircle, ContactRound, Inbox } from 'lucide-react'
+import { Menu, LogOut, LayoutDashboard, MessageSquarePlus, Home, MessageSquareText, Users, UserCircle, ContactRound, Inbox, Megaphone } from 'lucide-react'
 import { signOut, useSession } from 'next-auth/react'
 import { Routes } from '@/config/routes'
 import ThemeToggle from './theme-toggle'
@@ -55,6 +55,12 @@ export default function AppHeader() {
         icon={<Inbox className='h-4 w-4 stroke-[1.5]' />}
         label='Inbox'
         isActive={pathname === '/dashboard/inbox'}
+      />
+      <DashboardNavItem
+        href='/dashboard/campaigns'
+        icon={<Megaphone className='h-4 w-4 stroke-[1.5]' />}
+        label='Campaigns'
+        isActive={pathname === '/dashboard/campaigns'}
       />
       <DashboardNavItem
         href='/dashboard/contacts'

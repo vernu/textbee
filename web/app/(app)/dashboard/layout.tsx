@@ -1,6 +1,6 @@
 'use client'
 
-import { Home, MessageSquareText, UserCircle, Users, ContactRound } from 'lucide-react'
+import { Home, MessageSquareText, UserCircle, Users, ContactRound, Megaphone } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import AccountDeletionAlert from './(components)/account-deletion-alert'
@@ -15,7 +15,7 @@ export default function DashboardLayout({
   const pathname = usePathname()
 
   // Pages that need height-constrained layout (no scrolling)
-  const constrainedPages = ['/dashboard/contacts', '/dashboard/inbox']
+  const constrainedPages = ['/dashboard/contacts', '/dashboard/campaigns', '/dashboard/inbox']
   const isConstrainedPage = constrainedPages.some(page => pathname.startsWith(page))
 
   if (isConstrainedPage) {
@@ -47,6 +47,12 @@ export default function DashboardLayout({
               icon={<MessageSquareText className='h-4 w-4 stroke-[1.5]' />}
               label='Messaging'
               isActive={pathname === '/dashboard/messaging'}
+            />
+            <MobileNavItem
+              href='/dashboard/campaigns'
+              icon={<Megaphone className='h-4 w-4 stroke-[1.5]' />}
+              label='Campaigns'
+              isActive={pathname === '/dashboard/campaigns'}
             />
             <MobileNavItem
               href='/dashboard/contacts'
@@ -103,6 +109,12 @@ export default function DashboardLayout({
             isActive={pathname === '/dashboard/messaging'}
           />
           <MobileNavItem
+            href='/dashboard/campaigns'
+            icon={<Megaphone className='h-4 w-4 stroke-[1.5]' />}
+            label='Campaigns'
+            isActive={pathname === '/dashboard/campaigns'}
+          />
+          <MobileNavItem
             href='/dashboard/contacts'
             icon={<ContactRound className='h-4 w-4 stroke-[1.5]' />}
             label='Contacts'
@@ -145,7 +157,7 @@ function MobileNavItem({
     <Link
       href={href}
       prefetch={true}
-      className={`flex flex-col items-center justify-center p-2 rounded-md w-[23%] ${
+      className={`flex flex-col items-center justify-center p-2 rounded-md w-[15%] ${
         isActive
           ? 'border border-brand-500 dark:border-brand-400 bg-brand-100/20 dark:bg-brand-900/10 text-brand-600 dark:text-brand-400'
           : 'text-gray-700 dark:text-gray-300 hover:text-brand-600 dark:hover:text-brand-400'
