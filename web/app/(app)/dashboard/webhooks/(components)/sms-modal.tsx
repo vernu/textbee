@@ -56,13 +56,11 @@ export function SmsModal({ isOpen, onClose, smsData }: SmsModalProps) {
       <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
         <DialogHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <DialogTitle className="flex items-center gap-2">
-            <Bell className="h-5 w-5" />
             Webhook Notification
           </DialogTitle>
         </DialogHeader>
 
         <h3 className="font-semibold text-sm flex items-center gap-2">
-          <MessageSquare className="h-4 w-4" />
           Message Content
         </h3>
         <div className="space-y-4">
@@ -75,7 +73,6 @@ export function SmsModal({ isOpen, onClose, smsData }: SmsModalProps) {
             {/* Sender Information */}
             <div className="space-y-2">
               <h3 className="font-semibold text-sm flex items-center gap-2">
-                <Phone className="h-4 w-4" />
                 Sender
               </h3>
               <p className="text-sm bg-muted/30 rounded-md p-2">
@@ -100,7 +97,6 @@ export function SmsModal({ isOpen, onClose, smsData }: SmsModalProps) {
             </div>
             <div className="space-y-2">
               <h3 className="font-semibold text-sm flex items-center gap-x-2">
-                <Calendar className="h-4 w-4" />
                 Created At
               </h3>
               <p className="text-sm bg-muted/30 rounded-md p-2 capitalize">
