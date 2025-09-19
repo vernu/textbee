@@ -194,6 +194,11 @@ export const contactsApi = {
     return response.data
   },
 
+  async updateTemplate(id: string, data: CreateTemplateData): Promise<ContactTemplate> {
+    const response = await httpBrowserClient.put(`/contacts/templates/${id}`, data)
+    return response.data
+  },
+
   async deleteTemplate(id: string): Promise<void> {
     await httpBrowserClient.delete(`/contacts/templates/${id}`)
   },

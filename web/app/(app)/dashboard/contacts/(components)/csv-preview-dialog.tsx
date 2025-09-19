@@ -12,6 +12,16 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -21,6 +31,8 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { contactsApi, CsvPreview, ContactTemplate } from '@/lib/api/contacts'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Info, Trash2, X, Save, Copy, RotateCcw } from 'lucide-react'
 
 interface CsvPreviewDialogProps {
   open: boolean
@@ -63,16 +75,21 @@ export default function CsvPreviewDialog({
 }: CsvPreviewDialogProps) {
   const [csvPreview, setCsvPreview] = useState<CsvPreview | null>(null)
   const [templates, setTemplates] = useState<ContactTemplate[]>([])
-  const [selectedTemplate, setSelectedTemplate] = useState<string>('')
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('__no_template__')
   const [columnMapping, setColumnMapping] = useState<Record<string, string>>({})
   const [previewRows, setPreviewRows] = useState(10)
-  const [newTemplateName, setNewTemplateName] = useState('')
-  const [showNewTemplate, setShowNewTemplate] = useState(false)
   const [processing, setProcessing] = useState(false)
   const [loading, setLoading] = useState(true)
   const [dncColumn, setDncColumn] = useState<string>('')
   const [dncValue, setDncValue] = useState<string>('')
   const [showDncWarning, setShowDncWarning] = useState(false)
+  const [dncWarningDismissed, setDncWarningDismissed] = useState(false)
+  const [originalTemplate, setOriginalTemplate] = useState<ContactTemplate | null>(null)
+  const [hasTemplateChanges, setHasTemplateChanges] = useState(false)
+  const [showSaveAsTemplate, setShowSaveAsTemplate] = useState(false)
+  const [saveAsTemplateName, setSaveAsTemplateName] = useState('')
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [templateToDelete, setTemplateToDelete] = useState<string>('')
   const { toast } = useToast()
 
   useEffect(() => {
@@ -81,6 +98,29 @@ export default function CsvPreviewDialog({
       loadTemplates()
     }
   }, [open, fileContent, previewRows])
+
+  useEffect(() => {
+    if (originalTemplate && selectedTemplate !== '__no_template__') {
+      const currentMapping = JSON.stringify(columnMapping)
+      const originalMapping = JSON.stringify(originalTemplate.columnMapping)
+      const currentDnc = JSON.stringify({ column: dncColumn, value: dncValue })
+      const originalDnc = JSON.stringify({
+        column: originalTemplate.dncColumn || '',
+        value: originalTemplate.dncValue || ''
+      })
+
+      setHasTemplateChanges(currentMapping !== originalMapping || currentDnc !== originalDnc)
+    } else {
+      setHasTemplateChanges(false)
+    }
+  }, [columnMapping, dncColumn, dncValue, originalTemplate, selectedTemplate])
+
+  useEffect(() => {
+    // Reset dismissal state when a DNC column is selected
+    if (dncColumn) {
+      setDncWarningDismissed(false)
+    }
+  }, [dncColumn])
 
   const loadPreview = async () => {
     try {
@@ -118,6 +158,9 @@ export default function CsvPreviewDialog({
       setDncColumn(template.dncColumn || '')
       setDncValue(template.dncValue || '')
       setSelectedTemplate(templateId)
+      setOriginalTemplate(template)
+    } else {
+      setOriginalTemplate(null)
     }
   }
 
@@ -155,27 +198,118 @@ export default function CsvPreviewDialog({
     const missingFields = REQUIRED_FIELDS.filter(field => !mappedFields.includes(field))
 
     if (missingFields.length > 0) {
+      const missingFieldLabels = missingFields.map(field => {
+        const contactField = CONTACT_FIELDS.find(f => f.value === field)
+        return contactField ? contactField.label : field
+      })
+
       toast({
         title: 'Missing required fields',
-        description: `Please map the following required fields: ${missingFields.join(', ')}`,
+        description: `Please map the following required fields: ${missingFieldLabels.join(', ')}`,
         variant: 'destructive',
       })
       return false
     }
 
-    // Show warning if no DNC column is selected
-    if (!dncColumn) {
-      setShowDncWarning(true)
-    }
-
     return true
   }
 
-  const handleCreateTemplate = async () => {
-    if (!newTemplateName.trim()) {
+  const handleClearColumnAssignments = () => {
+    setColumnMapping({})
+    setDncColumn('')
+    setDncValue('')
+  }
+
+  const handleClearTemplate = () => {
+    setColumnMapping({})
+    setDncColumn('')
+    setDncValue('')
+    setSelectedTemplate('__no_template__')
+    setOriginalTemplate(null)
+  }
+
+  const handleRevertChanges = () => {
+    if (originalTemplate) {
+      setColumnMapping(originalTemplate.columnMapping)
+      setDncColumn(originalTemplate.dncColumn || '')
+      setDncValue(originalTemplate.dncValue || '')
+    }
+  }
+
+  const handleDeleteTemplate = (templateId: string) => {
+    setTemplateToDelete(templateId)
+    setShowDeleteConfirm(true)
+  }
+
+  const confirmDeleteTemplate = async () => {
+    if (!templateToDelete) return
+
+    try {
+      await contactsApi.deleteTemplate(templateToDelete)
+
+      toast({
+        title: 'Template deleted',
+        description: 'Template deleted successfully',
+      })
+
+      await loadTemplates()
+
+      // Clear selection if the deleted template was selected
+      if (selectedTemplate === templateToDelete) {
+        handleClearTemplate()
+      }
+    } catch (error) {
+      console.error('Error deleting template:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to delete template',
+        variant: 'destructive',
+      })
+    } finally {
+      setShowDeleteConfirm(false)
+      setTemplateToDelete('')
+    }
+  }
+
+  const handleUpdateTemplate = async () => {
+    if (!originalTemplate) return
+    if (!validateMapping()) return
+
+    try {
+      await contactsApi.updateTemplate(originalTemplate.id, {
+        name: originalTemplate.name,
+        columnMapping,
+        dncColumn: dncColumn || undefined,
+        dncValue: dncValue || undefined,
+      })
+
+      toast({
+        title: 'Template updated',
+        description: 'Changes saved to template successfully',
+      })
+
+      await loadTemplates()
+      setOriginalTemplate(prev => prev ? {
+        ...prev,
+        columnMapping,
+        dncColumn: dncColumn || undefined,
+        dncValue: dncValue || undefined,
+      } : null)
+    } catch (error) {
+      console.error('Error updating template:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to update template',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const handleSaveAsTemplate = async () => {
+    if (!saveAsTemplateName.trim()) {
       toast({
         title: 'Template name required',
-        description: 'Please enter a name for the template',
+        description: 'Please enter a name for the new template',
         variant: 'destructive',
       })
       return
@@ -184,8 +318,8 @@ export default function CsvPreviewDialog({
     if (!validateMapping()) return
 
     try {
-      await contactsApi.createTemplate({
-        name: newTemplateName.trim(),
+      const newTemplate = await contactsApi.createTemplate({
+        name: saveAsTemplateName.trim(),
         columnMapping,
         dncColumn: dncColumn || undefined,
         dncValue: dncValue || undefined,
@@ -193,14 +327,18 @@ export default function CsvPreviewDialog({
 
       toast({
         title: 'Template created',
-        description: 'Template saved successfully',
+        description: 'New template saved successfully',
       })
 
       await loadTemplates()
-      setShowNewTemplate(false)
-      setNewTemplateName('')
+      setShowSaveAsTemplate(false)
+      setSaveAsTemplateName('')
+
+      // Switch to the new template
+      setSelectedTemplate(newTemplate.id)
+      setOriginalTemplate(newTemplate)
     } catch (error) {
-      console.error('Error creating template:', error)
+      console.error('Error creating new template:', error)
       toast({
         title: 'Error',
         description: 'Failed to create template',
@@ -213,7 +351,7 @@ export default function CsvPreviewDialog({
     if (!validateMapping()) return
 
     // If DNC warning is showing and user hasn't dismissed it, don't proceed
-    if (showDncWarning) {
+    if (!dncColumn && !dncWarningDismissed) {
       return
     }
 
@@ -221,7 +359,7 @@ export default function CsvPreviewDialog({
       setProcessing(true)
       const result = await contactsApi.processSpreadsheet(spreadsheetId, {
         columnMapping,
-        templateId: selectedTemplate || undefined,
+        templateId: selectedTemplate !== '__no_template__' ? selectedTemplate : undefined,
         dncColumn: dncColumn || undefined,
         dncValue: dncValue || undefined,
       })
@@ -270,7 +408,7 @@ export default function CsvPreviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-7xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Preview: {fileName}</DialogTitle>
           <DialogDescription>
@@ -281,11 +419,21 @@ export default function CsvPreviewDialog({
         <div className="flex items-center gap-4 py-2 border-b">
           <div className="flex items-center gap-2">
             <Label>Template:</Label>
-            <Select value={selectedTemplate} onValueChange={applyTemplate}>
+            <Select
+              value={selectedTemplate}
+              onValueChange={(value) => {
+                if (value && value !== "__no_template__") {
+                  applyTemplate(value)
+                } else {
+                  handleClearTemplate()
+                }
+              }}
+            >
               <SelectTrigger className="w-48">
                 <SelectValue placeholder="Select template" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="__no_template__">No template selected</SelectItem>
                 {templates.map((template) => (
                   <SelectItem key={template.id} value={template.id}>
                     {template.name}
@@ -294,14 +442,74 @@ export default function CsvPreviewDialog({
               </SelectContent>
             </Select>
           </div>
-          
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowNewTemplate(!showNewTemplate)}
-          >
-            + New Template
-          </Button>
+
+          <div className="flex items-center gap-2">
+            {hasTemplateChanges && originalTemplate && (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleUpdateTemplate}
+                  className="h-8"
+                >
+                  <Save className="h-3 w-3 mr-1" />
+                  Save changes
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowSaveAsTemplate(true)}
+                  className="h-8"
+                >
+                  <Copy className="h-3 w-3 mr-1" />
+                  Save as
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleRevertChanges}
+                  className="h-8"
+                >
+                  <RotateCcw className="h-3 w-3 mr-1" />
+                  Revert changes
+                </Button>
+              </>
+            )}
+
+            {selectedTemplate === '__no_template__' && (Object.keys(columnMapping).length > 0 || dncColumn) && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowSaveAsTemplate(true)}
+                className="h-8"
+              >
+                <Copy className="h-3 w-3 mr-1" />
+                Save template as
+              </Button>
+            )}
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleClearColumnAssignments}
+              className="h-8"
+            >
+              <X className="h-3 w-3 mr-1" />
+              Clear assignments
+            </Button>
+
+            {selectedTemplate && selectedTemplate !== '__no_template__' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleDeleteTemplate(selectedTemplate)}
+                className="h-8 hover:bg-red-50 hover:text-red-600 hover:border-red-300"
+              >
+                <Trash2 className="h-3 w-3 mr-1" />
+                Delete template
+              </Button>
+            )}
+          </div>
 
           <div className="flex items-center gap-2 ml-auto">
             <Label>Preview rows:</Label>
@@ -321,53 +529,38 @@ export default function CsvPreviewDialog({
           </div>
         </div>
 
-        {showNewTemplate && (
-          <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
-            <Input
-              placeholder="Template name"
-              value={newTemplateName}
-              onChange={(e) => setNewTemplateName(e.target.value)}
-              className="flex-1"
-            />
-            <Button size="sm" onClick={handleCreateTemplate}>
-              Save Template
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setShowNewTemplate(false)
-                setNewTemplateName('')
-              }}
-            >
-              Cancel
-            </Button>
-          </div>
-        )}
+
+
 
         {dncColumn && (
           <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
             <div className="flex items-center gap-2 mb-2">
               <Label className="text-sm font-medium">DNC Configuration</Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Contacts where "{dncColumn}" equals this value will be marked as Do Not Call</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
             <div className="flex items-center gap-2">
-              <Label className="text-sm">Column: "{dncColumn}"</Label>
-              <Label className="text-sm">Value indicating DNC:</Label>
+              <Label className="text-sm">Column "{dncColumn}" value indicating DNC:</Label>
               <Input
                 placeholder="e.g., Yes, 1, True"
                 value={dncValue}
                 onChange={(e) => setDncValue(e.target.value)}
-                className="w-32"
+                className="w-32 bg-white dark:bg-white dark:text-black"
                 size="sm"
               />
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Contacts where "{dncColumn}" equals this value will be marked as Do Not Call
-            </p>
           </div>
         )}
 
-        {showDncWarning && (
+        {!dncColumn && !dncWarningDismissed && (
           <div className="p-3 bg-yellow-50 dark:bg-yellow-950 rounded-lg border border-yellow-200 dark:border-yellow-800">
             <div className="flex items-start gap-2">
               <div className="flex-1">
@@ -382,15 +575,9 @@ export default function CsvPreviewDialog({
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => setShowDncWarning(false)}
+                  onClick={() => setDncWarningDismissed(true)}
                 >
                   Continue Anyway
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={() => setShowDncWarning(false)}
-                >
-                  Got It
                 </Button>
               </div>
             </div>
@@ -402,32 +589,56 @@ export default function CsvPreviewDialog({
             <thead>
               <tr className="bg-muted">
                 {csvPreview.headers.map((header, index) => {
-                  const isMapped = dncColumn === header || columnMapping[header]
+                  const isDncColumn = dncColumn === header
+                  const isMapped = columnMapping[header]
+                  const isNotMapped = !isDncColumn && !isMapped
+                  const selectedValue = dncColumn === header ? '__dnc__' : columnMapping[header] || '__not_mapped__'
+
+                  // Determine if selected field is required for bold styling
+                  const isSelectedRequired = selectedValue !== '__not_mapped__' && selectedValue !== '__dnc__' && REQUIRED_FIELDS.includes(selectedValue)
+
+                  let dropdownBgClass = ''
+                  let dropdownTextClass = ''
+
+                  if (isDncColumn) {
+                    dropdownBgClass = 'bg-blue-50 dark:bg-blue-950'
+                    dropdownTextClass = 'text-blue-800 dark:text-blue-200'
+                  } else if (isNotMapped) {
+                    dropdownBgClass = 'bg-yellow-50 dark:bg-yellow-950'
+                    dropdownTextClass = 'text-yellow-800 dark:text-yellow-200'
+                  } else if (isSelectedRequired) {
+                    dropdownBgClass = 'bg-purple-50 dark:bg-purple-950'
+                    dropdownTextClass = 'text-purple-800 dark:text-purple-200'
+                  } else {
+                    dropdownBgClass = 'bg-white dark:bg-white'
+                    dropdownTextClass = 'text-black dark:text-black'
+                  }
+
                   return (
-                    <th key={index} className={`border p-2 text-left min-w-[150px] ${isMapped ? 'bg-blue-50 dark:bg-blue-950' : ''}`}>
+                    <th key={index} className="border p-2 text-left min-w-[150px]">
                       <div className="space-y-2">
                         <div className="font-medium">
                           {header}
                         </div>
                       <Select
-                        value={
-                          dncColumn === header
-                            ? '__dnc__'
-                            : columnMapping[header] || '__not_mapped__'
-                        }
+                        value={selectedValue}
                         onValueChange={(value) => handleColumnMappingChange(header, value)}
                       >
-                        <SelectTrigger className="h-8">
+                        <SelectTrigger className={`h-8 ${dropdownBgClass} ${dropdownTextClass} ${isSelectedRequired ? 'font-semibold' : 'font-normal'}`}>
                           <SelectValue placeholder="Select field" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="__not_mapped__">Not mapped</SelectItem>
+                          <SelectItem value="__not_mapped__" className="bg-yellow-50 dark:bg-yellow-950 text-yellow-800 dark:text-yellow-200">Not mapped</SelectItem>
                           {CONTACT_FIELDS.map((field) => (
                             <SelectItem
                               key={field.value}
                               value={field.value}
                               className={
-                                REQUIRED_FIELDS.includes(field.value) ? 'font-semibold' : ''
+                                field.value === '__dnc__'
+                                  ? 'bg-blue-50 dark:bg-blue-950 text-blue-800 dark:text-blue-200'
+                                  : REQUIRED_FIELDS.includes(field.value)
+                                    ? 'font-semibold bg-purple-50 dark:bg-purple-950 text-purple-800 dark:text-purple-200'
+                                    : ''
                               }
                             >
                               {field.label}
@@ -445,11 +656,20 @@ export default function CsvPreviewDialog({
             <tbody>
               {csvPreview.rows.map((row, rowIndex) => (
                 <tr key={rowIndex} className={rowIndex % 2 === 0 ? 'bg-background' : 'bg-muted/25'}>
-                  {row.map((cell, cellIndex) => (
-                    <td key={cellIndex} className="border p-2 text-sm">
-                      {cell}
-                    </td>
-                  ))}
+                  {row.map((cell, cellIndex) => {
+                    const header = csvPreview.headers[cellIndex]
+                    const isDncColumn = dncColumn === header
+                    const matchesDncValue = isDncColumn && dncValue && cell === dncValue
+
+                    return (
+                      <td
+                        key={cellIndex}
+                        className={`border p-2 text-sm ${matchesDncValue ? 'bg-blue-50 dark:bg-blue-950' : ''}`}
+                      >
+                        {cell}
+                      </td>
+                    )
+                  })}
                 </tr>
               ))}
             </tbody>
@@ -471,6 +691,73 @@ export default function CsvPreviewDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Template</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete template '{templates.find(t => t.id === templateToDelete)?.name}'?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowDeleteConfirm(false)
+              setTemplateToDelete('')
+            }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteTemplate}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              Delete Template
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog open={showSaveAsTemplate} onOpenChange={(open) => {
+        setShowSaveAsTemplate(open)
+        if (!open) setSaveAsTemplateName('')
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Save Template</DialogTitle>
+            <DialogDescription>
+              Enter a name for your new template. This will save the current column mapping and DNC settings.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-1">
+            <Input
+              id="template-name"
+              placeholder="Enter template name"
+              value={saveAsTemplateName}
+              onChange={(e) => setSaveAsTemplateName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleSaveAsTemplate()
+                }
+              }}
+            />
+          </div>
+          <DialogFooter className="pt-0">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowSaveAsTemplate(false)
+                setSaveAsTemplateName('')
+              }}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleSaveAsTemplate}>
+              Save Template
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   )
 }
