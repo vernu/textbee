@@ -23,7 +23,7 @@ import {
 import { ApiEndpoints } from '@/config/api'
 import httpBrowserClient from '@/lib/httpBrowserClient'
 import { contactsApi } from '@/lib/api/contacts'
-import { cn, normalizePhoneNumber } from '@/lib/utils'
+import { cn, normalizePhoneNumber, formatMessageTime, groupMessagesWithDateSeparators, MessageWithDate, MessageGroup, getStatusDisplay, MessageStatus } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
 
 interface Conversation {
@@ -67,6 +67,34 @@ interface Message {
   type: string
   status: string
   device: string | { _id: string }
+}
+
+function DateSeparator({ dateLabel }: { dateLabel: string }) {
+  return (
+    <div className="flex items-center justify-center my-4">
+      <div className="bg-muted/80 text-muted-foreground text-xs px-3 py-1 rounded-full">
+        {dateLabel}
+      </div>
+    </div>
+  )
+}
+
+function MessageStatusIndicator({ status, isIncoming }: { status: MessageStatus; isIncoming: boolean }) {
+  // Only show status for outgoing messages (sent by user)
+  if (isIncoming) return null
+
+  const statusInfo = getStatusDisplay(status)
+
+  return (
+    <div className="text-xs text-muted-foreground flex items-center gap-1">
+      <span className="font-mono text-xs">
+        {statusInfo.icon}
+      </span>
+      <span>
+        {statusInfo.label}
+      </span>
+    </div>
+  )
 }
 
 function ConversationRow({
@@ -436,14 +464,6 @@ function MessengerInterface({
     setNewMessage('')
   }
 
-  const formatMessageTime = (date: Date) => {
-    return date.toLocaleTimeString('en-US', { 
-      hour: 'numeric', 
-      minute: '2-digit',
-      hour12: true 
-    })
-  }
-
   return (
     <div className="flex flex-col h-full border-l">
       {/* Header */}
@@ -502,39 +522,70 @@ function MessengerInterface({
               ref={messagesContainerRef}
               className="flex-1 min-h-0 overflow-y-auto bg-muted/20"
             >
-              <div className="p-4 space-y-3">
+              <div className="p-4">
                 {conversationMessages.length === 0 ? (
                   <div className="text-center text-muted-foreground">
                     No messages found
                   </div>
-                ) : (
-                  conversationMessages.map((message, index) => {
-                    const isIncoming = !!message.sender
-                    const messageDate = new Date(message.receivedAt || message.requestedAt || 0)
+                ) : (() => {
+                  // Convert messages to the format expected by grouping function
+                  const formattedMessages: MessageWithDate[] = conversationMessages.map((message, index) => ({
+                    id: `${message._id}-${index}`,
+                    message: message.message,
+                    date: new Date(message.receivedAt || message.requestedAt || 0),
+                    isIncoming: !!message.sender,
+                    status: message.status as MessageStatus,
+                    originalMessage: message
+                  }))
 
-                    return (
-                      <div key={`${message._id}-${index}`} className={cn(
-                        "flex",
-                        isIncoming ? "justify-start" : "justify-end"
-                      )}>
-                        <div className={cn(
-                          "max-w-[80%] rounded-lg px-3 py-2 text-sm",
-                          isIncoming
-                            ? "bg-background border text-foreground"
-                            : "bg-primary text-primary-foreground"
-                        )}>
-                          <p>{message.message}</p>
+                  // Group messages with date separators
+                  const messageGroups = groupMessagesWithDateSeparators(formattedMessages)
+
+                  return messageGroups.map((group, index) => {
+                    if (group.type === 'date') {
+                      return (
+                        <DateSeparator key={`date-${index}`} dateLabel={group.dateLabel!} />
+                      )
+                    } else {
+                      const msg = group.message!
+                      return (
+                        <div key={msg.id} className="mb-3">
                           <div className={cn(
-                            "text-xs mt-1",
-                            isIncoming ? "text-muted-foreground" : "text-primary-foreground/70"
+                            "flex items-center gap-2",
+                            msg.isIncoming ? "justify-start" : "justify-end"
                           )}>
-                            {formatMessageTime(messageDate)}
+                            {!msg.isIncoming && (
+                              <div className="text-xs text-muted-foreground">
+                                {formatMessageTime(msg.date)}
+                              </div>
+                            )}
+                            <div className={cn(
+                              "max-w-[80%] rounded-lg px-3 py-2 text-sm",
+                              msg.isIncoming
+                                ? "bg-background border text-foreground"
+                                : "bg-primary text-primary-foreground"
+                            )}>
+                              <p>{msg.message}</p>
+                            </div>
+                            {msg.isIncoming && (
+                              <div className="text-xs text-muted-foreground">
+                                {formatMessageTime(msg.date)}
+                              </div>
+                            )}
                           </div>
+                          {!msg.isIncoming && msg.status && (
+                            <div className="flex justify-end mt-1">
+                              <MessageStatusIndicator
+                                status={msg.status}
+                                isIncoming={msg.isIncoming}
+                              />
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    )
+                      )
+                    }
                   })
-                )}
+                })()}
               </div>
             </div>
 
@@ -1388,13 +1439,6 @@ function NewMessageSidebar({
     ? `${currentConversation.contact.firstName || ''} ${currentConversation.contact.lastName || ''}`.trim()
     : currentConversation?.normalizedPhoneNumber || 'New Message'
 
-  const formatMessageTime = (date: Date) => {
-    return date.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    })
-  }
 
   const enabledDevice = devices.find(d => d.enabled)
 
@@ -1494,40 +1538,75 @@ function NewMessageSidebar({
       {/* Messages Area */}
       <div className="flex-1 min-h-0 overflow-y-auto bg-muted/20">
         {currentConversation ? (
-          <div className="p-4 space-y-3">
+          <div className="p-4">
             {conversationMessages?.length === 0 ? (
               <div className="text-center text-muted-foreground">
                 No messages yet. Start the conversation!
               </div>
-            ) : (
-              conversationMessages?.map((message, index) => {
-                const isIncoming = !!message.sender
-                const messageDate = new Date(message.receivedAt || message.requestedAt || 0)
+            ) : (() => {
+              // Convert messages to the format expected by grouping function
+              const formattedMessages: MessageWithDate[] = conversationMessages?.map((message, index) => ({
+                id: `${message._id}-${index}`,
+                message: message.message,
+                date: new Date(message.receivedAt || message.requestedAt || 0),
+                isIncoming: !!message.sender,
+                status: message.status as MessageStatus,
+                originalMessage: message
+              })) || []
 
-                return (
-                  <div key={`${message._id}-${index}`} className={cn(
-                    "flex",
-                    isIncoming ? "justify-start" : "justify-end"
-                  )}>
-                    <div className={cn(
-                      "max-w-[80%] rounded-lg px-3 py-2 text-sm",
-                      isIncoming
-                        ? "bg-background border text-foreground"
-                        : "bg-primary text-primary-foreground"
-                    )}>
-                      <p>{message.message}</p>
-                      <div className={cn(
-                        "text-xs mt-1",
-                        isIncoming ? "text-muted-foreground" : "text-primary-foreground/70"
-                      )}>
-                        {formatMessageTime(messageDate)}
-                      </div>
-                    </div>
-                  </div>
-                )
-              })
-            )}
-            <div ref={messagesEndRef} />
+              // Group messages with date separators
+              const messageGroups = groupMessagesWithDateSeparators(formattedMessages)
+
+              return (
+                <>
+                  {messageGroups.map((group, index) => {
+                    if (group.type === 'date') {
+                      return (
+                        <DateSeparator key={`date-${index}`} dateLabel={group.dateLabel!} />
+                      )
+                    } else {
+                      const msg = group.message!
+                      return (
+                        <div key={msg.id} className="mb-3">
+                          <div className={cn(
+                            "flex items-center gap-2",
+                            msg.isIncoming ? "justify-start" : "justify-end"
+                          )}>
+                            {!msg.isIncoming && (
+                              <div className="text-xs text-muted-foreground">
+                                {formatMessageTime(msg.date)}
+                              </div>
+                            )}
+                            <div className={cn(
+                              "max-w-[80%] rounded-lg px-3 py-2 text-sm",
+                              msg.isIncoming
+                                ? "bg-background border text-foreground"
+                                : "bg-primary text-primary-foreground"
+                            )}>
+                              <p>{msg.message}</p>
+                            </div>
+                            {msg.isIncoming && (
+                              <div className="text-xs text-muted-foreground">
+                                {formatMessageTime(msg.date)}
+                              </div>
+                            )}
+                          </div>
+                          {!msg.isIncoming && msg.status && (
+                            <div className="flex justify-end mt-1">
+                              <MessageStatusIndicator
+                                status={msg.status}
+                                isIncoming={msg.isIncoming}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      )
+                    }
+                  })}
+                  <div ref={messagesEndRef} />
+                </>
+              )
+            })()}
           </div>
         ) : (
           <div className="flex items-center justify-center h-full text-muted-foreground text-center p-8">
