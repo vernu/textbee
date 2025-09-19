@@ -35,6 +35,7 @@ const CONTACT_FIELDS = [
   { value: 'firstName', label: 'First name' },
   { value: 'lastName', label: 'Last name' },
   { value: 'phone', label: 'Phone' },
+  { value: '__dnc__', label: 'Do Not Call' },
   { value: 'email', label: 'Email' },
   { value: 'propertyAddress', label: 'Property address' },
   { value: 'propertyCity', label: 'Property city' },
@@ -48,7 +49,6 @@ const CONTACT_FIELDS = [
   { value: 'mailingCity', label: 'Mailing city' },
   { value: 'mailingState', label: 'Mailing state' },
   { value: 'mailingZip', label: 'Mailing zip' },
-  { value: '__dnc__', label: 'Do Not Call' },
 ]
 
 const REQUIRED_FIELDS = ['firstName', 'lastName', 'phone']
@@ -401,10 +401,14 @@ export default function CsvPreviewDialog({
           <table className="w-full border-collapse border">
             <thead>
               <tr className="bg-muted">
-                {csvPreview.headers.map((header, index) => (
-                  <th key={index} className="border p-2 text-left min-w-[150px]">
-                    <div className="space-y-2">
-                      <div className="font-medium">{header}</div>
+                {csvPreview.headers.map((header, index) => {
+                  const isMapped = dncColumn === header || columnMapping[header]
+                  return (
+                    <th key={index} className={`border p-2 text-left min-w-[150px] ${isMapped ? 'bg-blue-50 dark:bg-blue-950' : ''}`}>
+                      <div className="space-y-2">
+                        <div className="font-medium">
+                          {header}
+                        </div>
                       <Select
                         value={
                           dncColumn === header
@@ -434,7 +438,8 @@ export default function CsvPreviewDialog({
                       </Select>
                     </div>
                   </th>
-                ))}
+                  )
+                })}
               </tr>
             </thead>
             <tbody>
