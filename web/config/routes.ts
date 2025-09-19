@@ -1,8 +1,10 @@
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://textbee.dev'
+
 export const Routes = {
-  landingPage: 'https://textbee.dev',
+  landingPage: siteUrl,
   contribute: '/contribute',
-  useCases: 'https://textbee.dev/use-cases',
-  quickstart: 'https://textbee.dev/quickstart',
+  useCases: `${siteUrl}/use-cases`,
+  quickstart: `${siteUrl}/quickstart`,
   login: '/login',
   register: '/register',
   logout: '/logout',
@@ -11,9 +13,10 @@ export const Routes = {
 
   dashboard: '/dashboard',
 
-  downloadAndroidApp: 'https://textbee.dev/download',
-  privacyPolicy: 'https://textbee.dev/privacy-policy',
-  refundPolicy: 'https://textbee.dev/refund-policy',
-  termsOfService: 'https://textbee.dev/terms-of-service',
-  statusPage: 'https://status.textbee.dev',
+  downloadAndroidApp: `${siteUrl}/download`,
+  downloadAPK: `${siteUrl.replace('https://', 'https://dl.')}/textbee.apk`,
+  privacyPolicy: `${siteUrl}/privacy-policy`,
+  refundPolicy: `${siteUrl}/refund-policy`,
+  termsOfService: `${siteUrl}/terms-of-service`,
+  statusPage: `${siteUrl.replace('https://', 'https://status.')}`,
 }

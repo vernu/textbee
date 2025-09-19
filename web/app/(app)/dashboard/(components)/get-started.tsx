@@ -15,6 +15,7 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import QRCode from 'react-qr-code'
 import GenerateApiKey from './generate-api-key'
+import { Routes } from '@/config/routes'
 
 export default function GetStartedCard() {
   const [isGenerateKeyModalOpen, setIsGenerateKeyModalOpen] = useState(false)
@@ -76,7 +77,7 @@ export default function GetStartedCard() {
                 <p className="text-sm text-muted-foreground">
                   Install the TextBee app on your Android device
                 </p>
-                <Button variant="outline" size="sm" className="mt-2" onClick={() => window.open('https://dl.textbee.dev', '_blank')}>
+                <Button variant="outline" size="sm" className="mt-2" onClick={() => window.open(Routes.downloadAPK, '_blank')}>
                   <Download className="mr-2 h-4 w-4" />
                   Download App APK
                 </Button>
