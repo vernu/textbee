@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter, usePathname } from 'next/navigation'
@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
-import { Menu, LogOut, LayoutDashboard, MessageSquarePlus, Home, MessageSquareText, Users, UserCircle, ContactRound, Inbox, Megaphone } from 'lucide-react'
+import { Menu, LogOut, LayoutDashboard, MessageSquarePlus, Home, MessageSquareText, Users, UserCircle, ContactRound, Inbox, Megaphone, Loader2 } from 'lucide-react'
 import { signOut, useSession } from 'next-auth/react'
 import { Routes } from '@/config/routes'
 import ThemeToggle from './theme-toggle'
@@ -23,6 +23,35 @@ export default function AppHeader() {
   const session = useSession()
   const router = useRouter()
   const pathname = usePathname()
+  const [loadingPath, setLoadingPath] = useState<string | null>(null)
+
+  // Clear loading state when pathname changes (successful navigation)
+  useEffect(() => {
+    if (loadingPath) {
+      // Clear loading state if we've navigated to the exact target path
+      if (pathname === loadingPath) {
+        setLoadingPath(null)
+      }
+      // Also clear if we've navigated to a sub-route of the target (except for dashboard root)
+      else if (pathname?.startsWith(loadingPath + '/') && loadingPath !== '/dashboard') {
+        setLoadingPath(null)
+      }
+    }
+  }, [pathname, loadingPath])
+
+  // Also clear loading state when component unmounts or session changes
+  useEffect(() => {
+    return () => {
+      setLoadingPath(null)
+    }
+  }, [])
+
+  // Clear loading state if session status changes (page reload, auth change)
+  useEffect(() => {
+    if (session.status === 'loading') {
+      setLoadingPath(null)
+    }
+  }, [session.status])
 
   const handleLogout = () => {
     signOut()
@@ -43,42 +72,56 @@ export default function AppHeader() {
         icon={<Home className='h-4 w-4 stroke-[1.5]' />}
         label='Dashboard'
         isActive={pathname === '/dashboard'}
+        isLoading={loadingPath === '/dashboard'}
+        onLoadingChange={setLoadingPath}
       />
       <DashboardNavItem
         href='/dashboard/messaging'
         icon={<MessageSquareText className='h-4 w-4 stroke-[1.5]' />}
         label='Messaging'
         isActive={pathname === '/dashboard/messaging'}
+        isLoading={loadingPath === '/dashboard/messaging'}
+        onLoadingChange={setLoadingPath}
       />
       <DashboardNavItem
         href='/dashboard/inbox'
         icon={<Inbox className='h-4 w-4 stroke-[1.5]' />}
         label='Inbox'
         isActive={pathname === '/dashboard/inbox'}
+        isLoading={loadingPath === '/dashboard/inbox'}
+        onLoadingChange={setLoadingPath}
       />
       <DashboardNavItem
         href='/dashboard/campaigns'
         icon={<Megaphone className='h-4 w-4 stroke-[1.5]' />}
         label='Campaigns'
         isActive={pathname === '/dashboard/campaigns'}
+        isLoading={loadingPath === '/dashboard/campaigns'}
+        onLoadingChange={setLoadingPath}
       />
       <DashboardNavItem
         href='/dashboard/contacts'
         icon={<ContactRound className='h-4 w-4 stroke-[1.5]' />}
         label='Contacts'
         isActive={pathname === '/dashboard/contacts'}
+        isLoading={loadingPath === '/dashboard/contacts'}
+        onLoadingChange={setLoadingPath}
       />
       <DashboardNavItem
         href='/dashboard/community'
         icon={<Users className='h-4 w-4 stroke-[1.5]' />}
         label='Community'
         isActive={pathname === '/dashboard/community'}
+        isLoading={loadingPath === '/dashboard/community'}
+        onLoadingChange={setLoadingPath}
       />
       <DashboardNavItem
         href='/dashboard/account'
         icon={<UserCircle className='h-4 w-4 stroke-[1.5]' />}
         label='Account'
         isActive={pathname?.startsWith('/dashboard/account')}
+        isLoading={loadingPath === '/dashboard/account'}
+        onLoadingChange={setLoadingPath}
       />
     </nav>
   )
@@ -262,23 +305,44 @@ function DashboardNavItem({
   icon,
   label,
   isActive,
+  isLoading,
+  onLoadingChange,
 }: {
   href: string
   icon: React.ReactNode
   label: string
   isActive: boolean
+  isLoading: boolean
+  onLoadingChange: (path: string | null) => void
 }) {
+  const handleClick = () => {
+    if (!isActive) {
+      onLoadingChange(href)
+      // Fallback timeout in case navigation doesn't trigger pathname change
+      setTimeout(() => {
+        onLoadingChange(null)
+      }, 10000) // 10 seconds safety net
+    }
+  }
+
   return (
     <Link
       href={href}
       prefetch={true}
-      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-colors text-sm ${
+      onClick={handleClick}
+      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-all duration-200 text-sm ${
         isActive
           ? 'bg-primary/10 text-primary border border-primary/20'
+          : isLoading
+          ? 'bg-primary/5 text-primary border border-primary/10 animate-pulse'
           : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
       }`}
     >
-      {icon}
+      {isLoading ? (
+        <Loader2 className='h-4 w-4 stroke-[1.5] animate-spin' />
+      ) : (
+        icon
+      )}
       <span className='font-medium'>{label}</span>
     </Link>
   )
