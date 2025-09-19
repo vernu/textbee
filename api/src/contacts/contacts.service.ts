@@ -463,12 +463,82 @@ export class ContactsService {
     }
 
     if (search) {
-      filter.$or = [
-        { firstName: { $regex: search, $options: 'i' } },
-        { lastName: { $regex: search, $options: 'i' } },
-        { phone: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } },
-      ]
+      // Handle comma-separated format (e.g., "Smith, John")
+      if (search.includes(',')) {
+        const commaParts = search.split(',').map(part => part.trim())
+        if (commaParts.length === 2 && commaParts[0] && commaParts[1]) {
+          const [lastNamePart, firstNamePart] = commaParts
+
+          filter.$or = [
+            // Try: first part = lastName, second part = firstName
+            {
+              $and: [
+                { lastName: { $regex: lastNamePart, $options: 'i' } },
+                { firstName: { $regex: firstNamePart, $options: 'i' } }
+              ]
+            },
+            // Try: first part = firstName, second part = lastName (in case user reverses it)
+            {
+              $and: [
+                { firstName: { $regex: lastNamePart, $options: 'i' } },
+                { lastName: { $regex: firstNamePart, $options: 'i' } }
+              ]
+            },
+            // Also search individual fields for the full search string
+            { firstName: { $regex: search, $options: 'i' } },
+            { lastName: { $regex: search, $options: 'i' } },
+            { phone: { $regex: search, $options: 'i' } },
+            { email: { $regex: search, $options: 'i' } },
+          ]
+        } else {
+          // Invalid comma format, fall back to regular search
+          filter.$or = [
+            { firstName: { $regex: search, $options: 'i' } },
+            { lastName: { $regex: search, $options: 'i' } },
+            { phone: { $regex: search, $options: 'i' } },
+            { email: { $regex: search, $options: 'i' } },
+          ]
+        }
+      } else {
+        // Handle space-separated format
+        const searchTerms = search.trim().split(/\s+/)
+
+        if (searchTerms.length >= 2) {
+          // Handle multi-word searches (likely first name + last name)
+          const [firstTerm, ...restTerms] = searchTerms
+          const lastTerm = restTerms.join(' ')
+
+          filter.$or = [
+            // Try: first term = firstName, rest = lastName
+            {
+              $and: [
+                { firstName: { $regex: firstTerm, $options: 'i' } },
+                { lastName: { $regex: lastTerm, $options: 'i' } }
+              ]
+            },
+            // Try: first term = lastName, rest = firstName (in case user enters "Smith John")
+            {
+              $and: [
+                { firstName: { $regex: lastTerm, $options: 'i' } },
+                { lastName: { $regex: firstTerm, $options: 'i' } }
+              ]
+            },
+            // Also search individual fields for the full search string
+            { firstName: { $regex: search, $options: 'i' } },
+            { lastName: { $regex: search, $options: 'i' } },
+            { phone: { $regex: search, $options: 'i' } },
+            { email: { $regex: search, $options: 'i' } },
+          ]
+        } else {
+          // Single word search - use original logic
+          filter.$or = [
+            { firstName: { $regex: search, $options: 'i' } },
+            { lastName: { $regex: search, $options: 'i' } },
+            { phone: { $regex: search, $options: 'i' } },
+            { email: { $regex: search, $options: 'i' } },
+          ]
+        }
+      }
     }
 
     // Build sort

@@ -129,7 +129,7 @@ export default function AppHeader() {
   const AuthenticatedMenu = () => (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant='ghost' className='relative h-8 w-8 rounded-full'>
+        <Button variant='ghost' className='flex items-center gap-2 h-8 px-2 rounded-full'>
           <Avatar className='h-8 w-8'>
             <AvatarImage
               src={session.data?.user?.avatar}
@@ -139,9 +139,9 @@ export default function AppHeader() {
               {session.data?.user?.name?.charAt(0)}
             </AvatarFallback>
           </Avatar>
-          <div className='hidden md:block'>
+          <span className='hidden md:block text-sm font-medium'>
             {session.data?.user?.name?.split(' ')[0]}
-          </div>
+          </span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className='w-56' align='end' forceMount>
@@ -239,7 +239,7 @@ export default function AppHeader() {
 
   return (
     <header className='fixed top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60'>
-      <div className='container flex h-14 items-center'>
+      <div className='flex h-14 items-center px-4 lg:px-6'>
         <div className='mr-4 flex'>
           <Link
             className='flex items-center space-x-2'
@@ -260,16 +260,16 @@ export default function AppHeader() {
             </span>
           </Link>
         </div>
-        
+
         {/* Dashboard Navigation - only show on dashboard pages */}
         {isAuthenticated && isDashboardPage && <DashboardNavigation />}
-        
-        <div className='flex flex-1 items-center justify-end space-x-2'>
-          <nav className='flex items-center space-x-6'>
+
+        <div className='flex flex-1 items-center justify-end'>
+          <nav className='flex items-center space-x-4'>
             <ThemeToggle />
             <Link
               href={Routes.contribute}
-              className='items-center gap-2 pr-8 hidden md:block'
+              className='hidden md:block'
             >
               <Button variant='outline' className='px-4 py-2 text-sm'>
                 Contribute

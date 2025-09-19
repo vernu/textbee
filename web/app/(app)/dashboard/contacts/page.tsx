@@ -698,8 +698,9 @@ export default function ContactsPage() {
         limit: displayCount,
         page: currentPage,
       })
-      
+
       setContacts(response.data)
+      setFilteredContactsTotal(response.total)
     } catch (error) {
       console.error('Error loading contacts:', error)
       toast({
@@ -737,6 +738,7 @@ export default function ContactsPage() {
 
   const [totalContacts, setTotalContacts] = useState(0)
   const [totalFiles, setTotalFiles] = useState(0)
+  const [filteredContactsTotal, setFilteredContactsTotal] = useState(0)
 
   // Load stats separately
   useEffect(() => {
@@ -1215,7 +1217,10 @@ export default function ContactsPage() {
               <Input
                 placeholder={selectedMode === 'spreadsheets' ? 'Search contact files...' : 'Search contacts...'}
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value)
+                  setCurrentPage(1) // Reset to first page when searching
+                }}
                 className='pl-10'
               />
             </div>
@@ -1646,7 +1651,7 @@ export default function ContactsPage() {
                 {selectedMode === 'spreadsheets' ? (
                   `Showing 1-${Math.min(displayCount, totalFiles)} of ${totalFiles} files`
                 ) : (
-                  `Showing 1-${Math.min(displayCount, contacts.length)} of ${totalContacts} contacts`
+                  `Showing 1-${Math.min(displayCount, contacts.length)} of ${filteredContactsTotal} contacts`
                 )}
               </div>
               <div className='flex items-center gap-2'>
@@ -1660,13 +1665,13 @@ export default function ContactsPage() {
                   Previous
                 </Button>
                 <span className='text-sm text-muted-foreground'>
-                  Page {currentPage} of {Math.ceil((selectedMode === 'spreadsheets' ? totalFiles : totalContacts) / displayCount) || 1}
+                  Page {currentPage} of {Math.ceil((selectedMode === 'spreadsheets' ? totalFiles : filteredContactsTotal) / displayCount) || 1}
                 </span>
                 <Button
                   variant='outline'
                   size='sm'
-                  onClick={() => setCurrentPage(Math.min(Math.ceil((selectedMode === 'spreadsheets' ? totalFiles : totalContacts) / displayCount), currentPage + 1))}
-                  disabled={currentPage >= Math.ceil((selectedMode === 'spreadsheets' ? totalFiles : totalContacts) / displayCount)}
+                  onClick={() => setCurrentPage(Math.min(Math.ceil((selectedMode === 'spreadsheets' ? totalFiles : filteredContactsTotal) / displayCount), currentPage + 1))}
+                  disabled={currentPage >= Math.ceil((selectedMode === 'spreadsheets' ? totalFiles : filteredContactsTotal) / displayCount)}
                 >
                   Next
                   <ChevronRight className='h-4 w-4' />
