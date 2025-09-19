@@ -304,6 +304,18 @@ export class ContactSpreadsheetResponseDto {
   fileSize: number
   status: string
   templateId?: string
+  validContactsCount?: number
+  nonDncCount?: number
+  dncCount?: number
+  processedCount?: number
+  skippedCount?: number
+  processingErrors?: string[]
+  duplicateContacts?: Array<{
+    phone: string
+    firstName?: string
+    lastName?: string
+    reason: string
+  }>
 }
 
 export class ContactTemplateResponseDto {
@@ -319,6 +331,18 @@ export class CsvPreviewResponseDto {
   headers: string[]
   rows: string[][]
   totalRows: number
+}
+
+export class ProcessSpreadsheetResponseDto {
+  processed: number
+  skipped: number
+  errors: string[]
+  duplicateContacts: Array<{
+    phone: string
+    firstName?: string
+    lastName?: string
+    reason: string
+  }>
 }
 
 export class ContactResponseDto {

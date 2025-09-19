@@ -12,6 +12,7 @@ import {
   PreviewCsvDto,
   CsvPreviewResponseDto,
   ProcessSpreadsheetDto,
+  ProcessSpreadsheetResponseDto,
   CreateTemplateDto,
   ContactTemplateResponseDto,
   GetContactsDto,
@@ -35,9 +36,12 @@ export class ContactsService {
     userId: string,
     uploadData: UploadSpreadsheetDto,
   ): Promise<ContactSpreadsheetResponseDto> {
+    // Generate unique filename by checking for existing files
+    const uniqueFileName = await this.generateUniqueFileName(userId, uploadData.originalFileName)
+
     const contactSpreadsheet = new this.contactSpreadsheetModel({
       userId: new Types.ObjectId(userId),
-      originalFileName: uploadData.originalFileName,
+      originalFileName: uniqueFileName,
       contactCount: uploadData.contactCount,
       uploadDate: new Date(),
       fileContent: uploadData.fileContent,
@@ -46,7 +50,9 @@ export class ContactsService {
     })
 
     const savedSpreadsheet = await contactSpreadsheet.save()
-    return this.mapToResponseDto(savedSpreadsheet)
+    // For newly uploaded spreadsheets, stats will be 0 until processed
+    const stats = { validContactsCount: 0, nonDncCount: 0, dncCount: 0 }
+    return this.mapToResponseDto(savedSpreadsheet, stats)
   }
 
   async getSpreadsheets(
@@ -101,8 +107,16 @@ export class ContactsService {
       .countDocuments({ userId: new Types.ObjectId(userId) })
       .exec()
 
+    // Calculate DNC statistics for each spreadsheet
+    const spreadsheetsWithStats = await Promise.all(
+      spreadsheets.map(async (spreadsheet) => {
+        const stats = await this.calculateSpreadsheetStats(userId, spreadsheet._id.toString())
+        return this.mapToResponseDto(spreadsheet, stats)
+      })
+    )
+
     return {
-      data: spreadsheets.map(this.mapToResponseDto),
+      data: spreadsheetsWithStats,
       total,
       totalContacts,
     }
@@ -238,7 +252,7 @@ export class ContactsService {
     userId: string,
     spreadsheetId: string,
     processData: ProcessSpreadsheetDto,
-  ): Promise<{ processed: number; errors: string[] }> {
+  ): Promise<ProcessSpreadsheetResponseDto> {
     const spreadsheet = await this.getSpreadsheetById(userId, spreadsheetId)
 
     if (spreadsheet.status === 'processed') {
@@ -264,34 +278,61 @@ export class ContactsService {
 
       const contacts = []
       const errors = []
+      const duplicateContacts = []
+      const userObjectId = new Types.ObjectId(userId)
+
+      // Get all existing phone numbers for this user
+      const existingContacts = await this.contactModel
+        .find({ userId: userObjectId }, { phone: 1, firstName: 1, lastName: 1 })
+        .exec()
+
+      const existingPhones = new Set(existingContacts.map(contact => contact.phone))
 
       for (let i = 0; i < dataRows.length; i++) {
         try {
           const row = this.parseCsvRow(dataRows[i])
           const contact = this.mapRowToContact(userId, spreadsheetId, headers, row, columnMapping, dncColumn, dncValue)
+
+          // Check if this phone number already exists
+          if (existingPhones.has(contact.phone)) {
+            duplicateContacts.push({
+              phone: contact.phone,
+              firstName: contact.firstName,
+              lastName: contact.lastName,
+              reason: 'Phone number already exists in your contacts'
+            })
+            continue // Skip this contact
+          }
+
+          // Check for duplicates within the current spreadsheet being processed
+          const isDuplicateInCurrentBatch = contacts.some(existing => existing.phone === contact.phone)
+          if (isDuplicateInCurrentBatch) {
+            duplicateContacts.push({
+              phone: contact.phone,
+              firstName: contact.firstName,
+              lastName: contact.lastName,
+              reason: 'Duplicate phone number found within the same spreadsheet'
+            })
+            continue // Skip this contact
+          }
+
           contacts.push(contact)
         } catch (error) {
           errors.push(`Row ${i + 2}: ${error.message}`)
         }
       }
 
-      // Save contacts
-      try {
+      // Save only the non-duplicate contacts
+      if (contacts.length > 0) {
         await this.contactModel.insertMany(contacts)
-      } catch (error) {
-        if (error.code === 11000) {
-          if (error.keyPattern?.phone) {
-            // Extract the duplicate phone number from the error message if possible
-            const duplicatePhone = error.keyValue?.phone || 'unknown'
-            throw new ConflictException(`Duplicate phone number found: ${duplicatePhone}. Each contact must have a unique phone number.`)
-          }
-          throw new ConflictException('Duplicate data found. Please check your spreadsheet for duplicate entries.')
-        }
-        throw error
       }
 
-      // Update spreadsheet status
+      // Update spreadsheet with processing results
       spreadsheet.status = 'processed'
+      spreadsheet.processedCount = contacts.length
+      spreadsheet.skippedCount = duplicateContacts.length
+      spreadsheet.processingErrors = errors
+      spreadsheet.duplicateContacts = duplicateContacts
       if (templateId) {
         spreadsheet.templateId = new Types.ObjectId(templateId)
       }
@@ -299,7 +340,9 @@ export class ContactsService {
 
       return {
         processed: contacts.length,
+        skipped: duplicateContacts.length,
         errors,
+        duplicateContacts,
       }
     } catch (error) {
       throw new BadRequestException(`Failed to process spreadsheet: ${error.message}`)
@@ -633,7 +676,28 @@ export class ContactsService {
     return contact
   }
 
-  private mapToResponseDto(spreadsheet: ContactSpreadsheetDocument): ContactSpreadsheetResponseDto {
+  private async calculateSpreadsheetStats(userId: string, spreadsheetId: string) {
+    const filter = {
+      userId: new Types.ObjectId(userId),
+      spreadsheetId: new Types.ObjectId(spreadsheetId),
+    }
+
+    const [validContactsCount, nonDncCount, dncCount] = await Promise.all([
+      // Total valid contacts from this spreadsheet
+      this.contactModel.countDocuments(filter).exec(),
+      // Contacts with DNC = false (excluding null/undefined)
+      this.contactModel.countDocuments({ ...filter, dnc: false }).exec(),
+      // Contacts with DNC = true (excluding null/undefined)
+      this.contactModel.countDocuments({ ...filter, dnc: true }).exec(),
+    ])
+
+    return { validContactsCount, nonDncCount, dncCount }
+  }
+
+  private mapToResponseDto(
+    spreadsheet: ContactSpreadsheetDocument,
+    stats?: { validContactsCount: number; nonDncCount: number; dncCount: number }
+  ): ContactSpreadsheetResponseDto {
     return {
       id: spreadsheet._id.toString(),
       originalFileName: spreadsheet.originalFileName,
@@ -642,6 +706,13 @@ export class ContactsService {
       fileSize: spreadsheet.fileSize,
       status: spreadsheet.status,
       templateId: spreadsheet.templateId?.toString(),
+      validContactsCount: stats?.validContactsCount,
+      nonDncCount: stats?.nonDncCount,
+      dncCount: stats?.dncCount,
+      processedCount: spreadsheet.processedCount,
+      skippedCount: spreadsheet.skippedCount,
+      processingErrors: spreadsheet.processingErrors,
+      duplicateContacts: spreadsheet.duplicateContacts,
     }
   }
 
@@ -709,5 +780,44 @@ export class ContactsService {
       dnc: contact.dnc,
       dncUpdatedAt: contact.dncUpdatedAt?.toISOString(),
     }
+  }
+
+  private async generateUniqueFileName(userId: string, originalFileName: string): Promise<string> {
+    // Extract filename without extension and extension
+    const lastDotIndex = originalFileName.lastIndexOf('.')
+    const nameWithoutExt = lastDotIndex > 0 ? originalFileName.substring(0, lastDotIndex) : originalFileName
+    const extension = lastDotIndex > 0 ? originalFileName.substring(lastDotIndex) : ''
+
+    // Check if the original filename already exists
+    const existingFiles = await this.contactSpreadsheetModel
+      .find({
+        userId: new Types.ObjectId(userId),
+        isDeleted: { $ne: true }
+      })
+      .select('originalFileName')
+      .exec()
+
+    const existingFileNames = existingFiles.map(file => file.originalFileName)
+
+    // If the original filename doesn't exist, return it as is
+    if (!existingFileNames.includes(originalFileName)) {
+      return originalFileName
+    }
+
+    // Find the highest number in existing files with the same base name
+    let highestNumber = 0
+    const regex = new RegExp(`^${nameWithoutExt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?: \\((\\d+)\\))?${extension.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`)
+
+    existingFileNames.forEach(fileName => {
+      const match = fileName.match(regex)
+      if (match) {
+        const number = match[1] ? parseInt(match[1], 10) : 0
+        highestNumber = Math.max(highestNumber, number)
+      }
+    })
+
+    // Generate the new filename with incremented number
+    const newNumber = highestNumber + 1
+    return `${nameWithoutExt} (${newNumber})${extension}`
   }
 }

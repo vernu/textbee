@@ -8,6 +8,18 @@ export interface ContactSpreadsheet {
   fileSize: number
   status: string
   templateId?: string
+  validContactsCount?: number
+  nonDncCount?: number
+  dncCount?: number
+  processedCount?: number
+  skippedCount?: number
+  processingErrors?: string[]
+  duplicateContacts?: Array<{
+    phone: string
+    firstName?: string
+    lastName?: string
+    reason: string
+  }>
 }
 
 export interface GetSpreadsheetsParams {
@@ -56,6 +68,18 @@ export interface ProcessSpreadsheetData {
   templateId?: string
   dncColumn?: string
   dncValue?: string
+}
+
+export interface ProcessSpreadsheetResponse {
+  processed: number
+  skipped: number
+  errors: string[]
+  duplicateContacts: Array<{
+    phone: string
+    firstName?: string
+    lastName?: string
+    reason: string
+  }>
 }
 
 export interface CreateTemplateData {
@@ -112,7 +136,7 @@ export const contactsApi = {
     return response.data
   },
 
-  async getSpreadsheet(id: string): Promise<ContactSpreadsheet> {
+  async getSpreadsheet(id: string): Promise<ContactSpreadsheet & { fileContent: string }> {
     const response = await httpBrowserClient.get(`/contacts/spreadsheets/${id}`)
     return response.data
   },
@@ -150,7 +174,7 @@ export const contactsApi = {
     return response.data
   },
 
-  async processSpreadsheet(spreadsheetId: string, data: ProcessSpreadsheetData): Promise<{ processed: number; errors: string[] }> {
+  async processSpreadsheet(spreadsheetId: string, data: ProcessSpreadsheetData): Promise<ProcessSpreadsheetResponse> {
     const response = await httpBrowserClient.post(`/contacts/spreadsheets/${spreadsheetId}/process`, data)
     return response.data
   },

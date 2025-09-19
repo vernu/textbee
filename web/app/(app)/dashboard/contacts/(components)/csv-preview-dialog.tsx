@@ -226,10 +226,29 @@ export default function CsvPreviewDialog({
         dncValue: dncValue || undefined,
       })
 
+      const successParts = [`Processed ${result.processed} contacts`]
+      if (result.skipped > 0) {
+        successParts.push(`${result.skipped} duplicates skipped`)
+      }
+      if (result.errors.length > 0) {
+        successParts.push(`${result.errors.length} errors`)
+      }
+
       toast({
         title: 'Processing complete',
-        description: `Processed ${result.processed} contacts${result.errors.length > 0 ? ` with ${result.errors.length} errors` : ''}`,
+        description: successParts.join(', '),
       })
+
+      // Show detailed duplicate information if there are any
+      if (result.duplicateContacts.length > 0) {
+        setTimeout(() => {
+          toast({
+            title: `${result.duplicateContacts.length} duplicate contacts skipped`,
+            description: `Phone numbers already exist in your contacts. Use "View Details" button to see specifics.`,
+            variant: 'default',
+          })
+        }, 1000)
+      }
 
       onProcessComplete()
       onOpenChange(false)

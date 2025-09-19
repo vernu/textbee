@@ -33,12 +33,15 @@ import {
   X,
   MessageSquare,
   Plus,
+  RefreshCw,
+  Eye,
 } from 'lucide-react'
 import { contactsApi, ContactSpreadsheet, Contact, downloadBlob } from '@/lib/api/contacts'
 import { ApiEndpoints } from '@/config/api'
 import httpBrowserClient from '@/lib/httpBrowserClient'
 import { cn, normalizePhoneNumber } from '@/lib/utils'
 import CsvPreviewDialog from './(components)/csv-preview-dialog'
+import ProcessingDetailsDialog from './(components)/processing-details-dialog'
 
 interface Message {
   _id: string
@@ -587,7 +590,9 @@ export default function ContactsPage() {
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [displayCount, setDisplayCount] = useState(25)
-  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'a-z' | 'z-a'>('newest')
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'a-z' | 'z-a' | 'status'>('newest')
+  const [spreadsheetSortBy, setSpreadsheetSortBy] = useState<'newest' | 'oldest' | 'a-z' | 'z-a' | 'status'>('newest')
+  const [spreadsheetSortOrder, setSpreadsheetSortOrder] = useState<'asc' | 'desc'>('desc')
   const [contactSortBy, setContactSortBy] = useState<'firstName' | 'lastName' | 'phone' | 'email' | 'propertyAddress' | 'propertyCity' | 'propertyState'>('firstName')
   const [contactSortOrder, setContactSortOrder] = useState<'asc' | 'desc'>('asc')
   const [selectedFiles, setSelectedFiles] = useState<string[]>([])
@@ -631,6 +636,14 @@ export default function ContactsPage() {
     fileName: '',
     fileContent: '',
   })
+
+  const [detailsDialog, setDetailsDialog] = useState<{
+    open: boolean
+    spreadsheet: ContactSpreadsheet | null
+  }>({
+    open: false,
+    spreadsheet: null,
+  })
   const { toast } = useToast()
   const queryClient = useQueryClient()
 
@@ -647,7 +660,7 @@ export default function ContactsPage() {
       
       return () => clearTimeout(timer)
     }
-  }, [selectedMode, searchQuery, sortBy, contactSortBy, contactSortOrder, displayCount, currentPage])
+  }, [selectedMode, searchQuery, sortBy, spreadsheetSortBy, spreadsheetSortOrder, contactSortBy, contactSortOrder, displayCount, currentPage])
 
   const loadSpreadsheets = async () => {
     try {
@@ -700,8 +713,26 @@ export default function ContactsPage() {
     }
   }
 
-  // Use files/contacts directly since API handles filtering and sorting
-  const filteredAndSortedFiles = files
+  // Use files/contacts directly since API handles filtering and sorting for most cases
+  // But apply client-side sorting for Status column since it's not handled by backend
+  const filteredAndSortedFiles = useMemo(() => {
+    if (spreadsheetSortBy === 'status') {
+      const sorted = [...files].sort((a, b) => {
+        const statusOrder = { pending: 0, processed: 1 }
+        const aOrder = statusOrder[a.status as keyof typeof statusOrder] ?? 2
+        const bOrder = statusOrder[b.status as keyof typeof statusOrder] ?? 2
+
+        if (spreadsheetSortOrder === 'asc') {
+          return aOrder - bOrder
+        } else {
+          return bOrder - aOrder
+        }
+      })
+      return sorted
+    }
+    return files
+  }, [files, spreadsheetSortBy, spreadsheetSortOrder])
+
   const filteredAndSortedContacts = contacts
 
   const [totalContacts, setTotalContacts] = useState(0)
@@ -992,14 +1023,14 @@ export default function ContactsPage() {
 
     const fileCount = selectedFiles.length
     const fileText = fileCount === 1 ? 'file' : 'files'
-    
+
     if (!confirm(`Are you sure you want to permanently delete ${fileCount} ${fileText}? This will also delete all contacts from these spreadsheets. This action cannot be undone.`)) {
       return
     }
 
     try {
       await contactsApi.deleteMultipleSpreadsheets(selectedFiles)
-      
+
       toast({
         title: 'Success',
         description: `Deleted ${fileCount} ${fileText} and their contacts`,
@@ -1019,6 +1050,35 @@ export default function ContactsPage() {
     }
   }
 
+  const handleRetryConfiguration = async (file: ContactSpreadsheet) => {
+    try {
+      // Get the file content from the backend
+      const spreadsheet = await contactsApi.getSpreadsheet(file.id)
+
+      // Open the preview dialog with the file data
+      setPreviewDialog({
+        open: true,
+        spreadsheetId: file.id,
+        fileName: file.originalFileName,
+        fileContent: spreadsheet.fileContent,
+      })
+    } catch (error) {
+      console.error('Error getting spreadsheet:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to load spreadsheet data',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const handleViewDetails = (file: ContactSpreadsheet) => {
+    setDetailsDialog({
+      open: true,
+      spreadsheet: file,
+    })
+  }
+
   const handleContactSort = (column: 'firstName' | 'lastName' | 'phone' | 'email' | 'propertyAddress' | 'propertyCity' | 'propertyState') => {
     if (contactSortBy === column) {
       // Toggle sort order if clicking on same column
@@ -1031,10 +1091,29 @@ export default function ContactsPage() {
     setCurrentPage(1) // Reset to first page when sorting changes
   }
 
+  const handleSpreadsheetSort = (column: 'status') => {
+    if (spreadsheetSortBy === column) {
+      // Toggle sort order if clicking on same column
+      setSpreadsheetSortOrder(spreadsheetSortOrder === 'asc' ? 'desc' : 'asc')
+    } else {
+      // For status, default to pending first (asc)
+      setSpreadsheetSortBy(column)
+      setSpreadsheetSortOrder('asc')
+    }
+    setCurrentPage(1) // Reset to first page when sorting changes
+  }
+
+  const renderSpreadsheetSortIcon = (column: 'status') => {
+    if (spreadsheetSortBy !== column) return null
+    return spreadsheetSortOrder === 'asc' ?
+      <ChevronUp className="h-4 w-4 ml-1" /> :
+      <ChevronDown className="h-4 w-4 ml-1" />
+  }
+
   const renderSortIcon = (column: 'firstName' | 'lastName' | 'phone' | 'email' | 'propertyAddress' | 'propertyCity' | 'propertyState') => {
     if (contactSortBy !== column) return null
-    return contactSortOrder === 'asc' ? 
-      <ChevronUp className="h-4 w-4 ml-1" /> : 
+    return contactSortOrder === 'asc' ?
+      <ChevronUp className="h-4 w-4 ml-1" /> :
       <ChevronDown className="h-4 w-4 ml-1" />
   }
 
@@ -1042,6 +1121,52 @@ export default function ContactsPage() {
   const isSomeSelected = selectedFiles.length > 0
   const isAllContactsSelected = selectedContacts.length === filteredAndSortedContacts.length && filteredAndSortedContacts.length > 0
   const isSomeContactsSelected = selectedContacts.length > 0
+
+  const getStatusDisplay = (status: string, file: ContactSpreadsheet) => {
+    const statusConfig = {
+      pending: { dot: 'bg-yellow-500', text: 'Pending' },
+      processed: { dot: 'bg-green-500', text: 'Processed' },
+    }
+
+    const config = statusConfig[status as keyof typeof statusConfig] || { dot: 'bg-gray-400', text: status }
+
+    return (
+      <div className='flex items-center gap-2'>
+        <div className={`w-2 h-2 rounded-full ${config.dot}`} />
+        <span className='text-sm w-16'>{config.text}</span>
+        <div className='flex items-center'>
+          {status === 'pending' && (
+            <Button
+              size='sm'
+              variant='ghost'
+              onClick={(e) => {
+                e.stopPropagation()
+                handleRetryConfiguration(file)
+              }}
+              className='gap-1 h-6 px-2'
+              title='Retry configuration'
+            >
+              <RefreshCw className='h-3 w-3' />
+            </Button>
+          )}
+          {status === 'processed' && (file.skippedCount || file.processingErrors?.length) && (
+            <Button
+              size='sm'
+              variant='ghost'
+              onClick={(e) => {
+                e.stopPropagation()
+                handleViewDetails(file)
+              }}
+              className='gap-1 h-6 px-2'
+              title='View processing details'
+            >
+              <Eye className='h-3 w-3' />
+            </Button>
+          )}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className='flex h-full overflow-hidden'>
@@ -1306,7 +1431,19 @@ export default function ContactsPage() {
                       />
                     </th>
                     <th className='text-left p-4 font-medium'>Group name</th>
+                    <th
+                      className='text-left p-4 font-medium cursor-pointer hover:bg-muted/75 transition-colors'
+                      onClick={() => handleSpreadsheetSort('status')}
+                    >
+                      <div className='flex items-center'>
+                        Status
+                        {renderSpreadsheetSortIcon('status')}
+                      </div>
+                    </th>
                     <th className='text-left p-4 font-medium'>Rows</th>
+                    <th className='text-left p-4 font-medium'>Valid Contacts</th>
+                    <th className='text-left p-4 font-medium'>Non-DNC</th>
+                    <th className='text-left p-4 font-medium'>DNC</th>
                     <th className='text-left p-4 font-medium'>Date created</th>
                   </tr>
                 </thead>
@@ -1324,16 +1461,23 @@ export default function ContactsPage() {
                           <FileSpreadsheet className='h-4 w-4 text-muted-foreground' />
                           <div>
                             <div className='font-medium'>{file.originalFileName}</div>
-                            <div className='text-xs text-muted-foreground'>
-                              Status: <Badge variant={file.status === 'processed' ? 'default' : 'secondary'} className='text-xs'>
-                                {file.status}
-                              </Badge>
-                            </div>
                           </div>
                         </div>
                       </td>
+                      <td className='p-4'>
+                        {getStatusDisplay(file.status, file)}
+                      </td>
                       <td className='p-4 text-muted-foreground'>
                         {file.contactCount.toLocaleString()}
+                      </td>
+                      <td className='p-4 text-muted-foreground'>
+                        {file.status === 'pending' ? '-' : (file.validContactsCount?.toLocaleString() ?? '-')}
+                      </td>
+                      <td className='p-4 text-muted-foreground'>
+                        {file.status === 'pending' ? '-' : (file.nonDncCount?.toLocaleString() ?? '-')}
+                      </td>
+                      <td className='p-4 text-muted-foreground'>
+                        {file.status === 'pending' ? '-' : (file.dncCount?.toLocaleString() ?? '-')}
                       </td>
                       <td className='p-4 text-muted-foreground'>
                         {file.uploadDate}
@@ -1556,6 +1700,12 @@ export default function ContactsPage() {
             await loadSpreadsheets()
             await loadStats()
           }}
+        />
+
+      <ProcessingDetailsDialog
+          open={detailsDialog.open}
+          onOpenChange={(open) => setDetailsDialog(prev => ({ ...prev, open }))}
+          spreadsheet={detailsDialog.spreadsheet}
         />
     </div>
   )

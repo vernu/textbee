@@ -30,6 +30,39 @@ export class ContactSpreadsheet {
 
   @Prop({ type: Types.ObjectId, ref: 'ContactTemplate' })
   templateId?: Types.ObjectId
+
+  @Prop({ type: Number, default: 0 })
+  validContactsCount?: number
+
+  @Prop({ type: Number, default: 0 })
+  nonDncCount?: number
+
+  @Prop({ type: Number, default: 0 })
+  dncCount?: number
+
+  @Prop({ type: Number })
+  processedCount?: number
+
+  @Prop({ type: Number })
+  skippedCount?: number
+
+  @Prop({ type: [String] })
+  processingErrors?: string[]
+
+  @Prop({
+    type: [{
+      phone: { type: String, required: true },
+      firstName: { type: String },
+      lastName: { type: String },
+      reason: { type: String, required: true }
+    }]
+  })
+  duplicateContacts?: Array<{
+    phone: string
+    firstName?: string
+    lastName?: string
+    reason: string
+  }>
 }
 
 export const ContactSpreadsheetSchema = SchemaFactory.createForClass(ContactSpreadsheet)

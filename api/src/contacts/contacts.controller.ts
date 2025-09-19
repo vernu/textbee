@@ -22,6 +22,7 @@ import {
   GetSpreadsheetsDto,
   PreviewCsvDto,
   ProcessSpreadsheetDto,
+  ProcessSpreadsheetResponseDto,
   CreateTemplateDto,
   GetContactsDto,
   UpdateContactDto,
@@ -67,6 +68,9 @@ export class ContactsController {
       contactCount: spreadsheet.contactCount,
       uploadDate: spreadsheet.uploadDate.toISOString().split('T')[0],
       fileSize: spreadsheet.fileSize,
+      status: spreadsheet.status,
+      fileContent: spreadsheet.fileContent,
+      templateId: spreadsheet.templateId?.toString(),
     }
   }
 
@@ -158,7 +162,7 @@ export class ContactsController {
     @Request() req,
     @Param('id') id: string,
     @Body() processData: ProcessSpreadsheetDto,
-  ) {
+  ): Promise<ProcessSpreadsheetResponseDto> {
     return this.contactsService.processSpreadsheet(req.user.id, id, processData)
   }
 
