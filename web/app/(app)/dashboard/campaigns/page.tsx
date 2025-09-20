@@ -107,22 +107,24 @@ function TemplateItem({ template, onRemove }: { template: any, onRemove: () => v
       <div className='flex items-start justify-between gap-2'>
         <div className='flex-1 min-w-0'>
           <div className='text-xs font-medium mb-1'>{template.name}</div>
-          <div
-            className={`text-xs text-muted-foreground transition-all duration-200 ${
-              isExpanded ? 'whitespace-pre-wrap break-words' : 'truncate'
-            }`}
-            style={{ maxHeight: isExpanded ? '200px' : '20px', overflow: isExpanded ? 'visible' : 'hidden' }}
-          >
-            {template.content}
+          <div className='flex items-start gap-1'>
+            <div
+              className={`text-xs text-muted-foreground transition-all duration-200 flex-1 ${
+                isExpanded ? 'whitespace-pre-wrap break-words' : 'truncate'
+              }`}
+              style={{ maxHeight: isExpanded ? '200px' : '20px', overflow: isExpanded ? 'visible' : 'hidden' }}
+            >
+              {template.content}
+            </div>
+            <Button
+              variant='ghost'
+              size='sm'
+              className='p-0 h-4 text-xs text-blue-600 hover:text-blue-800 flex-shrink-0'
+              onClick={() => setIsExpanded(!isExpanded)}
+            >
+              {isExpanded ? 'Show less' : 'Show more'}
+            </Button>
           </div>
-          <Button
-            variant='ghost'
-            size='sm'
-            className='p-0 h-4 text-xs mt-1 text-blue-600 hover:text-blue-800'
-            onClick={() => setIsExpanded(!isExpanded)}
-          >
-            {isExpanded ? 'Show less' : 'Show more'}
-          </Button>
         </div>
         <Button
           variant='ghost'
