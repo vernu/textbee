@@ -42,6 +42,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { contactsApi, ContactSpreadsheet } from '@/lib/api/contacts'
+import { campaignsApi, MessageTemplateGroup, MessageTemplate } from '@/lib/api/campaigns'
 import { ApiEndpoints } from '@/config/api'
 import httpBrowserClient from '@/lib/httpBrowserClient'
 
@@ -55,6 +56,85 @@ interface Campaign {
   dateCreated: string
   lastSent?: string
   description?: string
+}
+
+function TemplateSelectionItem({ template, isSelected, onToggle }: { template: any, isSelected: boolean, onToggle: () => void }) {
+  const [isExpanded, setIsExpanded] = useState(false)
+
+  return (
+    <div className='border border-muted rounded p-2'>
+      <div className='flex items-start space-x-2'>
+        <Checkbox
+          checked={isSelected}
+          onCheckedChange={onToggle}
+        />
+        <div className='flex-1 min-w-0'>
+          <div className='flex items-center justify-between'>
+            <span className='font-medium text-sm truncate pr-2'>{template.name}</span>
+            <div className='flex items-center space-x-2 shrink-0'>
+              <Badge variant='secondary' className='text-xs'>
+                {template.content.length} chars
+              </Badge>
+              <Button
+                variant='ghost'
+                size='sm'
+                className='p-1 h-6 w-6'
+                onClick={() => setIsExpanded(!isExpanded)}
+              >
+                <Eye className='h-3 w-3' />
+              </Button>
+            </div>
+          </div>
+          <div
+            className={`text-xs text-muted-foreground mt-1 transition-all duration-200 ${
+              isExpanded ? 'whitespace-pre-wrap break-words' : 'truncate'
+            }`}
+            style={{ maxHeight: isExpanded ? '200px' : '20px', overflow: isExpanded ? 'auto' : 'hidden' }}
+          >
+            {template.content}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function TemplateItem({ template, onRemove }: { template: any, onRemove: () => void }) {
+  const [isExpanded, setIsExpanded] = useState(false)
+
+  return (
+    <div className='bg-gray-200 rounded p-2 border'>
+      <div className='flex items-start justify-between gap-2'>
+        <div className='flex-1 min-w-0'>
+          <div className='text-xs font-medium mb-1'>{template.name}</div>
+          <div
+            className={`text-xs text-muted-foreground transition-all duration-200 ${
+              isExpanded ? 'whitespace-pre-wrap break-words' : 'truncate'
+            }`}
+            style={{ maxHeight: isExpanded ? '200px' : '20px', overflow: isExpanded ? 'visible' : 'hidden' }}
+          >
+            {template.content}
+          </div>
+          <Button
+            variant='ghost'
+            size='sm'
+            className='p-0 h-4 text-xs mt-1 text-blue-600 hover:text-blue-800'
+            onClick={() => setIsExpanded(!isExpanded)}
+          >
+            {isExpanded ? 'Show less' : 'Show more'}
+          </Button>
+        </div>
+        <Button
+          variant='ghost'
+          size='sm'
+          className='p-0.5 h-5 w-5 text-muted-foreground hover:text-foreground'
+          onClick={onRemove}
+        >
+          <X className='h-3 w-3' />
+        </Button>
+      </div>
+    </div>
+  )
 }
 
 export default function CampaignsPage() {
@@ -72,7 +152,7 @@ export default function CampaignsPage() {
     description: '',
     status: 'draft' as 'active' | 'draft' | 'inactive' | 'completed',
     selectedContacts: [] as string[],
-    messageTemplateGroups: [] as string[],
+    selectedTemplates: [] as string[], // Changed from messageTemplateGroups to selectedTemplates
     sendDevices: [] as string[],
     scheduleType: 'now' as 'now' | 'later',
     scheduledDate: '',
@@ -86,7 +166,6 @@ export default function CampaignsPage() {
     name: '',
     description: ''
   })
-  const [templateGroups, setTemplateGroups] = useState<any[]>([])
   const [createTemplateOpen, setCreateTemplateOpen] = useState(false)
   const [newTemplate, setNewTemplate] = useState({
     name: '',
@@ -99,6 +178,8 @@ export default function CampaignsPage() {
     name: string
     content: string
   } | null>(null)
+  const [templateSelectionOpen, setTemplateSelectionOpen] = useState(false)
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
 
   // Validation functions for each stage
   const validateDetailsStage = () => {
@@ -106,14 +187,14 @@ export default function CampaignsPage() {
   }
 
   const validateConfigureStage = () => {
-    const hasTemplateGroups = createCampaignData.messageTemplateGroups.length > 0
+    const hasTemplates = createCampaignData.selectedTemplates.length > 0
     const hasDevices = createCampaignData.sendDevices.length > 0
     const hasValidSchedule = createCampaignData.scheduleType === 'now' ||
       (createCampaignData.scheduleType === 'later' &&
        createCampaignData.scheduledDate &&
        createCampaignData.scheduledTime)
 
-    return hasTemplateGroups && hasDevices && hasValidSchedule
+    return hasTemplates && hasDevices && hasValidSchedule
   }
 
   const canNavigateToTab = (targetTab: string) => {
@@ -149,8 +230,65 @@ export default function CampaignsPage() {
         .then((res) => res.data),
   })
 
-  // Template groups will be fetched from API
-  const mockTemplateGroups: any[] = templateGroups
+  // Fetch template groups from API
+  const { data: templateGroupsData, refetch: refetchTemplateGroups } = useQuery({
+    queryKey: ['template-groups'],
+    queryFn: () => campaignsApi.getTemplateGroups(),
+  })
+
+  const templateGroups = templateGroupsData || []
+
+  // Mutations for template groups
+  const createTemplateGroupMutation = useMutation({
+    mutationFn: campaignsApi.createTemplateGroup,
+    onSuccess: () => {
+      refetchTemplateGroups()
+      queryClient.invalidateQueries({ queryKey: ['template-groups'] })
+    },
+  })
+
+  const updateTemplateGroupMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
+      campaignsApi.updateTemplateGroup(id, data),
+    onSuccess: () => {
+      refetchTemplateGroups()
+      queryClient.invalidateQueries({ queryKey: ['template-groups'] })
+    },
+  })
+
+  const deleteTemplateGroupMutation = useMutation({
+    mutationFn: campaignsApi.deleteTemplateGroup,
+    onSuccess: () => {
+      refetchTemplateGroups()
+      queryClient.invalidateQueries({ queryKey: ['template-groups'] })
+    },
+  })
+
+  // Mutations for templates
+  const createTemplateMutation = useMutation({
+    mutationFn: campaignsApi.createTemplate,
+    onSuccess: () => {
+      refetchTemplateGroups()
+      queryClient.invalidateQueries({ queryKey: ['template-groups'] })
+    },
+  })
+
+  const updateTemplateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
+      campaignsApi.updateTemplate(id, data),
+    onSuccess: () => {
+      refetchTemplateGroups()
+      queryClient.invalidateQueries({ queryKey: ['template-groups'] })
+    },
+  })
+
+  const deleteTemplateMutation = useMutation({
+    mutationFn: campaignsApi.deleteTemplate,
+    onSuccess: () => {
+      refetchTemplateGroups()
+      queryClient.invalidateQueries({ queryKey: ['template-groups'] })
+    },
+  })
 
   // Campaigns will be fetched from API
   useEffect(() => {
@@ -288,7 +426,7 @@ export default function CampaignsPage() {
       description: '',
       status: 'draft',
       selectedContacts: [],
-      messageTemplateGroups: [],
+      selectedTemplates: [],
       sendDevices: [],
       scheduleType: 'now',
       scheduledDate: '',
@@ -321,7 +459,7 @@ export default function CampaignsPage() {
     })
   }
 
-  const handleCreateTemplateGroup = () => {
+  const handleCreateTemplateGroup = async () => {
     if (!newTemplateGroup.name.trim()) {
       toast({
         title: "Template group name required",
@@ -331,25 +469,29 @@ export default function CampaignsPage() {
       return
     }
 
-    const templateGroup = {
-      id: Date.now().toString(),
-      name: newTemplateGroup.name,
-      description: newTemplateGroup.description,
-      templates: [],
-      createdAt: new Date().toISOString()
+    try {
+      await createTemplateGroupMutation.mutateAsync({
+        name: newTemplateGroup.name,
+        description: newTemplateGroup.description || undefined,
+      })
+
+      setNewTemplateGroup({ name: '', description: '' })
+      setCreateTemplateGroupOpen(false)
+
+      toast({
+        title: "Template group created",
+        description: "New template group has been created successfully."
+      })
+    } catch (error: any) {
+      toast({
+        title: "Error creating template group",
+        description: error.response?.data?.message || "An error occurred while creating the template group.",
+        variant: "destructive"
+      })
     }
-
-    setTemplateGroups([...templateGroups, templateGroup])
-    setNewTemplateGroup({ name: '', description: '' })
-    setCreateTemplateGroupOpen(false)
-
-    toast({
-      title: "Template group created",
-      description: "New template group has been created successfully."
-    })
   }
 
-  const handleCreateTemplate = () => {
+  const handleCreateTemplate = async () => {
     if (!newTemplate.name.trim() || !newTemplate.content.trim()) {
       toast({
         title: "Template fields required",
@@ -368,31 +510,32 @@ export default function CampaignsPage() {
       return
     }
 
-    const template = {
-      id: Date.now().toString(),
-      name: newTemplate.name,
-      content: newTemplate.content,
-      createdAt: new Date().toISOString()
+    try {
+      await createTemplateMutation.mutateAsync({
+        groupId: selectedTemplateGroup,
+        name: newTemplate.name,
+        content: newTemplate.content,
+      })
+
+      setNewTemplate({ name: '', content: '' })
+      setCreateTemplateOpen(false)
+
+      toast({
+        title: "Template created",
+        description: "New template has been created successfully."
+      })
+    } catch (error: any) {
+      toast({
+        title: "Error creating template",
+        description: error.response?.data?.message || "An error occurred while creating the template.",
+        variant: "destructive"
+      })
     }
-
-    setTemplateGroups(templateGroups.map(group =>
-      group.id === selectedTemplateGroup
-        ? { ...group, templates: [...group.templates, template] }
-        : group
-    ))
-
-    setNewTemplate({ name: '', content: '' })
-    setCreateTemplateOpen(false)
-
-    toast({
-      title: "Template created",
-      description: "New template has been created successfully."
-    })
   }
 
   const handleEditTemplate = (template: any, groupId: string) => {
     setEditingTemplate({
-      id: template.id,
+      id: template._id,
       groupId: groupId,
       name: template.name,
       content: template.content
@@ -400,7 +543,7 @@ export default function CampaignsPage() {
     setEditTemplateOpen(true)
   }
 
-  const handleUpdateTemplate = () => {
+  const handleUpdateTemplate = async () => {
     if (!editingTemplate) return
 
     if (!editingTemplate.name.trim() || !editingTemplate.content.trim()) {
@@ -412,31 +555,29 @@ export default function CampaignsPage() {
       return
     }
 
-    setTemplateGroups(templateGroups.map(group =>
-      group.id === editingTemplate.groupId
-        ? {
-            ...group,
-            templates: group.templates.map((template: any) =>
-              template.id === editingTemplate.id
-                ? {
-                    ...template,
-                    name: editingTemplate.name,
-                    content: editingTemplate.content,
-                    updatedAt: new Date().toISOString()
-                  }
-                : template
-            )
-          }
-        : group
-    ))
+    try {
+      await updateTemplateMutation.mutateAsync({
+        id: editingTemplate.id,
+        data: {
+          name: editingTemplate.name,
+          content: editingTemplate.content,
+        },
+      })
 
-    setEditingTemplate(null)
-    setEditTemplateOpen(false)
+      setEditingTemplate(null)
+      setEditTemplateOpen(false)
 
-    toast({
-      title: "Template updated",
-      description: "Template has been updated successfully."
-    })
+      toast({
+        title: "Template updated",
+        description: "Template has been updated successfully."
+      })
+    } catch (error: any) {
+      toast({
+        title: "Error updating template",
+        description: error.response?.data?.message || "An error occurred while updating the template.",
+        variant: "destructive"
+      })
+    }
   }
 
   const handleCampaignSort = (column: 'name' | 'status' | 'contacts' | 'groups' | 'dateCreated' | 'lastSent') => {
@@ -577,375 +718,426 @@ export default function CampaignsPage() {
                     Create new campaign
                   </Button>
                 </DialogTrigger>
-                <DialogContent className='max-w-4xl max-h-[90vh] overflow-y-auto'>
-                  <DialogHeader>
+                <DialogContent className='w-[900px] max-h-[90vh] max-w-none overflow-hidden flex flex-col'>
+                  <DialogHeader className='flex-shrink-0 border-b p-6 pb-4'>
                     <DialogTitle>Create New Campaign</DialogTitle>
                   </DialogHeader>
-                  <Tabs value={activeTab} onValueChange={(value) => {
-                    if (canNavigateToTab(value)) {
-                      setActiveTab(value)
-                    } else {
-                      if (value === 'configure' && !validateDetailsStage()) {
-                        toast({
-                          title: "Complete required fields",
-                          description: "Please fill in campaign name and select contacts before proceeding.",
-                          variant: "destructive"
-                        })
-                      } else if (value === 'preview' && !validateConfigureStage()) {
-                        toast({
-                          title: "Complete SMS configuration",
-                          description: "Please select template groups, devices, and schedule before previewing.",
-                          variant: "destructive"
-                        })
+                  <div className='flex-1 overflow-hidden min-h-0'>
+                    <Tabs value={activeTab} onValueChange={(value) => {
+                      if (canNavigateToTab(value)) {
+                        setActiveTab(value)
+                      } else {
+                        if (value === 'configure' && !validateDetailsStage()) {
+                          toast({
+                            title: "Complete required fields",
+                            description: "Please fill in campaign name and select contacts before proceeding.",
+                            variant: "destructive"
+                          })
+                        } else if (value === 'preview' && !validateConfigureStage()) {
+                          toast({
+                            title: "Complete SMS configuration",
+                            description: "Please select template groups, devices, and schedule before previewing.",
+                            variant: "destructive"
+                          })
+                        }
                       }
-                    }
-                  }} className='w-full'>
-                    <TabsList className='grid w-full grid-cols-3'>
-                      <TabsTrigger value='details' className='flex items-center gap-2'>
-                        <FileText className='h-4 w-4' />
-                        Details
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value='configure'
-                        disabled={!canNavigateToTab('configure')}
-                        className='flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed'
-                      >
-                        <Settings className='h-4 w-4' />
-                        Configure SMS
-                      </TabsTrigger>
-                      <TabsTrigger
-                        value='preview'
-                        disabled={!canNavigateToTab('preview')}
-                        className='flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed'
-                      >
-                        <Eye className='h-4 w-4' />
-                        Preview
-                      </TabsTrigger>
-                    </TabsList>
+                    }} className='h-full flex flex-col'>
+                      <TabsList className='h-[50px] w-full grid grid-cols-3 flex-shrink-0'>
+                        <TabsTrigger value='details' className='flex items-center justify-center gap-2 h-full'>
+                          <FileText className='h-4 w-4' />
+                          Details
+                        </TabsTrigger>
+                        <TabsTrigger
+                          value='configure'
+                          disabled={!canNavigateToTab('configure')}
+                          className='flex items-center justify-center gap-2 h-full disabled:opacity-50 disabled:cursor-not-allowed'
+                        >
+                          <Settings className='h-4 w-4' />
+                          Configure SMS
+                        </TabsTrigger>
+                        <TabsTrigger
+                          value='preview'
+                          disabled={!canNavigateToTab('preview')}
+                          className='flex items-center justify-center gap-2 h-full disabled:opacity-50 disabled:cursor-not-allowed'
+                        >
+                          <Eye className='h-4 w-4' />
+                          Preview
+                        </TabsTrigger>
+                      </TabsList>
 
-                    <TabsContent value='details' className='space-y-4 mt-6'>
-                      <div className='space-y-2'>
-                        <Label htmlFor='name' className='text-sm font-medium'>
-                          Campaign Name<span className='text-red-500'>*</span>
-                        </Label>
-                        <Input
-                          id='name'
-                          value={createCampaignData.name}
-                          onChange={(e) => {
-                            setCreateCampaignData(prev => ({ ...prev, name: e.target.value }))
-                          }}
-                          placeholder='Enter campaign name'
-                        />
-                      </div>
-
-                      <div className='space-y-2'>
-                        <Label className='text-sm font-medium'>
-                          Selected Contacts<span className='text-red-500'>*</span>
-                        </Label>
-                        <Select>
-                          <SelectTrigger>
-                            <SelectValue
-                              placeholder={createCampaignData.selectedContacts.length > 0
-                                ? `${createCampaignData.selectedContacts.length} spreadsheet(s) selected`
-                                : 'Select contact spreadsheets'}
-                            />
-                          </SelectTrigger>
-                          <SelectContent className='max-h-60 overflow-y-auto'>
-                            {contactSpreadsheetsData?.length === 0 ? (
-                              <div className='px-2 py-4 text-center text-sm text-muted-foreground'>
-                                No processed contact spreadsheets available.
-                                <br />
-                                Process spreadsheets in the Contacts page first.
-                              </div>
-                            ) : (
-                              contactSpreadsheetsData?.map(contact => (
-                                <div key={contact.id} className='flex items-center space-x-2 px-2 py-2 cursor-pointer hover:bg-muted/50'
-                                     onClick={(e) => {
-                                       e.preventDefault()
-                                       const isSelected = createCampaignData.selectedContacts.includes(contact.id)
-                                       if (isSelected) {
-                                         setCreateCampaignData(prev => ({
-                                           ...prev,
-                                           selectedContacts: prev.selectedContacts.filter(id => id !== contact.id)
-                                         }))
-                                       } else {
-                                         setCreateCampaignData(prev => ({
-                                           ...prev,
-                                           selectedContacts: [...prev.selectedContacts, contact.id]
-                                         }))
-                                       }
-                                     }}>
-                                  <Checkbox
-                                    checked={createCampaignData.selectedContacts.includes(contact.id)}
-                                    onChange={() => {}}
-                                  />
-                                  <div className='text-sm'>
-                                    <div className='font-medium'>{contact.originalFileName}</div>
-                                    <div className='text-xs text-muted-foreground'>
-                                      {(contact.validContactsCount || contact.contactCount).toLocaleString()} valid contacts • Uploaded {new Date(contact.uploadDate).toLocaleDateString()}
-                                    </div>
-                                  </div>
-                                </div>
-                              ))
-                            )}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className='space-y-2'>
-                        <Label htmlFor='description' className='text-sm font-medium'>
-                          Description
-                        </Label>
-                        <Textarea
-                          id='description'
-                          value={createCampaignData.description}
-                          onChange={(e) => {
-                            setCreateCampaignData(prev => ({ ...prev, description: e.target.value }))
-                          }}
-                          placeholder='Enter campaign description (optional)'
-                          rows={3}
-                        />
-                      </div>
-                    </TabsContent>
-
-                    <TabsContent value='configure' className='space-y-4 mt-6'>
-                      <div className='w-1/2 space-y-2'>
-                        <div className='flex items-center justify-between'>
-                          <Label className='text-sm font-medium'>
-                            Message Template Groups<span className='text-red-500'>*</span>
-                          </Label>
-                          <Button
-                            variant='outline'
-                            size='sm'
-                            onClick={() => setManageTemplatesOpen(true)}
-                          >
-                            Manage templates
-                          </Button>
-                        </div>
-                        <Select>
-                          <SelectTrigger>
-                            <SelectValue
-                              placeholder={createCampaignData.messageTemplateGroups.length > 0
-                                ? `${createCampaignData.messageTemplateGroups.length} group(s) selected`
-                                : 'Select template groups'}
-                            />
-                          </SelectTrigger>
-                          <SelectContent className='max-h-60 overflow-y-auto'>
-                            {mockTemplateGroups.map(group => (
-                              <div key={group.id} className='flex items-center space-x-2 px-2 py-2 cursor-pointer hover:bg-muted/50'
-                                   onClick={(e) => {
-                                     e.preventDefault()
-                                     const isSelected = createCampaignData.messageTemplateGroups.includes(group.id)
-                                     if (isSelected) {
-                                       setCreateCampaignData(prev => ({
-                                         ...prev,
-                                         messageTemplateGroups: prev.messageTemplateGroups.filter(id => id !== group.id)
-                                       }))
-                                     } else {
-                                       setCreateCampaignData(prev => ({
-                                         ...prev,
-                                         messageTemplateGroups: [...prev.messageTemplateGroups, group.id]
-                                       }))
-                                     }
-                                   }}>
-                                <Checkbox
-                                  checked={createCampaignData.messageTemplateGroups.includes(group.id)}
-                                  onChange={() => {}}
-                                />
-                                <div className='text-sm'>
-                                  <div className='font-medium'>{group.name}</div>
-                                  <div className='text-xs text-muted-foreground'>
-                                    {group.templates.length} template(s) • Random selection per contact
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </SelectContent>
-                        </Select>
-
-                        {/* Selected Templates List */}
-                        {createCampaignData.messageTemplateGroups.length > 0 && (
-                          <div className='space-y-2 mt-4'>
-                            <Label className='text-xs font-medium text-muted-foreground'>
-                              Selected Templates ({createCampaignData.messageTemplateGroups.reduce((sum, groupId) => {
-                                const group = mockTemplateGroups.find(g => g.id === groupId)
-                                return sum + (group?.templates.length || 0)
-                              }, 0)} total)
+                      <TabsContent value='details' className='flex-1 overflow-y-auto p-6 min-h-0'>
+                        <div className='space-y-6 max-w-[500px]'>
+                          <div className='space-y-2'>
+                            <Label htmlFor='name' className='text-sm font-medium'>
+                              Campaign Name<span className='text-red-500'>*</span>
                             </Label>
-                            <div className='max-h-32 overflow-y-auto border rounded-md p-2 bg-muted/20'>
-                              <div className='space-y-1'>
-                                {createCampaignData.messageTemplateGroups.map(groupId => {
-                                  const group = mockTemplateGroups.find(g => g.id === groupId)
-                                  return group?.templates.map(template => (
-                                    <div key={template.id} className='flex items-center justify-between px-2 py-1 text-xs rounded hover:bg-muted/50'>
-                                      <span className='font-medium'>{template.name}</span>
-                                      <Badge variant='outline' className='text-xs'>
-                                        {group.name}
-                                      </Badge>
+                            <Input
+                              id='name'
+                              value={createCampaignData.name}
+                              onChange={(e) => {
+                                setCreateCampaignData(prev => ({ ...prev, name: e.target.value }))
+                              }}
+                              placeholder='Enter campaign name'
+                              className='w-full'
+                            />
+                          </div>
+
+                          <div className='space-y-2'>
+                            <Label className='text-sm font-medium'>
+                              Selected Contacts<span className='text-red-500'>*</span>
+                            </Label>
+                            <Select>
+                              <SelectTrigger className='w-full'>
+                                <SelectValue
+                                  placeholder={createCampaignData.selectedContacts.length > 0
+                                    ? `${createCampaignData.selectedContacts.length} spreadsheet(s) selected`
+                                    : 'Select contact spreadsheets'}
+                                />
+                              </SelectTrigger>
+                              <SelectContent className='max-h-60 overflow-y-auto'>
+                                {contactSpreadsheetsData?.length === 0 ? (
+                                  <div className='px-2 py-4 text-center text-sm text-muted-foreground'>
+                                    No processed contact spreadsheets available.
+                                    <br />
+                                    Process spreadsheets in the Contacts page first.
+                                  </div>
+                                ) : (
+                                  contactSpreadsheetsData?.map(contact => (
+                                    <div key={contact.id} className='flex items-center space-x-2 px-2 py-2 cursor-pointer hover:bg-muted/50'
+                                         onClick={(e) => {
+                                           e.preventDefault()
+                                           const isSelected = createCampaignData.selectedContacts.includes(contact.id)
+                                           if (isSelected) {
+                                             setCreateCampaignData(prev => ({
+                                               ...prev,
+                                               selectedContacts: prev.selectedContacts.filter(id => id !== contact.id)
+                                             }))
+                                           } else {
+                                             setCreateCampaignData(prev => ({
+                                               ...prev,
+                                               selectedContacts: [...prev.selectedContacts, contact.id]
+                                             }))
+                                           }
+                                         }}>
+                                      <Checkbox
+                                        checked={createCampaignData.selectedContacts.includes(contact.id)}
+                                        onChange={() => {}}
+                                      />
+                                      <div className='text-sm'>
+                                        <div className='font-medium'>{contact.originalFileName}</div>
+                                        <div className='text-xs text-muted-foreground'>
+                                          {(contact.validContactsCount || contact.contactCount).toLocaleString()} valid contacts • Uploaded {new Date(contact.uploadDate).toLocaleDateString()}
+                                        </div>
+                                      </div>
                                     </div>
                                   ))
-                                })}
-                              </div>
-                            </div>
+                                )}
+                              </SelectContent>
+                            </Select>
                           </div>
-                        )}
-                      </div>
 
-                      <div className='w-1/2 space-y-2'>
-                        <Label className='text-sm font-medium'>
-                          Send Devices<span className='text-red-500'>*</span>
-                        </Label>
-                        <Select>
-                          <SelectTrigger>
-                            <SelectValue
-                              placeholder={createCampaignData.sendDevices.length > 0
-                                ? `${createCampaignData.sendDevices.length} device(s) selected`
-                                : 'Select send devices'}
+                          <div className='space-y-2'>
+                            <Label htmlFor='description' className='text-sm font-medium'>
+                              Description
+                            </Label>
+                            <Textarea
+                              id='description'
+                              value={createCampaignData.description}
+                              onChange={(e) => {
+                                setCreateCampaignData(prev => ({ ...prev, description: e.target.value }))
+                              }}
+                              placeholder='Enter campaign description (optional)'
+                              rows={4}
+                              className='w-full resize-none'
                             />
-                          </SelectTrigger>
-                          <SelectContent className='max-h-60 overflow-y-auto'>
-                            <div className='flex items-center space-x-2 px-2 py-2 border-b cursor-pointer hover:bg-muted/50'
-                                 onClick={(e) => {
-                                   e.preventDefault()
-                                   const allDeviceIds = devicesData?.data?.filter(d => d.enabled).map(d => d._id) || []
-                                   const isAllSelected = allDeviceIds.every(id => createCampaignData.sendDevices.includes(id))
-                                   if (isAllSelected) {
-                                     setCreateCampaignData(prev => ({ ...prev, sendDevices: [] }))
-                                   } else {
-                                     setCreateCampaignData(prev => ({ ...prev, sendDevices: allDeviceIds }))
-                                   }
-                                 }}>
-                              <Checkbox
-                                checked={devicesData?.data?.filter(d => d.enabled).length > 0 &&
-                                        devicesData?.data?.filter(d => d.enabled).every(d => createCampaignData.sendDevices.includes(d._id))}
-                                onChange={() => {}}
-                              />
-                              <div className='text-sm font-medium'>Select all enabled devices</div>
+                          </div>
+                        </div>
+                      </TabsContent>
+
+                      <TabsContent value='configure' className='flex-1 overflow-hidden p-6 min-h-0'>
+                        <div className='grid grid-cols-2 gap-6 h-full'>
+                          {/* Left Column - Form Controls */}
+                          <div className='space-y-4 overflow-y-auto'>
+                          <div className='space-y-2'>
+                            <div className='flex items-center justify-between'>
+                              <Label className='text-sm font-medium'>
+                                Message Templates<span className='text-red-500'>*</span>
+                              </Label>
+                              <Button
+                                variant='outline'
+                                size='sm'
+                                onClick={() => setManageTemplatesOpen(true)}
+                              >
+                                Manage templates
+                              </Button>
                             </div>
-                            {devicesData?.data?.length === 0 ? (
-                              <div className='px-2 py-4 text-center text-sm text-muted-foreground'>
-                                No devices registered.
-                                <br />
-                                Register devices in the Dashboard first.
-                              </div>
-                            ) : (
-                              devicesData?.data?.map(device => (
-                                <div key={device._id} className='flex items-center space-x-2 px-2 py-2 cursor-pointer hover:bg-muted/50'
+                            <Button
+                              variant='outline'
+                              className='w-full justify-start h-10'
+                              onClick={() => setTemplateSelectionOpen(true)}
+                            >
+                              <MessageSquare className='mr-2 h-4 w-4' />
+                              {createCampaignData.selectedTemplates.length > 0
+                                ? `${createCampaignData.selectedTemplates.length} template(s) selected`
+                                : 'Select message templates'}
+                            </Button>
+                          </div>
+
+                          <div className='space-y-2'>
+                            <Label className='text-sm font-medium'>
+                              Send Devices<span className='text-red-500'>*</span>
+                            </Label>
+                            <Select>
+                              <SelectTrigger className='w-full'>
+                                <SelectValue
+                                  placeholder={createCampaignData.sendDevices.length > 0
+                                    ? `${createCampaignData.sendDevices.length} device(s) selected`
+                                    : 'Select send devices'}
+                                />
+                              </SelectTrigger>
+                              <SelectContent className='max-h-60 overflow-y-auto'>
+                                <div className='flex items-center space-x-2 px-2 py-2 border-b cursor-pointer hover:bg-muted/50'
                                      onClick={(e) => {
                                        e.preventDefault()
-                                       const isSelected = createCampaignData.sendDevices.includes(device._id)
-                                       if (isSelected) {
-                                         setCreateCampaignData(prev => ({
-                                           ...prev,
-                                           sendDevices: prev.sendDevices.filter(id => id !== device._id)
-                                         }))
+                                       const allDeviceIds = devicesData?.data?.filter(d => d.enabled).map(d => d._id) || []
+                                       const isAllSelected = allDeviceIds.every(id => createCampaignData.sendDevices.includes(id))
+                                       if (isAllSelected) {
+                                         setCreateCampaignData(prev => ({ ...prev, sendDevices: [] }))
                                        } else {
-                                         setCreateCampaignData(prev => ({
-                                           ...prev,
-                                           sendDevices: [...prev.sendDevices, device._id]
-                                         }))
+                                         setCreateCampaignData(prev => ({ ...prev, sendDevices: allDeviceIds }))
                                        }
                                      }}>
                                   <Checkbox
-                                    checked={createCampaignData.sendDevices.includes(device._id)}
+                                    checked={devicesData?.data?.filter(d => d.enabled).length > 0 &&
+                                            devicesData?.data?.filter(d => d.enabled).every(d => createCampaignData.sendDevices.includes(d._id))}
                                     onChange={() => {}}
                                   />
-                                  <div className='text-sm'>
-                                    <div className='flex items-center justify-between gap-3'>
-                                      <span className='font-medium'>{device.brand} {device.model}</span>
-                                      <Badge variant={device.enabled ? 'default' : 'secondary'} className='text-xs'>
-                                        {device.enabled ? 'Enabled' : 'Disabled'}
-                                      </Badge>
+                                  <div className='text-sm font-medium'>Select all enabled devices</div>
+                                </div>
+                                {devicesData?.data?.length === 0 ? (
+                                  <div className='px-2 py-4 text-center text-sm text-muted-foreground'>
+                                    No devices registered.
+                                    <br />
+                                    Register devices in the Dashboard first.
+                                  </div>
+                                ) : (
+                                  devicesData?.data?.map(device => (
+                                    <div key={device._id} className='flex items-center space-x-2 px-2 py-2 cursor-pointer hover:bg-muted/50'
+                                         onClick={(e) => {
+                                           e.preventDefault()
+                                           const isSelected = createCampaignData.sendDevices.includes(device._id)
+                                           if (isSelected) {
+                                             setCreateCampaignData(prev => ({
+                                               ...prev,
+                                               sendDevices: prev.sendDevices.filter(id => id !== device._id)
+                                             }))
+                                           } else {
+                                             setCreateCampaignData(prev => ({
+                                               ...prev,
+                                               sendDevices: [...prev.sendDevices, device._id]
+                                             }))
+                                           }
+                                         }}>
+                                      <Checkbox
+                                        checked={createCampaignData.sendDevices.includes(device._id)}
+                                        onChange={() => {}}
+                                      />
+                                      <div className='text-sm'>
+                                        <div className='flex items-center justify-between gap-3'>
+                                          <span className='font-medium'>{device.brand} {device.model}</span>
+                                          <Badge variant={device.enabled ? 'default' : 'secondary'} className='text-xs'>
+                                            {device.enabled ? 'Enabled' : 'Disabled'}
+                                          </Badge>
+                                        </div>
+                                        <div className='mt-1'>
+                                          <code className='relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-xs text-muted-foreground'>
+                                            {device._id}
+                                          </code>
+                                        </div>
+                                      </div>
                                     </div>
-                                    <div className='mt-1'>
-                                      <code className='relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-xs text-muted-foreground'>
-                                        {device._id}
-                                      </code>
-                                    </div>
+                                  ))
+                                )}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className='space-y-2'>
+                            <Label className='text-sm font-medium'>Schedule Send</Label>
+                            <div className='space-y-3'>
+                              <div className='flex items-center space-x-2'>
+                                <div
+                                  className={`w-4 h-4 rounded-full border-2 flex items-center justify-center cursor-pointer ${
+                                    createCampaignData.scheduleType === 'now'
+                                      ? 'border-primary bg-primary'
+                                      : 'border-muted-foreground hover:border-primary'
+                                  }`}
+                                  onClick={() => setCreateCampaignData(prev => ({ ...prev, scheduleType: 'now' }))}
+                                >
+                                  {createCampaignData.scheduleType === 'now' && (
+                                    <div className='w-2 h-2 rounded-full bg-white' />
+                                  )}
+                                </div>
+                                <Label
+                                  className='text-sm cursor-pointer'
+                                  onClick={() => setCreateCampaignData(prev => ({ ...prev, scheduleType: 'now' }))}
+                                >
+                                  Send now
+                                </Label>
+                              </div>
+                              <div className='flex items-center space-x-2'>
+                                <div
+                                  className={`w-4 h-4 rounded-full border-2 flex items-center justify-center cursor-pointer ${
+                                    createCampaignData.scheduleType === 'later'
+                                      ? 'border-primary bg-primary'
+                                      : 'border-muted-foreground hover:border-primary'
+                                  }`}
+                                  onClick={() => setCreateCampaignData(prev => ({ ...prev, scheduleType: 'later' }))}
+                                >
+                                  {createCampaignData.scheduleType === 'later' && (
+                                    <div className='w-2 h-2 rounded-full bg-white' />
+                                  )}
+                                </div>
+                                <Label
+                                  className='text-sm cursor-pointer'
+                                  onClick={() => setCreateCampaignData(prev => ({ ...prev, scheduleType: 'later' }))}
+                                >
+                                  Schedule for later
+                                </Label>
+                              </div>
+                              {createCampaignData.scheduleType === 'later' && (
+                                <div className='flex gap-2 ml-6'>
+                                  <div className='space-y-1'>
+                                    <Label className='text-xs text-muted-foreground'>
+                                      Date<span className='text-red-500'>*</span>
+                                    </Label>
+                                    <Input
+                                      type='date'
+                                      value={createCampaignData.scheduledDate}
+                                      onChange={(e) => {
+                                        setCreateCampaignData(prev => ({ ...prev, scheduledDate: e.target.value }))
+                                      }}
+                                      className='w-[120px]'
+                                    />
+                                  </div>
+                                  <div className='space-y-1'>
+                                    <Label className='text-xs text-muted-foreground'>
+                                      Time<span className='text-red-500'>*</span>
+                                    </Label>
+                                    <Input
+                                      type='time'
+                                      value={createCampaignData.scheduledTime}
+                                      onChange={(e) => {
+                                        setCreateCampaignData(prev => ({ ...prev, scheduledTime: e.target.value }))
+                                      }}
+                                      className='w-[120px]'
+                                    />
                                   </div>
                                 </div>
-                              ))
-                            )}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
 
-                      <div className='space-y-2'>
-                        <Label className='text-sm font-medium'>Schedule Send</Label>
-                        <div className='space-y-3'>
-                          <div className='flex items-center space-x-2'>
-                            <div
-                              className={`w-4 h-4 rounded-full border-2 flex items-center justify-center cursor-pointer ${
-                                createCampaignData.scheduleType === 'now'
-                                  ? 'border-primary bg-primary'
-                                  : 'border-muted-foreground hover:border-primary'
-                              }`}
-                              onClick={() => setCreateCampaignData(prev => ({ ...prev, scheduleType: 'now' }))}
-                            >
-                              {createCampaignData.scheduleType === 'now' && (
-                                <div className='w-2 h-2 rounded-full bg-white' />
-                              )}
-                            </div>
-                            <Label
-                              className='text-sm cursor-pointer'
-                              onClick={() => setCreateCampaignData(prev => ({ ...prev, scheduleType: 'now' }))}
-                            >
-                              Send now
-                            </Label>
-                          </div>
-                          <div className='flex items-center space-x-2'>
-                            <div
-                              className={`w-4 h-4 rounded-full border-2 flex items-center justify-center cursor-pointer ${
-                                createCampaignData.scheduleType === 'later'
-                                  ? 'border-primary bg-primary'
-                                  : 'border-muted-foreground hover:border-primary'
-                              }`}
-                              onClick={() => setCreateCampaignData(prev => ({ ...prev, scheduleType: 'later' }))}
-                            >
-                              {createCampaignData.scheduleType === 'later' && (
-                                <div className='w-2 h-2 rounded-full bg-white' />
-                              )}
-                            </div>
-                            <Label
-                              className='text-sm cursor-pointer'
-                              onClick={() => setCreateCampaignData(prev => ({ ...prev, scheduleType: 'later' }))}
-                            >
-                              Schedule for later
-                            </Label>
-                          </div>
-                          {createCampaignData.scheduleType === 'later' && (
-                            <div className='flex gap-2 ml-6'>
-                              <div className='space-y-1'>
-                                <Label className='text-xs text-muted-foreground'>
-                                  Date<span className='text-red-500'>*</span>
-                                </Label>
-                                <Input
-                                  type='date'
-                                  value={createCampaignData.scheduledDate}
-                                  onChange={(e) => {
-                                    setCreateCampaignData(prev => ({ ...prev, scheduledDate: e.target.value }))
-                                  }}
-                                />
+                          {/* Right Column - Selected Templates */}
+                          <div className='flex flex-col h-full overflow-hidden'>
+                            <Label className='text-sm font-medium mb-2'>Selected Templates</Label>
+                            <div className='flex-1 border rounded-lg p-4 bg-gray-50 overflow-y-auto'>
+                            {createCampaignData.selectedTemplates.length === 0 ? (
+                              <div className='flex items-center justify-center h-full text-center text-muted-foreground'>
+                                <div>
+                                  <MessageSquare className='h-8 w-8 mx-auto mb-2 opacity-50' />
+                                  <p className='text-sm'>No templates selected</p>
+                                  <p className='text-xs'>Select templates to see them here</p>
+                                </div>
                               </div>
-                              <div className='space-y-1'>
-                                <Label className='text-xs text-muted-foreground'>
-                                  Time<span className='text-red-500'>*</span>
-                                </Label>
-                                <Input
-                                  type='time'
-                                  value={createCampaignData.scheduledTime}
-                                  onChange={(e) => {
-                                    setCreateCampaignData(prev => ({ ...prev, scheduledTime: e.target.value }))
-                                  }}
-                                />
+                            ) : (
+                                <div className='space-y-3 h-full overflow-y-auto'>
+                                {(() => {
+                                  // Group selected templates by their template groups
+                                  const groupedTemplates = new Map()
+
+                                  createCampaignData.selectedTemplates.forEach(templateId => {
+                                    let foundTemplate = null
+                                    let foundGroup = null
+
+                                    for (const group of templateGroups) {
+                                      const template = group.templates.find(t => t._id === templateId)
+                                      if (template) {
+                                        foundTemplate = template
+                                        foundGroup = group
+                                        break
+                                      }
+                                    }
+
+                                    if (foundTemplate && foundGroup) {
+                                      if (!groupedTemplates.has(foundGroup._id)) {
+                                        groupedTemplates.set(foundGroup._id, {
+                                          group: foundGroup,
+                                          templates: []
+                                        })
+                                      }
+                                      groupedTemplates.get(foundGroup._id).templates.push(foundTemplate)
+                                    }
+                                  })
+
+                                  return Array.from(groupedTemplates.values()).map(({ group, templates }) => {
+                                    const isGroupExpanded = expandedGroups.has(`selected-${group._id}`)
+
+                                    return (
+                                      <div key={group._id} className='space-y-1'>
+                                        <div
+                                          className='flex items-center justify-between cursor-pointer p-1 rounded hover:bg-gray-100'
+                                          onClick={() => {
+                                            const newExpanded = new Set(expandedGroups)
+                                            const groupKey = `selected-${group._id}`
+                                            if (isGroupExpanded) {
+                                              newExpanded.delete(groupKey)
+                                            } else {
+                                              newExpanded.add(groupKey)
+                                            }
+                                            setExpandedGroups(newExpanded)
+                                          }}
+                                        >
+                                          <div className='flex items-center gap-2'>
+                                            {isGroupExpanded ? (
+                                              <ChevronDown className='h-3 w-3 text-muted-foreground' />
+                                            ) : (
+                                              <ChevronRight className='h-3 w-3 text-muted-foreground' />
+                                            )}
+                                            <span className='text-xs font-medium text-muted-foreground'>{group.name}</span>
+                                          </div>
+                                          <span className='text-xs text-muted-foreground'>{templates.length}</span>
+                                        </div>
+
+                                        {isGroupExpanded && (
+                                          <div className='space-y-1 ml-2'>
+                                              {templates.map(template => (
+                                                <TemplateItem
+                                                  key={template._id}
+                                                  template={template}
+                                                  onRemove={() => {
+                                                    setCreateCampaignData(prev => ({
+                                                      ...prev,
+                                                      selectedTemplates: prev.selectedTemplates.filter(id => id !== template._id)
+                                                    }))
+                                                  }}
+                                                />
+                                              ))}
+                                          </div>
+                                        )}
+                                      </div>
+                                    )
+                                  })
+                                })()}
                               </div>
-                            </div>
-                          )}
+                            )}
+                          </div>
                         </div>
                       </div>
                     </TabsContent>
 
-                    <TabsContent value='preview' className='space-y-4 mt-6'>
+                      <TabsContent value='preview' className='flex-1 overflow-y-auto p-6 min-h-0'>
                       <div className='bg-muted/50 p-4 rounded-lg space-y-4'>
                         <h3 className='text-lg font-semibold'>Campaign Summary</h3>
                         <div className='grid grid-cols-2 gap-4'>
@@ -972,23 +1164,12 @@ export default function CampaignsPage() {
                             </p>
                           </div>
                           <div>
-                            <Label className='text-sm font-medium text-muted-foreground'>Template Groups</Label>
+                            <Label className='text-sm font-medium text-muted-foreground'>Message Templates</Label>
                             <p className='text-sm'>
-                              {createCampaignData.messageTemplateGroups.length > 0 ? (
-                                <>
-                                  {createCampaignData.messageTemplateGroups.map(groupId => {
-                                    const group = mockTemplateGroups.find(g => g.id === groupId)
-                                    return group ? group.name : 'Unknown group'
-                                  }).join(', ')}
-                                  <span className='text-muted-foreground ml-1'>
-                                    ({createCampaignData.messageTemplateGroups.reduce((sum, groupId) => {
-                                      const group = mockTemplateGroups.find(g => g.id === groupId)
-                                      return sum + (group?.templates.length || 0)
-                                    }, 0)} total templates)
-                                  </span>
-                                </>
+                              {createCampaignData.selectedTemplates.length > 0 ? (
+                                `${createCampaignData.selectedTemplates.length} template(s) selected`
                               ) : (
-                                'No template groups selected'
+                                'No templates selected'
                               )}
                             </p>
                           </div>
@@ -1013,7 +1194,8 @@ export default function CampaignsPage() {
                       </div>
                     </TabsContent>
                   </Tabs>
-                  <DialogFooter className='flex justify-between'>
+                  </div>
+                  <DialogFooter className='flex-shrink-0 border-t flex justify-between items-center p-6 pt-4'>
                     <div className='flex gap-2'>
                       {activeTab !== 'details' && (
                         <Button
@@ -1095,7 +1277,7 @@ export default function CampaignsPage() {
 
               {/* Manage Templates Dialog */}
               <Dialog open={manageTemplatesOpen} onOpenChange={setManageTemplatesOpen}>
-                <DialogContent className='max-w-4xl max-h-[90vh] overflow-y-auto'>
+                <DialogContent className='max-w-3xl max-h-[90vh] overflow-y-auto'>
                   <DialogHeader>
                     <DialogTitle>Manage Templates</DialogTitle>
                   </DialogHeader>
@@ -1115,19 +1297,19 @@ export default function CampaignsPage() {
                     <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
                       {/* Template Groups List */}
                       <div className='space-y-2'>
-                        {mockTemplateGroups.length === 0 ? (
+                        {templateGroups.length === 0 ? (
                           <div className='text-center text-muted-foreground py-8'>
                             <MessageSquare className='h-12 w-12 mx-auto mb-2 opacity-50' />
                             <p className='text-sm'>No template groups yet</p>
                             <p className='text-xs'>Create your first template group to get started</p>
                           </div>
                         ) : (
-                          mockTemplateGroups.map(group => (
+                          templateGroups.map(group => (
                             <Button
-                              key={group.id}
-                              variant={selectedTemplateGroup === group.id ? 'default' : 'outline'}
+                              key={group._id}
+                              variant={selectedTemplateGroup === group._id ? 'default' : 'outline'}
                               className='w-full justify-start'
-                              onClick={() => setSelectedTemplateGroup(group.id)}
+                              onClick={() => setSelectedTemplateGroup(group._id)}
                             >
                               <div className='flex items-center justify-between w-full'>
                                 <span>{group.name}</span>
@@ -1144,7 +1326,7 @@ export default function CampaignsPage() {
                           <>
                             <div className='flex items-center justify-between'>
                               <h4 className='font-medium'>
-                                {mockTemplateGroups.find(g => g.id === selectedTemplateGroup)?.name} Templates
+                                {templateGroups.find(g => g._id === selectedTemplateGroup)?.name} Templates
                               </h4>
                               <Button
                                 size='sm'
@@ -1157,10 +1339,10 @@ export default function CampaignsPage() {
                               </Button>
                             </div>
                             <div className='space-y-2'>
-                              {mockTemplateGroups
-                                .find(g => g.id === selectedTemplateGroup)
+                              {templateGroups
+                                .find(g => g._id === selectedTemplateGroup)
                                 ?.templates.map(template => (
-                                  <div key={template.id} className='border rounded-lg p-3 space-y-2'>
+                                  <div key={template._id} className='border rounded-lg p-3 space-y-2'>
                                     <div className='flex items-center justify-between'>
                                       <h5 className='font-medium text-sm'>{template.name}</h5>
                                       <Button
@@ -1359,6 +1541,132 @@ export default function CampaignsPage() {
                       disabled={!editingTemplate?.name.trim() || !editingTemplate?.content.trim()}
                     >
                       Update Template
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              {/* Template Selection Dialog */}
+              <Dialog open={templateSelectionOpen} onOpenChange={setTemplateSelectionOpen}>
+                <DialogContent className='w-[700px] max-h-[90vh] max-w-none overflow-hidden flex flex-col'>
+                  <DialogHeader className='flex-shrink-0 border-b p-6 pb-4'>
+                    <DialogTitle>Select Message Templates</DialogTitle>
+                  </DialogHeader>
+                  <div className='flex-1 overflow-y-auto p-6 min-h-0'>
+                    {templateGroups.length === 0 ? (
+                      <div className='text-center text-muted-foreground py-8'>
+                        <MessageSquare className='h-12 w-12 mx-auto mb-2 opacity-50' />
+                        <p className='text-sm'>No template groups available</p>
+                        <p className='text-xs'>Create template groups and templates first</p>
+                      </div>
+                    ) : (
+                      <div className='space-y-3'>
+                        {templateGroups.map(group => {
+                          const isGroupExpanded = expandedGroups.has(group._id)
+                          const groupTemplates = group.templates || []
+                          const selectedInGroup = groupTemplates.filter(t => createCampaignData.selectedTemplates.includes(t._id))
+                          const allGroupSelected = groupTemplates.length > 0 && selectedInGroup.length === groupTemplates.length
+                          const someGroupSelected = selectedInGroup.length > 0 && selectedInGroup.length < groupTemplates.length
+
+                          return (
+                            <div key={group._id} className='border rounded-lg p-3'>
+                              <div className='flex items-center justify-between mb-2'>
+                                <div className='flex items-center space-x-2'>
+                                  <Button
+                                    variant='ghost'
+                                    size='sm'
+                                    className='p-1 h-6 w-6'
+                                    onClick={() => {
+                                      const newExpanded = new Set(expandedGroups)
+                                      if (isGroupExpanded) {
+                                        newExpanded.delete(group._id)
+                                      } else {
+                                        newExpanded.add(group._id)
+                                      }
+                                      setExpandedGroups(newExpanded)
+                                    }}
+                                  >
+                                    {isGroupExpanded ? (
+                                      <ChevronDown className='h-4 w-4' />
+                                    ) : (
+                                      <ChevronRight className='h-4 w-4' />
+                                    )}
+                                  </Button>
+                                  <Checkbox
+                                    checked={allGroupSelected}
+                                    indeterminate={someGroupSelected ? true : undefined}
+                                    onCheckedChange={(checked) => {
+                                      if (checked) {
+                                        // Select all templates in group
+                                        const newSelected = [...createCampaignData.selectedTemplates]
+                                        groupTemplates.forEach(template => {
+                                          if (!newSelected.includes(template._id)) {
+                                            newSelected.push(template._id)
+                                          }
+                                        })
+                                        setCreateCampaignData(prev => ({ ...prev, selectedTemplates: newSelected }))
+                                      } else {
+                                        // Deselect all templates in group
+                                        const templateIds = groupTemplates.map(t => t._id)
+                                        setCreateCampaignData(prev => ({
+                                          ...prev,
+                                          selectedTemplates: prev.selectedTemplates.filter(id => !templateIds.includes(id))
+                                        }))
+                                      }
+                                    }}
+                                  />
+                                  <div className='flex-1'>
+                                    <div className='font-medium text-sm'>{group.name}</div>
+                                    <div className='text-xs text-muted-foreground'>
+                                      {groupTemplates.length} template(s) • {selectedInGroup.length} selected
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {isGroupExpanded && (
+                                <div className='ml-6 space-y-2'>
+                                  {groupTemplates.map(template => (
+                                    <TemplateSelectionItem
+                                      key={template._id}
+                                      template={template}
+                                      isSelected={createCampaignData.selectedTemplates.includes(template._id)}
+                                      onToggle={() => {
+                                        const isSelected = createCampaignData.selectedTemplates.includes(template._id)
+                                        if (isSelected) {
+                                          setCreateCampaignData(prev => ({
+                                            ...prev,
+                                            selectedTemplates: prev.selectedTemplates.filter(id => id !== template._id)
+                                          }))
+                                        } else {
+                                          setCreateCampaignData(prev => ({
+                                            ...prev,
+                                            selectedTemplates: [...prev.selectedTemplates, template._id]
+                                          }))
+                                        }
+                                      }}
+                                    />
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                  <DialogFooter className='flex-shrink-0 border-t flex justify-between items-center p-6 pt-4'>
+                    <Button
+                      variant='outline'
+                      onClick={() => setTemplateSelectionOpen(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={() => setTemplateSelectionOpen(false)}
+                      disabled={createCampaignData.selectedTemplates.length === 0}
+                    >
+                      OK ({createCampaignData.selectedTemplates.length} selected)
                     </Button>
                   </DialogFooter>
                 </DialogContent>

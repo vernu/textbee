@@ -45,4 +45,10 @@ export const ApiEndpoints = {
     markConversationAsRead: () => '/users/conversations/mark-read',
     getConversationReadStatuses: () => '/users/conversations/read-statuses',
   },
+  campaigns: {
+    templateGroups: () => '/campaigns/template-groups',
+    templateGroup: (id: string) => `/campaigns/template-groups/${id}`,
+    templates: () => '/campaigns/templates',
+    template: (id: string) => `/campaigns/templates/${id}`,
+  },
 }
