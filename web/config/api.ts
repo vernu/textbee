@@ -41,4 +41,8 @@ export const ApiEndpoints = {
     customerSupport: () => '/support/customer-support',
     requestAccountDeletion: () => '/support/request-account-deletion',
   },
+  users: {
+    markConversationAsRead: () => '/users/conversations/mark-read',
+    getConversationReadStatuses: () => '/users/conversations/read-statuses',
+  },
 }

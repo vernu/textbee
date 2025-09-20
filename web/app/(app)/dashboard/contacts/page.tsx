@@ -92,6 +92,9 @@ function ContactSidebar({
 }) {
   const [activeTab, setActiveTab] = useState('info')
   const [newMessage, setNewMessage] = useState('')
+  const [autoRefreshInterval] = useState(15) // Default to 15 seconds
+  const refreshTimerRef = useRef(null)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
   const { toast } = useToast()
   const queryClient = useQueryClient()
 
@@ -103,7 +106,7 @@ function ContactSidebar({
         .then((res) => res.data),
   })
 
-  const { data: messagesData } = useQuery({
+  const { data: messagesData, refetch } = useQuery({
     queryKey: ['contact-messages', contact.phone],
     enabled: !!devices?.data?.length,
     queryFn: async () => {
@@ -142,6 +145,57 @@ function ContactSidebar({
     },
   })
 
+  // Setup auto-refresh timer
+  useEffect(() => {
+    // Clear any existing timer
+    if (refreshTimerRef.current) {
+      clearInterval(refreshTimerRef.current)
+      refreshTimerRef.current = null
+    }
+
+    // Set up timer for 15 second auto-refresh
+    if (devices?.data?.length) {
+      refreshTimerRef.current = setInterval(() => {
+        refetch()
+      }, autoRefreshInterval * 1000)
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (refreshTimerRef.current) {
+        clearInterval(refreshTimerRef.current)
+      }
+    }
+  }, [autoRefreshInterval, devices?.data?.length, refetch, contact.phone])
+
+  // Mark conversation as read when messages tab is viewed
+  const markConversationAsRead = useCallback(async () => {
+    try {
+      const normalizedPhoneNumber = normalizePhoneNumber(contact.phone)
+      await httpBrowserClient.post(ApiEndpoints.users.markConversationAsRead(), {
+        normalizedPhoneNumber,
+        lastSeenAt: new Date().toISOString()
+      })
+      queryClient.invalidateQueries({ queryKey: ['conversation-read-statuses'] })
+    } catch (error) {
+      console.error('Failed to mark conversation as read:', error)
+    }
+  }, [contact.phone, queryClient])
+
+  // Scroll to bottom when messages tab is active and messages are loaded
+  useEffect(() => {
+    if (activeTab === 'messages' && messagesData && messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [activeTab, messagesData])
+
+  // Mark conversation as read when messages tab is viewed
+  useEffect(() => {
+    if (activeTab === 'messages' && messagesData) {
+      markConversationAsRead()
+    }
+  }, [activeTab, messagesData, markConversationAsRead])
+
   const sendSmsMutation = useMutation({
     mutationFn: async (messageText: string) => {
       const enabledDevice = devices?.data?.find(d => d.enabled)
@@ -165,6 +219,12 @@ function ContactSidebar({
         description: "Your message has been sent successfully."
       })
       queryClient.invalidateQueries({ queryKey: ['contact-messages', contact.phone] })
+      // Scroll to bottom after sending message
+      setTimeout(() => {
+        if (messagesEndRef.current) {
+          messagesEndRef.current.scrollIntoView({ behavior: 'smooth' })
+        }
+      }, 100)
     },
     onError: (error: any) => {
       toast({
@@ -263,50 +323,55 @@ function ContactSidebar({
                   // Group messages with date separators
                   const messageGroups = groupMessagesWithDateSeparators(formattedMessages)
 
-                  return messageGroups.map((group, index) => {
-                    if (group.type === 'date') {
-                      return (
-                        <DateSeparator key={`date-${index}`} dateLabel={group.dateLabel!} />
-                      )
-                    } else {
-                      const msg = group.message!
-                      return (
-                        <div key={msg.id} className="mb-3">
-                          <div className={cn(
-                            "flex items-center gap-2",
-                            msg.isIncoming ? "justify-start" : "justify-end"
-                          )}>
-                            {!msg.isIncoming && (
-                              <div className="text-xs text-muted-foreground">
-                                {formatMessageTime(msg.date)}
+                  return (
+                    <>
+                      {messageGroups.map((group, index) => {
+                        if (group.type === 'date') {
+                          return (
+                            <DateSeparator key={`date-${index}`} dateLabel={group.dateLabel!} />
+                          )
+                        } else {
+                          const msg = group.message!
+                          return (
+                            <div key={msg.id} className="mb-3">
+                              <div className={cn(
+                                "flex items-center gap-2",
+                                msg.isIncoming ? "justify-start" : "justify-end"
+                              )}>
+                                {!msg.isIncoming && (
+                                  <div className="text-xs text-muted-foreground">
+                                    {formatMessageTime(msg.date)}
+                                  </div>
+                                )}
+                                <div className={cn(
+                                  "max-w-[80%] rounded-lg px-3 py-2 text-sm",
+                                  msg.isIncoming
+                                    ? "bg-background border text-foreground"
+                                    : "bg-primary text-primary-foreground"
+                                )}>
+                                  <p>{msg.message}</p>
+                                </div>
+                                {msg.isIncoming && (
+                                  <div className="text-xs text-muted-foreground">
+                                    {formatMessageTime(msg.date)}
+                                  </div>
+                                )}
                               </div>
-                            )}
-                            <div className={cn(
-                              "max-w-[80%] rounded-lg px-3 py-2 text-sm",
-                              msg.isIncoming
-                                ? "bg-background border text-foreground"
-                                : "bg-primary text-primary-foreground"
-                            )}>
-                              <p>{msg.message}</p>
+                              {!msg.isIncoming && msg.status && (
+                                <div className="flex justify-end mt-1">
+                                  <MessageStatusIndicator
+                                    status={msg.status}
+                                    isIncoming={msg.isIncoming}
+                                  />
+                                </div>
+                              )}
                             </div>
-                            {msg.isIncoming && (
-                              <div className="text-xs text-muted-foreground">
-                                {formatMessageTime(msg.date)}
-                              </div>
-                            )}
-                          </div>
-                          {!msg.isIncoming && msg.status && (
-                            <div className="flex justify-end mt-1">
-                              <MessageStatusIndicator
-                                status={msg.status}
-                                isIncoming={msg.isIncoming}
-                              />
-                            </div>
-                          )}
-                        </div>
-                      )
-                    }
-                  })
+                          )
+                        }
+                      })}
+                      <div ref={messagesEndRef} />
+                    </>
+                  )
                 })()}
               </div>
             </div>

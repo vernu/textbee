@@ -1,6 +1,7 @@
 import { forwardRef, Module } from '@nestjs/common'
 import { MongooseModule } from '@nestjs/mongoose'
 import { User, UserSchema } from './schemas/user.schema'
+import { ConversationReadStatus, ConversationReadStatusSchema } from './schemas/conversation-read-status.schema'
 import { UsersController } from './users.controller'
 import { UsersService } from './users.service'
 import { BillingModule } from 'src/billing/billing.module'
@@ -13,6 +14,10 @@ import { MailModule } from 'src/mail/mail.module'
       {
         name: User.name,
         schema: UserSchema,
+      },
+      {
+        name: ConversationReadStatus.name,
+        schema: ConversationReadStatusSchema,
       },
       {
         name: Device.name,

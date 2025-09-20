@@ -6,6 +6,7 @@ import { Inbox as InboxIcon, Calendar, ChevronDown, Search, Edit, Save, X, Plus,
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Select,
@@ -55,6 +56,7 @@ interface Conversation {
   }
   lastMessageDate: Date
   messageCount: number
+  unseenCount: number
 }
 
 interface Message {
@@ -141,9 +143,27 @@ function ConversationRow({
     >
       <div className="flex justify-between items-start">
         <div className="flex-1 min-w-0">
-          <h3 className="font-medium text-sm truncate">{displayName}</h3>
-          <p className="text-sm text-muted-foreground truncate mt-1">
-            {conversation.lastMessage.message}
+          <div className="flex items-center gap-2">
+            <h3 className={cn(
+              "text-sm truncate",
+              conversation.unseenCount > 0 ? "font-semibold text-foreground" : "font-medium"
+            )}>
+              {displayName}
+            </h3>
+            {conversation.unseenCount > 0 && (
+              <Badge
+                variant="default"
+                className="h-5 min-w-[20px] px-1.5 text-xs bg-primary text-primary-foreground"
+              >
+                {conversation.unseenCount}
+              </Badge>
+            )}
+          </div>
+          <p className={cn(
+            "text-sm truncate mt-1",
+            conversation.unseenCount > 0 ? "text-foreground font-medium" : "text-muted-foreground"
+          )}>
+            {conversation.lastMessage.isIncoming ? '' : 'You: '}{conversation.lastMessage.message}
           </p>
         </div>
         <div className="text-xs text-muted-foreground ml-2 flex-shrink-0">
@@ -945,6 +965,31 @@ export default function InboxPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [showNewMessageSidebar, setShowNewMessageSidebar] = useState(false)
   const [newConversation, setNewConversation] = useState<Conversation | null>(null)
+  const [autoRefreshInterval] = useState(15) // Default to 15 seconds
+  const [lastSeenTimestamps, setLastSeenTimestamps] = useState<Record<string, Date>>({})
+  const refreshTimerRef = useRef(null)
+  const queryClient = useQueryClient()
+
+  // Load conversation read statuses from API
+  const { data: readStatuses } = useQuery({
+    queryKey: ['conversation-read-statuses'],
+    queryFn: async () => {
+      const response = await httpBrowserClient.get(ApiEndpoints.users.getConversationReadStatuses())
+      const statuses: Record<string, string> = response.data
+      const timestamps: Record<string, Date> = {}
+      Object.entries(statuses).forEach(([key, value]) => {
+        timestamps[key] = new Date(value)
+      })
+      return timestamps
+    }
+  })
+
+  // Update local state when API data is loaded
+  useEffect(() => {
+    if (readStatuses) {
+      setLastSeenTimestamps(readStatuses)
+    }
+  }, [readStatuses])
 
   // Query devices to get message data
   const { data: devices } = useQuery({
@@ -962,14 +1007,14 @@ export default function InboxPage() {
   })
 
   // Query messages from all devices
-  const { data: messagesData, isLoading } = useQuery({
+  const { data: messagesData, isLoading, refetch } = useQuery({
     queryKey: ['all-messages'],
     enabled: !!devices?.data?.length,
     queryFn: async () => {
       if (!devices?.data?.length) return []
-      
+
       const allMessages: Message[] = []
-      
+
       // Fetch messages from all devices
       for (const device of devices.data) {
         try {
@@ -983,10 +1028,33 @@ export default function InboxPage() {
           console.error(`Failed to fetch messages for device ${device._id}:`, error)
         }
       }
-      
+
       return allMessages
     },
   })
+
+  // Setup auto-refresh timer
+  useEffect(() => {
+    // Clear any existing timer
+    if (refreshTimerRef.current) {
+      clearInterval(refreshTimerRef.current)
+      refreshTimerRef.current = null
+    }
+
+    // Set up timer for 15 second auto-refresh
+    if (devices?.data?.length) {
+      refreshTimerRef.current = setInterval(() => {
+        refetch()
+      }, autoRefreshInterval * 1000)
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (refreshTimerRef.current) {
+        clearInterval(refreshTimerRef.current)
+      }
+    }
+  }, [autoRefreshInterval, devices?.data?.length, refetch])
 
   // Process messages into conversations
   const conversations = useMemo(() => {
@@ -1037,7 +1105,8 @@ export default function InboxPage() {
             isIncoming: !!message.sender
           },
           lastMessageDate: messageDate,
-          messageCount: (existing?.messageCount || 0) + 1
+          messageCount: (existing?.messageCount || 0) + 1,
+          unseenCount: 0 // Will be calculated later
         })
       } else {
         // Update message count for existing conversation
@@ -1047,11 +1116,59 @@ export default function InboxPage() {
 
     // Add new conversation if it doesn't exist in the map
     if (newConversation && !conversationMap.has(newConversation.normalizedPhoneNumber)) {
-      conversationMap.set(newConversation.normalizedPhoneNumber, newConversation)
+      conversationMap.set(newConversation.normalizedPhoneNumber, {
+        ...newConversation,
+        unseenCount: 0 // New conversations start with no unseen messages
+      })
     }
 
-    return Array.from(conversationMap.values())
-  }, [messagesData, contactsData, devices?.data, newConversation])
+    // Final pass: Calculate unseen counts for all conversations
+    const conversations = Array.from(conversationMap.values())
+    conversations.forEach(conversation => {
+      const lastSeen = lastSeenTimestamps[conversation.normalizedPhoneNumber] || new Date(0)
+
+      // Count incoming messages received after last seen timestamp
+      const unseenCount = (messagesData || []).filter(message => {
+        const messagePhoneNumber = message.sender || message.recipient
+        if (!messagePhoneNumber) return false
+
+        const normalizedMessagePhone = normalizePhoneNumber(messagePhoneNumber)
+        const messageDate = new Date(message.receivedAt || message.requestedAt || 0)
+
+        return normalizedMessagePhone === conversation.normalizedPhoneNumber &&
+               message.sender && // Only count incoming messages
+               messageDate > lastSeen
+      }).length
+
+      conversation.unseenCount = unseenCount
+    })
+
+    return conversations
+  }, [messagesData, contactsData, devices?.data, newConversation, lastSeenTimestamps])
+
+  // Function to mark a conversation as seen
+  const markConversationAsSeen = async (conversation: Conversation) => {
+    const now = new Date()
+
+    // Update local state immediately for responsive UI
+    setLastSeenTimestamps(prev => ({
+      ...prev,
+      [conversation.normalizedPhoneNumber]: now
+    }))
+    setSelectedConversation(conversation)
+
+    // Save to database
+    try {
+      await httpBrowserClient.post(ApiEndpoints.users.markConversationAsRead(), {
+        normalizedPhoneNumber: conversation.normalizedPhoneNumber,
+        lastSeenAt: now.toISOString()
+      })
+      // Invalidate query to refresh from server
+      queryClient.invalidateQueries({ queryKey: ['conversation-read-statuses'] })
+    } catch (error) {
+      console.error('Failed to mark conversation as read:', error)
+    }
+  }
 
   if (isLoading) {
     return (
@@ -1126,7 +1243,7 @@ export default function InboxPage() {
                 <ConversationList
                   conversations={conversations}
                   selectedConversation={selectedConversation}
-                  onSelectConversation={setSelectedConversation}
+                  onSelectConversation={markConversationAsSeen}
                   sortBy={sortBy}
                   setSortBy={setSortBy}
                   dateFilter={dateFilter}
