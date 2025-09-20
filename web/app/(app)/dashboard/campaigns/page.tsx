@@ -102,6 +102,24 @@ function TemplateSelectionItem({ template, isSelected, onToggle }: { template: a
 
 function TemplateItem({ template, onRemove }: { template: any, onRemove: () => void }) {
   const [isExpanded, setIsExpanded] = useState(false)
+  const [isTextClipped, setIsTextClipped] = useState(false)
+  const textRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const checkTextClipping = () => {
+      if (textRef.current && !isExpanded) {
+        const element = textRef.current
+        const isClipped = element.scrollHeight > element.clientHeight || element.scrollWidth > element.clientWidth
+        setIsTextClipped(isClipped)
+      }
+    }
+
+    checkTextClipping()
+
+    // Check again when the window resizes
+    window.addEventListener('resize', checkTextClipping)
+    return () => window.removeEventListener('resize', checkTextClipping)
+  }, [template.content, isExpanded])
 
   return (
     <div className='bg-gray-200 rounded p-2 border'>
@@ -110,6 +128,7 @@ function TemplateItem({ template, onRemove }: { template: any, onRemove: () => v
           <div className='text-xs font-medium mb-1'>{template.name}</div>
           <div className='flex items-start gap-1'>
             <div
+              ref={textRef}
               className={`text-xs text-muted-foreground transition-all duration-200 flex-1 ${
                 isExpanded ? 'whitespace-pre-wrap break-words' : 'truncate'
               }`}
@@ -117,14 +136,16 @@ function TemplateItem({ template, onRemove }: { template: any, onRemove: () => v
             >
               {template.content}
             </div>
-            <Button
-              variant='ghost'
-              size='sm'
-              className='p-0 h-4 text-xs text-blue-600 hover:text-blue-800 flex-shrink-0'
-              onClick={() => setIsExpanded(!isExpanded)}
-            >
-              {isExpanded ? 'Show less' : 'Show more'}
-            </Button>
+            {(isTextClipped || isExpanded) && (
+              <Button
+                variant='ghost'
+                size='sm'
+                className='p-0 h-4 text-xs text-blue-600 hover:text-blue-800 flex-shrink-0'
+                onClick={() => setIsExpanded(!isExpanded)}
+              >
+                {isExpanded ? 'Show less' : 'Show more'}
+              </Button>
+            )}
           </div>
         </div>
         <Button
