@@ -365,4 +365,5 @@ export class ContactResponseDto {
   mailingZip?: string
   dnc?: boolean
   dncUpdatedAt?: string
+  spreadsheetName?: string
 }

@@ -109,11 +109,12 @@ export interface Contact {
   mailingZip?: string
   dnc?: boolean | null
   dncUpdatedAt?: string
+  spreadsheetName?: string
 }
 
 export interface GetContactsParams {
   search?: string
-  sortBy?: 'newest' | 'oldest' | 'firstName' | 'lastName' | 'phone' | 'email' | 'propertyAddress' | 'propertyCity' | 'propertyState'
+  sortBy?: 'newest' | 'oldest' | 'firstName' | 'lastName' | 'phone' | 'email' | 'groups'
   sortOrder?: 'asc' | 'desc'
   limit?: number
   page?: number

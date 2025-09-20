@@ -579,6 +579,7 @@ export class ContactsService {
     const [contacts, total] = await Promise.all([
       this.contactModel
         .find(filter)
+        .populate('spreadsheetId', 'originalFileName')
         .sort(sort)
         .limit(limit)
         .skip((page - 1) * limit)
@@ -587,7 +588,7 @@ export class ContactsService {
     ])
 
     return {
-      data: contacts.map(this.mapContactToResponseDto),
+      data: contacts.map((contact) => this.mapContactToResponseDto(contact)),
       total,
     }
   }
@@ -598,6 +599,7 @@ export class ContactsService {
         _id: new Types.ObjectId(contactId),
         userId: new Types.ObjectId(userId),
       })
+      .populate('spreadsheetId', 'originalFileName')
       .exec()
 
     if (!contact) {
@@ -829,6 +831,10 @@ export class ContactsService {
   }
 
   private mapContactToResponseDto = (contact: ContactDocument): ContactResponseDto => {
+    const spreadsheetName = contact.spreadsheetId && typeof contact.spreadsheetId === 'object'
+      ? (contact.spreadsheetId as any).originalFileName
+      : undefined
+
     return {
       id: contact._id.toString(),
       firstName: contact.firstName,
@@ -849,6 +855,7 @@ export class ContactsService {
       mailingZip: contact.mailingZip,
       dnc: contact.dnc,
       dncUpdatedAt: contact.dncUpdatedAt?.toISOString(),
+      spreadsheetName: spreadsheetName,
     }
   }
 

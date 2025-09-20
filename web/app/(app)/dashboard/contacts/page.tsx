@@ -683,6 +683,16 @@ function ContactInfoEditor({
               )
             })}
 
+            {/* Groups Information */}
+            <div className="border-t pt-3 mt-3">
+              <div className="text-sm">
+                <span className="font-medium">Groups:</span>
+                <ul className="list-disc list-inside ml-4 mt-1">
+                  <li>{contact.spreadsheetName || 'Manual'}</li>
+                </ul>
+              </div>
+            </div>
+
             {conversationMessages.length > 0 && (
               <>
                 <div>
@@ -709,7 +719,7 @@ export default function ContactsPage() {
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'a-z' | 'z-a' | 'status'>('newest')
   const [spreadsheetSortBy, setSpreadsheetSortBy] = useState<'newest' | 'oldest' | 'a-z' | 'z-a' | 'status'>('newest')
   const [spreadsheetSortOrder, setSpreadsheetSortOrder] = useState<'asc' | 'desc'>('desc')
-  const [contactSortBy, setContactSortBy] = useState<'firstName' | 'lastName' | 'phone' | 'email' | 'propertyAddress' | 'propertyCity' | 'propertyState'>('firstName')
+  const [contactSortBy, setContactSortBy] = useState<'firstName' | 'lastName' | 'phone' | 'email' | 'groups'>('firstName')
   const [contactSortOrder, setContactSortOrder] = useState<'asc' | 'desc'>('asc')
   const [selectedFiles, setSelectedFiles] = useState<string[]>([])
   const [selectedContacts, setSelectedContacts] = useState<string[]>([])
@@ -809,7 +819,7 @@ export default function ContactsPage() {
       
       const response = await contactsApi.getContacts({
         search: searchQuery || undefined,
-        sortBy: contactSortBy,
+        sortBy: contactSortBy === 'groups' ? 'firstName' : contactSortBy,
         sortOrder: contactSortOrder,
         limit: displayCount,
         page: currentPage,
@@ -850,7 +860,22 @@ export default function ContactsPage() {
     return files
   }, [files, spreadsheetSortBy, spreadsheetSortOrder])
 
-  const filteredAndSortedContacts = contacts
+  const filteredAndSortedContacts = useMemo(() => {
+    if (contactSortBy === 'groups') {
+      const sorted = [...contacts].sort((a, b) => {
+        const aGroup = a.spreadsheetName || 'Manual'
+        const bGroup = b.spreadsheetName || 'Manual'
+
+        if (contactSortOrder === 'asc') {
+          return aGroup.localeCompare(bGroup)
+        } else {
+          return bGroup.localeCompare(aGroup)
+        }
+      })
+      return sorted
+    }
+    return contacts
+  }, [contacts, contactSortBy, contactSortOrder])
 
   const [totalContacts, setTotalContacts] = useState(0)
   const [totalFiles, setTotalFiles] = useState(0)
@@ -1197,7 +1222,7 @@ export default function ContactsPage() {
     })
   }
 
-  const handleContactSort = (column: 'firstName' | 'lastName' | 'phone' | 'email' | 'propertyAddress' | 'propertyCity' | 'propertyState') => {
+  const handleContactSort = (column: 'firstName' | 'lastName' | 'phone' | 'email' | 'groups') => {
     if (contactSortBy === column) {
       // Toggle sort order if clicking on same column
       setContactSortOrder(contactSortOrder === 'asc' ? 'desc' : 'asc')
@@ -1228,7 +1253,7 @@ export default function ContactsPage() {
       <ChevronDown className="h-4 w-4 ml-1" />
   }
 
-  const renderSortIcon = (column: 'firstName' | 'lastName' | 'phone' | 'email' | 'propertyAddress' | 'propertyCity' | 'propertyState') => {
+  const renderSortIcon = (column: 'firstName' | 'lastName' | 'phone' | 'email' | 'groups') => {
     if (contactSortBy !== column) return null
     return contactSortOrder === 'asc' ?
       <ChevronUp className="h-4 w-4 ml-1" /> :
@@ -1655,7 +1680,7 @@ export default function ContactsPage() {
                         {renderSortIcon('phone')}
                       </div>
                     </th>
-                    <th 
+                    <th
                       className='text-left p-4 font-medium cursor-pointer hover:bg-muted/75 transition-colors'
                       onClick={() => handleContactSort('email')}
                     >
@@ -1664,31 +1689,13 @@ export default function ContactsPage() {
                         {renderSortIcon('email')}
                       </div>
                     </th>
-                    <th 
+                    <th
                       className='text-left p-4 font-medium cursor-pointer hover:bg-muted/75 transition-colors'
-                      onClick={() => handleContactSort('propertyAddress')}
+                      onClick={() => handleContactSort('groups')}
                     >
                       <div className='flex items-center'>
-                        Property Address
-                        {renderSortIcon('propertyAddress')}
-                      </div>
-                    </th>
-                    <th 
-                      className='text-left p-4 font-medium cursor-pointer hover:bg-muted/75 transition-colors'
-                      onClick={() => handleContactSort('propertyCity')}
-                    >
-                      <div className='flex items-center'>
-                        Property City
-                        {renderSortIcon('propertyCity')}
-                      </div>
-                    </th>
-                    <th 
-                      className='text-left p-4 font-medium cursor-pointer hover:bg-muted/75 transition-colors'
-                      onClick={() => handleContactSort('propertyState')}
-                    >
-                      <div className='flex items-center'>
-                        Property State
-                        {renderSortIcon('propertyState')}
+                        Groups
+                        {renderSortIcon('groups')}
                       </div>
                     </th>
                   </tr>
@@ -1737,19 +1744,7 @@ export default function ContactsPage() {
                         className='p-4 text-muted-foreground cursor-pointer'
                         onClick={() => setSelectedContact(contact)}
                       >
-                        {contact.propertyAddress || '-'}
-                      </td>
-                      <td
-                        className='p-4 text-muted-foreground cursor-pointer'
-                        onClick={() => setSelectedContact(contact)}
-                      >
-                        {contact.propertyCity || '-'}
-                      </td>
-                      <td
-                        className='p-4 text-muted-foreground cursor-pointer'
-                        onClick={() => setSelectedContact(contact)}
-                      >
-                        {contact.propertyState || '-'}
+                        {contact.spreadsheetName || 'Manual'}
                       </td>
                     </tr>
                   ))}
