@@ -49,6 +49,12 @@ export class Device {
 
   @Prop({ type: Number, default: 0 })
   receivedSMSCount: number
+
+  @Prop({ type: Number, default: 60 })
+  max_hourly_send_rate: number
+
+  @Prop({ type: Number, default: 50 })
+  daily_send_limit: number
 }
 
 export const DeviceSchema = SchemaFactory.createForClass(Device)

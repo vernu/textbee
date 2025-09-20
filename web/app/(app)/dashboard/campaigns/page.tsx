@@ -803,7 +803,7 @@ export default function CampaignsPage() {
                     Create new campaign
                   </Button>
                 </DialogTrigger>
-                <DialogContent className='w-[900px] max-h-[90vh] max-w-none overflow-hidden flex flex-col'>
+                <DialogContent className='w-[1170px] h-[90vh] max-w-none overflow-hidden flex flex-col'>
                   <DialogHeader className='flex-shrink-0 border-b p-4 pb-3'>
                     <DialogTitle>Create New Campaign</DialogTitle>
                   </DialogHeader>
@@ -942,7 +942,7 @@ export default function CampaignsPage() {
                       <TabsContent value='configure' className='flex-1 overflow-hidden p-4 min-h-0'>
                         <div className='grid grid-cols-2 gap-6 h-full'>
                           {/* Left Column - Form Controls */}
-                          <div className='space-y-4 overflow-y-auto'>
+                          <div className='space-y-4 overflow-y-auto max-h-full pr-4'>
                           <div className='space-y-2'>
                             <div className='flex items-center justify-between'>
                               <Label className='text-sm font-medium'>
@@ -972,79 +972,80 @@ export default function CampaignsPage() {
                             <Label className='text-sm font-medium'>
                               Send Devices<span className='text-red-500'>*</span>
                             </Label>
-                            <Select>
-                              <SelectTrigger className='w-full'>
-                                <SelectValue
-                                  placeholder={createCampaignData.sendDevices.length > 0
-                                    ? `${createCampaignData.sendDevices.length} device(s) selected`
-                                    : 'Select send devices'}
-                                />
-                              </SelectTrigger>
-                              <SelectContent className='max-h-60 overflow-y-auto'>
-                                <div className='flex items-center space-x-2 px-2 py-2 border-b cursor-pointer hover:bg-muted/50'
-                                     onClick={(e) => {
-                                       e.preventDefault()
-                                       const allDeviceIds = devicesData?.data?.filter(d => d.enabled).map(d => d._id) || []
-                                       const isAllSelected = allDeviceIds.every(id => createCampaignData.sendDevices.includes(id))
-                                       if (isAllSelected) {
-                                         setCreateCampaignData(prev => ({ ...prev, sendDevices: [] }))
-                                       } else {
-                                         setCreateCampaignData(prev => ({ ...prev, sendDevices: allDeviceIds }))
-                                       }
-                                     }}>
+                            <div className='bg-muted/50 border rounded p-3 space-y-3 max-h-60 overflow-y-auto'>
+                              {/* Select/Unselect All Toggle */}
+                              <div className='flex items-center justify-between border-b border-border pb-2'>
+                                <div className='flex items-center space-x-2'>
                                   <Checkbox
                                     checked={devicesData?.data?.filter(d => d.enabled).length > 0 &&
                                             devicesData?.data?.filter(d => d.enabled).every(d => createCampaignData.sendDevices.includes(d._id))}
-                                    onChange={() => {}}
+                                    onCheckedChange={(checked) => {
+                                      const allEnabledDeviceIds = devicesData?.data?.filter(d => d.enabled).map(d => d._id) || []
+                                      if (checked) {
+                                        setCreateCampaignData(prev => ({ ...prev, sendDevices: allEnabledDeviceIds }))
+                                      } else {
+                                        setCreateCampaignData(prev => ({ ...prev, sendDevices: [] }))
+                                      }
+                                    }}
                                   />
-                                  <div className='text-sm font-medium'>Select all enabled devices</div>
+                                  <span className='text-sm font-medium'>Select/Unselect all enabled devices</span>
                                 </div>
-                                {devicesData?.data?.length === 0 ? (
-                                  <div className='px-2 py-4 text-center text-sm text-muted-foreground'>
-                                    No devices registered.
-                                    <br />
-                                    Register devices in the Dashboard first.
-                                  </div>
-                                ) : (
-                                  devicesData?.data?.map(device => (
-                                    <div key={device._id} className='flex items-center space-x-2 px-2 py-2 cursor-pointer hover:bg-muted/50'
-                                         onClick={(e) => {
-                                           e.preventDefault()
-                                           const isSelected = createCampaignData.sendDevices.includes(device._id)
-                                           if (isSelected) {
-                                             setCreateCampaignData(prev => ({
-                                               ...prev,
-                                               sendDevices: prev.sendDevices.filter(id => id !== device._id)
-                                             }))
-                                           } else {
-                                             setCreateCampaignData(prev => ({
-                                               ...prev,
-                                               sendDevices: [...prev.sendDevices, device._id]
-                                             }))
-                                           }
-                                         }}>
-                                      <Checkbox
-                                        checked={createCampaignData.sendDevices.includes(device._id)}
-                                        onChange={() => {}}
-                                      />
-                                      <div className='text-sm'>
-                                        <div className='flex items-center justify-between gap-3'>
-                                          <span className='font-medium'>{device.brand} {device.model}</span>
-                                          <Badge variant={device.enabled ? 'default' : 'secondary'} className='text-xs'>
-                                            {device.enabled ? 'Enabled' : 'Disabled'}
-                                          </Badge>
-                                        </div>
-                                        <div className='mt-1'>
-                                          <code className='relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-xs text-muted-foreground'>
-                                            {device._id}
-                                          </code>
+                              </div>
+
+                              {/* Device List */}
+                              {devicesData?.data?.length === 0 ? (
+                                <div className='text-center text-sm text-muted-foreground py-4'>
+                                  No devices registered.
+                                  <br />
+                                  Register devices in the Dashboard first.
+                                </div>
+                              ) : (
+                                <div className='space-y-2'>
+                                  {devicesData?.data?.map(device => (
+                                    <div key={device._id} className='flex items-center justify-between p-2 rounded border bg-background'>
+                                      <div className='flex items-center space-x-2'>
+                                        <Checkbox
+                                          checked={createCampaignData.sendDevices.includes(device._id)}
+                                          disabled={!device.enabled}
+                                          onCheckedChange={(checked) => {
+                                            if (!device.enabled) return
+                                            if (checked) {
+                                              setCreateCampaignData(prev => ({
+                                                ...prev,
+                                                sendDevices: [...prev.sendDevices, device._id]
+                                              }))
+                                            } else {
+                                              setCreateCampaignData(prev => ({
+                                                ...prev,
+                                                sendDevices: prev.sendDevices.filter(id => id !== device._id)
+                                              }))
+                                            }
+                                          }}
+                                          className={!device.enabled ? 'opacity-50' : ''}
+                                        />
+                                        <div className={`text-sm ${!device.enabled ? 'opacity-50' : ''}`}>
+                                          <div className='flex items-center gap-2'>
+                                            <span className='font-medium'>{device.brand} {device.model}</span>
+                                            <Badge variant={device.enabled ? 'default' : 'secondary'} className='text-xs'>
+                                              {device.enabled ? 'Enabled' : 'Disabled'}
+                                            </Badge>
+                                          </div>
+                                          <div className='text-xs text-muted-foreground mt-1'>
+                                            <code className='bg-muted px-1 py-0.5 rounded text-xs'>
+                                              {device._id}
+                                            </code>
+                                          </div>
                                         </div>
                                       </div>
+                                      <div className={`text-sm text-muted-foreground text-right ${!device.enabled ? 'opacity-50' : ''}`}>
+                                        <div>{device.max_hourly_send_rate || 60} per hour</div>
+                                        <div>{device.daily_send_limit || 50} per day</div>
+                                      </div>
                                     </div>
-                                  ))
-                                )}
-                              </SelectContent>
-                            </Select>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
                           </div>
 
                           <div className='space-y-2'>
@@ -1122,12 +1123,13 @@ export default function CampaignsPage() {
                               )}
                             </div>
                           </div>
+
                         </div>
 
                           {/* Right Column - Selected Templates */}
-                          <div className='flex flex-col h-full overflow-hidden'>
-                            <Label className='text-sm font-medium mb-2'>Selected Templates</Label>
-                            <div className='flex-1 border rounded-lg p-4 bg-gray-50 overflow-y-auto'>
+                          <div className='flex flex-col h-full overflow-hidden min-h-0'>
+                            <Label className='text-sm font-medium mb-2 flex-shrink-0'>Selected Templates</Label>
+                            <div className='flex-1 border rounded-lg p-4 bg-gray-50 overflow-y-auto min-h-0'>
                             {createCampaignData.selectedTemplates.length === 0 ? (
                               <div className='flex items-center justify-center h-full text-center text-muted-foreground'>
                                 <div>
@@ -1495,9 +1497,23 @@ export default function CampaignsPage() {
                               </Button>
                             </div>
                             <div className='space-y-2 overflow-y-auto flex-1 min-h-0 bg-muted rounded-lg p-4'>
-                              {templateGroups
-                                .find(g => g._id === selectedTemplateGroup)
-                                ?.templates.map(template => (
+                              {(() => {
+                                const selectedGroup = templateGroups.find(g => g._id === selectedTemplateGroup)
+                                const templates = selectedGroup?.templates || []
+
+                                if (templates.length === 0) {
+                                  return (
+                                    <div className='flex items-center justify-center h-full text-center text-muted-foreground'>
+                                      <div>
+                                        <MessageSquare className='h-8 w-8 mx-auto mb-2 opacity-50' />
+                                        <p className='text-sm'>No templates in this group</p>
+                                        <p className='text-xs'>Add templates to see them here</p>
+                                      </div>
+                                    </div>
+                                  )
+                                }
+
+                                return templates.map(template => (
                                   <div key={template._id} className='bg-white border rounded-lg p-3 space-y-2 shadow-sm group'>
                                     <div className='flex items-center justify-between'>
                                       <h5 className='font-medium text-sm'>{template.name}</h5>
@@ -1536,7 +1552,7 @@ export default function CampaignsPage() {
                                     </div>
                                   </div>
                                 ))
-                              }
+                              })()}
                             </div>
                           </>
                         )}
