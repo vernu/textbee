@@ -139,6 +139,15 @@ function TemplateItem({ template, onRemove }: { template: any, onRemove: () => v
   )
 }
 
+function getVariables(content: string): string[] {
+  const regex = /{[^}]+}/g
+  const matches = content.match(regex)
+  if (!matches) {
+    return []
+  }
+  return [...new Set(matches)]
+}
+
 export default function CampaignsPage() {
   const [selectedMode, setSelectedMode] = useState<'campaigns' | 'active' | 'draft' | 'inactive' | 'completed'>('campaigns')
   const [searchQuery, setSearchQuery] = useState('')
@@ -1279,12 +1288,12 @@ export default function CampaignsPage() {
 
               {/* Manage Templates Dialog */}
               <Dialog open={manageTemplatesOpen} onOpenChange={setManageTemplatesOpen}>
-                <DialogContent className='max-w-3xl max-h-[90vh] overflow-y-auto'>
-                  <DialogHeader>
+                <DialogContent className='max-w-3xl max-h-[90vh] flex flex-col overflow-hidden'>
+                  <DialogHeader className='flex-shrink-0'>
                     <DialogTitle>Manage Templates</DialogTitle>
                   </DialogHeader>
-                  <div className='space-y-4 py-4'>
-                    <div className='flex items-center justify-between'>
+                  <div className='space-y-4 py-4 flex-1 min-h-0 flex flex-col'>
+                    <div className='flex items-center justify-between flex-shrink-0'>
                       <h3 className='text-lg font-semibold'>Template Groups</h3>
                       <Button
                         size='sm'
@@ -1296,9 +1305,9 @@ export default function CampaignsPage() {
                       </Button>
                     </div>
 
-                    <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                    <div className='grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 min-h-0'>
                       {/* Template Groups List */}
-                      <div className='space-y-2'>
+                      <div className='space-y-2 overflow-y-auto'>
                         {templateGroups.length === 0 ? (
                           <div className='text-center text-muted-foreground py-8'>
                             <MessageSquare className='h-12 w-12 mx-auto mb-2 opacity-50' />
@@ -1323,13 +1332,15 @@ export default function CampaignsPage() {
                       </div>
 
                       {/* Templates in Selected Group */}
-                      <div className='space-y-2'>
+                      <div className='space-y-2 overflow-y-auto'>
                         {selectedTemplateGroup && (
                           <>
                             <div className='flex items-center justify-between'>
                               <h4 className='font-medium'>
                                 {templateGroups.find(g => g._id === selectedTemplateGroup)?.name} Templates
                               </h4>
+                            </div>
+                            <div className='flex justify-end'>
                               <Button
                                 size='sm'
                                 variant='outline'
@@ -1359,7 +1370,12 @@ export default function CampaignsPage() {
                                       {template.content}
                                     </p>
                                     <div className='text-xs text-muted-foreground'>
-                                      Variables: {'{firstName}'}, {'{lastName}'}, {'{phone}'} etc.
+                                      {(() => {
+                                        const variables = getVariables(template.content)
+                                        return variables.length > 0
+                                          ? `Variables: ${variables.join(', ')}`
+                                          : 'No variables used'
+                                      })()}
                                     </div>
                                   </div>
                                 ))
@@ -1375,7 +1391,7 @@ export default function CampaignsPage() {
                       </div>
                     </div>
                   </div>
-                  <DialogFooter>
+                  <DialogFooter className='flex-shrink-0'>
                     <Button
                       variant='outline'
                       onClick={() => {
@@ -1596,7 +1612,7 @@ export default function CampaignsPage() {
                                   </Button>
                                   <Checkbox
                                     checked={allGroupSelected}
-                                    indeterminate={someGroupSelected ? true : undefined}
+                                    indeterminate={someGroupSelected}
                                     onCheckedChange={(checked) => {
                                       if (checked) {
                                         // Select all templates in group
