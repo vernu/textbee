@@ -803,7 +803,7 @@ export default function CampaignsPage() {
                     Create new campaign
                   </Button>
                 </DialogTrigger>
-                <DialogContent className='w-[1170px] h-[90vh] max-w-none overflow-hidden flex flex-col'>
+                <DialogContent className='w-[90vw] max-w-6xl h-[90vh] overflow-hidden flex flex-col'>
                   <DialogHeader className='flex-shrink-0 border-b p-4 pb-3'>
                     <DialogTitle>Create New Campaign</DialogTitle>
                   </DialogHeader>
