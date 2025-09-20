@@ -16,6 +16,9 @@ export class MessageTemplateGroup {
   @Prop({ type: String })
   description?: string
 
+  @Prop({ type: Number, default: 0 })
+  order: number
+
   @Prop({ type: Date, default: Date.now })
   createdAt: Date
 

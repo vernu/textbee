@@ -14,6 +14,7 @@ import {
   UpdateMessageTemplateGroupDto,
   CreateMessageTemplateDto,
   UpdateMessageTemplateDto,
+  ReorderTemplateGroupsDto,
   MessageTemplateGroupResponseDto,
   MessageTemplateResponseDto,
 } from './campaigns.dto'
@@ -33,9 +34,19 @@ export class CampaignsService {
     createDto: CreateMessageTemplateGroupDto,
   ): Promise<MessageTemplateGroupResponseDto> {
     try {
+      // Get the next order value
+      const maxOrder = await this.messageTemplateGroupModel
+        .findOne({ userId: new Types.ObjectId(userId) })
+        .sort({ order: -1 })
+        .select('order')
+        .lean()
+
+      const nextOrder = maxOrder ? maxOrder.order + 1 : 0
+
       const templateGroup = new this.messageTemplateGroupModel({
         ...createDto,
         userId: new Types.ObjectId(userId),
+        order: nextOrder,
       })
 
       const saved = await templateGroup.save()
@@ -55,7 +66,7 @@ export class CampaignsService {
   ): Promise<MessageTemplateGroupResponseDto[]> {
     const groups = await this.messageTemplateGroupModel
       .find({ userId: new Types.ObjectId(userId) })
-      .sort({ createdAt: -1 })
+      .sort({ order: 1, createdAt: 1 })
       .lean()
 
     const result = []
@@ -157,6 +168,41 @@ export class CampaignsService {
 
     // Delete the group
     await this.messageTemplateGroupModel.deleteOne({ _id: group._id })
+  }
+
+  async reorderTemplateGroups(
+    userId: string,
+    reorderDto: ReorderTemplateGroupsDto,
+  ): Promise<MessageTemplateGroupResponseDto[]> {
+    const { templateGroupIds } = reorderDto
+
+    // Verify all template groups belong to the user
+    const groups = await this.messageTemplateGroupModel
+      .find({
+        _id: { $in: templateGroupIds.map(id => new Types.ObjectId(id)) },
+        userId: new Types.ObjectId(userId),
+      })
+      .lean()
+
+    if (groups.length !== templateGroupIds.length) {
+      throw new NotFoundException('One or more template groups not found')
+    }
+
+    // Update the order for each group
+    const bulkOperations = templateGroupIds.map((groupId, index) => ({
+      updateOne: {
+        filter: {
+          _id: new Types.ObjectId(groupId),
+          userId: new Types.ObjectId(userId),
+        },
+        update: { order: index, updatedAt: new Date() },
+      },
+    }))
+
+    await this.messageTemplateGroupModel.bulkWrite(bulkOperations)
+
+    // Return the updated groups in their new order
+    return this.getTemplateGroups(userId)
   }
 
   // Templates
@@ -281,6 +327,7 @@ export class CampaignsService {
       userId: group.userId.toString(),
       name: group.name,
       description: group.description,
+      order: group.order || 0,
       createdAt: group.createdAt,
       updatedAt: group.updatedAt,
       templates,

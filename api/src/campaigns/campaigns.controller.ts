@@ -18,6 +18,7 @@ import {
   UpdateMessageTemplateGroupDto,
   CreateMessageTemplateDto,
   UpdateMessageTemplateDto,
+  ReorderTemplateGroupsDto,
   MessageTemplateGroupResponseDto,
   MessageTemplateResponseDto,
 } from './campaigns.dto'
@@ -54,6 +55,15 @@ export class CampaignsController {
     @Param('id') groupId: string,
   ): Promise<MessageTemplateGroupResponseDto> {
     return this.campaignsService.getTemplateGroup(req.user.id, groupId)
+  }
+
+  @Put('template-groups/reorder')
+  @ApiOperation({ summary: 'Reorder message template groups' })
+  async reorderTemplateGroups(
+    @Request() req,
+    @Body() reorderDto: ReorderTemplateGroupsDto,
+  ): Promise<MessageTemplateGroupResponseDto[]> {
+    return this.campaignsService.reorderTemplateGroups(req.user.id, reorderDto)
   }
 
   @Put('template-groups/:id')

@@ -39,10 +39,11 @@ import {
   Settings,
   Eye,
   FileText,
+  GripVertical,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { contactsApi, ContactSpreadsheet } from '@/lib/api/contacts'
-import { campaignsApi, MessageTemplateGroup, MessageTemplate } from '@/lib/api/campaigns'
+import { campaignsApi, MessageTemplateGroup, MessageTemplate, ReorderTemplateGroupsDto } from '@/lib/api/campaigns'
 import { ApiEndpoints } from '@/config/api'
 import httpBrowserClient from '@/lib/httpBrowserClient'
 
@@ -191,6 +192,8 @@ export default function CampaignsPage() {
   } | null>(null)
   const [templateSelectionOpen, setTemplateSelectionOpen] = useState(false)
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
+  const [draggedGroupId, setDraggedGroupId] = useState<string | null>(null)
+  const [dragOverGroupId, setDragOverGroupId] = useState<string | null>(null)
 
   // Validation functions for each stage
   const validateDetailsStage = () => {
@@ -258,6 +261,54 @@ export default function CampaignsPage() {
     },
   })
 
+  const reorderTemplateGroupsMutation = useMutation({
+    mutationFn: async ({ sourceIndex, destinationIndex }: { sourceIndex: number; destinationIndex: number }) => {
+      // Create a copy of the current template groups array
+      const reorderedGroups = [...templateGroups]
+
+      // Remove the item from source index and insert at destination index
+      const [movedGroup] = reorderedGroups.splice(sourceIndex, 1)
+      reorderedGroups.splice(destinationIndex, 0, movedGroup)
+
+      // Extract the new order of IDs
+      const templateGroupIds = reorderedGroups.map(group => group._id)
+
+      // Call the API to persist the new order
+      return await campaignsApi.reorderTemplateGroups({ templateGroupIds })
+    },
+    onMutate: async ({ sourceIndex, destinationIndex }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['template-groups'] })
+
+      // Snapshot the previous value
+      const previousTemplateGroups = queryClient.getQueryData(['template-groups'])
+
+      // Optimistically update the cache
+      queryClient.setQueryData(['template-groups'], (old: MessageTemplateGroup[] | undefined) => {
+        if (!old) return old
+
+        const reorderedGroups = [...old]
+        const [movedGroup] = reorderedGroups.splice(sourceIndex, 1)
+        reorderedGroups.splice(destinationIndex, 0, movedGroup)
+
+        return reorderedGroups
+      })
+
+      // Return a context object with the snapshotted value
+      return { previousTemplateGroups }
+    },
+    onError: (err, variables, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      if (context?.previousTemplateGroups) {
+        queryClient.setQueryData(['template-groups'], context.previousTemplateGroups)
+      }
+    },
+    onSettled: () => {
+      // Always refetch after error or success
+      queryClient.invalidateQueries({ queryKey: ['template-groups'] })
+    },
+  })
+
   const updateTemplateGroupMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) =>
       campaignsApi.updateTemplateGroup(id, data),
@@ -270,8 +321,20 @@ export default function CampaignsPage() {
   const deleteTemplateGroupMutation = useMutation({
     mutationFn: campaignsApi.deleteTemplateGroup,
     onSuccess: () => {
+      setSelectedTemplateGroup(null)
       refetchTemplateGroups()
       queryClient.invalidateQueries({ queryKey: ['template-groups'] })
+      toast({
+        title: "Template group deleted",
+        description: "Template group and all its templates have been deleted successfully."
+      })
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error deleting template group",
+        description: error.response?.data?.message || "An error occurred while deleting the template group.",
+        variant: "destructive"
+      })
     },
   })
 
@@ -298,6 +361,17 @@ export default function CampaignsPage() {
     onSuccess: () => {
       refetchTemplateGroups()
       queryClient.invalidateQueries({ queryKey: ['template-groups'] })
+      toast({
+        title: "Template deleted",
+        description: "Template has been deleted successfully."
+      })
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error deleting template",
+        description: error.response?.data?.message || "An error occurred while deleting the template.",
+        variant: "destructive"
+      })
     },
   })
 
@@ -1288,59 +1362,128 @@ export default function CampaignsPage() {
 
               {/* Manage Templates Dialog */}
               <Dialog open={manageTemplatesOpen} onOpenChange={setManageTemplatesOpen}>
-                <DialogContent className='max-w-3xl max-h-[90vh] flex flex-col overflow-hidden'>
-                  <DialogHeader className='flex-shrink-0'>
+                <DialogContent className='max-w-3xl h-[90vh] flex flex-col overflow-hidden'>
+                  <DialogHeader className='flex-shrink-0 border-b p-4 pb-3'>
                     <DialogTitle>Manage Templates</DialogTitle>
                   </DialogHeader>
-                  <div className='space-y-4 py-4 flex-1 min-h-0 flex flex-col'>
-                    <div className='flex items-center justify-between flex-shrink-0'>
-                      <h3 className='text-lg font-semibold'>Template Groups</h3>
-                      <Button
-                        size='sm'
-                        className='gap-2'
-                        onClick={() => setCreateTemplateGroupOpen(true)}
-                      >
-                        <Plus className='h-4 w-4' />
-                        Create new template group
-                      </Button>
-                    </div>
-
+                  <div className='space-y-4 p-4 flex-1 min-h-0 flex flex-col'>
                     <div className='grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 min-h-0'>
                       {/* Template Groups List */}
-                      <div className='space-y-2 overflow-y-auto'>
-                        {templateGroups.length === 0 ? (
-                          <div className='text-center text-muted-foreground py-8'>
-                            <MessageSquare className='h-12 w-12 mx-auto mb-2 opacity-50' />
-                            <p className='text-sm'>No template groups yet</p>
-                            <p className='text-xs'>Create your first template group to get started</p>
-                          </div>
-                        ) : (
-                          templateGroups.map(group => (
-                            <Button
-                              key={group._id}
-                              variant={selectedTemplateGroup === group._id ? 'default' : 'outline'}
-                              className='w-full justify-start'
-                              onClick={() => setSelectedTemplateGroup(group._id)}
-                            >
-                              <div className='flex items-center justify-between w-full'>
-                                <span>{group.name}</span>
-                                <Badge variant='secondary'>{group.templates.length}</Badge>
+                      <div className='border-r pr-4 h-full flex flex-col'>
+                        <div className='flex items-center justify-between flex-shrink-0 mb-4'>
+                          <h3 className='text-base font-semibold'>Template Groups</h3>
+                          <Button
+                            size='sm'
+                            variant='outline'
+                            className='gap-2'
+                            onClick={() => setCreateTemplateGroupOpen(true)}
+                          >
+                            <Plus className='h-4 w-4' />
+                            New template group
+                          </Button>
+                        </div>
+                        <div className='space-y-2 overflow-y-auto flex-1'>
+                          {templateGroups.length === 0 ? (
+                            <div className='text-center text-muted-foreground py-8'>
+                              <MessageSquare className='h-12 w-12 mx-auto mb-2 opacity-50' />
+                              <p className='text-sm'>No template groups yet</p>
+                              <p className='text-xs'>Create your first template group to get started</p>
+                            </div>
+                          ) : (
+                            templateGroups.map((group, index) => (
+                              <div
+                                key={group._id}
+                                onDragOver={(e) => {
+                                  e.preventDefault()
+                                  e.dataTransfer.dropEffect = 'move'
+                                  setDragOverGroupId(group._id)
+                                }}
+                                onDragLeave={() => {
+                                  setDragOverGroupId(null)
+                                }}
+                                onDrop={(e) => {
+                                  e.preventDefault()
+                                  e.stopPropagation()
+
+                                  const draggedIndex = templateGroups.findIndex(g => g._id === draggedGroupId)
+                                  const targetIndex = index
+
+                                  if (draggedIndex !== -1 && draggedIndex !== targetIndex) {
+                                    reorderTemplateGroupsMutation.mutate({
+                                      sourceIndex: draggedIndex,
+                                      destinationIndex: targetIndex
+                                    })
+                                  }
+
+                                  setDraggedGroupId(null)
+                                  setDragOverGroupId(null)
+                                }}
+                                className={cn(
+                                  'relative transition-all duration-200',
+                                  dragOverGroupId === group._id && draggedGroupId !== group._id ? 'transform translate-y-1' : ''
+                                )}
+                              >
+                                <div
+                                  draggable
+                                  onDragStart={(e) => {
+                                    setDraggedGroupId(group._id)
+                                    e.dataTransfer.effectAllowed = 'move'
+                                    e.dataTransfer.setData('text/plain', group._id)
+                                    e.currentTarget.style.opacity = '0.5'
+                                  }}
+                                  onDragEnd={(e) => {
+                                    e.currentTarget.style.opacity = '1'
+                                    setDraggedGroupId(null)
+                                    setDragOverGroupId(null)
+                                  }}
+                                  onClick={() => setSelectedTemplateGroup(group._id)}
+                                  className={cn(
+                                    'cursor-grab active:cursor-grabbing select-none group',
+                                    'w-full p-3 rounded-md border transition-colors',
+                                    selectedTemplateGroup === group._id
+                                      ? 'bg-primary text-primary-foreground border-primary'
+                                      : 'bg-background hover:bg-accent hover:text-accent-foreground border-input'
+                                  )}
+                                >
+                                  <div className='flex items-center justify-between w-full'>
+                                    <div className='flex items-center gap-2'>
+                                      <GripVertical className='h-4 w-4 text-muted-foreground opacity-60 hover:opacity-100 transition-opacity' />
+                                      <span className='font-medium'>{group.name}</span>
+                                    </div>
+                                    <div className='flex items-center gap-2'>
+                                      <Badge variant={selectedTemplateGroup === group._id ? 'secondary' : 'outline'}>
+                                        {group.templates.length}
+                                      </Badge>
+                                      <Button
+                                        variant='ghost'
+                                        size='sm'
+                                        className='p-1 h-6 w-6 text-muted-foreground hover:text-destructive'
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          if (confirm(`Are you sure you want to delete "${group.name}"? This will also delete all templates in this group. This action cannot be undone.`)) {
+                                            deleteTemplateGroupMutation.mutate(group._id)
+                                          }
+                                        }}
+                                      >
+                                        <Trash2 className='h-3 w-3' />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                                {dragOverGroupId === group._id && draggedGroupId !== group._id && (
+                                  <div className='absolute -bottom-1 left-0 right-0 h-0.5 bg-primary rounded' />
+                                )}
                               </div>
-                            </Button>
-                          ))
-                        )}
+                            ))
+                          )}
+                        </div>
                       </div>
 
                       {/* Templates in Selected Group */}
-                      <div className='space-y-2 overflow-y-auto'>
+                      <div className='pl-4 flex flex-col h-full min-h-0'>
                         {selectedTemplateGroup && (
                           <>
-                            <div className='flex items-center justify-between'>
-                              <h4 className='font-medium'>
-                                {templateGroups.find(g => g._id === selectedTemplateGroup)?.name} Templates
-                              </h4>
-                            </div>
-                            <div className='flex justify-end'>
+                            <div className='flex justify-end mb-4 flex-shrink-0'>
                               <Button
                                 size='sm'
                                 variant='outline'
@@ -1348,23 +1491,37 @@ export default function CampaignsPage() {
                                 onClick={() => setCreateTemplateOpen(true)}
                               >
                                 <Plus className='h-4 w-4' />
-                                Add new template
+                                New template
                               </Button>
                             </div>
-                            <div className='space-y-2'>
+                            <div className='space-y-2 overflow-y-auto flex-1 min-h-0 bg-muted rounded-lg p-4'>
                               {templateGroups
                                 .find(g => g._id === selectedTemplateGroup)
                                 ?.templates.map(template => (
-                                  <div key={template._id} className='border rounded-lg p-3 space-y-2'>
+                                  <div key={template._id} className='bg-white border rounded-lg p-3 space-y-2 shadow-sm group'>
                                     <div className='flex items-center justify-between'>
                                       <h5 className='font-medium text-sm'>{template.name}</h5>
-                                      <Button
-                                        size='sm'
-                                        variant='outline'
-                                        onClick={() => handleEditTemplate(template, selectedTemplateGroup)}
-                                      >
-                                        <Edit className='h-3 w-3' />
-                                      </Button>
+                                      <div className='flex items-center gap-1'>
+                                        <Button
+                                          size='sm'
+                                          variant='outline'
+                                          onClick={() => handleEditTemplate(template, selectedTemplateGroup)}
+                                        >
+                                          <Edit className='h-3 w-3' />
+                                        </Button>
+                                        <Button
+                                          size='sm'
+                                          variant='ghost'
+                                          className='text-muted-foreground hover:text-destructive'
+                                          onClick={() => {
+                                            if (confirm(`Are you sure you want to delete "${template.name}"? This action cannot be undone.`)) {
+                                              deleteTemplateMutation.mutate(template._id)
+                                            }
+                                          }}
+                                        >
+                                          <Trash2 className='h-3 w-3' />
+                                        </Button>
+                                      </div>
                                     </div>
                                     <p className='text-xs text-muted-foreground bg-muted/50 p-2 rounded'>
                                       {template.content}
@@ -1384,8 +1541,10 @@ export default function CampaignsPage() {
                           </>
                         )}
                         {!selectedTemplateGroup && (
-                          <div className='text-center text-muted-foreground py-8'>
-                            Select a template group to view templates
+                          <div className='text-center text-muted-foreground py-8 flex-1 flex items-center justify-center'>
+                            <div>
+                              Select a template group to view templates
+                            </div>
                           </div>
                         )}
                       </div>

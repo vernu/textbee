@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger'
-import { IsString, IsOptional, IsNotEmpty, IsMongoId } from 'class-validator'
+import { IsString, IsOptional, IsNotEmpty, IsMongoId, IsArray } from 'class-validator'
 
 export class CreateMessageTemplateGroupDto {
   @ApiProperty()
@@ -53,6 +53,13 @@ export class UpdateMessageTemplateDto {
   content?: string
 }
 
+export class ReorderTemplateGroupsDto {
+  @ApiProperty({ type: [String] })
+  @IsArray()
+  @IsMongoId({ each: true })
+  templateGroupIds: string[]
+}
+
 export class MessageTemplateResponseDto {
   @ApiProperty()
   _id: string
@@ -88,6 +95,9 @@ export class MessageTemplateGroupResponseDto {
 
   @ApiProperty({ required: false })
   description?: string
+
+  @ApiProperty()
+  order: number
 
   @ApiProperty()
   createdAt: Date

@@ -31,6 +31,10 @@ export interface UpdateTemplateGroupDto {
   description?: string
 }
 
+export interface ReorderTemplateGroupsDto {
+  templateGroupIds: string[]
+}
+
 export interface CreateTemplateDto {
   groupId: string
   name: string
@@ -66,6 +70,11 @@ export const campaignsApi = {
 
   async deleteTemplateGroup(id: string): Promise<void> {
     await httpBrowserClient.delete(ApiEndpoints.campaigns.templateGroup(id))
+  },
+
+  async reorderTemplateGroups(data: ReorderTemplateGroupsDto): Promise<MessageTemplateGroup[]> {
+    const response = await httpBrowserClient.put(ApiEndpoints.campaigns.reorderTemplateGroups(), data)
+    return response.data
   },
 
   // Templates
