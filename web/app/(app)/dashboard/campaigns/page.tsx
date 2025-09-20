@@ -719,7 +719,7 @@ export default function CampaignsPage() {
                   </Button>
                 </DialogTrigger>
                 <DialogContent className='w-[900px] max-h-[90vh] max-w-none overflow-hidden flex flex-col'>
-                  <DialogHeader className='flex-shrink-0 border-b p-6 pb-4'>
+                  <DialogHeader className='flex-shrink-0 border-b p-4 pb-3'>
                     <DialogTitle>Create New Campaign</DialogTitle>
                   </DialogHeader>
                   <div className='flex-1 overflow-hidden min-h-0'>
@@ -765,7 +765,7 @@ export default function CampaignsPage() {
                         </TabsTrigger>
                       </TabsList>
 
-                      <TabsContent value='details' className='flex-1 overflow-y-auto p-6 min-h-0'>
+                      <TabsContent value='details' className='flex-1 overflow-y-auto p-4 min-h-0'>
                         <div className='space-y-6 max-w-[500px]'>
                           <div className='space-y-2'>
                             <Label htmlFor='name' className='text-sm font-medium'>
@@ -854,7 +854,7 @@ export default function CampaignsPage() {
                         </div>
                       </TabsContent>
 
-                      <TabsContent value='configure' className='flex-1 overflow-hidden p-6 min-h-0'>
+                      <TabsContent value='configure' className='flex-1 overflow-hidden p-4 min-h-0'>
                         <div className='grid grid-cols-2 gap-6 h-full'>
                           {/* Left Column - Form Controls */}
                           <div className='space-y-4 overflow-y-auto'>
@@ -1137,7 +1137,7 @@ export default function CampaignsPage() {
                       </div>
                     </TabsContent>
 
-                      <TabsContent value='preview' className='flex-1 overflow-y-auto p-6 min-h-0'>
+                      <TabsContent value='preview' className='flex-1 overflow-y-auto p-4 min-h-0'>
                       <div className='bg-muted/50 p-4 rounded-lg space-y-4'>
                         <h3 className='text-lg font-semibold'>Campaign Summary</h3>
                         <div className='grid grid-cols-2 gap-4'>
@@ -1195,7 +1195,7 @@ export default function CampaignsPage() {
                     </TabsContent>
                   </Tabs>
                   </div>
-                  <DialogFooter className='flex-shrink-0 border-t flex justify-between items-center p-6 pt-4'>
+                  <DialogFooter className='flex-shrink-0 border-t flex justify-between items-center p-4 pt-3'>
                     <div className='flex gap-2'>
                       {activeTab !== 'details' && (
                         <Button
@@ -1549,10 +1549,10 @@ export default function CampaignsPage() {
               {/* Template Selection Dialog */}
               <Dialog open={templateSelectionOpen} onOpenChange={setTemplateSelectionOpen}>
                 <DialogContent className='w-[700px] max-h-[90vh] max-w-none overflow-hidden flex flex-col'>
-                  <DialogHeader className='flex-shrink-0 border-b p-6 pb-4'>
+                  <DialogHeader className='flex-shrink-0 border-b p-4 pb-3'>
                     <DialogTitle>Select Message Templates</DialogTitle>
                   </DialogHeader>
-                  <div className='flex-1 overflow-y-auto p-6 min-h-0'>
+                  <div className='flex-1 overflow-y-auto p-4 min-h-0'>
                     {templateGroups.length === 0 ? (
                       <div className='text-center text-muted-foreground py-8'>
                         <MessageSquare className='h-12 w-12 mx-auto mb-2 opacity-50' />
@@ -1655,7 +1655,7 @@ export default function CampaignsPage() {
                       </div>
                     )}
                   </div>
-                  <DialogFooter className='flex-shrink-0 border-t flex justify-between items-center p-6 pt-4'>
+                  <DialogFooter className='flex-shrink-0 border-t flex justify-between items-center p-4 pt-3'>
                     <Button
                       variant='outline'
                       onClick={() => setTemplateSelectionOpen(false)}
