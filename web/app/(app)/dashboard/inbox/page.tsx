@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Inbox as InboxIcon, Calendar, ChevronDown, Search, Edit, Save, X, Plus, MessageSquarePlus } from 'lucide-react'
+import { Inbox as InboxIcon, Calendar, ChevronDown, Search, Edit, Save, X, Plus, MessageSquarePlus, Mail, MailOpen, MessageCircle, Clock, Users, Megaphone } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -256,10 +256,7 @@ function ConversationList({
       {/* Header with filters */}
       <div className="p-4 border-b space-y-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <InboxIcon className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-semibold">Conversations</h2>
-          </div>
+          <h2 className="text-lg font-semibold">Conversations</h2>
           <Button
             size="sm"
             onClick={onNewMessage}
@@ -967,6 +964,8 @@ export default function InboxPage() {
   const [newConversation, setNewConversation] = useState<Conversation | null>(null)
   const [autoRefreshInterval] = useState(15) // Default to 15 seconds
   const [lastSeenTimestamps, setLastSeenTimestamps] = useState<Record<string, Date>>({})
+  const [selectedInboxFilter, setSelectedInboxFilter] = useState<'all' | 'unread' | 'unreplied' | 'awaiting-reply'>('all')
+  const [selectedCampaignFilter, setSelectedCampaignFilter] = useState<string | null>(null)
   const refreshTimerRef = useRef(null)
   const queryClient = useQueryClient()
 
@@ -1146,6 +1145,31 @@ export default function InboxPage() {
     return conversations
   }, [messagesData, contactsData, devices?.data, newConversation, lastSeenTimestamps])
 
+  // Filter conversations based on selected filter
+  const filteredConversations = useMemo(() => {
+    let filtered = conversations
+
+    // Apply inbox filters
+    if (selectedInboxFilter !== 'all') {
+      filtered = filtered.filter(conversation => {
+        switch (selectedInboxFilter) {
+          case 'unread':
+            return conversation.unseenCount > 0
+          case 'unreplied':
+            // A conversation is unreplied if the last message was incoming and there are no outgoing messages after it
+            return conversation.lastMessage.isIncoming
+          case 'awaiting-reply':
+            // A conversation is awaiting reply if the last message was outgoing and there are no incoming messages after it
+            return !conversation.lastMessage.isIncoming
+          default:
+            return true
+        }
+      })
+    }
+
+    return filtered
+  }, [conversations, selectedInboxFilter])
+
   // Function to mark a conversation as seen
   const markConversationAsSeen = async (conversation: Conversation) => {
     const now = new Date()
@@ -1172,120 +1196,154 @@ export default function InboxPage() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col h-full overflow-hidden">
-        <div className="flex-shrink-0 p-6 md:p-8 pb-4">
-          <div className="space-y-1">
-            <div className="flex items-center space-x-2">
-              <InboxIcon className="h-6 w-6 text-primary" />
-              <h2 className="text-3xl font-bold tracking-tight">Inbox</h2>
-            </div>
-            <p className="text-muted-foreground">
-              View and manage your message conversations
-            </p>
+      <div className='flex h-full overflow-hidden'>
+        {/* Sidebar */}
+        <div className='w-64 border-r bg-background/50 p-4 flex flex-col h-full overflow-hidden'>
+          <div className='space-y-2 flex-shrink-0'>
+            <Skeleton className="h-6 w-20 mb-4" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-6 w-24 mt-6 mb-2" />
+            <Skeleton className="h-4 w-32" />
           </div>
         </div>
 
-        <div className="flex-1 px-6 md:px-8 pb-6 md:pb-8 overflow-hidden">
-          <Card className="h-full">
-            <CardContent className="p-0 h-full">
-              <div className="flex h-full">
-                <div className="w-1/2 border-r">
-                  <div className="p-4 space-y-4">
-                    <Skeleton className="h-8 w-full" />
-                    <Skeleton className="h-10 w-full" />
-                    <div className="flex space-x-2">
-                      <Skeleton className="h-10 w-32" />
-                      <Skeleton className="h-10 w-32" />
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    {Array.from({ length: 8 }).map((_, i) => (
-                      <div key={i} className="p-4 border-b">
-                        <Skeleton className="h-4 w-32 mb-2" />
-                        <Skeleton className="h-3 w-48" />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="w-1/2">
-                  <div className="p-4">
-                    <Skeleton className="h-6 w-32" />
-                  </div>
-                </div>
+        {/* Main content */}
+        <div className="flex-1 flex h-full overflow-hidden">
+          <div className="w-1/2 border-r">
+            <div className="p-4 space-y-4">
+              <Skeleton className="h-8 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <div className="flex space-x-2">
+                <Skeleton className="h-10 w-32" />
+                <Skeleton className="h-10 w-32" />
               </div>
-            </CardContent>
-          </Card>
+            </div>
+            <div className="space-y-1">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="p-4 border-b">
+                  <Skeleton className="h-4 w-32 mb-2" />
+                  <Skeleton className="h-3 w-48" />
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="w-1/2">
+            <div className="p-4">
+              <Skeleton className="h-6 w-32" />
+            </div>
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      <div className="flex-shrink-0 p-6 md:p-8 pb-4">
-        <div className="space-y-1">
-          <div className="flex items-center space-x-2">
-            <InboxIcon className="h-6 w-6 text-primary" />
-            <h2 className="text-3xl font-bold tracking-tight">Inbox</h2>
+    <div className='flex h-full overflow-hidden'>
+      {/* Sidebar */}
+      <div className='w-64 border-r bg-background/50 p-4 flex flex-col h-full overflow-hidden'>
+        <div className='space-y-2 flex-shrink-0'>
+          {/* Inbox Section */}
+          <div className="space-y-1">
+            <div className="flex items-center text-sm font-medium text-muted-foreground mb-2">
+              <InboxIcon className="mr-2 h-4 w-4" />
+              Inbox
+            </div>
+            <Button
+              variant={selectedInboxFilter === 'all' ? 'default' : 'ghost'}
+              className='w-full justify-start text-sm'
+              onClick={() => setSelectedInboxFilter('all')}
+            >
+              <Mail className='mr-2 h-4 w-4' />
+              All
+            </Button>
+            <Button
+              variant={selectedInboxFilter === 'unread' ? 'default' : 'ghost'}
+              className='w-full justify-start text-sm'
+              onClick={() => setSelectedInboxFilter('unread')}
+            >
+              <MailOpen className='mr-2 h-4 w-4' />
+              Unread
+            </Button>
+            <Button
+              variant={selectedInboxFilter === 'unreplied' ? 'default' : 'ghost'}
+              className='w-full justify-start text-sm'
+              onClick={() => setSelectedInboxFilter('unreplied')}
+            >
+              <MessageCircle className='mr-2 h-4 w-4' />
+              Unreplied
+            </Button>
+            <Button
+              variant={selectedInboxFilter === 'awaiting-reply' ? 'default' : 'ghost'}
+              className='w-full justify-start text-sm'
+              onClick={() => setSelectedInboxFilter('awaiting-reply')}
+            >
+              <Clock className='mr-2 h-4 w-4' />
+              Awaiting reply
+            </Button>
           </div>
-          <p className="text-muted-foreground">
-            View and manage your message conversations
-          </p>
+
+          {/* Campaigns Section */}
+          <div className="space-y-1 pt-4">
+            <div className="flex items-center text-sm font-medium text-muted-foreground mb-2">
+              <Megaphone className="mr-2 h-4 w-4" />
+              Campaigns
+            </div>
+            <div className="text-xs text-muted-foreground pl-6">
+              Coming soon...
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="flex-1 px-6 md:px-8 pb-6 md:pb-8 overflow-hidden">
-        <Card className="h-full">
-          <CardContent className="p-0 h-full">
-            <div className="flex h-full">
-              {/* Conversation list panel */}
-              <div className={selectedConversation || showNewMessageSidebar ? "w-1/2" : "w-full"}>
-                <ConversationList
-                  conversations={conversations}
-                  selectedConversation={selectedConversation}
-                  onSelectConversation={markConversationAsSeen}
-                  sortBy={sortBy}
-                  setSortBy={setSortBy}
-                  dateFilter={dateFilter}
-                  setDateFilter={setDateFilter}
-                  dateRange={dateRange}
-                  setDateRange={setDateRange}
-                  searchQuery={searchQuery}
-                  setSearchQuery={setSearchQuery}
-                  onNewMessage={() => setShowNewMessageSidebar(true)}
-                />
-              </div>
+      {/* Main content */}
+      <div className="flex-1 flex h-full overflow-hidden">
+        {/* Conversation list panel */}
+        <div className={selectedConversation || showNewMessageSidebar ? "w-1/2" : "w-full"}>
+          <ConversationList
+            conversations={filteredConversations}
+            selectedConversation={selectedConversation}
+            onSelectConversation={markConversationAsSeen}
+            sortBy={sortBy}
+            setSortBy={setSortBy}
+            dateFilter={dateFilter}
+            setDateFilter={setDateFilter}
+            dateRange={dateRange}
+            setDateRange={setDateRange}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            onNewMessage={() => setShowNewMessageSidebar(true)}
+          />
+        </div>
 
-              {/* Messenger interface panel */}
-              {selectedConversation && !showNewMessageSidebar && (
-                <div className="w-1/2">
-                  <MessengerInterface
-                    conversation={selectedConversation}
-                    allMessages={messagesData || []}
-                  />
-                </div>
-              )}
+        {/* Messenger interface panel */}
+        {selectedConversation && !showNewMessageSidebar && (
+          <div className="w-1/2">
+            <MessengerInterface
+              conversation={selectedConversation}
+              allMessages={messagesData || []}
+            />
+          </div>
+        )}
 
-              {/* New Message Sidebar */}
-              {showNewMessageSidebar && (
-                <div className="w-1/2">
-                  <NewMessageSidebar
-                    onClose={() => setShowNewMessageSidebar(false)}
-                    onConversationCreated={(conversation) => {
-                      setNewConversation(conversation)
-                      setSelectedConversation(conversation)
-                      setShowNewMessageSidebar(false)
-                    }}
-                    allMessages={messagesData || []}
-                    contacts={contactsData?.data || []}
-                    devices={devices?.data || []}
-                  />
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
+        {/* New Message Sidebar */}
+        {showNewMessageSidebar && (
+          <div className="w-1/2">
+            <NewMessageSidebar
+              onClose={() => setShowNewMessageSidebar(false)}
+              onConversationCreated={(conversation) => {
+                setNewConversation(conversation)
+                setSelectedConversation(conversation)
+                setShowNewMessageSidebar(false)
+              }}
+              allMessages={messagesData || []}
+              contacts={contactsData?.data || []}
+              devices={devices?.data || []}
+            />
+          </div>
+        )}
       </div>
     </div>
   )
