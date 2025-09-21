@@ -272,8 +272,6 @@ const WebhooksHistory = () => {
                   Date Range
                 </h3>{' '}
               </div>
-              {/* date range ( today, last 3 days, last 7 days, last 30 days-default, last 90 days, custom)
-Custom should trigger a popover to set a custom date range ( two date inputs) */}
               <Select value={dateRange} onValueChange={handleDateRangeChange}>
                 <SelectTrigger className="w-full bg-white/80 dark:bg-black/20 h-9 text-sm border-brand-200 dark:border-brand-800/70">
                   <SelectValue placeholder="Date Range" />
@@ -315,7 +313,6 @@ Custom should trigger a popover to set a custom date range ( two date inputs) */
             </div>
           </div>
           
-          {/* Custom Date Range Popup */}
           <Popover open={openCal} onOpenChange={setOpenCal}>
             <PopoverContent className="p-4 w-64">
               <div className="flex flex-col gap-3">
@@ -379,7 +376,7 @@ Custom should trigger a popover to set a custom date range ( two date inputs) */
                     onClick={() => {
                       setPage(1)
                       setOpenCal(false)
-                      refetch() // react-query refetch
+                      refetch()
                     }}
                     disabled={!dateQuery.start || !dateQuery.end}
                   >
@@ -411,7 +408,7 @@ Custom should trigger a popover to set a custom date range ( two date inputs) */
                 </Button>
 
                 <div className="flex flex-wrap items-center gap-2 justify-center sm:justify-start">
-                  {/* First page */}
+                  
                   {totalPages > 1 && (
                     <Button
                       onClick={() => handlePageChange(1)}
@@ -432,7 +429,7 @@ Custom should trigger a popover to set a custom date range ( two date inputs) */
                     <span className="px-1">...</span>
                   )}
 
-                  {/* Middle pages */}
+                  
                   {Array.from(
                     {
                       length: Math.min(6, totalPages - 2),
