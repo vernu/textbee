@@ -7,6 +7,7 @@ import {
   Controller,
   Get,
   UseGuards,
+  Query,
 } from '@nestjs/common'
 import { WebhookService } from './webhook.service'
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
@@ -27,7 +28,30 @@ export class WebhookController {
     })
     return { data }
   }
-
+  @Get('notifications')
+  @UseGuards(AuthGuard)
+  async getWebhookNotifications(
+    @Request() req,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('status') status?: string,
+    @Query('eventType') eventType?: string,
+    @Query('deviceId') deviceId?: string,
+    @Query('start') start?: Date,
+    @Query('end') end?: Date,
+  ) {
+    const data = await this.webhookService.findWebhookNotificationsForUser({
+      user: req.user,
+      page,
+      limit,
+      eventType,
+      status,
+      start,
+      end,
+      deviceId,
+    })
+    return { data }
+  }
   @Get(':webhookId')
   @UseGuards(AuthGuard)
   async getWebhook(@Request() req, @Param('webhookId') webhookId: string) {

@@ -1,7 +1,7 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { PlusCircle, Webhook } from 'lucide-react'
+import { Bell, PlusCircle, Webhook } from 'lucide-react'
 import { useState } from 'react'
 import { WebhookData } from '@/lib/types'
 import { WebhookCard } from './webhook-card'
@@ -18,6 +18,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 function WebhookCardSkeleton() {
   return (
@@ -57,8 +59,9 @@ function WebhookCardSkeleton() {
 export default function WebhooksSection() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const navigator = useRouter()
   const [selectedWebhook, setSelectedWebhook] = useState<WebhookData | null>(
-    null
+    null,
   )
   const queryClient = useQueryClient()
 
@@ -95,31 +98,41 @@ export default function WebhooksSection() {
             Manage webhook notifications for your SMS events
           </p>
         </div>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div>
-                <Button
-                  onClick={handleCreateClick}
-                  disabled={webhooks?.data?.length > 0 || isLoading}
-                  variant='default'
-                  className='w-full sm:w-auto'
-                >
-                  <PlusCircle className='mr-2 h-4 w-4' />
-                  Create Webhook
-                </Button>
-              </div>
-            </TooltipTrigger>
-            {webhooks?.data?.length > 0 && (
-              <TooltipContent>
-                <p>
-                  You already have an active webhook subscription. You can edit
-                  or manage the existing webhook instead.
-                </p>
-              </TooltipContent>
-            )}
-          </Tooltip>
-        </TooltipProvider>
+        <div className='flex gap-x-4'>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div>
+                  <Button
+                    onClick={handleCreateClick}
+                    disabled={webhooks?.data?.length > 0 || isLoading}
+                    variant='default'
+                    className='w-full sm:w-auto'
+                  >
+                    <PlusCircle className='mr-2 h-4 w-4' />
+                    Create Webhook
+                  </Button>
+                </div>
+              </TooltipTrigger>
+              {webhooks?.data?.length > 0 && (
+                <TooltipContent>
+                  <p>
+                    You already have an active webhook subscription. You can
+                    edit or manage the existing webhook instead.
+                  </p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
+          <Button
+            onClick={() => navigator.push('/dashboard/webhooks')}
+            variant='default'
+            className='w-full sm:w-auto'
+          >
+            <Bell className='mr-2 h-4 w-4' />
+            Notification Deliveries
+          </Button>
+        </div>
       </div>
 
       <div className='grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8'>

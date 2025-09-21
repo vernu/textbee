@@ -15,6 +15,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { Cron } from '@nestjs/schedule'
 import { CronExpression } from '@nestjs/schedule'
 import * as crypto from 'crypto'
+import mongoose from 'mongoose'
 
 @Injectable()
 export class WebhookService {
@@ -40,7 +41,181 @@ export class WebhookService {
   async findWebhooksForUser({ user }) {
     return await this.webhookSubscriptionModel.find({ user: user._id })
   }
+  async findWebhookNotificationsForUser({
+    user,
+    page = 1,
+    limit = 10,
+    eventType,
+    status,
+    start,
+    end,
+    deviceId,
+  }): Promise<{ data: any[]; meta: any }> {
+    const userWebhookSubscription = await this.webhookSubscriptionModel.findOne(
+      {
+        user: user._id,
+      },
+    )
 
+    if (!userWebhookSubscription) {
+      return {
+        data: [],
+        meta: {
+          page: 1,
+          limit,
+          total: 0,
+          totalPages: 0,
+        },
+      }
+    }
+
+    const matchStage: any = { webhookSubscription: userWebhookSubscription._id }
+
+    if (eventType) {
+      matchStage.event = eventType
+    }
+
+    if (
+      start &&
+      end &&
+      !Number.isNaN(new Date(start).getTime()) &&
+      !Number.isNaN(new Date(end).getTime())
+    ) {
+      matchStage.createdAt = { $gte: new Date(start), $lte: new Date(end) }
+    }
+
+
+    const pageNum = Math.max(1, Number.parseInt(page.toString()) || 1)
+    const limitNum = Math.max(1, Number.parseInt(limit.toString()) || 10)
+    const skip = (pageNum - 1) * limitNum
+
+    const commonPipeline: any[] = [
+      { $match: matchStage },
+      {
+        $lookup: {
+          from: 'sms',
+          localField: 'sms',
+          foreignField: '_id',
+          as: 'smsData',
+        },
+      },
+      { $unwind: { path: '$smsData', preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: 'devices',
+          localField: 'smsData.device',
+          foreignField: '_id',
+          as: 'deviceData',
+        },
+      },
+      { $unwind: { path: '$deviceData', preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: 'webhooksubscriptions',
+          localField: 'webhookSubscription',
+          foreignField: '_id',
+          as: 'webhookSubscriptionData',
+        },
+      },
+      {
+        $unwind: {
+          path: '$webhookSubscriptionData',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $addFields: {
+          computedStatus: {
+            $cond: {
+              if: { $ne: ['$deliveredAt', null] },
+              then: 'delivered',
+              else: {
+                $cond: {
+                  if: {
+                    $or: [
+                      { $ne: ['$deliveryAttemptAbortedAt', null] },
+                      { $gte: ['$deliveryAttemptCount', 10] }
+                    ]
+                  },
+                  then: 'failed',
+                  else: {
+                    $cond: {
+                      if: {
+                        $and: [
+                          { $eq: ['$deliveredAt', null] },
+                          { $eq: ['$deliveryAttemptAbortedAt', null] },
+                          { $gt: ['$deliveryAttemptCount', 0] },
+                          { $lt: ['$deliveryAttemptCount', 10] }
+                        ]
+                      },
+                      then: 'retrying',
+                      else: 'pending'
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+    ]
+
+    // Apply status filter
+    if (status) {
+      commonPipeline.push({
+        $match: {
+          computedStatus: status
+        }
+      })
+    }
+
+    if (deviceId) {
+      commonPipeline.push({
+        $match: {
+          'deviceData._id': new mongoose.Types.ObjectId(deviceId),
+        },
+      })
+    }
+
+    const facetPipeline = [
+      ...commonPipeline,
+      {
+        $facet: {
+          totalCount: [{ $count: 'count' }],
+          data: [
+            { $sort: { createdAt: -1 } },
+            { $skip: skip },
+            { $limit: limitNum },
+          ],
+        },
+      },
+      {
+        $project: {
+          data: 1,
+          totalCount: {
+            $ifNull: [{ $arrayElemAt: ['$totalCount.count', 0] }, 0],
+          },
+        },
+      },
+    ]
+
+    const [result] =
+      await this.webhookNotificationModel.aggregate(facetPipeline)
+
+    const total = result?.totalCount || 0
+    const data = result?.data || []
+    const totalPages = Math.ceil(total / limitNum)
+
+    return {
+      data,
+      meta: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages,
+      },
+    }
+  }
   async create({ user, createWebhookDto }) {
     const { events, deliveryUrl, signingSecret } = createWebhookDto
 
@@ -164,9 +339,7 @@ export class WebhookService {
     )
 
     if (!webhookSubscription) {
-      console.log(
-        `Webhook subscription not found for ${webhookSubscriptionId}`,
-      )
+      console.log(`Webhook subscription not found for ${webhookSubscriptionId}`)
       return
     }
 
@@ -217,7 +390,6 @@ export class WebhookService {
 
       webhookSubscription.deliveryFailureCount += 1
       webhookSubscription.lastDeliveryFailureAt = now
-
     } finally {
       webhookSubscription.deliveryAttemptCount += 1
       await webhookSubscription.save()
@@ -250,7 +422,7 @@ export class WebhookService {
 
   // Check for notifications that need to be delivered every 3 minutes
   @Cron('0 */3 * * * *', {
-    disabled: process.env.NODE_ENV !== 'production'
+    disabled: process.env.NODE_ENV !== 'production',
   })
   async checkForNotificationsToDeliver() {
     const now = new Date()

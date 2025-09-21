@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation } from '@tanstack/react-query'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -16,6 +16,8 @@ import {
   Smartphone,
   RefreshCw,
   Timer,
+  Copy,
+  Trash2,
 } from 'lucide-react'
 import {
   Select,
@@ -30,37 +32,93 @@ import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { sendSmsSchema } from '@/lib/schemas'
 import type { SendSmsFormData } from '@/lib/schemas'
-import { useMutation } from '@tanstack/react-query'
-import { Spinner } from '@/components/ui/spinner'
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
+import { Spinner } from '@/components/ui/spinner'
+import { toast } from '@/hooks/use-toast'
 
-function ReplyDialog({ sms, onClose }: { sms: any; onClose?: () => void }) {
-  const [open, setOpen] = useState(false)
+
+// Helper function to format timestamps
+const formatTimestamp = (timestamp: string | null | undefined) => {
+  if (!timestamp) return 'N/A'
+  return new Date(timestamp).toLocaleString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
+}
+
+// Helper to get status color and icon
+const getStatusBadge = (status: string) => {
+  const normalizedStatus = status?.toLowerCase() || 'pending'
+  switch (normalizedStatus) {
+    case 'pending':
+      return {
+        color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+        icon: <Timer className='h-3 w-3' />,
+        label: 'Pending',
+      }
+    case 'sent':
+      return {
+        color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+        icon: <Check className='h-3 w-3' />,
+        label: 'Sent',
+      }
+    case 'delivered':
+      return {
+        color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+        icon: <Check className='h-3 w-3' />,
+        label: 'Delivered',
+      }
+    case 'failed':
+      return {
+        color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
+        icon: <X className='h-3 w-3' />,
+        label: 'Failed',
+      }
+    default:
+      return {
+        color: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300',
+        icon: <Timer className='h-3 w-3' />,
+        label: normalizedStatus,
+      }
+  }
+}
+
+function ReplyDialog({ sms, onClose, open, onOpenChange }: { sms: any; onClose?: () => void; open: boolean; onOpenChange: (open: boolean) => void }) {
 
   const {
     mutate: sendSms,
     isPending: isSendingSms,
-    error: sendSmsError,
     isSuccess: isSendSmsSuccess,
   } = useMutation({
     mutationKey: ['send-sms'],
     mutationFn: (data: SendSmsFormData) =>
       httpBrowserClient.post(ApiEndpoints.gateway.sendSMS(data.deviceId), data),
     onSuccess: () => {
+      toast({
+        title: 'SMS sent successfully!',
+      })
       setTimeout(() => {
-        setOpen(false)
+        onOpenChange(false)
         if (onClose) onClose()
       }, 1500)
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Failed to send SMS.',
+        description: error.response?.data?.message || 'Please try again.',
+      })
     },
   })
 
@@ -79,12 +137,9 @@ function ReplyDialog({ sms, onClose }: { sms: any; onClose?: () => void }) {
     },
   })
 
-  const { data: devices, isLoading: isLoadingDevices } = useQuery({
+  const { data: devices } = useQuery({
     queryKey: ['devices'],
-    queryFn: () =>
-      httpBrowserClient
-        .get(ApiEndpoints.gateway.listDevices())
-        .then((res) => res.data),
+    queryFn: () => httpBrowserClient.get(ApiEndpoints.gateway.listDevices()).then((res) => res.data),
   })
 
   useEffect(() => {
@@ -98,25 +153,19 @@ function ReplyDialog({ sms, onClose }: { sms: any; onClose?: () => void }) {
   }, [open, sms, reset])
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant='ghost' size='sm' className='gap-1'>
-          <Reply className='h-3.5 w-3.5' />
-          Reply
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='sm:max-w-[500px]'>
         <DialogHeader>
           <DialogTitle className='flex items-center gap-2'>
-            <MessageSquare className='h-5 w-5' />
+            <Reply className='h-5 w-5' />
             Reply to {sms.sender}
           </DialogTitle>
           <DialogDescription>
-            Send a reply message to this sender
+            Send a reply message to this sender.
           </DialogDescription>
         </DialogHeader>
         <form
-          onSubmit={(e) => handleSubmit((data) => sendSms(data))(e)}
+          onSubmit={handleSubmit((data) => sendSms(data))}
           className='space-y-4 mt-4'
         >
           <div className='space-y-4'>
@@ -134,7 +183,7 @@ function ReplyDialog({ sms, onClose }: { sms: any; onClose?: () => void }) {
                       <SelectValue placeholder='Select a device' />
                     </SelectTrigger>
                     <SelectContent>
-                      {devices?.data?.map((device) => (
+                      {devices?.data?.map((device: any) => (
                         <SelectItem key={device._id} value={device._id}>
                           {device.brand} {device.model}{' '}
                           {device.enabled ? '' : '(disabled)'}
@@ -150,7 +199,6 @@ function ReplyDialog({ sms, onClose }: { sms: any; onClose?: () => void }) {
                 </p>
               )}
             </div>
-
             <div>
               <Input
                 type='tel'
@@ -163,7 +211,6 @@ function ReplyDialog({ sms, onClose }: { sms: any; onClose?: () => void }) {
                 </p>
               )}
             </div>
-
             <div>
               <Textarea
                 placeholder='Message'
@@ -177,25 +224,11 @@ function ReplyDialog({ sms, onClose }: { sms: any; onClose?: () => void }) {
               )}
             </div>
           </div>
-          {sendSmsError && (
-            <div className='flex items-center gap-2 text-destructive'>
-              <p>Error sending SMS: {sendSmsError.message}</p>
-              <X className='h-5 w-5' />
-            </div>
-          )}
-
-          {isSendSmsSuccess && (
-            <div className='flex items-center gap-2 text-green-600'>
-              <p>SMS sent successfully!</p>
-              <Check className='h-5 w-5' />
-            </div>
-          )}
-
           <div className='flex justify-end gap-2'>
             <Button
               type='button'
               variant='outline'
-              onClick={() => setOpen(false)}
+              onClick={() => onOpenChange(false)}
             >
               Cancel
             </Button>
@@ -212,29 +245,29 @@ function ReplyDialog({ sms, onClose }: { sms: any; onClose?: () => void }) {
   )
 }
 
-function FollowUpDialog({
-  message,
-  onClose,
-}: {
-  message: any
-  onClose?: () => void
-}) {
-  const [open, setOpen] = useState(false)
-
+function FollowUpDialog({ message, onClose, open, onOpenChange }: { message: any; onClose?: () => void; open: boolean; onOpenChange: (open: boolean) => void }) {
   const {
     mutate: sendSms,
     isPending: isSendingSms,
-    error: sendSmsError,
     isSuccess: isSendSmsSuccess,
   } = useMutation({
     mutationKey: ['send-sms'],
     mutationFn: (data: SendSmsFormData) =>
       httpBrowserClient.post(ApiEndpoints.gateway.sendSMS(data.deviceId), data),
     onSuccess: () => {
+      toast({
+        title: 'Follow-up SMS sent successfully!',
+      })
       setTimeout(() => {
-        setOpen(false)
+        onOpenChange(false)
         if (onClose) onClose()
       }, 1500)
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Failed to send follow-up SMS.',
+        description: error.response?.data?.message || 'Please try again.',
+      })
     },
   })
 
@@ -250,19 +283,16 @@ function FollowUpDialog({
       deviceId: message?.device?._id,
       recipients: [
         message.recipient ||
-          (message.recipients && message.recipients[0]) ||
-          '',
+        (message.recipients && message.recipients[0]) ||
+        '',
       ],
       message: '',
     },
   })
 
-  const { data: devices, isLoading: isLoadingDevices } = useQuery({
+  const { data: devices } = useQuery({
     queryKey: ['devices'],
-    queryFn: () =>
-      httpBrowserClient
-        .get(ApiEndpoints.gateway.listDevices())
-        .then((res) => res.data),
+    queryFn: () => httpBrowserClient.get(ApiEndpoints.gateway.listDevices()).then((res) => res.data),
   })
 
   useEffect(() => {
@@ -271,8 +301,8 @@ function FollowUpDialog({
         deviceId: message?.device?._id,
         recipients: [
           message.recipient ||
-            (message.recipients && message.recipients[0]) ||
-            '',
+          (message.recipients && message.recipients[0]) ||
+          '',
         ],
         message: '',
       })
@@ -280,13 +310,7 @@ function FollowUpDialog({
   }, [open, message, reset])
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant='ghost' size='sm' className='gap-1'>
-          <MessageSquare className='h-3.5 w-3.5' />
-          Follow Up
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='sm:max-w-[500px]'>
         <DialogHeader>
           <DialogTitle className='flex items-center gap-2'>
@@ -297,11 +321,11 @@ function FollowUpDialog({
               'Recipient'}
           </DialogTitle>
           <DialogDescription>
-            Send a follow-up message to this recipient
+            Send a follow-up message to this recipient.
           </DialogDescription>
         </DialogHeader>
         <form
-          onSubmit={(e) => handleSubmit((data) => sendSms(data))(e)}
+          onSubmit={handleSubmit((data) => sendSms(data))}
           className='space-y-4 mt-4'
         >
           <div className='space-y-4'>
@@ -319,7 +343,7 @@ function FollowUpDialog({
                       <SelectValue placeholder='Select a device' />
                     </SelectTrigger>
                     <SelectContent>
-                      {devices?.data?.map((device) => (
+                      {devices?.data?.map((device: any) => (
                         <SelectItem key={device._id} value={device._id}>
                           {device.brand} {device.model}{' '}
                           {device.enabled ? '' : '(disabled)'}
@@ -335,7 +359,6 @@ function FollowUpDialog({
                 </p>
               )}
             </div>
-
             <div>
               <Input
                 type='tel'
@@ -348,7 +371,6 @@ function FollowUpDialog({
                 </p>
               )}
             </div>
-
             <div>
               <Textarea
                 placeholder='Message'
@@ -362,25 +384,11 @@ function FollowUpDialog({
               )}
             </div>
           </div>
-          {sendSmsError && (
-            <div className='flex items-center gap-2 text-destructive'>
-              <p>Error sending SMS: {sendSmsError.message}</p>
-              <X className='h-5 w-5' />
-            </div>
-          )}
-
-          {isSendSmsSuccess && (
-            <div className='flex items-center gap-2 text-green-600'>
-              <p>SMS sent successfully!</p>
-              <Check className='h-5 w-5' />
-            </div>
-          )}
-
           <div className='flex justify-end gap-2'>
             <Button
               type='button'
               variant='outline'
-              onClick={() => setOpen(false)}
+              onClick={() => onOpenChange(false)}
             >
               Cancel
             </Button>
@@ -397,164 +405,169 @@ function FollowUpDialog({
   )
 }
 
-function StatusDetailsDialog({ message }: { message: any }) {
-  const [open, setOpen] = useState(false);
-  
-  // Format timestamps for display
-  const formatTimestamp = (timestamp) => {
-    if (!timestamp) return 'N/A';
-    return new Date(timestamp).toLocaleString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
-  };
-  
-  // Get status badge color and icon based on message status
-  const getStatusBadge = () => {
-    const status = message.status?.toLowerCase() || 'pending';
-    
-    switch (status) {
-      case 'pending':
-        return {
-          color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
-          icon: <Timer className="h-3 w-3 mr-1" />,
-          label: 'Pending'
-        };
-      case 'sent':
-        return {
-          color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
-          icon: <Check className="h-3 w-3 mr-1" />,
-          label: 'Sent'
-        };
-      case 'delivered':
-        return {
-          color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
-          icon: <Check className="h-3 w-3 mr-1" />,
-          label: 'Delivered'
-        };
-      case 'failed':
-        return {
-          color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
-          icon: <X className="h-3 w-3 mr-1" />,
-          label: 'Failed'
-        };
-      default:
-        return {
-          color: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300',
-          icon: <Timer className="h-3 w-3 mr-1" />,
-          label: status
-        };
-    }
-  };
+// New component for full SMS details
+function SmsDetailsDialog({
+  message,
+  open,
+  onOpenChange,
+}: {
+  message: any
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
+  const [isReplyOpen, setIsReplyOpen] = useState(false)
+  const [isFollowUpOpen, setIsFollowUpOpen] = useState(false)
 
-  const statusBadge = getStatusBadge();
-  
+  const statusBadge = getStatusBadge(message?.status)
+  const isSent = !!message?.recipient || (message?.recipients && message.recipients.length > 0)
+
+  const handleCopyMessage = () => {
+    if (message?.message) {
+      navigator.clipboard.writeText(message.message)
+      toast({
+        title: 'Message copied to clipboard!',
+      })
+    }
+  }
+
+  const handleReplyClick = () => {
+    onOpenChange(false)
+    setIsReplyOpen(true)
+  }
+
+  const handleFollowUpClick = () => {
+    onOpenChange(false)
+    setIsFollowUpOpen(true)
+  }
+
+  const handleReplyDialogClose = () => setIsReplyOpen(false)
+  const handleFollowUpDialogClose = () => setIsFollowUpOpen(false)
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Badge variant="outline" className={`${statusBadge.color} flex items-center text-xs cursor-pointer`}>
-          {statusBadge.icon}
-          {statusBadge.label}
-        </Badge>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5" />
-            SMS Status Details
-          </DialogTitle>
-          <DialogDescription>
-            Detailed information about this SMS message
-          </DialogDescription>
-        </DialogHeader>
-        
-        <div className="space-y-4 mt-4">
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            <div className="font-medium">Status</div>
-            <div>{message.status || 'pending'}</div>
-            
-            <div className="font-medium">Requested At</div>
-            <div>{formatTimestamp(message.requestedAt)}</div>
-            
-            <div className="font-medium">Sent At</div>
-            <div>{formatTimestamp(message.sentAt)}</div>
-            
-            <div className="font-medium">Delivered At</div>
-            <div>{formatTimestamp(message.deliveredAt)}</div>
-            
-            {message.status?.toLowerCase() === 'failed' && (
-              <>
-                <div className="font-medium">Failed At</div>
-                <div>{formatTimestamp(message.failedAt)}</div>
-                
-                {message.errorCode && (
-                  <>
-                    <div className="font-medium">Error Code</div>
-                    <div className="">{message.errorCode}</div>
-                  </>
-                )}
-                
-                {message.errorMessage && (
-                  <>
-                    <div className="font-medium">Error Message</div>
-                    <div className="">{message.errorMessage}</div>
-                  </>
-                )}
-                
-                {(!message.errorCode && !message.errorMessage && message.error) && (
-                  <>
-                    <div className="font-medium">Error</div>
-                    <div className="text-destructive">{message.error || 'Unknown error'}</div>
-                  </>
-                )}
-              </>
-            )}
-            
-            <div className="font-medium">Recipient</div>
-            <div>{message.recipient || (message.recipients && message.recipients[0]) || 'Unknown'}</div>
-            
-            <div className="font-medium">Message ID</div>
-            <div className="font-mono text-xs">{message._id}</div>
-            
-            {message.smsBatch && (
-              <>
-                <div className="font-medium">Batch ID</div>
-                <div className="font-mono text-xs">{message.smsBatch}</div>
-              </>
-            )}
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-[550px] p-6">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-lg font-semibold">
+              <MessageSquare className="h-5 w-5 text-brand-500" />
+              SMS Details
+            </DialogTitle>
+            <DialogDescription>
+              Detailed information about this SMS message.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="mt-4 space-y-4 text-sm">
+            {/* Info Grid */}
+            <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+              <div className="font-medium text-muted-foreground">Direction</div>
+              <div className="flex items-center gap-1">
+                {isSent ? <ArrowUpRight className="h-4 w-4 text-brand-500" /> :
+                  <ArrowDownLeft className="h-4 w-4 text-green-500" />}
+                <span className="capitalize">{isSent ? 'Sent' : 'Received'}</span>
+              </div>
+
+              <div className="font-medium text-muted-foreground">Number</div>
+              <div>
+                {isSent ? message.recipient || message.recipients?.[0] || 'Unknown'
+                        : message.sender || 'Unknown'}
+              </div>
+
+              <div className="font-medium text-muted-foreground">Status</div>
+              <div>
+                <Badge variant="outline" className={`${statusBadge.color} flex items-center text-xs`}>
+                  {statusBadge.icon}
+                  {statusBadge.label}
+                </Badge>
+              </div>
+
+              <div className="font-medium text-muted-foreground">Date & Time</div>
+              <div>{formatTimestamp(isSent ? message.requestedAt : message.receivedAt)}</div>
+
+              <div className="font-medium text-muted-foreground">Device</div>
+              <div className="flex items-center gap-1">
+                <Smartphone className="h-3 w-3" />
+                {message.device?.brand || 'N/A'} {message.device?.model || ''}
+              </div>
+
+              {message.gatewayMessageId && (
+                <>
+                  <div className="font-medium text-muted-foreground">Gateway ID</div>
+                  <div className="font-mono text-xs break-all">{message.gatewayMessageId}</div>
+                </>
+              )}
+
+              {message.errorMessage && (
+                <>
+                  <div className="font-medium text-muted-foreground">Error</div>
+                  <div className="text-destructive text-sm">{message.errorMessage}</div>
+                </>
+              )}
+            </div>
+
+            {/* Message Body */}
+            <div className="pt-4 border-t border-border">
+              <h4 className="font-medium text-sm text-muted-foreground mb-1">Message Body</h4>
+              <div className="max-h-48 overflow-y-auto p-2 bg-gray-50 dark:bg-gray-900 rounded-md text-sm break-words">
+                {message.message}
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-wrap gap-2 mt-4 pt-2 border-t border-border">
+              {!isSent && (
+                <Button variant="ghost" size="sm" className="gap-1" onClick={handleReplyClick}>
+                  <Reply className="h-4 w-4" />
+                  Reply
+                </Button>
+              )}
+              {isSent && (
+                <Button variant="ghost" size="sm" className="gap-1" onClick={handleFollowUpClick}>
+                  <MessageSquare className="h-4 w-4" />
+                  Follow Up
+                </Button>
+              )}
+              <Button variant="ghost" size="sm" className="gap-1" onClick={handleCopyMessage}>
+                <Copy className="h-4 w-4" />
+                Copy
+              </Button>
+              {/* Optional Delete */}
+              {/* <Button variant="ghost" size="sm" className="gap-1 text-destructive hover:bg-destructive/10">
+                <Trash2 className="h-4 w-4" />
+                Delete
+              </Button> */}
+            </div>
           </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
+        </DialogContent>
+      </Dialog>
+
+      {message && isReplyOpen && (
+        <ReplyDialog sms={message} open={isReplyOpen} onOpenChange={handleReplyDialogClose} />
+      )}
+      {message && isFollowUpOpen && (
+        <FollowUpDialog message={message} open={isFollowUpOpen} onOpenChange={handleFollowUpDialogClose} />
+      )}
+    </>
+  )
 }
 
-function MessageCard({ message, type, device }) {
+function MessageCard({ message, type, device, onSelectMessage }) {
   const isSent = type === 'sent'
 
-  const formattedDate = new Date(
+  const formattedDate = formatTimestamp(
     (isSent ? message.requestedAt : message.receivedAt) || message.createdAt
-  ).toLocaleString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  })
+  )
+  const statusBadge = getStatusBadge(message.status)
 
-  const shouldShowStatus = device?.appVersionCode >= 14 &&  new Date(message?.createdAt) > new Date('2025-06-05')
+  // Condition to show status badge based on device app version and message date
+  const shouldShowStatus = device?.appVersionCode >= 14 && new Date(message?.createdAt) > new Date('2025-06-05')
 
   return (
     <Card
-      className={`hover:bg-muted/50 transition-colors max-w-sm md:max-w-none ${
-        isSent
-          ? 'border-l-4 border-l-brand-500'
-          : 'border-l-4 border-l-green-500'
+      className={`hover:bg-muted/50 transition-colors cursor-pointer max-w-sm md:max-w-none ${
+        isSent ? 'border-l-4 border-l-brand-500' : 'border-l-4 border-l-green-500'
       }`}
+      onClick={() => onSelectMessage(message)}
     >
       <CardContent className='p-4'>
         <div className='space-y-3'>
@@ -584,20 +597,16 @@ function MessageCard({ message, type, device }) {
           </div>
 
           <div className='flex gap-2'>
-            <p className='text-sm max-w-sm md:max-w-none'>{message.message}</p>
+            <p className='text-sm max-w-sm md:max-w-none line-clamp-2'>{message.message}</p>
           </div>
 
           <div className='flex justify-between items-center'>
             {isSent && shouldShowStatus && (
-              <div className='flex items-center'>
-                <StatusDetailsDialog message={message} />
-              </div>
+              <Badge variant='outline' className={`${statusBadge.color} flex items-center text-xs`}>
+                {statusBadge.icon}
+                {statusBadge.label}
+              </Badge>
             )}
-            
-            <div className='flex justify-end ml-auto'>
-              {!isSent && <ReplyDialog sms={message} />}
-              {isSent && <FollowUpDialog message={message} />}
-            </div>
           </div>
         </div>
       </CardContent>
@@ -622,33 +631,37 @@ function MessageCardSkeleton() {
 }
 
 export default function MessageHistory() {
+  const [selectedMessage, setSelectedMessage] = useState(null)
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false)
+
+  const handleSelectMessage = (message: any) => {
+    setSelectedMessage(message)
+    setIsDetailsDialogOpen(true)
+  }
+
   const {
     data: devices,
     isLoading: isLoadingDevices,
     error: devicesError,
   } = useQuery({
     queryKey: ['devices'],
-    queryFn: () =>
-      httpBrowserClient
-        .get(ApiEndpoints.gateway.listDevices())
-        .then((res) => res.data),
+    queryFn: () => httpBrowserClient.get(ApiEndpoints.gateway.listDevices()).then((res) => res.data),
   })
 
   const [currentDevice, setCurrentDevice] = useState('')
   const [messageType, setMessageType] = useState('all')
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(20)
-  const [autoRefreshInterval, setAutoRefreshInterval] = useState(0) // 0 means no auto-refresh
+  const [autoRefreshInterval, setAutoRefreshInterval] = useState(0)
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const refreshTimerRef = useRef(null)
+  const refreshTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
-    if (devices?.data?.length) {
-      setCurrentDevice(devices?.data?.[0]?._id)
+    if (devices?.data?.length && !currentDevice) {
+      setCurrentDevice(devices.data[0]._id)
     }
-  }, [devices])
+  }, [devices, currentDevice])
 
-  // Query for messages with type filter
   const {
     data: messagesResponse,
     isLoading: isLoadingMessages,
@@ -667,34 +680,27 @@ export default function MessageHistory() {
         .then((res) => res.data),
   })
 
-  // Handle manual refresh
   const handleRefresh = async () => {
-    if (!currentDevice) return // Don't refresh if no device is selected
-
+    if (!currentDevice) return
     setIsRefreshing(true)
     await refetch()
-    setTimeout(() => setIsRefreshing(false), 500) // Show refresh animation for at least 500ms
+    setTimeout(() => setIsRefreshing(false), 500)
   }
 
-  // Setup auto-refresh timer
   useEffect(() => {
-    // Clear any existing timer
     if (refreshTimerRef.current) {
       clearInterval(refreshTimerRef.current)
       refreshTimerRef.current = null
     }
 
-    // Set up new timer if interval > 0
     if (autoRefreshInterval > 0 && currentDevice) {
       refreshTimerRef.current = setInterval(() => {
         refetch()
-        // Brief visual feedback that refresh happened
         setIsRefreshing(true)
         setTimeout(() => setIsRefreshing(false), 300)
       }, autoRefreshInterval * 1000)
     }
 
-    // Cleanup on unmount
     return () => {
       if (refreshTimerRef.current) {
         clearInterval(refreshTimerRef.current)
@@ -711,17 +717,17 @@ export default function MessageHistory() {
     totalPages: 1,
   }
 
-  const handleDeviceChange = (deviceId) => {
+  const handleDeviceChange = (deviceId: string) => {
     setCurrentDevice(deviceId)
     setPage(1)
   }
 
-  const handleMessageTypeChange = (type) => {
+  const handleMessageTypeChange = (type: string) => {
     setMessageType(type)
     setPage(1)
   }
 
-  const handlePageChange = (newPage) => {
+  const handlePageChange = (newPage: number) => {
     setPage(newPage)
   }
 
@@ -766,7 +772,7 @@ export default function MessageHistory() {
                   <SelectValue placeholder='Select a device' />
                 </SelectTrigger>
                 <SelectContent>
-                  {devices?.data?.map((device) => (
+                  {devices?.data?.map((device: any) => (
                     <SelectItem key={device._id} value={device._id}>
                       <div className='flex items-center gap-2'>
                         <span className='font-medium'>
@@ -825,7 +831,6 @@ export default function MessageHistory() {
             </div>
           </div>
 
-          {/* Refresh Controls */}
           <div className='flex items-center justify-between gap-2 pt-2 mt-2 border-t border-brand-100 dark:border-brand-800/50'>
             <div className='flex items-center gap-1.5'>
               <Button
@@ -842,18 +847,11 @@ export default function MessageHistory() {
                 />
                 Refresh Now
               </Button>
-
-              {/* {messagesResponse && (
-                <span className='text-xs text-muted-foreground hidden sm:inline-block'>
-                  Updated: {new Date().toLocaleTimeString()}
-                </span>
-              )} */}
             </div>
 
             <div className='flex items-center gap-1.5'>
               <Timer className='h-3 w-3 text-brand-500' />
               <span className='text-xs font-medium mr-1'>Auto Refresh:</span>
-
               <div className='flex'>
                 {[
                   { value: 0, label: 'Off' },
@@ -896,19 +894,20 @@ export default function MessageHistory() {
         </div>
       )}
 
-      {!isLoadingDevices && !messages && (
+      {!isLoadingMessages && messages.length === 0 && (
         <div className='flex justify-center items-center h-full py-10'>
           No messages found
         </div>
       )}
 
       <div className='space-y-4'>
-        {messages?.map((message) => (
+        {messages?.map((message: any) => (
           <MessageCard
             key={message._id}
             message={message}
             type={message.sender ? 'received' : 'sent'}
-            device={devices?.data?.find((device) => device._id === currentDevice)}
+            device={devices?.data?.find((device: any) => device._id === currentDevice)}
+            onSelectMessage={handleSelectMessage}
           />
         ))}
       </div>
@@ -924,7 +923,6 @@ export default function MessageHistory() {
           </Button>
 
           <div className='flex flex-wrap items-center gap-2 justify-center sm:justify-start'>
-            {/* First page */}
             {pagination.totalPages > 1 && (
               <Button
                 onClick={() => handlePageChange(1)}
@@ -940,32 +938,24 @@ export default function MessageHistory() {
               </Button>
             )}
 
-            {/* Ellipsis if needed */}
             {page > 4 && pagination.totalPages > 7 && (
               <span className='px-1'>...</span>
             )}
 
-            {/* Middle pages */}
             {Array.from(
               { length: Math.min(6, pagination.totalPages - 2) },
               (_, i) => {
                 let pageToShow
-
                 if (pagination.totalPages <= 8) {
-                  // If we have 8 or fewer pages, show pages 2 through 7 (or fewer)
                   pageToShow = i + 2
                 } else if (page <= 4) {
-                  // Near the start
                   pageToShow = i + 2
                 } else if (page >= pagination.totalPages - 3) {
-                  // Near the end
                   pageToShow = pagination.totalPages - 7 + i
                 } else {
-                  // Middle - center around current page
                   pageToShow = page - 2 + i
                 }
 
-                // Ensure page is within bounds and not the first or last page
                 if (pageToShow > 1 && pageToShow < pagination.totalPages) {
                   return (
                     <Button
@@ -987,12 +977,10 @@ export default function MessageHistory() {
               }
             )}
 
-            {/* Ellipsis if needed */}
             {page < pagination.totalPages - 3 && pagination.totalPages > 7 && (
               <span className='px-1'>...</span>
             )}
 
-            {/* Last page */}
             {pagination.totalPages > 1 && (
               <Button
                 onClick={() => handlePageChange(pagination.totalPages)}
@@ -1008,17 +996,21 @@ export default function MessageHistory() {
               </Button>
             )}
           </div>
-
           <Button
-            onClick={() =>
-              handlePageChange(Math.min(pagination.totalPages, page + 1))
-            }
+            onClick={() => handlePageChange(Math.min(pagination.totalPages, page + 1))}
             disabled={page === pagination.totalPages}
             variant={page === pagination.totalPages ? 'ghost' : 'default'}
           >
             Next
           </Button>
         </div>
+      )}
+      {selectedMessage && (
+        <SmsDetailsDialog
+          message={selectedMessage}
+          open={isDetailsDialogOpen}
+          onOpenChange={setIsDetailsDialogOpen}
+        />
       )}
     </div>
   )
