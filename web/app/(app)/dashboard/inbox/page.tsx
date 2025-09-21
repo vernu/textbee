@@ -816,6 +816,13 @@ function ContactInfoEditor({
     mailingZip: localContact?.mailingZip || '',
   })
 
+  // Fetch contact groups
+  const { data: contactGroups = [] } = useQuery({
+    queryKey: ['contact-groups', localContact?.id],
+    queryFn: () => contactsApi.getContactGroups(localContact?.id),
+    enabled: !!localContact?.id,
+  })
+
   // Update local contact when conversation.contact changes
   useEffect(() => {
     setLocalContact(conversation.contact)
@@ -1059,6 +1066,22 @@ function ContactInfoEditor({
                 {new Date(conversationMessages[0].receivedAt || conversationMessages[0].requestedAt || 0).toLocaleDateString()}
               </div>
             )}
+
+            {/* Groups Information */}
+            <div className="border-t pt-3 mt-3">
+              <div className="text-sm">
+                <span className="font-medium">Groups:</span>
+                <ul className="list-disc list-inside ml-4 mt-1">
+                  {contactGroups.length > 0 ? (
+                    contactGroups.map((group, index) => (
+                      <li key={index}>{group}</li>
+                    ))
+                  ) : (
+                    <li className="text-muted-foreground">No groups</li>
+                  )}
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
 

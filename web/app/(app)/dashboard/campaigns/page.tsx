@@ -350,7 +350,7 @@ export default function CampaignsPage() {
       queryClient.invalidateQueries({ queryKey: ['template-groups'] })
       toast({
         title: "Template group deleted",
-        description: "Template group and all its templates have been deleted successfully."
+        description: "Template group deleted successfully. Links to contacts have been removed."
       })
     },
     onError: (error: any) => {

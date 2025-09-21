@@ -693,6 +693,18 @@ function ContactInfoEditor({
               )
             })}
 
+            {conversationMessages.length > 0 && (
+              <>
+                <div>
+                  <span className="font-medium">Total Messages:</span> {conversationMessages.length}
+                </div>
+                <div>
+                  <span className="font-medium">First Contact:</span>{' '}
+                  {new Date(conversationMessages[0].receivedAt || conversationMessages[0].requestedAt || 0).toLocaleDateString()}
+                </div>
+              </>
+            )}
+
             {/* Groups Information */}
             <div className="border-t pt-3 mt-3">
               <div className="text-sm">
@@ -708,18 +720,6 @@ function ContactInfoEditor({
                 </ul>
               </div>
             </div>
-
-            {conversationMessages.length > 0 && (
-              <>
-                <div>
-                  <span className="font-medium">Total Messages:</span> {conversationMessages.length}
-                </div>
-                <div>
-                  <span className="font-medium">First Contact:</span>{' '}
-                  {new Date(conversationMessages[0].receivedAt || conversationMessages[0].requestedAt || 0).toLocaleDateString()}
-                </div>
-              </>
-            )}
           </div>
         </div>
       </div>
