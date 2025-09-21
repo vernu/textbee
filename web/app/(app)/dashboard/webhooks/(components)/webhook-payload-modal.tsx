@@ -1,4 +1,3 @@
-// components/sms-modal.tsx
 'use client'
 
 import {
@@ -9,13 +8,9 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import {
-  X,
-  Calendar,
-  MessageSquare,
-  Phone,
-  CreditCard,
-  Bell,
+  Copy,
 } from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
 
 interface SmsData {
   _id: string
@@ -31,13 +26,16 @@ interface SmsData {
   __v: number
 }
 
-interface SmsModalProps {
+interface WebhookPayloadModalProps {
   isOpen: boolean
   onClose: () => void
   smsData: SmsData | null
+  payload?: any
 }
 
-export function SmsModal({ isOpen, onClose, smsData }: SmsModalProps) {
+export function WebhookPayloadModal({ isOpen, onClose, smsData, payload }: WebhookPayloadModalProps) {
+  const { toast } = useToast()
+  
   if (!smsData) return null
 
   const formatDate = (dateString: string) => {
@@ -51,23 +49,64 @@ export function SmsModal({ isOpen, onClose, smsData }: SmsModalProps) {
     })
   }
 
+  const copyPayloadToClipboard = async () => {
+    if (!payload) return
+    try {
+      const jsonString = JSON.stringify(payload, null, 2)
+      await navigator.clipboard.writeText(jsonString)
+      toast({
+        title: "Copied!",
+        description: "Payload copied to clipboard",
+        duration: 2000,
+      })
+    } catch (err) {
+      console.error('Failed to copy payload:', err)
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea')
+      textArea.value = JSON.stringify(payload, null, 2)
+      document.body.appendChild(textArea)
+      textArea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textArea)
+      toast({
+        title: "Copied!",
+        description: "Payload copied to clipboard",
+        duration: 2000,
+      })
+    }
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-4xl max-h-[80vh] overflow-y-auto">
         <DialogHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <DialogTitle className="flex items-center gap-2">
             Webhook Notification
           </DialogTitle>
         </DialogHeader>
 
-        <h3 className="font-semibold text-sm flex items-center gap-2">
-          Message Content
-        </h3>
-        <div className="space-y-4">
-          {/* Message Content */}
-          <div className="bg-muted/50 rounded-lg p-4 max-h-32 overflow-y-scroll scrollbar-hide">
-            <p className="text-sm whitespace-pre-wrap">{smsData.message}</p>
-          </div>
+        <div className="space-y-6">
+          {payload && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-lg">Payload</h3>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={copyPayloadToClipboard}
+                  className="h-8"
+                >
+                  <Copy className="h-3 w-3 mr-1" />
+                  Copy
+                </Button>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-900 rounded-md border p-4 overflow-auto max-h-64">
+                <pre className="text-xs font-mono whitespace-pre-wrap text-gray-800 dark:text-gray-200">
+                  {JSON.stringify(payload, null, 2)}
+                </pre>
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Sender Information */}
@@ -95,6 +134,7 @@ export function SmsModal({ isOpen, onClose, smsData }: SmsModalProps) {
                 {smsData.status}
               </p>
             </div>
+            
             <div className="space-y-2">
               <h3 className="font-semibold text-sm flex items-center gap-x-2">
                 Created At

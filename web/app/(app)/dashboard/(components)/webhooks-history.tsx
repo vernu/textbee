@@ -53,9 +53,9 @@ const WebhooksHistory = () => {
         .then((res) => res.data),
   })
 
-  const [currentDevice, setCurrentDevice] = useState('')
-  const [eventType, setEventType] = useState('MESSAGE_RECEIVED')
-  const [status, setStatus] = useState('delivered')
+  const [currentDevice, setCurrentDevice] = useState('all')
+  const [eventType, setEventType] = useState('all')
+  const [status, setStatus] = useState('all')
   const [dateRange, setDateRange] = useState<any>('90')
   const [openCal, setOpenCal] = useState(false)
   const [dateQuery, setDateQuery] = useState<{ start: string; end: string }>({
@@ -67,10 +67,9 @@ const WebhooksHistory = () => {
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    if (devices?.data?.length) {
-      setCurrentDevice(devices?.data?.[0]?._id)
+    if (devices?.data?.length && currentDevice === 'all') {
     }
-  }, [devices])
+  }, [devices, currentDevice])
 
   const {
     data: webhookNotifications,
@@ -86,11 +85,11 @@ const WebhooksHistory = () => {
       currentDevice,
       status,
     ],
-    enabled: !!currentDevice,
+    enabled: true,
     queryFn: () =>
       httpBrowserClient
         .get(
-          `${ApiEndpoints.gateway.getWebhookNotifications()}?eventType=${eventType}&page=${page}&limit=${limit}&status=${status}&start=${
+          `${ApiEndpoints.gateway.getWebhookNotifications()}?eventType=${eventType === 'all' ? '' : eventType}&page=${page}&limit=${limit}&status=${status === 'all' ? '' : status}&start=${
             dateQuery.start
           }&end=${dateQuery.end}&deviceId=${
             currentDevice === 'all' ? '' : currentDevice
@@ -125,6 +124,15 @@ const WebhooksHistory = () => {
       case '90':
         start.setDate(end.getDate() - 90)
         break
+      case '90_months':
+        start.setMonth(end.getMonth() - 3)
+        break
+      case '180':
+        start.setMonth(end.getMonth() - 6)
+        break
+      case '365':
+        start.setMonth(end.getMonth() - 12)
+        break
       case 'custom':
         setDateQuery({ start: '', end: '' })
         setDateRange('custom')
@@ -156,6 +164,9 @@ const WebhooksHistory = () => {
                   <SelectValue placeholder="Select a device" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem key="all" value="all">
+                    All devices
+                  </SelectItem>
                   {devices?.data?.map((device) => (
                     <SelectItem key={device._id} value={device._id}>
                       <div className="flex items-center gap-2">
@@ -173,9 +184,6 @@ const WebhooksHistory = () => {
                       </div>
                     </SelectItem>
                   ))}
-                  <SelectItem key="all" value="all">
-                    All devices
-                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -192,6 +200,12 @@ const WebhooksHistory = () => {
                   <SelectValue placeholder="Message type" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="all">
+                    <div className="flex items-center gap-1.5">
+                      <div className="h-1.5 w-1.5 rounded-full bg-gray-500" />
+                      All Events
+                    </div>
+                  </SelectItem>
                   <SelectItem value="MESSAGE_RECEIVED">
                     <div className="flex items-center gap-1.5">
                       <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
@@ -218,6 +232,12 @@ const WebhooksHistory = () => {
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="all">
+                    <div className="flex items-center gap-1.5">
+                      <div className="h-1.5 w-1.5 rounded-full bg-gray-500" />
+                      All
+                    </div>
+                  </SelectItem>
                   <SelectItem value="delivered">
                     <div className="flex items-center gap-1.5">
                       <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
@@ -252,8 +272,6 @@ const WebhooksHistory = () => {
                   Date Range
                 </h3>{' '}
               </div>
-              {/* date range ( today, last 3 days, last 7 days, last 30 days-default, last 90 days, custom)
-Custom should trigger a popover to set a custom date range ( two date inputs) */}
               <Select value={dateRange} onValueChange={handleDateRangeChange}>
                 <SelectTrigger className="w-full bg-white/80 dark:bg-black/20 h-9 text-sm border-brand-200 dark:border-brand-800/70">
                   <SelectValue placeholder="Date Range" />
@@ -272,96 +290,103 @@ Custom should trigger a popover to set a custom date range ( two date inputs) */
                       Last 90 Days
                     </div>
                   </SelectItem>
+                  <SelectItem value="90_months">
+                    <div className="flex items-center gap-1.5">
+                      Last 3 Months
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="180">
+                    <div className="flex items-center gap-1.5">
+                      Last 6 Months
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="365">
+                    <div className="flex items-center gap-1.5">
+                      Last 12 Months
+                    </div>
+                  </SelectItem>
                   <SelectItem value="custom">
                     <div className="flex items-center gap-1.5">Custom</div>
                   </SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <div className="w-full sm:w-fit">
-              <div className="flex items-center gap-2 mb-1.5">
-                <div className="h-3.5 w-3.5 text-brand-500" />
-                <div className="text-sm font-medium text-foreground" />
-              </div>
-              {dateRange === 'custom' && (
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <button
-                      onClick={() => {
-                        setOpenCal(true)
-                      }}
-                      className="flex items-center gap-2 mt-2 w-full border rounded-md px-2 py-1 text-sm"
-                    >
-                      <Calendar className="h-4 w-4" />
-                      {dateQuery.start && dateQuery.end
-                        ? `${new Date(
-                            dateQuery.start
-                          ).toLocaleDateString()} → ${new Date(
-                            dateQuery.end
-                          ).toLocaleDateString()}`
-                        : 'Select custom range'}
-                    </button>
-                  </PopoverTrigger>
-                  {openCal && (
-                    <PopoverContent className="p-4 w-64">
-                      <div className="flex flex-col gap-3">
-                        <div>
-                          <label
-                            className="block text-xs mb-1"
-                            htmlFor="start-date"
-                          >
-                            Start Date
-                          </label>
-                          <input
-                            id="start-date"
-                            type="date"
-                            className="w-full border rounded px-2 py-1 text-sm"
-                            value={dateQuery.start}
-                            onChange={(e) =>
-                              setDateQuery({
-                                ...dateQuery,
-                                start: e.target.value,
-                              })
-                            }
-                          />
-                        </div>
-                        <div>
-                          <label
-                            className="block text-xs mb-1"
-                            htmlFor="end-date"
-                          >
-                            End Date
-                          </label>
-                          <input
-                            id="end-date"
-                            type="date"
-                            className="w-full border rounded px-2 py-1 text-sm"
-                            value={dateQuery.end}
-                            onChange={(e) =>
-                              setDateQuery({
-                                ...dateQuery,
-                                end: e.target.value,
-                              })
-                            }
-                          />
-                        </div>
-                        <Button
-                          size="sm"
-                          onClick={() => {
-                            setPage(1)
-                            setOpenCal(false)
-                            refetch() // react-query refetch
-                          }}
-                        >
-                          Apply
-                        </Button>
-                      </div>
-                    </PopoverContent>
-                  )}
-                </Popover>
-              )}
-            </div>
           </div>
+          
+          <Popover open={openCal} onOpenChange={setOpenCal}>
+            <PopoverContent className="p-4 w-64">
+              <div className="flex flex-col gap-3">
+                <div>
+                  <label
+                    className="block text-xs mb-1"
+                    htmlFor="start-date"
+                  >
+                    Start Date
+                  </label>
+                  <input
+                    id="start-date"
+                    type="date"
+                    className="w-full border rounded px-2 py-1 text-sm"
+                    value={dateQuery.start ? dateQuery.start.split('T')[0] : ''}
+                    onChange={(e) =>
+                      setDateQuery({
+                        ...dateQuery,
+                        start: e.target.value ? new Date(e.target.value).toISOString() : '',
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <label
+                    className="block text-xs mb-1"
+                    htmlFor="end-date"
+                  >
+                    End Date
+                  </label>
+                  <input
+                    id="end-date"
+                    type="date"
+                    className="w-full border rounded px-2 py-1 text-sm"
+                    value={dateQuery.end ? dateQuery.end.split('T')[0] : ''}
+                    onChange={(e) =>
+                      setDateQuery({
+                        ...dateQuery,
+                        end: e.target.value ? new Date(e.target.value).toISOString() : '',
+                      })
+                    }
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setOpenCal(false)
+                      setDateRange('90')
+                      const end = new Date()
+                      const start = new Date()
+                      start.setDate(end.getDate() - 90)
+                      setDateQuery({ start: start.toISOString(), end: end.toISOString() })
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setPage(1)
+                      setOpenCal(false)
+                      refetch()
+                    }}
+                    disabled={!dateQuery.start || !dateQuery.end}
+                  >
+                    Apply
+                  </Button>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+
           {isLoadingNotifications || isLoading ? (
             <ProductClient data={[]} isLoading={true} />
           ) : (
@@ -383,7 +408,7 @@ Custom should trigger a popover to set a custom date range ( two date inputs) */
                 </Button>
 
                 <div className="flex flex-wrap items-center gap-2 justify-center sm:justify-start">
-                  {/* First page */}
+                  
                   {totalPages > 1 && (
                     <Button
                       onClick={() => handlePageChange(1)}
@@ -404,7 +429,7 @@ Custom should trigger a popover to set a custom date range ( two date inputs) */
                     <span className="px-1">...</span>
                   )}
 
-                  {/* Middle pages */}
+                  
                   {Array.from(
                     {
                       length: Math.min(6, totalPages - 2),

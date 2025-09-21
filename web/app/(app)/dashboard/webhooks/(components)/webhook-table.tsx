@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { DataTable } from './data-table'
 import type { ColumnDef } from '@tanstack/react-table'
 import { format } from 'date-fns'
+import { Eye } from 'lucide-react'
 
 interface ProductClientProps {
   data: ProductColumns[]
@@ -20,7 +21,10 @@ export type ProductColumns = {
   }
   createdAt?: string
   status: string
+  computedStatus?: string
+  payload?: any
 }
+
 
 export const columns: ColumnDef<ProductColumns>[] = [
   {
@@ -59,6 +63,15 @@ export const columns: ColumnDef<ProductColumns>[] = [
     accessorKey: 'createdAt',
     header: 'Created At',
   },
+  {
+    id: 'actions',
+    header: 'Actions',
+    cell: ({ row }) => (
+      <Button variant="ghost" size="sm" disabled={!row.original.payload}>
+        <Eye className="h-4 w-4" />
+      </Button>
+    ),
+  },
 ]
 const formatDate = (dateString: string) => {
   return format(new Date(dateString), 'MMM dd, yyyy h:mm a')
@@ -74,7 +87,8 @@ const ProductClient = ({ data, isLoading, status = 'delivered' }) => {
       `  ${d.smsData._id}`,
     ],
     createdAt: formatDate(d.createdAt.toString()),
-    status,
+    status: d.computedStatus || status,
+    payload: d.payload,
   }))
 
   return (

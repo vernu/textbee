@@ -10,7 +10,7 @@ export default function MessagingPage() {
         <div className="flex items-center space-x-2">
           <MessageSquareTextIcon className="h-6 w-6 text-primary" />
           <h2 className="text-3xl font-bold tracking-tight">
-            Webhook Notifications
+            Webhook Notification Delivery History
           </h2>
         </div>
       </div>

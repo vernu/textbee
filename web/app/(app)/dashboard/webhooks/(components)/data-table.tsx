@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/table'
 import React from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
-import { SmsModal } from './sms-modal' // Import your modal
+import { WebhookPayloadModal } from './webhook-payload-modal' // Import your modal
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -39,6 +39,7 @@ export function DataTable<TData, TValue>({
     []
   )
   const [selectedSms, setSelectedSms] = React.useState<any>(null)
+  const [selectedPayload, setSelectedPayload] = React.useState<any>(null)
   const [isModalOpen, setIsModalOpen] = React.useState(false)
 
   const table = useReactTable({
@@ -57,6 +58,7 @@ export function DataTable<TData, TValue>({
     // Assuming your row data has smsData property
     if (row.original.smsData) {
       setSelectedSms(row.original.smsData)
+      setSelectedPayload(row.original.payload)
       setIsModalOpen(true)
     }
   }
@@ -64,6 +66,7 @@ export function DataTable<TData, TValue>({
   const handleCloseModal = () => {
     setIsModalOpen(false)
     setSelectedSms(null)
+    setSelectedPayload(null)
   }
 
   return (
@@ -133,11 +136,12 @@ export function DataTable<TData, TValue>({
         </Table>
       </div>
 
-      {/* SMS Modal */}
-      <SmsModal
+      {/* Webhook Payload Modal */}
+      <WebhookPayloadModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         smsData={selectedSms}
+        payload={selectedPayload}
       />
     </div>
   )
