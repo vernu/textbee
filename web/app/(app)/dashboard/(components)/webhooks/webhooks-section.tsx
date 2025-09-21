@@ -130,7 +130,7 @@ export default function WebhooksSection() {
             className='w-full sm:w-auto'
           >
             <Bell className='mr-2 h-4 w-4' />
-            Webhook Notification
+            Notification Deliveries
           </Button>
         </div>
       </div>
