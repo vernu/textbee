@@ -84,27 +84,6 @@ export class WebhookService {
       matchStage.createdAt = { $gte: new Date(start), $lte: new Date(end) }
     }
 
-    if (status) {
-      switch (status) {
-        case 'delivered':
-          matchStage.deliveredAt = { $ne: null }
-          break
-        case 'failed':
-          matchStage.deliveryAttemptAbortedAt = { $ne: null }
-          break
-        case 'retrying':
-          matchStage.deliveredAt = null
-          matchStage.deliveryAttemptAbortedAt = null
-          matchStage.deliveryAttemptCount = { $gt: 0 }
-          matchStage.nextDeliveryAttemptAt = { $ne: null }
-          break
-        case 'pending':
-          matchStage.deliveredAt = null
-          matchStage.deliveryAttemptAbortedAt = null
-          matchStage.deliveryAttemptCount = 0
-          break
-      }
-    }
 
     const pageNum = Math.max(1, Number.parseInt(page.toString()) || 1)
     const limitNum = Math.max(1, Number.parseInt(limit.toString()) || 10)
@@ -144,7 +123,51 @@ export class WebhookService {
           preserveNullAndEmptyArrays: true,
         },
       },
+      {
+        $addFields: {
+          computedStatus: {
+            $cond: {
+              if: { $ne: ['$deliveredAt', null] },
+              then: 'delivered',
+              else: {
+                $cond: {
+                  if: {
+                    $or: [
+                      { $ne: ['$deliveryAttemptAbortedAt', null] },
+                      { $gte: ['$deliveryAttemptCount', 10] }
+                    ]
+                  },
+                  then: 'failed',
+                  else: {
+                    $cond: {
+                      if: {
+                        $and: [
+                          { $eq: ['$deliveredAt', null] },
+                          { $eq: ['$deliveryAttemptAbortedAt', null] },
+                          { $gt: ['$deliveryAttemptCount', 0] },
+                          { $lt: ['$deliveryAttemptCount', 10] }
+                        ]
+                      },
+                      then: 'retrying',
+                      else: 'pending'
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
     ]
+
+    // Apply status filter
+    if (status) {
+      commonPipeline.push({
+        $match: {
+          computedStatus: status
+        }
+      })
+    }
 
     if (deviceId) {
       commonPipeline.push({
