@@ -44,6 +44,12 @@ export const ApiEndpoints = {
   users: {
     markConversationAsRead: () => '/users/conversations/mark-read',
     getConversationReadStatuses: () => '/users/conversations/read-statuses',
+    getConversationMetadata: () => '/users/conversations/metadata',
+    archiveConversations: () => '/users/conversations/archive',
+    unarchiveConversations: () => '/users/conversations/unarchive',
+    blockContacts: () => '/users/conversations/block',
+    unblockContacts: () => '/users/conversations/unblock',
+    toggleConversationStar: () => '/users/conversations/star',
   },
   campaigns: {
     templateGroups: () => '/campaigns/template-groups',

@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Inbox as InboxIcon, Calendar, ChevronDown, Search, Edit, Save, X, Plus, MessageSquarePlus, Mail, MailOpen, MessageCircle, Clock, Users, Megaphone } from 'lucide-react'
+import { Inbox as InboxIcon, Calendar, ChevronDown, Search, Edit, Save, X, Plus, MessageSquarePlus, Mail, MailOpen, MessageCircle, Clock, Users, Megaphone, Star, Archive, Trash2, ArchiveRestore } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -57,6 +58,10 @@ interface Conversation {
   lastMessageDate: Date
   messageCount: number
   unseenCount: number
+  isArchived?: boolean
+  isBlocked?: boolean
+  isStarred?: boolean
+  archivedAt?: Date
 }
 
 interface Message {
@@ -102,11 +107,17 @@ function MessageStatusIndicator({ status, isIncoming }: { status: MessageStatus;
 function ConversationRow({
   conversation,
   isSelected,
-  onClick
+  onClick,
+  isChecked,
+  onCheckboxChange,
+  onStarToggle
 }: {
   conversation: Conversation
   isSelected: boolean
   onClick: () => void
+  isChecked: boolean
+  onCheckboxChange: (checked: boolean) => void
+  onStarToggle: () => void
 }) {
   const displayName = conversation.contact?.firstName || conversation.contact?.lastName
     ? `${conversation.contact.firstName || ''} ${conversation.contact.lastName || ''}`.trim()
@@ -136,35 +147,55 @@ function ConversationRow({
   return (
     <div
       className={cn(
-        'p-4 border-b cursor-pointer hover:bg-muted/50 transition-colors',
+        'p-4 border-b hover:bg-muted/50 transition-colors',
         isSelected && 'bg-primary/10 border-l-4 border-l-primary'
       )}
-      onClick={onClick}
     >
       <div className="flex justify-between items-start">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <h3 className={cn(
-              "text-sm truncate",
-              conversation.unseenCount > 0 ? "font-semibold text-foreground" : "font-medium"
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <Checkbox
+            checked={isChecked}
+            onCheckedChange={onCheckboxChange}
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onStarToggle()
+            }}
+            className="text-muted-foreground hover:text-yellow-500 transition-colors"
+          >
+            <Star
+              className={cn(
+                "h-4 w-4",
+                conversation.isStarred && "fill-yellow-500 text-yellow-500"
+              )}
+            />
+          </button>
+          <div className="flex-1 min-w-0 cursor-pointer" onClick={onClick}>
+            <div className="flex items-center gap-2">
+              <h3 className={cn(
+                "text-sm truncate",
+                conversation.unseenCount > 0 ? "font-semibold text-foreground" : "font-medium"
+              )}>
+                {displayName}
+              </h3>
+              {conversation.unseenCount > 0 && (
+                <Badge
+                  variant="default"
+                  className="h-5 min-w-[20px] px-1.5 text-xs bg-primary text-primary-foreground"
+                >
+                  {conversation.unseenCount}
+                </Badge>
+              )}
+            </div>
+            <p className={cn(
+              "text-sm truncate mt-1",
+              conversation.unseenCount > 0 ? "text-foreground font-medium" : "text-muted-foreground"
             )}>
-              {displayName}
-            </h3>
-            {conversation.unseenCount > 0 && (
-              <Badge
-                variant="default"
-                className="h-5 min-w-[20px] px-1.5 text-xs bg-primary text-primary-foreground"
-              >
-                {conversation.unseenCount}
-              </Badge>
-            )}
+              {conversation.lastMessage.isIncoming ? '' : 'You: '}{conversation.lastMessage.message}
+            </p>
           </div>
-          <p className={cn(
-            "text-sm truncate mt-1",
-            conversation.unseenCount > 0 ? "text-foreground font-medium" : "text-muted-foreground"
-          )}>
-            {conversation.lastMessage.isIncoming ? '' : 'You: '}{conversation.lastMessage.message}
-          </p>
         </div>
         <div className="text-xs text-muted-foreground ml-2 flex-shrink-0">
           {formatDate(conversation.lastMessageDate)}
@@ -186,7 +217,15 @@ function ConversationList({
   setDateRange,
   searchQuery,
   setSearchQuery,
-  onNewMessage
+  onNewMessage,
+  checkedConversations,
+  onCheckboxChange,
+  onStarToggle,
+  onArchiveConversations,
+  onBlockContacts,
+  onUnarchiveConversations,
+  onUnblockContacts,
+  currentView
 }: {
   conversations: Conversation[]
   selectedConversation: Conversation | null
@@ -200,6 +239,14 @@ function ConversationList({
   searchQuery: string
   setSearchQuery: (query: string) => void
   onNewMessage: () => void
+  checkedConversations: Set<string>
+  onCheckboxChange: (phoneNumber: string, checked: boolean) => void
+  onStarToggle: (phoneNumber: string) => void
+  onArchiveConversations: () => void
+  onBlockContacts: () => void
+  onUnarchiveConversations: () => void
+  onUnblockContacts: () => void
+  currentView: string
 }) {
   const [showDatePicker, setShowDatePicker] = useState(false)
 
@@ -257,14 +304,73 @@ function ConversationList({
       <div className="p-4 border-b space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Conversations</h2>
-          <Button
-            size="sm"
-            onClick={onNewMessage}
-            className="gap-2"
-          >
-            <MessageSquarePlus className="h-4 w-4" />
-            New message
-          </Button>
+          <div className="flex items-center gap-2">
+            {checkedConversations.size > 0 && (
+              <>
+                {currentView === 'archived' ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={onUnarchiveConversations}
+                      className="gap-2"
+                    >
+                      <ArchiveRestore className="h-4 w-4" />
+                      Unarchive
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={onBlockContacts}
+                      className="gap-2 text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Block Contact
+                    </Button>
+                  </>
+                ) : currentView === 'spam' ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onUnblockContacts}
+                    className="gap-2"
+                  >
+                    <ArchiveRestore className="h-4 w-4" />
+                    Unblock Contact
+                  </Button>
+                ) : (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={onArchiveConversations}
+                      className="gap-2"
+                    >
+                      <Archive className="h-4 w-4" />
+                      Archive Conversation
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={onBlockContacts}
+                      className="gap-2 text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Block Contact
+                    </Button>
+                  </>
+                )}
+              </>
+            )}
+            <Button
+              size="sm"
+              onClick={onNewMessage}
+              className="gap-2"
+            >
+              <MessageSquarePlus className="h-4 w-4" />
+              New message
+            </Button>
+          </div>
         </div>
         
         {/* Search */}
@@ -379,6 +485,9 @@ function ConversationList({
               conversation={conversation}
               isSelected={selectedConversation?.normalizedPhoneNumber === conversation.normalizedPhoneNumber}
               onClick={() => onSelectConversation(conversation)}
+              isChecked={checkedConversations.has(conversation.normalizedPhoneNumber)}
+              onCheckboxChange={(checked) => onCheckboxChange(conversation.normalizedPhoneNumber, checked)}
+              onStarToggle={() => onStarToggle(conversation.normalizedPhoneNumber)}
             />
           ))
         )}
@@ -389,10 +498,12 @@ function ConversationList({
 
 function MessengerInterface({
   conversation,
-  allMessages = []
+  allMessages = [],
+  onClose
 }: {
   conversation: Conversation
   allMessages?: Message[]
+  onClose?: () => void
 }) {
   const [activeTab, setActiveTab] = useState('messages')
   const [newMessage, setNewMessage] = useState('')
@@ -484,10 +595,17 @@ function MessengerInterface({
   return (
     <div className="flex flex-col h-full border-l">
       {/* Header */}
-      <div className="p-4 border-b">
-        <h2 className="text-lg font-semibold">{displayName}</h2>
-        {conversation.contact?.firstName && (
-          <p className="text-sm text-muted-foreground">{conversation.normalizedPhoneNumber}</p>
+      <div className="p-4 border-b flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold">{displayName}</h2>
+          {conversation.contact?.firstName && (
+            <p className="text-sm text-muted-foreground">{conversation.normalizedPhoneNumber}</p>
+          )}
+        </div>
+        {onClose && (
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            <X className="h-4 w-4" />
+          </Button>
         )}
       </div>
 
@@ -964,8 +1082,10 @@ export default function InboxPage() {
   const [newConversation, setNewConversation] = useState<Conversation | null>(null)
   const [autoRefreshInterval] = useState(15) // Default to 15 seconds
   const [lastSeenTimestamps, setLastSeenTimestamps] = useState<Record<string, Date>>({})
-  const [selectedInboxFilter, setSelectedInboxFilter] = useState<'all' | 'unread' | 'unreplied' | 'awaiting-reply'>('all')
+  const [selectedInboxFilter, setSelectedInboxFilter] = useState<'all' | 'unread' | 'unreplied' | 'awaiting-reply' | 'starred'>('all')
   const [selectedCampaignFilter, setSelectedCampaignFilter] = useState<string | null>(null)
+  const [selectedOtherFilter, setSelectedOtherFilter] = useState<'archived' | 'spam' | null>(null)
+  const [checkedConversations, setCheckedConversations] = useState<Set<string>>(new Set())
   const refreshTimerRef = useRef(null)
   const queryClient = useQueryClient()
 
@@ -980,6 +1100,15 @@ export default function InboxPage() {
         timestamps[key] = new Date(value)
       })
       return timestamps
+    }
+  })
+
+  // Load conversation metadata (archive/block/star status) from API
+  const { data: conversationMetadata } = useQuery({
+    queryKey: ['conversation-metadata'],
+    queryFn: async () => {
+      const response = await httpBrowserClient.get(ApiEndpoints.users.getConversationMetadata())
+      return response.data as Record<string, { isArchived: boolean; isBlocked: boolean; isStarred: boolean; archivedAt?: Date }>
     }
   })
 
@@ -1121,7 +1250,7 @@ export default function InboxPage() {
       })
     }
 
-    // Final pass: Calculate unseen counts for all conversations
+    // Final pass: Calculate unseen counts and apply metadata to all conversations
     const conversations = Array.from(conversationMap.values())
     conversations.forEach(conversation => {
       const lastSeen = lastSeenTimestamps[conversation.normalizedPhoneNumber] || new Date(0)
@@ -1140,35 +1269,93 @@ export default function InboxPage() {
       }).length
 
       conversation.unseenCount = unseenCount
+
+      // Apply metadata from API
+      const metadata = conversationMetadata?.[conversation.normalizedPhoneNumber]
+      if (metadata) {
+        conversation.isArchived = metadata.isArchived
+        conversation.isBlocked = metadata.isBlocked
+        conversation.isStarred = metadata.isStarred
+
+        // If conversation was archived but has new incoming messages since archiving, unarchive it
+        // Note: Blocked conversations should never be auto-unarchived
+        if (metadata.isArchived && !metadata.isBlocked && metadata.archivedAt) {
+          const hasNewIncomingMessagesSinceArchive = (messagesData || []).some(message => {
+            const messagePhoneNumber = message.sender
+            if (!messagePhoneNumber) return false
+
+            const normalizedMessagePhone = normalizePhoneNumber(messagePhoneNumber)
+            const messageDate = new Date(message.receivedAt || message.requestedAt || 0)
+            const archivedAt = new Date(metadata.archivedAt!)
+
+            return normalizedMessagePhone === conversation.normalizedPhoneNumber &&
+                   messageDate > archivedAt
+          })
+
+          if (hasNewIncomingMessagesSinceArchive) {
+            // Automatically unarchive this conversation
+            conversation.isArchived = false
+            // Make API call to update the backend
+            httpBrowserClient.post(ApiEndpoints.users.unarchiveConversations(), {
+              phoneNumbers: [conversation.normalizedPhoneNumber]
+            }).catch(error => {
+              console.error('Failed to auto-unarchive conversation:', error)
+            })
+          }
+        }
+
+        // Store the archivedAt timestamp
+        conversation.archivedAt = metadata.archivedAt
+      }
     })
 
     return conversations
-  }, [messagesData, contactsData, devices?.data, newConversation, lastSeenTimestamps])
+  }, [messagesData, contactsData, devices?.data, newConversation, lastSeenTimestamps, conversationMetadata])
 
   // Filter conversations based on selected filter
   const filteredConversations = useMemo(() => {
     let filtered = conversations
 
-    // Apply inbox filters
-    if (selectedInboxFilter !== 'all') {
-      filtered = filtered.filter(conversation => {
-        switch (selectedInboxFilter) {
-          case 'unread':
-            return conversation.unseenCount > 0
-          case 'unreplied':
-            // A conversation is unreplied if the last message was incoming and there are no outgoing messages after it
-            return conversation.lastMessage.isIncoming
-          case 'awaiting-reply':
-            // A conversation is awaiting reply if the last message was outgoing and there are no incoming messages after it
-            return !conversation.lastMessage.isIncoming
-          default:
-            return true
-        }
-      })
+    // Apply view-based filters first
+    if (selectedOtherFilter) {
+      switch (selectedOtherFilter) {
+        case 'archived':
+          filtered = filtered.filter(conversation => conversation.isArchived === true)
+          break
+        case 'spam':
+          filtered = filtered.filter(conversation => conversation.isBlocked === true)
+          break
+        default:
+          break
+      }
+    } else {
+      // For inbox views, exclude archived and blocked conversations
+      filtered = filtered.filter(conversation => !conversation.isArchived && !conversation.isBlocked)
+
+      // Apply inbox filters
+      if (selectedInboxFilter !== 'all') {
+        filtered = filtered.filter(conversation => {
+          switch (selectedInboxFilter) {
+            case 'unread':
+              return conversation.unseenCount > 0
+            case 'unreplied':
+              // A conversation is unreplied if the last message was incoming and there are no outgoing messages after it
+              return conversation.lastMessage.isIncoming
+            case 'awaiting-reply':
+              // A conversation is awaiting reply if the last message was outgoing and there are no incoming messages after it
+              return !conversation.lastMessage.isIncoming
+            case 'starred':
+              // Show only starred conversations
+              return conversation.isStarred === true
+            default:
+              return true
+          }
+        })
+      }
     }
 
     return filtered
-  }, [conversations, selectedInboxFilter])
+  }, [conversations, selectedInboxFilter, selectedOtherFilter])
 
   // Function to mark a conversation as seen
   const markConversationAsSeen = async (conversation: Conversation) => {
@@ -1192,6 +1379,187 @@ export default function InboxPage() {
     } catch (error) {
       console.error('Failed to mark conversation as read:', error)
     }
+  }
+
+  // Checkbox and action handlers
+  const handleCheckboxChange = (phoneNumber: string, checked: boolean) => {
+    setCheckedConversations(prev => {
+      const newSet = new Set(prev)
+      if (checked) {
+        newSet.add(phoneNumber)
+      } else {
+        newSet.delete(phoneNumber)
+      }
+      return newSet
+    })
+  }
+
+  const handleStarToggle = async (phoneNumber: string) => {
+    try {
+      const currentMetadata = conversationMetadata?.[phoneNumber]
+      const newStarredState = !currentMetadata?.isStarred
+
+      // Optimistic update
+      queryClient.setQueryData(['conversation-metadata'], (oldData: any) => {
+        if (!oldData) return oldData
+
+        const newData = { ...oldData }
+        newData[phoneNumber] = {
+          ...newData[phoneNumber],
+          isStarred: newStarredState,
+          starredAt: newStarredState ? new Date() : null
+        }
+        return newData
+      })
+
+      await httpBrowserClient.patch(ApiEndpoints.users.toggleConversationStar(), {
+        phoneNumber,
+        isStarred: newStarredState
+      })
+
+      // Invalidate and refetch metadata
+      queryClient.invalidateQueries({ queryKey: ['conversation-metadata'] })
+    } catch (error) {
+      console.error('Failed to toggle star:', error)
+      queryClient.invalidateQueries({ queryKey: ['conversation-metadata'] })
+    }
+  }
+
+  const handleArchiveConversations = async () => {
+    try {
+      const phoneNumbersToArchive = Array.from(checkedConversations)
+
+      // Optimistic update
+      queryClient.setQueryData(['conversation-metadata'], (oldData: any) => {
+        if (!oldData) return oldData
+
+        const newData = { ...oldData }
+        phoneNumbersToArchive.forEach(phoneNumber => {
+          newData[phoneNumber] = {
+            ...newData[phoneNumber],
+            isArchived: true,
+            archivedAt: new Date()
+          }
+        })
+        return newData
+      })
+
+      await httpBrowserClient.post(ApiEndpoints.users.archiveConversations(), {
+        phoneNumbers: phoneNumbersToArchive
+      })
+
+      setCheckedConversations(new Set())
+      queryClient.invalidateQueries({ queryKey: ['conversation-metadata'] })
+    } catch (error) {
+      console.error('Failed to archive conversations:', error)
+      queryClient.invalidateQueries({ queryKey: ['conversation-metadata'] })
+    }
+  }
+
+  const handleBlockContacts = async () => {
+    try {
+      const phoneNumbersToBlock = Array.from(checkedConversations)
+
+      // Optimistic update - immediately update the query cache
+      queryClient.setQueryData(['conversation-metadata'], (oldData: any) => {
+        if (!oldData) return oldData
+
+        const newData = { ...oldData }
+        phoneNumbersToBlock.forEach(phoneNumber => {
+          newData[phoneNumber] = {
+            ...newData[phoneNumber],
+            isBlocked: true,
+            isArchived: false, // Remove from archived when blocking
+            blockedAt: new Date(),
+            archivedAt: null
+          }
+        })
+        return newData
+      })
+
+      await httpBrowserClient.post(ApiEndpoints.users.blockContacts(), {
+        phoneNumbers: phoneNumbersToBlock
+      })
+
+      setCheckedConversations(new Set())
+
+      // Invalidate to ensure we get fresh data from server
+      queryClient.invalidateQueries({ queryKey: ['conversation-metadata'] })
+    } catch (error) {
+      console.error('Failed to block contacts:', error)
+      // Revert optimistic update on error
+      queryClient.invalidateQueries({ queryKey: ['conversation-metadata'] })
+    }
+  }
+
+  const handleUnarchiveConversations = async () => {
+    try {
+      const phoneNumbersToUnarchive = Array.from(checkedConversations)
+
+      // Optimistic update
+      queryClient.setQueryData(['conversation-metadata'], (oldData: any) => {
+        if (!oldData) return oldData
+
+        const newData = { ...oldData }
+        phoneNumbersToUnarchive.forEach(phoneNumber => {
+          newData[phoneNumber] = {
+            ...newData[phoneNumber],
+            isArchived: false,
+            archivedAt: null
+          }
+        })
+        return newData
+      })
+
+      await httpBrowserClient.post(ApiEndpoints.users.unarchiveConversations(), {
+        phoneNumbers: phoneNumbersToUnarchive
+      })
+
+      setCheckedConversations(new Set())
+      queryClient.invalidateQueries({ queryKey: ['conversation-metadata'] })
+    } catch (error) {
+      console.error('Failed to unarchive conversations:', error)
+      queryClient.invalidateQueries({ queryKey: ['conversation-metadata'] })
+    }
+  }
+
+  const handleUnblockContacts = async () => {
+    try {
+      const phoneNumbersToUnblock = Array.from(checkedConversations)
+
+      // Optimistic update
+      queryClient.setQueryData(['conversation-metadata'], (oldData: any) => {
+        if (!oldData) return oldData
+
+        const newData = { ...oldData }
+        phoneNumbersToUnblock.forEach(phoneNumber => {
+          newData[phoneNumber] = {
+            ...newData[phoneNumber],
+            isBlocked: false,
+            blockedAt: null
+          }
+        })
+        return newData
+      })
+
+      await httpBrowserClient.post(ApiEndpoints.users.unblockContacts(), {
+        phoneNumbers: phoneNumbersToUnblock
+      })
+
+      setCheckedConversations(new Set())
+      queryClient.invalidateQueries({ queryKey: ['conversation-metadata'] })
+    } catch (error) {
+      console.error('Failed to unblock contacts:', error)
+      queryClient.invalidateQueries({ queryKey: ['conversation-metadata'] })
+    }
+  }
+
+  // Get current view for determining which actions to show
+  const getCurrentView = () => {
+    if (selectedOtherFilter) {
+      return selectedOtherFilter
+    }
+    return 'inbox'
   }
 
   if (isLoading) {
@@ -1252,36 +1620,59 @@ export default function InboxPage() {
               Inbox
             </div>
             <Button
-              variant={selectedInboxFilter === 'all' ? 'default' : 'ghost'}
+              variant={selectedInboxFilter === 'all' && !selectedOtherFilter ? 'default' : 'ghost'}
               className='w-full justify-start text-sm'
-              onClick={() => setSelectedInboxFilter('all')}
+              onClick={() => {
+                setSelectedInboxFilter('all')
+                setSelectedOtherFilter(null)
+              }}
             >
               <Mail className='mr-2 h-4 w-4' />
               All
             </Button>
             <Button
-              variant={selectedInboxFilter === 'unread' ? 'default' : 'ghost'}
+              variant={selectedInboxFilter === 'unread' && !selectedOtherFilter ? 'default' : 'ghost'}
               className='w-full justify-start text-sm'
-              onClick={() => setSelectedInboxFilter('unread')}
+              onClick={() => {
+                setSelectedInboxFilter('unread')
+                setSelectedOtherFilter(null)
+              }}
             >
               <MailOpen className='mr-2 h-4 w-4' />
               Unread
             </Button>
             <Button
-              variant={selectedInboxFilter === 'unreplied' ? 'default' : 'ghost'}
+              variant={selectedInboxFilter === 'unreplied' && !selectedOtherFilter ? 'default' : 'ghost'}
               className='w-full justify-start text-sm'
-              onClick={() => setSelectedInboxFilter('unreplied')}
+              onClick={() => {
+                setSelectedInboxFilter('unreplied')
+                setSelectedOtherFilter(null)
+              }}
             >
               <MessageCircle className='mr-2 h-4 w-4' />
               Unreplied
             </Button>
             <Button
-              variant={selectedInboxFilter === 'awaiting-reply' ? 'default' : 'ghost'}
+              variant={selectedInboxFilter === 'awaiting-reply' && !selectedOtherFilter ? 'default' : 'ghost'}
               className='w-full justify-start text-sm'
-              onClick={() => setSelectedInboxFilter('awaiting-reply')}
+              onClick={() => {
+                setSelectedInboxFilter('awaiting-reply')
+                setSelectedOtherFilter(null)
+              }}
             >
               <Clock className='mr-2 h-4 w-4' />
               Awaiting reply
+            </Button>
+            <Button
+              variant={selectedInboxFilter === 'starred' && !selectedOtherFilter ? 'default' : 'ghost'}
+              className='w-full justify-start text-sm'
+              onClick={() => {
+                setSelectedInboxFilter('starred')
+                setSelectedOtherFilter(null)
+              }}
+            >
+              <Star className='mr-2 h-4 w-4' />
+              Starred
             </Button>
           </div>
 
@@ -1294,6 +1685,36 @@ export default function InboxPage() {
             <div className="text-xs text-muted-foreground pl-6">
               Coming soon...
             </div>
+          </div>
+
+          {/* Other Section */}
+          <div className="space-y-1 pt-4">
+            <div className="flex items-center text-sm font-medium text-muted-foreground mb-2">
+              <Archive className="mr-2 h-4 w-4" />
+              Other
+            </div>
+            <Button
+              variant={selectedOtherFilter === 'archived' ? 'default' : 'ghost'}
+              className='w-full justify-start text-sm'
+              onClick={() => {
+                setSelectedOtherFilter('archived')
+                setSelectedInboxFilter('all')
+              }}
+            >
+              <Archive className='mr-2 h-4 w-4' />
+              Archived
+            </Button>
+            <Button
+              variant={selectedOtherFilter === 'spam' ? 'default' : 'ghost'}
+              className='w-full justify-start text-sm'
+              onClick={() => {
+                setSelectedOtherFilter('spam')
+                setSelectedInboxFilter('all')
+              }}
+            >
+              <Trash2 className='mr-2 h-4 w-4' />
+              Spam
+            </Button>
           </div>
         </div>
       </div>
@@ -1315,6 +1736,14 @@ export default function InboxPage() {
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
             onNewMessage={() => setShowNewMessageSidebar(true)}
+            checkedConversations={checkedConversations}
+            onCheckboxChange={handleCheckboxChange}
+            onStarToggle={handleStarToggle}
+            onArchiveConversations={handleArchiveConversations}
+            onBlockContacts={handleBlockContacts}
+            onUnarchiveConversations={handleUnarchiveConversations}
+            onUnblockContacts={handleUnblockContacts}
+            currentView={getCurrentView()}
           />
         </div>
 
@@ -1324,6 +1753,7 @@ export default function InboxPage() {
             <MessengerInterface
               conversation={selectedConversation}
               allMessages={messagesData || []}
+              onClose={() => setSelectedConversation(null)}
             />
           </div>
         )}

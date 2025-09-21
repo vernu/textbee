@@ -187,9 +187,10 @@ export default function CampaignsPage() {
     selectedContacts: [] as string[],
     selectedTemplates: [] as string[], // Changed from messageTemplateGroups to selectedTemplates
     sendDevices: [] as string[],
-    scheduleType: 'now' as 'now' | 'later',
+    scheduleType: 'now' as 'now' | 'later' | 'windows',
     scheduledDate: '',
     scheduledTime: '',
+    sendingWindows: [] as Array<{ date: string; startTime: string; endTime: string }>,
   })
   const [manageTemplatesOpen, setManageTemplatesOpen] = useState(false)
   const [selectedTemplateGroup, setSelectedTemplateGroup] = useState<string | null>(null)
@@ -227,7 +228,9 @@ export default function CampaignsPage() {
     const hasValidSchedule = createCampaignData.scheduleType === 'now' ||
       (createCampaignData.scheduleType === 'later' &&
        createCampaignData.scheduledDate &&
-       createCampaignData.scheduledTime)
+       createCampaignData.scheduledTime) ||
+      (createCampaignData.scheduleType === 'windows' &&
+       createCampaignData.sendingWindows.length > 0)
 
     return hasTemplates && hasDevices && hasValidSchedule
   }
@@ -537,6 +540,7 @@ export default function CampaignsPage() {
       scheduleType: 'now',
       scheduledDate: '',
       scheduledTime: '',
+      sendingWindows: [],
     })
     setActiveTab('details')
 
@@ -1089,7 +1093,7 @@ export default function CampaignsPage() {
                                   className='text-sm cursor-pointer'
                                   onClick={() => setCreateCampaignData(prev => ({ ...prev, scheduleType: 'now' }))}
                                 >
-                                  Send now
+                                  Start sending now
                                 </Label>
                               </div>
                               <div className='flex items-center space-x-2'>
@@ -1109,7 +1113,27 @@ export default function CampaignsPage() {
                                   className='text-sm cursor-pointer'
                                   onClick={() => setCreateCampaignData(prev => ({ ...prev, scheduleType: 'later' }))}
                                 >
-                                  Schedule for later
+                                  Schedule start for later
+                                </Label>
+                              </div>
+                              <div className='flex items-center space-x-2'>
+                                <div
+                                  className={`w-4 h-4 rounded-full border-2 flex items-center justify-center cursor-pointer ${
+                                    createCampaignData.scheduleType === 'windows'
+                                      ? 'border-primary bg-primary'
+                                      : 'border-muted-foreground hover:border-primary'
+                                  }`}
+                                  onClick={() => setCreateCampaignData(prev => ({ ...prev, scheduleType: 'windows' }))}
+                                >
+                                  {createCampaignData.scheduleType === 'windows' && (
+                                    <div className='w-2 h-2 rounded-full bg-white' />
+                                  )}
+                                </div>
+                                <Label
+                                  className='text-sm cursor-pointer'
+                                  onClick={() => setCreateCampaignData(prev => ({ ...prev, scheduleType: 'windows' }))}
+                                >
+                                  Define valid sending windows
                                 </Label>
                               </div>
                               {createCampaignData.scheduleType === 'later' && (
@@ -1140,6 +1164,107 @@ export default function CampaignsPage() {
                                       className='w-[120px]'
                                     />
                                   </div>
+                                </div>
+                              )}
+                              {createCampaignData.scheduleType === 'windows' && (
+                                <div className='ml-6 space-y-4 border-l-2 border-muted pl-4'>
+                                  <div className='text-xs text-muted-foreground bg-blue-50 p-2 rounded border border-blue-200'>
+                                    <strong>Note:</strong> Define specific days and time windows when messages can be sent.
+                                    Messages will only be sent during these windows.
+                                  </div>
+
+                                  <div className='flex items-center justify-between'>
+                                    <Label className='text-xs text-muted-foreground font-medium'>
+                                      Sending Windows<span className='text-red-500'>*</span>
+                                    </Label>
+                                    <Button
+                                      size='sm'
+                                      variant='outline'
+                                      className='gap-1 text-xs h-7'
+                                      onClick={() => {
+                                        setCreateCampaignData(prev => ({
+                                          ...prev,
+                                          sendingWindows: [...prev.sendingWindows, { date: '', startTime: '', endTime: '' }]
+                                        }))
+                                      }}
+                                    >
+                                      <Plus className='h-3 w-3' />
+                                      Add window
+                                    </Button>
+                                  </div>
+
+                                  {createCampaignData.sendingWindows.length === 0 ? (
+                                    <div className='text-xs text-muted-foreground text-center py-4 bg-muted/50 rounded border-dashed border'>
+                                      No sending windows defined. Click "Add window" to create one.
+                                    </div>
+                                  ) : (
+                                    <div className='space-y-3'>
+                                      {/* Headers */}
+                                      <div className='flex items-center gap-2 px-2'>
+                                        <div className='flex gap-2 flex-1'>
+                                          <div className='w-32'>
+                                            <Label className='text-xs text-muted-foreground font-medium'>Date</Label>
+                                          </div>
+                                          <div className='w-24'>
+                                            <Label className='text-xs text-muted-foreground font-medium'>Start time</Label>
+                                          </div>
+                                          <div className='w-24'>
+                                            <Label className='text-xs text-muted-foreground font-medium'>End time</Label>
+                                          </div>
+                                        </div>
+                                        <div className='w-6'></div> {/* Spacer for remove button */}
+                                      </div>
+
+                                      {/* Window Items */}
+                                      {createCampaignData.sendingWindows.map((window, index) => (
+                                        <div key={index} className='flex items-center gap-2 p-2 bg-muted/30 rounded border'>
+                                          <div className='flex gap-2 flex-1'>
+                                            <Input
+                                              type='date'
+                                              value={window.date}
+                                              onChange={(e) => {
+                                                const newWindows = [...createCampaignData.sendingWindows]
+                                                newWindows[index].date = e.target.value
+                                                setCreateCampaignData(prev => ({ ...prev, sendingWindows: newWindows }))
+                                              }}
+                                              className='w-32 text-xs h-8'
+                                            />
+                                            <Input
+                                              type='time'
+                                              value={window.startTime}
+                                              onChange={(e) => {
+                                                const newWindows = [...createCampaignData.sendingWindows]
+                                                newWindows[index].startTime = e.target.value
+                                                setCreateCampaignData(prev => ({ ...prev, sendingWindows: newWindows }))
+                                              }}
+                                              className='w-24 text-xs h-8'
+                                            />
+                                            <Input
+                                              type='time'
+                                              value={window.endTime}
+                                              onChange={(e) => {
+                                                const newWindows = [...createCampaignData.sendingWindows]
+                                                newWindows[index].endTime = e.target.value
+                                                setCreateCampaignData(prev => ({ ...prev, sendingWindows: newWindows }))
+                                              }}
+                                              className='w-24 text-xs h-8'
+                                            />
+                                          </div>
+                                          <Button
+                                            size='sm'
+                                            variant='ghost'
+                                            className='p-1 h-6 w-6 text-muted-foreground hover:text-destructive'
+                                            onClick={() => {
+                                              const newWindows = createCampaignData.sendingWindows.filter((_, i) => i !== index)
+                                              setCreateCampaignData(prev => ({ ...prev, sendingWindows: newWindows }))
+                                            }}
+                                          >
+                                            <X className='h-3 w-3' />
+                                          </Button>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </div>
@@ -1288,11 +1413,25 @@ export default function CampaignsPage() {
                           <div>
                             <Label className='text-sm font-medium text-muted-foreground'>Schedule</Label>
                             <p className='text-sm'>
-                              {createCampaignData.scheduleType === 'now' ? 'Send immediately' :
-                               createCampaignData.scheduledDate && createCampaignData.scheduledTime ?
-                               `Send on ${createCampaignData.scheduledDate} at ${createCampaignData.scheduledTime}` :
+                              {createCampaignData.scheduleType === 'now' ? 'Start sending immediately' :
+                               createCampaignData.scheduleType === 'later' && createCampaignData.scheduledDate && createCampaignData.scheduledTime ?
+                               `Start sending on ${createCampaignData.scheduledDate} at ${createCampaignData.scheduledTime}` :
+                               createCampaignData.scheduleType === 'windows' && createCampaignData.sendingWindows.length > 0 ?
+                               `${createCampaignData.sendingWindows.length} sending window(s) defined` :
                                'Schedule not set'}
                             </p>
+                            {createCampaignData.scheduleType === 'windows' && createCampaignData.sendingWindows.length > 0 && (
+                              <div className='mt-2'>
+                                <Label className='text-xs text-muted-foreground'>Sending Windows:</Label>
+                                <div className='mt-1 space-y-1'>
+                                  {createCampaignData.sendingWindows.map((window, index) => (
+                                    <div key={index} className='text-xs bg-muted/50 p-2 rounded'>
+                                      {window.date ? new Date(window.date).toLocaleDateString() : 'No date'} • {window.startTime || 'No start'} - {window.endTime || 'No end'}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
                           <div className='col-span-2'>
                             <Label className='text-sm font-medium text-muted-foreground'>Description</Label>
