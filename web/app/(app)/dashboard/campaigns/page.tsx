@@ -900,8 +900,8 @@ export default function CampaignsPage() {
                               <SelectTrigger className='w-full'>
                                 <SelectValue
                                   placeholder={createCampaignData.selectedContacts.length > 0
-                                    ? `${createCampaignData.selectedContacts.length} spreadsheet(s) selected`
-                                    : 'Select contact spreadsheets'}
+                                    ? `${createCampaignData.selectedContacts.length} group(s) selected`
+                                    : 'Select contact groups'}
                                 />
                               </SelectTrigger>
                               <SelectContent className='max-h-60 overflow-y-auto'>
