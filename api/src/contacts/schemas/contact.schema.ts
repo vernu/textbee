@@ -10,8 +10,6 @@ export class Contact {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   userId: Types.ObjectId
 
-  @Prop({ type: Types.ObjectId, ref: 'ContactSpreadsheet' })
-  spreadsheetId?: Types.ObjectId
 
   @Prop({ type: String })
   firstName?: string

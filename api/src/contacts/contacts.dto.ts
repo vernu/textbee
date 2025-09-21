@@ -343,6 +343,7 @@ export class ProcessSpreadsheetResponseDto {
     lastName?: string
     reason: string
   }>
+  totalMembershipsCreated?: number
 }
 
 export class ContactResponseDto {
@@ -365,5 +366,4 @@ export class ContactResponseDto {
   mailingZip?: string
   dnc?: boolean
   dncUpdatedAt?: string
-  spreadsheetName?: string
 }

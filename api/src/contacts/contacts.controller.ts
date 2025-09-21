@@ -239,6 +239,15 @@ export class ContactsController {
     return this.contactsService.getContactById(req.user.id, id)
   }
 
+  @Get(':id/groups')
+  @ApiOperation({ summary: 'Get groups for a specific contact' })
+  async getContactGroups(
+    @Request() req,
+    @Param('id') id: string,
+  ) {
+    return this.contactsService.getContactGroups(req.user.id, id)
+  }
+
   @Put(':id')
   @ApiOperation({ summary: 'Update a contact' })
   async updateContact(

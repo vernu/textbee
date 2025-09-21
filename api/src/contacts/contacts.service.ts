@@ -5,6 +5,7 @@ import { Model, Types } from 'mongoose'
 import { ContactSpreadsheet, ContactSpreadsheetDocument } from './schemas/contact-spreadsheet.schema'
 import { Contact, ContactDocument } from './schemas/contact.schema'
 import { ContactTemplate, ContactTemplateDocument } from './schemas/contact-template.schema'
+import { ContactGroupMembership, ContactGroupMembershipDocument } from './schemas/contact-group-membership.schema'
 import {
   UploadSpreadsheetDto,
   GetSpreadsheetsDto,
@@ -30,6 +31,8 @@ export class ContactsService {
     private contactModel: Model<ContactDocument>,
     @InjectModel(ContactTemplate.name)
     private contactTemplateModel: Model<ContactTemplateDocument>,
+    @InjectModel(ContactGroupMembership.name)
+    private contactGroupMembershipModel: Model<ContactGroupMembershipDocument>,
   ) {}
 
   async uploadSpreadsheet(
@@ -152,9 +155,9 @@ export class ContactsService {
       throw new NotFoundException('Contact spreadsheet not found')
     }
 
-    // Delete all contacts associated with this spreadsheet
-    await this.contactModel.deleteMany({
-      spreadsheetId: new Types.ObjectId(spreadsheetId),
+    // Delete all group memberships for this group
+    await this.contactGroupMembershipModel.deleteMany({
+      groupId: new Types.ObjectId(spreadsheetId),
       userId: new Types.ObjectId(userId),
     }).exec()
 
@@ -177,9 +180,9 @@ export class ContactsService {
       throw new NotFoundException('One or more spreadsheets not found')
     }
 
-    // Delete all contacts associated with these spreadsheets
-    await this.contactModel.deleteMany({
-      spreadsheetId: { $in: objectIds },
+    // Delete all group memberships for these groups
+    await this.contactGroupMembershipModel.deleteMany({
+      groupId: { $in: objectIds },
       userId: new Types.ObjectId(userId),
     }).exec()
 
@@ -276,60 +279,90 @@ export class ContactsService {
       const headers = this.parseCsvRow(lines[0])
       const dataRows = lines.slice(1)
 
-      const contacts = []
+      const contactsToCreate = []
+      const membershipsToCreate = []
       const errors = []
       const duplicateContacts = []
       const userObjectId = new Types.ObjectId(userId)
+      const groupObjectId = new Types.ObjectId(spreadsheetId)
 
-      // Get all existing phone numbers for this user
+      // Get all existing contacts for this user
       const existingContacts = await this.contactModel
         .find({ userId: userObjectId }, { phone: 1, firstName: 1, lastName: 1 })
         .exec()
 
-      const existingPhones = new Set(existingContacts.map(contact => contact.phone))
+      const existingContactsMap = new Map(existingContacts.map(contact => [contact.phone, contact]))
+      const processedPhones = new Set()
 
       for (let i = 0; i < dataRows.length; i++) {
         try {
           const row = this.parseCsvRow(dataRows[i])
-          const contact = this.mapRowToContact(userId, spreadsheetId, headers, row, columnMapping, dncColumn, dncValue)
+          const contactData = this.mapRowToContact(userId, spreadsheetId, headers, row, columnMapping, dncColumn, dncValue)
 
-          // Check if this phone number already exists
-          if (existingPhones.has(contact.phone)) {
+          // Check for duplicates within the current CSV being processed
+          if (processedPhones.has(contactData.phone)) {
             duplicateContacts.push({
-              phone: contact.phone,
-              firstName: contact.firstName,
-              lastName: contact.lastName,
-              reason: 'Phone number already exists in your contacts'
-            })
-            continue // Skip this contact
-          }
-
-          // Check for duplicates within the current spreadsheet being processed
-          const isDuplicateInCurrentBatch = contacts.some(existing => existing.phone === contact.phone)
-          if (isDuplicateInCurrentBatch) {
-            duplicateContacts.push({
-              phone: contact.phone,
-              firstName: contact.firstName,
-              lastName: contact.lastName,
+              phone: contactData.phone,
+              firstName: contactData.firstName,
+              lastName: contactData.lastName,
               reason: 'Duplicate phone number found within the same spreadsheet'
             })
-            continue // Skip this contact
+            continue
           }
 
-          contacts.push(contact)
+          processedPhones.add(contactData.phone)
+
+          const existingContact = existingContactsMap.get(contactData.phone)
+
+          if (existingContact) {
+            // Contact exists - create membership to link to this group and track as duplicate
+            membershipsToCreate.push({
+              userId: userObjectId,
+              contactId: existingContact._id,
+              groupId: groupObjectId,
+              wasNewContact: false
+            })
+            duplicateContacts.push({
+              phone: contactData.phone,
+              firstName: contactData.firstName,
+              lastName: contactData.lastName,
+              reason: 'Phone number already exists in your contacts - linked to this group'
+            })
+          } else {
+            // New contact - create contact and membership
+            contactsToCreate.push(contactData)
+            // We'll create the membership after saving the contact
+          }
         } catch (error) {
           errors.push(`Row ${i + 2}: ${error.message}`)
         }
       }
 
-      // Save only the non-duplicate contacts
-      if (contacts.length > 0) {
-        await this.contactModel.insertMany(contacts)
+      // Save new contacts and create memberships
+      let newContactIds = []
+      if (contactsToCreate.length > 0) {
+        const savedContacts = await this.contactModel.insertMany(contactsToCreate)
+        newContactIds = savedContacts.map(contact => contact._id)
+
+        // Create memberships for new contacts
+        savedContacts.forEach(contact => {
+          membershipsToCreate.push({
+            userId: userObjectId,
+            contactId: contact._id,
+            groupId: groupObjectId,
+            wasNewContact: true
+          })
+        })
+      }
+
+      // Create all memberships
+      if (membershipsToCreate.length > 0) {
+        await this.contactGroupMembershipModel.insertMany(membershipsToCreate)
       }
 
       // Update spreadsheet with processing results
       spreadsheet.status = 'processed'
-      spreadsheet.processedCount = contacts.length
+      spreadsheet.processedCount = contactsToCreate.length // New contacts created
       spreadsheet.skippedCount = duplicateContacts.length
       spreadsheet.processingErrors = errors
       spreadsheet.duplicateContacts = duplicateContacts
@@ -339,10 +372,11 @@ export class ContactsService {
       await spreadsheet.save()
 
       return {
-        processed: contacts.length,
+        processed: contactsToCreate.length, // New contacts created
         skipped: duplicateContacts.length,
         errors,
         duplicateContacts,
+        totalMembershipsCreated: membershipsToCreate.length, // Total contacts added to group
       }
     } catch (error) {
       throw new BadRequestException(`Failed to process spreadsheet: ${error.message}`)
@@ -458,8 +492,19 @@ export class ContactsService {
     // Build filter
     const filter: any = { userId: new Types.ObjectId(userId) }
 
+    // Handle filtering by group (spreadsheetId)
+    let contactIdsInGroup: Types.ObjectId[] | undefined
     if (spreadsheetId) {
-      filter.spreadsheetId = new Types.ObjectId(spreadsheetId)
+      const memberships = await this.contactGroupMembershipModel
+        .find({
+          userId: new Types.ObjectId(userId),
+          groupId: new Types.ObjectId(spreadsheetId)
+        })
+        .select('contactId')
+        .exec()
+
+      contactIdsInGroup = memberships.map(m => m.contactId)
+      filter._id = { $in: contactIdsInGroup }
     }
 
     if (search) {
@@ -579,7 +624,6 @@ export class ContactsService {
     const [contacts, total] = await Promise.all([
       this.contactModel
         .find(filter)
-        .populate('spreadsheetId', 'originalFileName')
         .sort(sort)
         .limit(limit)
         .skip((page - 1) * limit)
@@ -599,7 +643,6 @@ export class ContactsService {
         _id: new Types.ObjectId(contactId),
         userId: new Types.ObjectId(userId),
       })
-      .populate('spreadsheetId', 'originalFileName')
       .exec()
 
     if (!contact) {
@@ -693,7 +736,6 @@ export class ContactsService {
   ): any {
     const contact: any = {
       userId: new Types.ObjectId(userId),
-      spreadsheetId: new Types.ObjectId(spreadsheetId),
     }
 
     // Map CSV columns to contact fields
@@ -749,19 +791,20 @@ export class ContactsService {
   }
 
   private async calculateSpreadsheetStats(userId: string, spreadsheetId: string) {
-    const filter = {
-      userId: new Types.ObjectId(userId),
-      spreadsheetId: new Types.ObjectId(spreadsheetId),
-    }
+    const userObjectId = new Types.ObjectId(userId)
+    const groupObjectId = new Types.ObjectId(spreadsheetId)
 
-    const [validContactsCount, nonDncCount, dncCount] = await Promise.all([
-      // Total valid contacts from this spreadsheet
-      this.contactModel.countDocuments(filter).exec(),
-      // Contacts with DNC = false (excluding null/undefined)
-      this.contactModel.countDocuments({ ...filter, dnc: false }).exec(),
-      // Contacts with DNC = true (excluding null/undefined)
-      this.contactModel.countDocuments({ ...filter, dnc: true }).exec(),
-    ])
+    // Get all contacts in this group via the junction table
+    const memberships = await this.contactGroupMembershipModel
+      .find({ userId: userObjectId, groupId: groupObjectId })
+      .populate('contactId')
+      .exec()
+
+    const contacts = memberships.map(membership => membership.contactId as any).filter(Boolean)
+
+    const validContactsCount = contacts.length
+    const nonDncCount = contacts.filter(contact => contact.dnc === false).length
+    const dncCount = contacts.filter(contact => contact.dnc === true).length
 
     return { validContactsCount, nonDncCount, dncCount }
   }
@@ -830,11 +873,22 @@ export class ContactsService {
     }
   }
 
-  private mapContactToResponseDto = (contact: ContactDocument): ContactResponseDto => {
-    const spreadsheetName = contact.spreadsheetId && typeof contact.spreadsheetId === 'object'
-      ? (contact.spreadsheetId as any).originalFileName
-      : undefined
+  async getContactGroups(userId: string, contactId: string): Promise<string[]> {
+    const memberships = await this.contactGroupMembershipModel
+      .find({
+        userId: new Types.ObjectId(userId),
+        contactId: new Types.ObjectId(contactId)
+      })
+      .populate('groupId', 'originalFileName')
+      .exec()
 
+    return memberships.map(membership => {
+      const group = membership.groupId as any
+      return group?.originalFileName || 'Unknown Group'
+    })
+  }
+
+  private mapContactToResponseDto = (contact: ContactDocument): ContactResponseDto => {
     return {
       id: contact._id.toString(),
       firstName: contact.firstName,
@@ -855,7 +909,6 @@ export class ContactsService {
       mailingZip: contact.mailingZip,
       dnc: contact.dnc,
       dncUpdatedAt: contact.dncUpdatedAt?.toISOString(),
-      spreadsheetName: spreadsheetName,
     }
   }
 

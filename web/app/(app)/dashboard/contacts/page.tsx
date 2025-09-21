@@ -98,6 +98,13 @@ function ContactSidebar({
   const { toast } = useToast()
   const queryClient = useQueryClient()
 
+  // Fetch contact groups
+  const { data: contactGroups = [] } = useQuery({
+    queryKey: ['contact-groups', contact.id],
+    queryFn: () => contactsApi.getContactGroups(contact.id),
+    enabled: !!contact.id,
+  })
+
   const { data: devices } = useQuery({
     queryKey: ['devices'],
     queryFn: () =>
@@ -412,6 +419,7 @@ function ContactSidebar({
             <ContactInfoEditor
               contact={contact}
               conversationMessages={messagesData || []}
+              contactGroups={contactGroups}
               onContactUpdated={() => {
                 queryClient.invalidateQueries({ queryKey: ['contacts-all'] })
               }}
@@ -437,10 +445,12 @@ function ContactSidebar({
 function ContactInfoEditor({
   contact,
   conversationMessages = [],
+  contactGroups = [],
   onContactUpdated
 }: {
   contact: Contact
   conversationMessages?: Message[]
+  contactGroups?: string[]
   onContactUpdated: (contact: any) => void
 }) {
   const [isEditing, setIsEditing] = useState(false)
@@ -688,7 +698,13 @@ function ContactInfoEditor({
               <div className="text-sm">
                 <span className="font-medium">Groups:</span>
                 <ul className="list-disc list-inside ml-4 mt-1">
-                  <li>{contact.spreadsheetName || 'Manual'}</li>
+                  {contactGroups.length > 0 ? (
+                    contactGroups.map((group, index) => (
+                      <li key={index}>{group}</li>
+                    ))
+                  ) : (
+                    <li className="text-muted-foreground">No groups</li>
+                  )}
                 </ul>
               </div>
             </div>
@@ -719,7 +735,7 @@ export default function ContactsPage() {
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'a-z' | 'z-a' | 'status'>('newest')
   const [spreadsheetSortBy, setSpreadsheetSortBy] = useState<'newest' | 'oldest' | 'a-z' | 'z-a' | 'status'>('newest')
   const [spreadsheetSortOrder, setSpreadsheetSortOrder] = useState<'asc' | 'desc'>('desc')
-  const [contactSortBy, setContactSortBy] = useState<'firstName' | 'lastName' | 'phone' | 'email' | 'groups'>('firstName')
+  const [contactSortBy, setContactSortBy] = useState<'firstName' | 'lastName' | 'phone' | 'email'>('firstName')
   const [contactSortOrder, setContactSortOrder] = useState<'asc' | 'desc'>('asc')
   const [selectedFiles, setSelectedFiles] = useState<string[]>([])
   const [selectedContacts, setSelectedContacts] = useState<string[]>([])
@@ -819,7 +835,7 @@ export default function ContactsPage() {
       
       const response = await contactsApi.getContacts({
         search: searchQuery || undefined,
-        sortBy: contactSortBy === 'groups' ? 'firstName' : contactSortBy,
+        sortBy: contactSortBy,
         sortOrder: contactSortOrder,
         limit: displayCount,
         page: currentPage,
@@ -861,21 +877,9 @@ export default function ContactsPage() {
   }, [files, spreadsheetSortBy, spreadsheetSortOrder])
 
   const filteredAndSortedContacts = useMemo(() => {
-    if (contactSortBy === 'groups') {
-      const sorted = [...contacts].sort((a, b) => {
-        const aGroup = a.spreadsheetName || 'Manual'
-        const bGroup = b.spreadsheetName || 'Manual'
-
-        if (contactSortOrder === 'asc') {
-          return aGroup.localeCompare(bGroup)
-        } else {
-          return bGroup.localeCompare(aGroup)
-        }
-      })
-      return sorted
-    }
+    // The API handles all sorting now
     return contacts
-  }, [contacts, contactSortBy, contactSortOrder])
+  }, [contacts])
 
   const [totalContacts, setTotalContacts] = useState(0)
   const [totalFiles, setTotalFiles] = useState(0)
@@ -1326,7 +1330,7 @@ export default function ContactsPage() {
             }}
           >
             <FileSpreadsheet className='mr-2 h-4 w-4' />
-            Contact spreadsheets ({totalFiles})
+            Contact groups ({totalFiles})
           </Button>
           <Button
             variant={selectedMode === 'all' ? 'default' : 'ghost'}
@@ -1350,7 +1354,7 @@ export default function ContactsPage() {
         <div className='border-b p-4 flex-shrink-0'>
           <div className='flex items-center justify-between mb-4'>
             <h2 className='text-lg font-semibold'>
-              {selectedMode === 'spreadsheets' && 'Contact spreadsheets'}
+              {selectedMode === 'spreadsheets' && 'Contact groups'}
               {selectedMode === 'all' && 'All contacts'}
             </h2>
             <div className='relative w-80'>
@@ -1586,8 +1590,8 @@ export default function ContactsPage() {
                         {renderSpreadsheetSortIcon('status')}
                       </div>
                     </th>
-                    <th className='text-left p-4 font-medium'>Rows</th>
-                    <th className='text-left p-4 font-medium'>Valid Contacts</th>
+                    <th className='text-left p-4 font-medium'>CSV rows</th>
+                    <th className='text-left p-4 font-medium'>Contacts</th>
                     <th className='text-left p-4 font-medium'>Non-DNC</th>
                     <th className='text-left p-4 font-medium'>DNC</th>
                     <th className='text-left p-4 font-medium'>Date created</th>
@@ -1658,7 +1662,7 @@ export default function ContactsPage() {
                       onClick={() => handleContactSort('firstName')}
                     >
                       <div className='flex items-center'>
-                        First Name
+                        First name
                         {renderSortIcon('firstName')}
                       </div>
                     </th>
@@ -1667,7 +1671,7 @@ export default function ContactsPage() {
                       onClick={() => handleContactSort('lastName')}
                     >
                       <div className='flex items-center'>
-                        Last Name
+                        Last name
                         {renderSortIcon('lastName')}
                       </div>
                     </th>
@@ -1687,15 +1691,6 @@ export default function ContactsPage() {
                       <div className='flex items-center'>
                         Email
                         {renderSortIcon('email')}
-                      </div>
-                    </th>
-                    <th
-                      className='text-left p-4 font-medium cursor-pointer hover:bg-muted/75 transition-colors'
-                      onClick={() => handleContactSort('groups')}
-                    >
-                      <div className='flex items-center'>
-                        Groups
-                        {renderSortIcon('groups')}
                       </div>
                     </th>
                   </tr>
@@ -1739,12 +1734,6 @@ export default function ContactsPage() {
                         onClick={() => setSelectedContact(contact)}
                       >
                         {contact.email || '-'}
-                      </td>
-                      <td
-                        className='p-4 text-muted-foreground cursor-pointer'
-                        onClick={() => setSelectedContact(contact)}
-                      >
-                        {contact.spreadsheetName || 'Manual'}
                       </td>
                     </tr>
                   ))}

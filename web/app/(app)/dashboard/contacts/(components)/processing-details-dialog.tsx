@@ -30,7 +30,7 @@ export default function ProcessingDetailsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
+      <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
@@ -38,16 +38,17 @@ export default function ProcessingDetailsDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="flex-1 overflow-y-auto">
+          <div className="space-y-6 p-1">
           {/* Summary Stats */}
           <div className="grid grid-cols-3 gap-4">
             <div className="text-center p-4 bg-green-50 rounded-lg border">
               <div className="flex items-center justify-center gap-2 mb-2">
                 <CheckCircle className="h-5 w-5 text-green-600" />
-                <span className="font-semibold text-green-700">Processed</span>
+                <span className="font-semibold text-green-700">New Contacts</span>
               </div>
               <div className="text-2xl font-bold text-green-600">{processedCount}</div>
-              <div className="text-sm text-green-600">contacts added</div>
+              <div className="text-sm text-green-600">contacts created</div>
             </div>
 
             <div className="text-center p-4 bg-orange-50 rounded-lg border">
@@ -141,6 +142,7 @@ export default function ProcessingDetailsDialog({
               <p className="text-gray-600">All contacts were processed successfully with no duplicates or errors.</p>
             </div>
           )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>

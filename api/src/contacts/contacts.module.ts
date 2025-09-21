@@ -5,6 +5,7 @@ import { ContactsService } from './contacts.service'
 import { ContactSpreadsheet, ContactSpreadsheetSchema } from './schemas/contact-spreadsheet.schema'
 import { Contact, ContactSchema } from './schemas/contact.schema'
 import { ContactTemplate, ContactTemplateSchema } from './schemas/contact-template.schema'
+import { ContactGroupMembership, ContactGroupMembershipSchema } from './schemas/contact-group-membership.schema'
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { ContactTemplate, ContactTemplateSchema } from './schemas/contact-templa
       { name: ContactSpreadsheet.name, schema: ContactSpreadsheetSchema },
       { name: Contact.name, schema: ContactSchema },
       { name: ContactTemplate.name, schema: ContactTemplateSchema },
+      { name: ContactGroupMembership.name, schema: ContactGroupMembershipSchema },
     ]),
   ],
   controllers: [ContactsController],

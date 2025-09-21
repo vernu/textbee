@@ -109,12 +109,11 @@ export interface Contact {
   mailingZip?: string
   dnc?: boolean | null
   dncUpdatedAt?: string
-  spreadsheetName?: string
 }
 
 export interface GetContactsParams {
   search?: string
-  sortBy?: 'newest' | 'oldest' | 'firstName' | 'lastName' | 'phone' | 'email' | 'groups'
+  sortBy?: 'newest' | 'oldest' | 'firstName' | 'lastName' | 'phone' | 'email'
   sortOrder?: 'asc' | 'desc'
   limit?: number
   page?: number
@@ -216,6 +215,11 @@ export const contactsApi = {
 
   async getContact(id: string): Promise<Contact> {
     const response = await httpBrowserClient.get(`/contacts/${id}`)
+    return response.data
+  },
+
+  async getContactGroups(id: string): Promise<string[]> {
+    const response = await httpBrowserClient.get(`/contacts/${id}/groups`)
     return response.data
   },
 
