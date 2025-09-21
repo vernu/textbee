@@ -406,6 +406,25 @@ export default function CampaignsPage() {
     setLoading(false)
   }, [])
 
+  // Auto-expand groups when templates are selected
+  useEffect(() => {
+    if (createCampaignData.selectedTemplates.length > 0) {
+      const groupsWithSelectedTemplates = new Set<string>()
+
+      createCampaignData.selectedTemplates.forEach(templateId => {
+        for (const group of templateGroups) {
+          const template = group.templates.find(t => t._id === templateId)
+          if (template) {
+            groupsWithSelectedTemplates.add(`selected-${group._id}`)
+            break
+          }
+        }
+      })
+
+      setExpandedGroups(groupsWithSelectedTemplates)
+    }
+  }, [createCampaignData.selectedTemplates, templateGroups])
+
   // Filter and sort campaigns based on selected mode
   const filteredAndSortedCampaigns = useMemo(() => {
     let filtered = campaigns
