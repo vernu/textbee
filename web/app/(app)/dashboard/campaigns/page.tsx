@@ -216,6 +216,7 @@ export default function CampaignsPage() {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
   const [draggedGroupId, setDraggedGroupId] = useState<string | null>(null)
   const [dragOverGroupId, setDragOverGroupId] = useState<string | null>(null)
+  const [uniqueContactCount, setUniqueContactCount] = useState<number>(0)
 
   // Validation functions for each stage
   const validateDetailsStage = () => {
@@ -424,6 +425,26 @@ export default function CampaignsPage() {
       setExpandedGroups(groupsWithSelectedTemplates)
     }
   }, [createCampaignData.selectedTemplates, templateGroups])
+
+  // Fetch unique contact count when selected contacts change
+  useEffect(() => {
+    const fetchUniqueContactCount = async () => {
+      if (createCampaignData.selectedContacts.length === 0) {
+        setUniqueContactCount(0)
+        return
+      }
+
+      try {
+        const result = await contactsApi.getUniqueContactCount(createCampaignData.selectedContacts)
+        setUniqueContactCount(result.uniqueContactCount)
+      } catch (error) {
+        console.error('Failed to fetch unique contact count:', error)
+        setUniqueContactCount(0)
+      }
+    }
+
+    fetchUniqueContactCount()
+  }, [createCampaignData.selectedContacts])
 
   // Filter and sort campaigns based on selected mode
   const filteredAndSortedCampaigns = useMemo(() => {
@@ -919,7 +940,7 @@ export default function CampaignsPage() {
                               <SelectTrigger className='w-full'>
                                 <SelectValue
                                   placeholder={createCampaignData.selectedContacts.length > 0
-                                    ? `${createCampaignData.selectedContacts.length} group(s) selected`
+                                    ? `${createCampaignData.selectedContacts.length} group(s) selected (${uniqueContactCount.toLocaleString()} unique contacts)`
                                     : 'Select contact groups'}
                                 />
                               </SelectTrigger>

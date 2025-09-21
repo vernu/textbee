@@ -235,6 +235,11 @@ export const contactsApi = {
   async deleteMultipleContacts(ids: string[]): Promise<void> {
     await httpBrowserClient.post('/contacts/delete-multiple', { ids })
   },
+
+  async getUniqueContactCount(spreadsheetIds: string[]): Promise<{ uniqueContactCount: number }> {
+    const response = await httpBrowserClient.post('/contacts/spreadsheets/unique-count', { spreadsheetIds })
+    return response.data
+  },
 }
 
 export function downloadBlob(blob: Blob, filename: string) {

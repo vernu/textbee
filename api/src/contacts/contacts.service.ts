@@ -888,6 +888,68 @@ export class ContactsService {
     })
   }
 
+  async getUniqueContactCount(
+    userId: string,
+    spreadsheetIds: string[],
+  ): Promise<{ uniqueContactCount: number }> {
+    const objectIds = spreadsheetIds.map(id => new Types.ObjectId(id))
+
+    // Verify all spreadsheets belong to the user
+    const spreadsheets = await this.contactSpreadsheetModel
+      .find({
+        _id: { $in: objectIds },
+        userId: new Types.ObjectId(userId),
+      })
+      .exec()
+
+    if (spreadsheets.length !== spreadsheetIds.length) {
+      throw new NotFoundException('One or more spreadsheets not found')
+    }
+
+    // Debug: Check if there are any memberships for these groups
+    const membershipCount = await this.contactGroupMembershipModel
+      .countDocuments({
+        userId: new Types.ObjectId(userId),
+        groupId: { $in: objectIds },
+      })
+      .exec()
+
+    console.log(`Debug: Found ${membershipCount} memberships for user ${userId} in groups ${spreadsheetIds}`)
+
+    // Get unique contacts across all specified spreadsheets by joining with ContactGroupMembership
+    const uniqueContacts = await this.contactGroupMembershipModel.aggregate([
+      {
+        $match: {
+          userId: new Types.ObjectId(userId),
+          groupId: { $in: objectIds },
+        },
+      },
+      {
+        $lookup: {
+          from: 'contacts',
+          localField: 'contactId',
+          foreignField: '_id',
+          as: 'contact',
+        },
+      },
+      {
+        $unwind: '$contact',
+      },
+      {
+        $group: {
+          _id: '$contact.phone', // Group by phone number to get unique contacts
+        },
+      },
+      {
+        $count: 'uniqueContactCount',
+      },
+    ])
+
+    return {
+      uniqueContactCount: uniqueContacts.length > 0 ? uniqueContacts[0].uniqueContactCount : 0,
+    }
+  }
+
   private mapContactToResponseDto = (contact: ContactDocument): ContactResponseDto => {
     return {
       id: contact._id.toString(),

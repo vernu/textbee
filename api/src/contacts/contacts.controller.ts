@@ -280,4 +280,16 @@ export class ContactsController {
     }
     return this.contactsService.deleteMultipleContacts(req.user.id, ids)
   }
+
+  @Post('spreadsheets/unique-count')
+  @ApiOperation({ summary: 'Get unique contact count across multiple spreadsheets' })
+  async getUniqueContactCount(
+    @Request() req,
+    @Body('spreadsheetIds') spreadsheetIds: string[],
+  ) {
+    if (!spreadsheetIds || spreadsheetIds.length === 0) {
+      return { uniqueContactCount: 0 }
+    }
+    return this.contactsService.getUniqueContactCount(req.user.id, spreadsheetIds)
+  }
 }
