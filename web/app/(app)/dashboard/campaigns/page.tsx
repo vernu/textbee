@@ -1186,6 +1186,19 @@ export default function CampaignsPage() {
                                           ...prev,
                                           sendingWindows: [...prev.sendingWindows, { date: '', startTime: '', endTime: '' }]
                                         }))
+                                        // Auto-scroll to bottom after adding new window
+                                        setTimeout(() => {
+                                          const leftColumn = document.querySelector('[role="dialog"] .space-y-4.overflow-y-auto.max-h-full.pr-4')
+                                          console.log('Found left column:', leftColumn) // Debug log
+                                          if (leftColumn) {
+                                            leftColumn.scrollTo({
+                                              top: leftColumn.scrollHeight,
+                                              behavior: 'smooth'
+                                            })
+                                          } else {
+                                            console.log('Could not find scrollable container')
+                                          }
+                                        }, 100)
                                       }}
                                     >
                                       <Plus className='h-3 w-3' />
