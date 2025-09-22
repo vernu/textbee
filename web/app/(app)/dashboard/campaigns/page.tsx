@@ -1160,88 +1160,21 @@ export default function CampaignsPage() {
 
                           <div className='space-y-2'>
                             <Label className='text-sm font-medium'>Schedule Send</Label>
-                            <div className='space-y-3'>
-                              <div className='flex items-center space-x-2'>
-                                <div
-                                  className={`w-4 h-4 rounded-full border-2 flex items-center justify-center cursor-pointer ${
-                                    createCampaignData.scheduleType === 'now'
-                                      ? 'border-primary bg-primary'
-                                      : 'border-muted-foreground hover:border-primary'
-                                  }`}
-                                  onClick={() => setCreateCampaignData(prev => ({ ...prev, scheduleType: 'now' }))}
-                                >
-                                  {createCampaignData.scheduleType === 'now' && (
-                                    <div className='w-2 h-2 rounded-full bg-white' />
-                                  )}
-                                </div>
-                                <Label
-                                  className='text-sm cursor-pointer'
-                                  onClick={() => setCreateCampaignData(prev => ({ ...prev, scheduleType: 'now' }))}
-                                >
-                                  Start sending now
-                                </Label>
-                              </div>
-                              <div className='flex items-center space-x-2'>
-                                <div
-                                  className={`w-4 h-4 rounded-full border-2 flex items-center justify-center cursor-pointer ${
-                                    createCampaignData.scheduleType === 'later'
-                                      ? 'border-primary bg-primary'
-                                      : 'border-muted-foreground hover:border-primary'
-                                  }`}
-                                  onClick={() => setCreateCampaignData(prev => ({ ...prev, scheduleType: 'later' }))}
-                                >
-                                  {createCampaignData.scheduleType === 'later' && (
-                                    <div className='w-2 h-2 rounded-full bg-white' />
-                                  )}
-                                </div>
-                                <Label
-                                  className='text-sm cursor-pointer'
-                                  onClick={() => setCreateCampaignData(prev => ({ ...prev, scheduleType: 'later' }))}
-                                >
-                                  Schedule start for later
-                                </Label>
-                              </div>
-                              <div className='flex items-center space-x-2'>
-                                <div
-                                  className={`w-4 h-4 rounded-full border-2 flex items-center justify-center cursor-pointer ${
-                                    createCampaignData.scheduleType === 'weekday'
-                                      ? 'border-primary bg-primary'
-                                      : 'border-muted-foreground hover:border-primary'
-                                  }`}
-                                  onClick={() => setCreateCampaignData(prev => ({ ...prev, scheduleType: 'weekday' }))}
-                                >
-                                  {createCampaignData.scheduleType === 'weekday' && (
-                                    <div className='w-2 h-2 rounded-full bg-white' />
-                                  )}
-                                </div>
-                                <Label
-                                  className='text-sm cursor-pointer'
-                                  onClick={() => setCreateCampaignData(prev => ({ ...prev, scheduleType: 'weekday' }))}
-                                >
-                                  Define valid sending windows by weekday
-                                </Label>
-                              </div>
-                              <div className='flex items-center space-x-2'>
-                                <div
-                                  className={`w-4 h-4 rounded-full border-2 flex items-center justify-center cursor-pointer ${
-                                    createCampaignData.scheduleType === 'windows'
-                                      ? 'border-primary bg-primary'
-                                      : 'border-muted-foreground hover:border-primary'
-                                  }`}
-                                  onClick={() => setCreateCampaignData(prev => ({ ...prev, scheduleType: 'windows' }))}
-                                >
-                                  {createCampaignData.scheduleType === 'windows' && (
-                                    <div className='w-2 h-2 rounded-full bg-white' />
-                                  )}
-                                </div>
-                                <Label
-                                  className='text-sm cursor-pointer'
-                                  onClick={() => setCreateCampaignData(prev => ({ ...prev, scheduleType: 'windows' }))}
-                                >
-                                  Define valid sending windows by slot
-                                </Label>
-                              </div>
-                              {createCampaignData.scheduleType === 'later' && (
+                            <Select
+                              value={createCampaignData.scheduleType}
+                              onValueChange={(value) => setCreateCampaignData(prev => ({ ...prev, scheduleType: value }))}
+                            >
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Select scheduling option" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="now">Start sending now</SelectItem>
+                                <SelectItem value="later">Schedule start for later</SelectItem>
+                                <SelectItem value="weekday">Define valid sending windows by weekday</SelectItem>
+                                <SelectItem value="windows">Define valid sending windows by slot</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            {createCampaignData.scheduleType === 'later' && (
                                 <div className='flex gap-2 ml-6'>
                                   <div className='space-y-1'>
                                     <Label className='text-xs text-muted-foreground'>
@@ -1561,16 +1494,13 @@ export default function CampaignsPage() {
                                             </div>
                                           ))}
                                         </div>
-                                        )
-                                      )}
+                                      ))}
                                     </div>
                                   ))}
                                 </div>
                               )}
                             </div>
                           </div>
-
-                        </div>
 
                           {/* Right Column - Sending Schedule */}
                           <div className='flex flex-col h-full overflow-hidden min-h-0'>
@@ -1583,7 +1513,7 @@ export default function CampaignsPage() {
                       </TabsContent>
 
                       <TabsContent value='preview' className='flex-1 overflow-y-auto p-4 min-h-0'>
-                      <div className='bg-muted/50 p-4 rounded-lg space-y-4'>
+                        <div className='bg-muted/50 p-4 rounded-lg space-y-4'>
                         <h3 className='text-lg font-semibold'>Campaign Summary</h3>
                         <div className='grid grid-cols-2 gap-4'>
                           <div>
@@ -2585,16 +2515,23 @@ function SendingScheduleCalendar({ campaignData }: { campaignData: any }) {
 
   return (
     <div className='h-full flex flex-col'>
-      <div className='flex items-center justify-between mb-4'>
-        <div className='flex items-center gap-2'>
-          <span className='text-sm font-medium'>Sending Schedule</span>
-        </div>
-        <span className='text-xs text-muted-foreground'>
-          {getStatusText()}
-        </span>
-      </div>
-
       <div className='flex-1 min-h-0'>
+        <style jsx>{`
+          .fc-timegrid-slot-label {
+            font-size: 0.45rem !important;
+          }
+          .fc-toolbar-title {
+            font-size: 0.5rem !important;
+          }
+          .fc-button {
+            padding: 0.25rem 0.5rem !important;
+            font-size: 0.75rem !important;
+          }
+          .fc-prev-button, .fc-next-button {
+            padding: 0.1rem 0.2rem !important;
+            font-size: 0.625rem !important;
+          }
+        `}</style>
         <FullCalendar
           plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
           initialView='timeGridWeek'
