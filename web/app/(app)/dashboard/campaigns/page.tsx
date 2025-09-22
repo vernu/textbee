@@ -40,12 +40,14 @@ import {
   Eye,
   FileText,
   GripVertical,
+  Copy,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { contactsApi, ContactSpreadsheet } from '@/lib/api/contacts'
 import { campaignsApi, MessageTemplateGroup, MessageTemplate, ReorderTemplateGroupsDto } from '@/lib/api/campaigns'
 import { ApiEndpoints } from '@/config/api'
 import httpBrowserClient from '@/lib/httpBrowserClient'
+
 
 interface Campaign {
   _id: string
@@ -187,10 +189,28 @@ export default function CampaignsPage() {
     selectedContacts: [] as string[],
     selectedTemplates: [] as string[], // Changed from messageTemplateGroups to selectedTemplates
     sendDevices: [] as string[],
-    scheduleType: 'now' as 'now' | 'later' | 'windows',
+    scheduleType: 'now' as 'now' | 'later' | 'windows' | 'weekday',
     scheduledDate: '',
     scheduledTime: '',
-    sendingWindows: [] as Array<{ date: string; startTime: string; endTime: string }>,
+    sendingWindows: [] as Array<{ startDate: string; startTime: string; endDate: string; endTime: string }>,
+    weekdayWindows: {
+      monday: [] as Array<{ startTime: string; endTime: string }>,
+      tuesday: [] as Array<{ startTime: string; endTime: string }>,
+      wednesday: [] as Array<{ startTime: string; endTime: string }>,
+      thursday: [] as Array<{ startTime: string; endTime: string }>,
+      friday: [] as Array<{ startTime: string; endTime: string }>,
+      saturday: [] as Array<{ startTime: string; endTime: string }>,
+      sunday: [] as Array<{ startTime: string; endTime: string }>
+    },
+    weekdayEnabled: {
+      monday: true,
+      tuesday: true,
+      wednesday: true,
+      thursday: true,
+      friday: true,
+      saturday: false,
+      sunday: false
+    },
   })
   const [manageTemplatesOpen, setManageTemplatesOpen] = useState(false)
   const [selectedTemplateGroup, setSelectedTemplateGroup] = useState<string | null>(null)
@@ -231,7 +251,10 @@ export default function CampaignsPage() {
        createCampaignData.scheduledDate &&
        createCampaignData.scheduledTime) ||
       (createCampaignData.scheduleType === 'windows' &&
-       createCampaignData.sendingWindows.length > 0)
+       createCampaignData.sendingWindows.length > 0) ||
+      (createCampaignData.scheduleType === 'weekday' &&
+       Object.entries(createCampaignData.weekdayWindows).some(([day, dayWindows]) =>
+         createCampaignData.weekdayEnabled[day as keyof typeof createCampaignData.weekdayEnabled] && dayWindows.length > 0))
 
     return hasTemplates && hasDevices && hasValidSchedule
   }
@@ -581,6 +604,24 @@ export default function CampaignsPage() {
       scheduledDate: '',
       scheduledTime: '',
       sendingWindows: [],
+      weekdayWindows: {
+        monday: [],
+        tuesday: [],
+        wednesday: [],
+        thursday: [],
+        friday: [],
+        saturday: [],
+        sunday: []
+      },
+      weekdayEnabled: {
+        monday: true,
+        tuesday: true,
+        wednesday: true,
+        thursday: true,
+        friday: true,
+        saturday: false,
+        sunday: false
+      },
     })
     setActiveTab('details')
 
@@ -1159,6 +1200,26 @@ export default function CampaignsPage() {
                               <div className='flex items-center space-x-2'>
                                 <div
                                   className={`w-4 h-4 rounded-full border-2 flex items-center justify-center cursor-pointer ${
+                                    createCampaignData.scheduleType === 'weekday'
+                                      ? 'border-primary bg-primary'
+                                      : 'border-muted-foreground hover:border-primary'
+                                  }`}
+                                  onClick={() => setCreateCampaignData(prev => ({ ...prev, scheduleType: 'weekday' }))}
+                                >
+                                  {createCampaignData.scheduleType === 'weekday' && (
+                                    <div className='w-2 h-2 rounded-full bg-white' />
+                                  )}
+                                </div>
+                                <Label
+                                  className='text-sm cursor-pointer'
+                                  onClick={() => setCreateCampaignData(prev => ({ ...prev, scheduleType: 'weekday' }))}
+                                >
+                                  Define valid sending windows by weekday
+                                </Label>
+                              </div>
+                              <div className='flex items-center space-x-2'>
+                                <div
+                                  className={`w-4 h-4 rounded-full border-2 flex items-center justify-center cursor-pointer ${
                                     createCampaignData.scheduleType === 'windows'
                                       ? 'border-primary bg-primary'
                                       : 'border-muted-foreground hover:border-primary'
@@ -1173,7 +1234,7 @@ export default function CampaignsPage() {
                                   className='text-sm cursor-pointer'
                                   onClick={() => setCreateCampaignData(prev => ({ ...prev, scheduleType: 'windows' }))}
                                 >
-                                  Define valid sending windows
+                                  Define valid sending windows by slot
                                 </Label>
                               </div>
                               {createCampaignData.scheduleType === 'later' && (
@@ -1224,7 +1285,7 @@ export default function CampaignsPage() {
                                       onClick={() => {
                                         setCreateCampaignData(prev => ({
                                           ...prev,
-                                          sendingWindows: [...prev.sendingWindows, { date: '', startTime: '', endTime: '' }]
+                                          sendingWindows: [...prev.sendingWindows, { startDate: '', startTime: '', endDate: '', endTime: '' }]
                                         }))
                                         // Auto-scroll to bottom after adding new window
                                         setTimeout(() => {
@@ -1256,10 +1317,13 @@ export default function CampaignsPage() {
                                       <div className='flex items-center gap-2 px-2'>
                                         <div className='flex gap-2 flex-1'>
                                           <div className='w-32'>
-                                            <Label className='text-xs text-muted-foreground font-medium'>Date</Label>
+                                            <Label className='text-xs text-muted-foreground font-medium'>Start date</Label>
                                           </div>
                                           <div className='w-24'>
                                             <Label className='text-xs text-muted-foreground font-medium'>Start time</Label>
+                                          </div>
+                                          <div className='w-32'>
+                                            <Label className='text-xs text-muted-foreground font-medium'>End date</Label>
                                           </div>
                                           <div className='w-24'>
                                             <Label className='text-xs text-muted-foreground font-medium'>End time</Label>
@@ -1274,10 +1338,14 @@ export default function CampaignsPage() {
                                           <div className='flex gap-2 flex-1'>
                                             <Input
                                               type='date'
-                                              value={window.date}
+                                              value={window.startDate}
                                               onChange={(e) => {
                                                 const newWindows = [...createCampaignData.sendingWindows]
-                                                newWindows[index].date = e.target.value
+                                                newWindows[index].startDate = e.target.value
+                                                // Auto-update end date if it's empty
+                                                if (!newWindows[index].endDate) {
+                                                  newWindows[index].endDate = e.target.value
+                                                }
                                                 setCreateCampaignData(prev => ({ ...prev, sendingWindows: newWindows }))
                                               }}
                                               className='w-32 text-xs h-8'
@@ -1291,6 +1359,16 @@ export default function CampaignsPage() {
                                                 setCreateCampaignData(prev => ({ ...prev, sendingWindows: newWindows }))
                                               }}
                                               className='w-24 text-xs h-8'
+                                            />
+                                            <Input
+                                              type='date'
+                                              value={window.endDate}
+                                              onChange={(e) => {
+                                                const newWindows = [...createCampaignData.sendingWindows]
+                                                newWindows[index].endDate = e.target.value
+                                                setCreateCampaignData(prev => ({ ...prev, sendingWindows: newWindows }))
+                                              }}
+                                              className='w-32 text-xs h-8'
                                             />
                                             <Input
                                               type='time'
@@ -1318,6 +1396,171 @@ export default function CampaignsPage() {
                                       ))}
                                     </div>
                                   )}
+                                </div>
+                              )}
+                              {createCampaignData.scheduleType === 'weekday' && (
+                                <div className='ml-6 space-y-4 border-l-2 border-muted pl-4'>
+                                  <div className='text-xs text-muted-foreground bg-blue-50 p-2 rounded border border-blue-200'>
+                                    <strong>Note:</strong> Define time windows for each day of the week when messages can be sent.
+                                    Messages will only be sent during these time windows on the respective days.
+                                  </div>
+
+                                  {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => (
+                                    <div key={day} className='space-y-2'>
+                                      <div className='flex items-center justify-between'>
+                                        <div className='flex items-center gap-2'>
+                                          <Checkbox
+                                            checked={createCampaignData.weekdayEnabled[day as keyof typeof createCampaignData.weekdayEnabled]}
+                                            onCheckedChange={(checked) => {
+                                              setCreateCampaignData(prev => ({
+                                                ...prev,
+                                                weekdayEnabled: {
+                                                  ...prev.weekdayEnabled,
+                                                  [day]: checked as boolean
+                                                }
+                                              }))
+                                            }}
+                                            className='h-4 w-4'
+                                          />
+                                          <Label className={`text-sm font-medium capitalize cursor-pointer ${
+                                            createCampaignData.weekdayEnabled[day as keyof typeof createCampaignData.weekdayEnabled]
+                                              ? 'text-foreground'
+                                              : 'text-muted-foreground'
+                                          }`}>
+                                            {day}
+                                          </Label>
+                                        </div>
+                                        <div className='flex gap-2'>
+                                          {createCampaignData.weekdayEnabled[day as keyof typeof createCampaignData.weekdayEnabled] && (
+                                            <>
+                                              {createCampaignData.weekdayWindows[day as keyof typeof createCampaignData.weekdayWindows].length > 0 && (
+                                                <Button
+                                                  size='sm'
+                                                  variant='outline'
+                                                  className='gap-1 text-xs h-7 text-destructive hover:text-destructive hover:bg-destructive/10'
+                                                  onClick={() => {
+                                                    setCreateCampaignData(prev => ({
+                                                      ...prev,
+                                                      weekdayWindows: {
+                                                        ...prev.weekdayWindows,
+                                                        [day]: []
+                                                      }
+                                                    }))
+                                                  }}
+                                                  title={`Clear all windows for ${day}`}
+                                                >
+                                                  <Trash2 className='h-3 w-3' />
+                                                  Clear
+                                                </Button>
+                                              )}
+                                              <Button
+                                                size='sm'
+                                                variant='outline'
+                                                className='gap-1 text-xs h-7'
+                                                onClick={() => {
+                                                  setCreateCampaignData(prev => ({
+                                                    ...prev,
+                                                    weekdayWindows: {
+                                                      ...prev.weekdayWindows,
+                                                      [day]: [...prev.weekdayWindows[day as keyof typeof prev.weekdayWindows], { startTime: '', endTime: '' }]
+                                                    }
+                                                  }))
+                                                }}
+                                              >
+                                                <Plus className='h-3 w-3' />
+                                                Add window
+                                              </Button>
+                                            </>
+                                          )}
+                                        </div>
+                                      </div>
+
+                                      {createCampaignData.weekdayEnabled[day as keyof typeof createCampaignData.weekdayEnabled] && (
+                                        createCampaignData.weekdayWindows[day as keyof typeof createCampaignData.weekdayWindows].length === 0 ? (
+                                          <div className='text-xs text-muted-foreground text-center py-2 bg-muted/30 rounded border-dashed border ml-4'>
+                                            No windows for {day}
+                                          </div>
+                                        ) : (
+                                        <div className='ml-4 space-y-2'>
+                                          {createCampaignData.weekdayWindows[day as keyof typeof createCampaignData.weekdayWindows].map((window, index) => (
+                                            <div key={index} className='flex items-center gap-2 p-2 bg-muted/20 rounded border'>
+                                              <div className='flex gap-2 flex-1'>
+                                                <div className='flex flex-col'>
+                                                  <Label className='text-xs text-muted-foreground mb-1'>Start time</Label>
+                                                  <Input
+                                                    type='time'
+                                                    value={window.startTime}
+                                                    onChange={(e) => {
+                                                      const newWindows = { ...createCampaignData.weekdayWindows }
+                                                      newWindows[day as keyof typeof newWindows][index].startTime = e.target.value
+                                                      setCreateCampaignData(prev => ({ ...prev, weekdayWindows: newWindows }))
+                                                    }}
+                                                    className='w-24 text-xs h-8'
+                                                  />
+                                                </div>
+                                                <div className='flex flex-col'>
+                                                  <Label className='text-xs text-muted-foreground mb-1'>End time</Label>
+                                                  <Input
+                                                    type='time'
+                                                    value={window.endTime}
+                                                    onChange={(e) => {
+                                                      const newWindows = { ...createCampaignData.weekdayWindows }
+                                                      newWindows[day as keyof typeof newWindows][index].endTime = e.target.value
+                                                      setCreateCampaignData(prev => ({ ...prev, weekdayWindows: newWindows }))
+                                                    }}
+                                                    className='w-24 text-xs h-8'
+                                                  />
+                                                </div>
+                                              </div>
+                                              <div className='flex gap-1'>
+                                                {window.startTime && window.endTime && (
+                                                  <Button
+                                                    size='sm'
+                                                    variant='ghost'
+                                                    className='p-1 h-6 w-6 text-muted-foreground hover:text-foreground'
+                                                    onClick={() => {
+                                                      // Propagate this specific window to all other enabled days
+                                                      const newWindows = { ...createCampaignData.weekdayWindows }
+                                                      const windowToCopy = { startTime: window.startTime, endTime: window.endTime }
+
+                                                      // Add the window to all enabled days only
+                                                      Object.keys(newWindows).forEach(dayKey => {
+                                                        if (dayKey !== day && createCampaignData.weekdayEnabled[dayKey as keyof typeof createCampaignData.weekdayEnabled]) {
+                                                          newWindows[dayKey as keyof typeof newWindows] = [
+                                                            ...newWindows[dayKey as keyof typeof newWindows],
+                                                            windowToCopy
+                                                          ]
+                                                        }
+                                                      })
+
+                                                      setCreateCampaignData(prev => ({ ...prev, weekdayWindows: newWindows }))
+                                                    }}
+                                                    title={`Copy this window (${window.startTime} - ${window.endTime}) to all other enabled days`}
+                                                  >
+                                                    <Copy className='h-3 w-3' />
+                                                  </Button>
+                                                )}
+                                                <Button
+                                                  size='sm'
+                                                  variant='ghost'
+                                                  className='p-1 h-6 w-6 text-muted-foreground hover:text-destructive'
+                                                  onClick={() => {
+                                                    const newWindows = { ...createCampaignData.weekdayWindows }
+                                                    newWindows[day as keyof typeof newWindows] = newWindows[day as keyof typeof newWindows].filter((_, i) => i !== index)
+                                                    setCreateCampaignData(prev => ({ ...prev, weekdayWindows: newWindows }))
+                                                  }}
+                                                  title={`Remove this window`}
+                                                >
+                                                  <X className='h-3 w-3' />
+                                                </Button>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                        )
+                                      )}
+                                    </div>
+                                  ))}
                                 </div>
                               )}
                             </div>
@@ -1470,16 +1713,36 @@ export default function CampaignsPage() {
                                createCampaignData.scheduleType === 'later' && createCampaignData.scheduledDate && createCampaignData.scheduledTime ?
                                `Start sending on ${createCampaignData.scheduledDate} at ${createCampaignData.scheduledTime}` :
                                createCampaignData.scheduleType === 'windows' && createCampaignData.sendingWindows.length > 0 ?
-                               `${createCampaignData.sendingWindows.length} sending window(s) defined` :
+                               `${createCampaignData.sendingWindows.length} slot window(s) defined` :
+                               createCampaignData.scheduleType === 'weekday' && Object.entries(createCampaignData.weekdayWindows).some(([day, dayWindows]) =>
+                                 createCampaignData.weekdayEnabled[day as keyof typeof createCampaignData.weekdayEnabled] && dayWindows.length > 0) ?
+                               `Weekday windows defined for ${Object.entries(createCampaignData.weekdayWindows).filter(([day, windows]) =>
+                                 createCampaignData.weekdayEnabled[day as keyof typeof createCampaignData.weekdayEnabled] && windows.length > 0).length} day(s)` :
                                'Schedule not set'}
                             </p>
                             {createCampaignData.scheduleType === 'windows' && createCampaignData.sendingWindows.length > 0 && (
                               <div className='mt-2'>
-                                <Label className='text-xs text-muted-foreground'>Sending Windows:</Label>
+                                <Label className='text-xs text-muted-foreground'>Slot Windows:</Label>
                                 <div className='mt-1 space-y-1'>
                                   {createCampaignData.sendingWindows.map((window, index) => (
                                     <div key={index} className='text-xs bg-muted/50 p-2 rounded'>
-                                      {window.date ? new Date(window.date).toLocaleDateString() : 'No date'} • {window.startTime || 'No start'} - {window.endTime || 'No end'}
+                                      {window.startDate ? new Date(window.startDate).toLocaleDateString() : 'No start date'} {window.startTime || 'No start time'} → {window.endDate ? new Date(window.endDate).toLocaleDateString() : 'No end date'} {window.endTime || 'No end time'}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {createCampaignData.scheduleType === 'weekday' && Object.entries(createCampaignData.weekdayWindows).some(([day, dayWindows]) =>
+                              createCampaignData.weekdayEnabled[day as keyof typeof createCampaignData.weekdayEnabled] && dayWindows.length > 0) && (
+                              <div className='mt-2'>
+                                <Label className='text-xs text-muted-foreground'>Weekday Windows:</Label>
+                                <div className='mt-1 space-y-1'>
+                                  {Object.entries(createCampaignData.weekdayWindows).filter(([day, windows]) =>
+                                    createCampaignData.weekdayEnabled[day as keyof typeof createCampaignData.weekdayEnabled] && windows.length > 0).map(([day, windows]) => (
+                                    <div key={day} className='text-xs bg-muted/50 p-2 rounded'>
+                                      <span className='font-medium capitalize'>{day}:</span> {windows.map((window, index) =>
+                                        `${window.startTime || 'No start'} - ${window.endTime || 'No end'}`
+                                      ).join(', ')}
                                     </div>
                                   ))}
                                 </div>
