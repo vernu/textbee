@@ -2516,20 +2516,51 @@ function SendingScheduleCalendar({ campaignData }: { campaignData: any }) {
   return (
     <div className='h-full flex flex-col'>
       <div className='flex-1 min-h-0'>
-        <style jsx>{`
-          .fc-timegrid-slot-label {
-            font-size: 0.45rem !important;
+        <style jsx global>{`
+          .fc .fc-toolbar {
+            margin-bottom: 8px !important;
+            min-height: auto !important;
           }
-          .fc-toolbar-title {
-            font-size: 0.5rem !important;
+          .fc .fc-toolbar-chunk {
+            display: flex !important;
+            align-items: center !important;
           }
-          .fc-button {
-            padding: 0.25rem 0.5rem !important;
-            font-size: 0.75rem !important;
+          .fc .fc-timegrid-slot-label {
+            font-size: 11px !important;
           }
-          .fc-prev-button, .fc-next-button {
-            padding: 0.1rem 0.2rem !important;
-            font-size: 0.625rem !important;
+          .fc .fc-toolbar-title {
+            font-size: 22px !important;
+            font-weight: 500 !important;
+            margin: 0 !important;
+            line-height: 1.2 !important;
+          }
+          .fc .fc-button {
+            padding: 3px 6px !important;
+            font-size: 10px !important;
+            height: 22px !important;
+            border-radius: 4px !important;
+            min-width: auto !important;
+            line-height: 1 !important;
+          }
+          .fc .fc-prev-button, .fc .fc-next-button {
+            padding: 2px 5px !important;
+            font-size: 9px !important;
+            height: 20px !important;
+            width: auto !important;
+            min-width: 30px !important;
+          }
+          .fc .fc-button-group {
+            display: flex !important;
+            gap: 3px !important;
+          }
+          .fc .fc-header-toolbar {
+            margin-bottom: 8px !important;
+            min-height: auto !important;
+          }
+          .fc .fc-toolbar h2 {
+            font-size: 22px !important;
+            margin: 0 !important;
+            line-height: 1.2 !important;
           }
         `}</style>
         <FullCalendar
