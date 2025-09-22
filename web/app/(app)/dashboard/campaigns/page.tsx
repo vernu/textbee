@@ -196,6 +196,8 @@ export default function CampaignsPage() {
     scheduleType: 'now' as 'now' | 'later' | 'windows' | 'weekday',
     scheduledDate: '',
     scheduledTime: '',
+    campaignStartDate: new Date().toISOString().split('T')[0], // Default to today
+    campaignEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Default to one month from now
     sendingWindows: [] as Array<{ startDate: string; startTime: string; endDate: string; endTime: string }>,
     weekdayWindows: {
       monday: [] as Array<{ startTime: string; endTime: string }>,
@@ -219,6 +221,10 @@ export default function CampaignsPage() {
   const [manageTemplatesOpen, setManageTemplatesOpen] = useState(false)
   const [selectedTemplateGroup, setSelectedTemplateGroup] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState('details')
+  const [dateValidationErrors, setDateValidationErrors] = useState({
+    startDateError: '',
+    endDateError: ''
+  })
   const [createTemplateGroupOpen, setCreateTemplateGroupOpen] = useState(false)
   const [newTemplateGroup, setNewTemplateGroup] = useState({
     name: '',
@@ -242,6 +248,31 @@ export default function CampaignsPage() {
   const [dragOverGroupId, setDragOverGroupId] = useState<string | null>(null)
   const [uniqueContactCount, setUniqueContactCount] = useState<number>(0)
 
+  // Date validation function
+  const validateDates = (startDate: string, endDate: string) => {
+    const today = new Date().toISOString().split('T')[0]
+    const errors = { startDateError: '', endDateError: '' }
+
+    // Don't validate start date if schedule type is 'now' (disabled field)
+    if (createCampaignData.scheduleType !== 'now' && startDate && startDate < today) {
+      errors.startDateError = 'Campaign start date cannot be before today'
+    }
+
+    if (startDate && endDate && new Date(endDate) < new Date(startDate)) {
+      errors.endDateError = 'Campaign end date cannot be before start date'
+    }
+
+    setDateValidationErrors(errors)
+    return errors.startDateError === '' && errors.endDateError === ''
+  }
+
+  // Validate dates when dialog opens or schedule type changes
+  useEffect(() => {
+    if (createCampaignOpen) {
+      validateDates(createCampaignData.campaignStartDate, createCampaignData.campaignEndDate)
+    }
+  }, [createCampaignOpen, createCampaignData.scheduleType])
+
   // Validation functions for each stage
   const validateDetailsStage = () => {
     return createCampaignData.name.trim() !== '' && createCampaignData.selectedContacts.length > 0
@@ -250,6 +281,10 @@ export default function CampaignsPage() {
   const validateConfigureStage = () => {
     const hasTemplates = createCampaignData.selectedTemplates.length > 0
     const hasDevices = createCampaignData.sendDevices.length > 0
+    const hasValidDates = createCampaignData.campaignStartDate &&
+                         createCampaignData.campaignEndDate &&
+                         dateValidationErrors.startDateError === '' &&
+                         dateValidationErrors.endDateError === ''
     const hasValidSchedule = createCampaignData.scheduleType === 'now' ||
       (createCampaignData.scheduleType === 'later' &&
        createCampaignData.scheduledDate &&
@@ -260,7 +295,7 @@ export default function CampaignsPage() {
        Object.entries(createCampaignData.weekdayWindows).some(([day, dayWindows]) =>
          createCampaignData.weekdayEnabled[day as keyof typeof createCampaignData.weekdayEnabled] && dayWindows.length > 0))
 
-    return hasTemplates && hasDevices && hasValidSchedule
+    return hasTemplates && hasDevices && hasValidDates && hasValidSchedule
   }
 
   const canNavigateToTab = (targetTab: string) => {
@@ -597,6 +632,7 @@ export default function CampaignsPage() {
 
     setCampaigns([newCampaign, ...campaigns])
     setCreateCampaignOpen(false)
+    setDateValidationErrors({ startDateError: '', endDateError: '' })
     setCreateCampaignData({
       name: '',
       description: '',
@@ -607,6 +643,8 @@ export default function CampaignsPage() {
       scheduleType: 'now',
       scheduledDate: '',
       scheduledTime: '',
+      campaignStartDate: new Date().toISOString().split('T')[0],
+      campaignEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       sendingWindows: [],
       weekdayWindows: {
         monday: [],
@@ -963,18 +1001,28 @@ export default function CampaignsPage() {
                       <TabsContent value='details' className='flex-1 overflow-y-auto p-4 min-h-0'>
                         <div className='space-y-6 max-w-[500px]'>
                           <div className='space-y-2'>
-                            <Label htmlFor='name' className='text-sm font-medium'>
-                              Campaign Name<span className='text-red-500'>*</span>
-                            </Label>
-                            <Input
-                              id='name'
-                              value={createCampaignData.name}
-                              onChange={(e) => {
-                                setCreateCampaignData(prev => ({ ...prev, name: e.target.value }))
-                              }}
-                              placeholder='Enter campaign name'
-                              className='w-full'
-                            />
+                            <div className='flex items-center justify-between'>
+                              <Label className='text-sm font-medium'>
+                                Message Templates<span className='text-red-500'>*</span>
+                              </Label>
+                              <Button
+                                variant='outline'
+                                size='sm'
+                                onClick={() => setManageTemplatesOpen(true)}
+                              >
+                                Manage templates
+                              </Button>
+                            </div>
+                            <Button
+                              variant='outline'
+                              className='w-full justify-start h-10'
+                              onClick={() => setTemplateSelectionOpen(true)}
+                            >
+                              <MessageSquare className='mr-2 h-4 w-4' />
+                              {createCampaignData.selectedTemplates.length > 0
+                                ? `${createCampaignData.selectedTemplates.length} template(s) selected`
+                                : 'Select message templates'}
+                            </Button>
                           </div>
 
                           <div className='space-y-2'>
@@ -1054,28 +1102,18 @@ export default function CampaignsPage() {
                           {/* Left Column - Form Controls */}
                           <div className='space-y-4 overflow-y-auto max-h-full pr-4'>
                           <div className='space-y-2'>
-                            <div className='flex items-center justify-between'>
-                              <Label className='text-sm font-medium'>
-                                Message Templates<span className='text-red-500'>*</span>
-                              </Label>
-                              <Button
-                                variant='outline'
-                                size='sm'
-                                onClick={() => setManageTemplatesOpen(true)}
-                              >
-                                Manage templates
-                              </Button>
-                            </div>
-                            <Button
-                              variant='outline'
-                              className='w-full justify-start h-10'
-                              onClick={() => setTemplateSelectionOpen(true)}
-                            >
-                              <MessageSquare className='mr-2 h-4 w-4' />
-                              {createCampaignData.selectedTemplates.length > 0
-                                ? `${createCampaignData.selectedTemplates.length} template(s) selected`
-                                : 'Select message templates'}
-                            </Button>
+                            <Label htmlFor='name' className='text-sm font-medium'>
+                              Campaign Name<span className='text-red-500'>*</span>
+                            </Label>
+                            <Input
+                              id='name'
+                              value={createCampaignData.name}
+                              onChange={(e) => {
+                                setCreateCampaignData(prev => ({ ...prev, name: e.target.value }))
+                              }}
+                              placeholder='Enter campaign name'
+                              className='w-full'
+                            />
                           </div>
 
                           <div className='space-y-2'>
@@ -1174,6 +1212,54 @@ export default function CampaignsPage() {
                                 <SelectItem value="windows">Define valid sending windows by slot</SelectItem>
                               </SelectContent>
                             </Select>
+
+                            {/* Campaign Start and End Date fields */}
+                            <div className='flex gap-4'>
+                              <div className='space-y-1 flex-1'>
+                                <Label className='text-xs text-muted-foreground'>
+                                  Campaign Start Date<span className='text-red-500'>*</span>
+                                </Label>
+                                <Input
+                                  type='date'
+                                  value={createCampaignData.campaignStartDate}
+                                  disabled={createCampaignData.scheduleType === 'now'}
+                                  onChange={(e) => {
+                                    const newStartDate = e.target.value
+                                    setCreateCampaignData(prev => ({
+                                      ...prev,
+                                      campaignStartDate: newStartDate
+                                    }))
+                                    validateDates(newStartDate, createCampaignData.campaignEndDate)
+                                  }}
+                                  className='w-full'
+                                />
+                                {dateValidationErrors.startDateError && (
+                                  <p className='text-xs text-red-600'>{dateValidationErrors.startDateError}</p>
+                                )}
+                              </div>
+                              <div className='space-y-1 flex-1'>
+                                <Label className='text-xs text-muted-foreground'>
+                                  Campaign End Date<span className='text-red-500'>*</span>
+                                </Label>
+                                <Input
+                                  type='date'
+                                  value={createCampaignData.campaignEndDate}
+                                  onChange={(e) => {
+                                    const newEndDate = e.target.value
+                                    setCreateCampaignData(prev => ({
+                                      ...prev,
+                                      campaignEndDate: newEndDate
+                                    }))
+                                    validateDates(createCampaignData.campaignStartDate, newEndDate)
+                                  }}
+                                  className='w-full'
+                                />
+                                {dateValidationErrors.endDateError && (
+                                  <p className='text-xs text-red-600'>{dateValidationErrors.endDateError}</p>
+                                )}
+                              </div>
+                            </div>
+
                             {createCampaignData.scheduleType === 'later' && (
                                 <div className='flex gap-2 ml-6'>
                                   <div className='space-y-1'>
@@ -1667,6 +1753,7 @@ export default function CampaignsPage() {
                         onClick={() => {
                           setCreateCampaignOpen(false)
                           setActiveTab('details')
+                          setDateValidationErrors({ startDateError: '', endDateError: '' })
                         }}
                       >
                         Cancel
@@ -2450,7 +2537,7 @@ function SendingScheduleCalendar({ campaignData }: { campaignData: any }) {
             start: `${window.startDate}T${window.startTime}`,
             end: `${window.endDate}T${window.endTime}`,
             display: 'background',
-            backgroundColor: '#dbeafe', // light blue
+            backgroundColor: '#3b82f6', // blue with more opacity
             className: 'sending-window-available'
           })
         }
@@ -2476,7 +2563,7 @@ function SendingScheduleCalendar({ campaignData }: { campaignData: any }) {
                 start: `${dateStr}T${window.startTime}`,
                 end: `${dateStr}T${window.endTime}`,
                 display: 'background',
-                backgroundColor: '#f3e8ff', // light purple
+                backgroundColor: '#3b82f6', // blue with more opacity
                 className: 'weekday-window-available'
               })
             }
@@ -2508,7 +2595,7 @@ function SendingScheduleCalendar({ campaignData }: { campaignData: any }) {
     } else if (campaignData.scheduleType === 'windows') {
       return 'Blue shading shows available sending windows'
     } else if (campaignData.scheduleType === 'weekday') {
-      return 'Purple shading shows weekday-based windows'
+      return 'Blue shading shows weekday-based windows'
     }
     return 'Configure schedule in the left panel'
   }
@@ -2562,6 +2649,12 @@ function SendingScheduleCalendar({ campaignData }: { campaignData: any }) {
             margin: 0 !important;
             line-height: 1.2 !important;
           }
+          .fc .fc-timegrid-now-indicator-line {
+            border-color: #166534 !important;
+          }
+          .fc .fc-timegrid-now-indicator-arrow {
+            border-color: #166534 !important;
+          }
         `}</style>
         <FullCalendar
           plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
@@ -2579,6 +2672,7 @@ function SendingScheduleCalendar({ campaignData }: { campaignData: any }) {
           weekends={true}
           slotDuration='00:30:00'
           slotLabelInterval='01:00:00'
+          nowIndicator={true}
           slotLabelFormat={{
             hour: 'numeric',
             minute: '2-digit',
