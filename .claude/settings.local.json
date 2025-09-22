@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Read(//mnt/c/Users/**)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "WebSearch"
     ],
     "deny": [],
     "ask": []

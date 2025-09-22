@@ -47,9 +47,10 @@ import { contactsApi, ContactSpreadsheet } from '@/lib/api/contacts'
 import { campaignsApi, MessageTemplateGroup, MessageTemplate, ReorderTemplateGroupsDto } from '@/lib/api/campaigns'
 import { ApiEndpoints } from '@/config/api'
 import httpBrowserClient from '@/lib/httpBrowserClient'
-import { Calendar as BigCalendar, momentLocalizer } from 'react-big-calendar'
-import moment from 'moment'
-import 'react-big-calendar/lib/css/react-big-calendar.css'
+import FullCalendar from '@fullcalendar/react'
+import timeGridPlugin from '@fullcalendar/timegrid'
+import dayGridPlugin from '@fullcalendar/daygrid'
+import interactionPlugin from '@fullcalendar/interaction'
 
 
 interface Campaign {
@@ -1575,7 +1576,7 @@ export default function CampaignsPage() {
                           <div className='flex flex-col h-full overflow-hidden min-h-0'>
                             <Label className='text-sm font-medium mb-2 flex-shrink-0'>Sending Schedule</Label>
                             <div className='flex-1 border rounded-lg p-4 bg-white overflow-hidden min-h-0'>
-                              <SendingScheduleCalendar />
+                              <SendingScheduleCalendar campaignData={createCampaignData} />
                             </div>
                           </div>
                         </div>
@@ -2480,108 +2481,156 @@ export default function CampaignsPage() {
   )
 }
 
-const localizer = momentLocalizer(moment)
-
-interface SendingWindow {
+interface CalendarEvent {
   id: string
   title: string
-  start: Date
-  end: Date
+  start: string
+  end: string
+  display?: 'background' | 'auto'
+  backgroundColor?: string
+  borderColor?: string
+  textColor?: string
+  className?: string
 }
 
-function SendingScheduleCalendar() {
-  const [currentDate, setCurrentDate] = useState(new Date())
-  const [sendingWindows, setSendingWindows] = useState<SendingWindow[]>([])
+function SendingScheduleCalendar({ campaignData }: { campaignData: any }) {
+  // Convert Schedule Send settings to calendar events
+  const calendarEvents = useMemo(() => {
+    const events: CalendarEvent[] = []
 
-  const handleSelectSlot = useCallback(({ start, end }: { start: Date; end: Date }) => {
-    const newWindow: SendingWindow = {
-      id: Math.random().toString(36).substr(2, 9),
-      title: 'Sending Window',
-      start,
-      end,
+    if (campaignData.scheduleType === 'later' && campaignData.scheduledDate && campaignData.scheduledTime) {
+      // This will be a regular event when we implement actual scheduling
+      // For now, show it as a background event to indicate when sending will happen
+      events.push({
+        id: 'scheduled-send',
+        title: '',
+        start: `${campaignData.scheduledDate}T${campaignData.scheduledTime}`,
+        end: `${campaignData.scheduledDate}T${campaignData.scheduledTime}`,
+        display: 'background',
+        backgroundColor: '#dcfce7', // light green
+        className: 'scheduled-send-time'
+      })
+    } else if (campaignData.scheduleType === 'windows' && campaignData.sendingWindows.length > 0) {
+      // Show sending windows as background events (available times)
+      campaignData.sendingWindows.forEach((window: any, index: number) => {
+        if (window.startDate && window.startTime && window.endDate && window.endTime) {
+          events.push({
+            id: `window-${index}`,
+            title: '',
+            start: `${window.startDate}T${window.startTime}`,
+            end: `${window.endDate}T${window.endTime}`,
+            display: 'background',
+            backgroundColor: '#dbeafe', // light blue
+            className: 'sending-window-available'
+          })
+        }
+      })
+    } else if (campaignData.scheduleType === 'weekday') {
+      // Show weekday-based windows as background events
+      const today = new Date()
+      const currentWeekStart = new Date(today.getFullYear(), today.getMonth(), today.getDate() - today.getDay())
+
+      Object.entries(campaignData.weekdayWindows).forEach(([day, dayWindows]: [string, any]) => {
+        if (campaignData.weekdayEnabled[day] && Array.isArray(dayWindows)) {
+          const dayIndex = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'].indexOf(day)
+
+          dayWindows.forEach((window: any, index: number) => {
+            if (window.startTime && window.endTime) {
+              const windowDate = new Date(currentWeekStart)
+              windowDate.setDate(currentWeekStart.getDate() + dayIndex)
+              const dateStr = windowDate.toISOString().split('T')[0]
+
+              events.push({
+                id: `${day}-${index}`,
+                title: '',
+                start: `${dateStr}T${window.startTime}`,
+                end: `${dateStr}T${window.endTime}`,
+                display: 'background',
+                backgroundColor: '#f3e8ff', // light purple
+                className: 'weekday-window-available'
+              })
+            }
+          })
+        }
+      })
     }
-    setSendingWindows(prev => [...prev, newWindow])
-  }, [])
 
-  const handleSelectEvent = useCallback((event: SendingWindow) => {
-    setSendingWindows(prev => prev.filter(window => window.id !== event.id))
-  }, [])
+    // TODO: Add actual scheduled message events here when implementing
+    // These would be regular events (not background) that show on top of the available windows
+    // Example:
+    // events.push({
+    //   id: 'message-1',
+    //   title: 'Campaign Message',
+    //   start: '2023-01-01T10:30:00',
+    //   end: '2023-01-01T10:30:00',
+    //   backgroundColor: '#1976d2',
+    //   textColor: 'white'
+    // })
 
-  const navigateToWeek = useCallback((direction: 'prev' | 'next') => {
-    const newDate = new Date(currentDate)
-    if (direction === 'prev') {
-      newDate.setDate(newDate.getDate() - 7)
-    } else {
-      newDate.setDate(newDate.getDate() + 7)
+    return events
+  }, [campaignData.scheduleType, campaignData.scheduledDate, campaignData.scheduledTime, campaignData.sendingWindows, campaignData.weekdayWindows, campaignData.weekdayEnabled])
+
+  const getStatusText = () => {
+    if (campaignData.scheduleType === 'now') {
+      return 'Will send immediately when started'
+    } else if (campaignData.scheduleType === 'later') {
+      return 'Green shading shows scheduled send time'
+    } else if (campaignData.scheduleType === 'windows') {
+      return 'Blue shading shows available sending windows'
+    } else if (campaignData.scheduleType === 'weekday') {
+      return 'Purple shading shows weekday-based windows'
     }
-    setCurrentDate(newDate)
-  }, [currentDate])
-
-  const getWeekRange = () => {
-    const startOfWeek = moment(currentDate).startOf('week')
-    const endOfWeek = moment(currentDate).endOf('week')
-    return `${startOfWeek.format('MM/DD')} - ${endOfWeek.format('MM/DD')}`
+    return 'Configure schedule in the left panel'
   }
 
   return (
     <div className='h-full flex flex-col'>
       <div className='flex items-center justify-between mb-4'>
         <div className='flex items-center gap-2'>
-          <Button
-            variant='outline'
-            size='sm'
-            onClick={() => navigateToWeek('prev')}
-          >
-            <ChevronLeft className='h-4 w-4' />
-          </Button>
-          <span className='text-sm font-medium'>{getWeekRange()}</span>
-          <Button
-            variant='outline'
-            size='sm'
-            onClick={() => navigateToWeek('next')}
-          >
-            <ChevronRight className='h-4 w-4' />
-          </Button>
+          <span className='text-sm font-medium'>Sending Schedule</span>
         </div>
-        <span className='text-xs text-muted-foreground'>Click and drag to create sending windows</span>
+        <span className='text-xs text-muted-foreground'>
+          {getStatusText()}
+        </span>
       </div>
 
       <div className='flex-1 min-h-0'>
-        <BigCalendar
-          localizer={localizer}
-          events={sendingWindows}
-          startAccessor='start'
-          endAccessor='end'
-          view='week'
-          views={['week']}
-          date={currentDate}
-          onNavigate={setCurrentDate}
-          onSelectSlot={handleSelectSlot}
-          onSelectEvent={handleSelectEvent}
-          selectable
-          step={30}
-          timeslots={2}
-          min={new Date(2024, 0, 1, 0, 0)}
-          max={new Date(2024, 0, 1, 23, 59)}
-          style={{ height: '100%' }}
-          eventPropGetter={() => ({
-            style: {
-              backgroundColor: '#3b82f6',
-              borderRadius: '4px',
-              border: 'none',
-              color: 'white',
-              fontSize: '12px',
-            }
-          })}
-          dayPropGetter={(date) => ({
-            style: {
-              backgroundColor: 'white',
-            }
-          })}
-          formats={{
-            timeGutterFormat: 'h:mm A',
-            eventTimeRangeFormat: ({ start, end }, culture, localizer) =>
-              `${localizer?.format(start, 'h:mm A', culture)} - ${localizer?.format(end, 'h:mm A', culture)}`,
+        <FullCalendar
+          plugins={[timeGridPlugin, dayGridPlugin, interactionPlugin]}
+          initialView='timeGridWeek'
+          headerToolbar={{
+            left: 'prev,next',
+            center: 'title',
+            right: ''
+          }}
+          events={calendarEvents}
+          height='100%'
+          slotMinTime='00:00:00'
+          slotMaxTime='24:00:00'
+          allDaySlot={false}
+          weekends={true}
+          slotDuration='00:30:00'
+          slotLabelInterval='01:00:00'
+          slotLabelFormat={{
+            hour: 'numeric',
+            minute: '2-digit',
+            meridiem: 'short'
+          }}
+          eventDisplay='block'
+          dayHeaderFormat={{
+            weekday: 'short',
+            month: 'numeric',
+            day: 'numeric'
+          }}
+          dayHeaderContent={(args) => {
+            const weekday = args.date.toLocaleDateString('en-US', { weekday: 'short' })
+            const date = args.date.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' })
+            return (
+              <div className='text-center text-xs leading-tight'>
+                <div>{weekday}</div>
+                <div>{date}</div>
+              </div>
+            )
           }}
         />
       </div>
