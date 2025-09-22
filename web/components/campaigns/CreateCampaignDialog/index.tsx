@@ -122,6 +122,7 @@ export function CreateCampaignDialog({
   }
 
   const validateConfigureStage = () => {
+    const hasCampaignName = campaignData.name.trim().length > 0
     const hasTemplates = campaignData.selectedTemplates.length > 0
     const hasDevices = campaignData.sendDevices.length > 0
     const hasValidDates = campaignData.campaignStartDate &&
@@ -129,16 +130,14 @@ export function CreateCampaignDialog({
                          dateValidationErrors.startDateError === '' &&
                          dateValidationErrors.endDateError === ''
     const hasValidSchedule = campaignData.scheduleType === 'now' ||
-      (campaignData.scheduleType === 'later' &&
-       campaignData.scheduledDate &&
-       campaignData.scheduledTime) ||
+      campaignData.scheduleType === 'later' ||
       (campaignData.scheduleType === 'windows' &&
        campaignData.sendingWindows.length > 0) ||
       (campaignData.scheduleType === 'weekday' &&
        Object.entries(campaignData.weekdayWindows).some(([day, dayWindows]) =>
          campaignData.weekdayEnabled[day as keyof typeof campaignData.weekdayEnabled] && dayWindows.length > 0))
 
-    return hasTemplates && hasDevices && hasValidDates && hasValidSchedule
+    return hasCampaignName && hasTemplates && hasDevices && hasValidDates && hasValidSchedule
   }
 
   const canNavigateToTab = (targetTab: string) => {
@@ -167,7 +166,7 @@ export function CreateCampaignDialog({
       } else if (value === 'preview' && !validateConfigureStage()) {
         toast({
           title: "Complete SMS configuration",
-          description: "Please select template groups, devices, and schedule before previewing.",
+          description: "Please enter campaign name, select template groups, devices, and schedule before previewing.",
           variant: "destructive"
         })
       }
@@ -199,7 +198,7 @@ export function CreateCampaignDialog({
         } else if (nextTab === 'preview' && !validateConfigureStage()) {
           toast({
             title: "Complete SMS configuration",
-            description: "Please select template groups, devices, and schedule before previewing.",
+            description: "Please enter campaign name, select template groups, devices, and schedule before previewing.",
             variant: "destructive"
           })
         }
@@ -500,36 +499,6 @@ export function CreateCampaignDialog({
                     </div>
                   </div>
 
-                  {campaignData.scheduleType === 'later' && (
-                      <div className='flex gap-2 ml-6'>
-                        <div className='space-y-1'>
-                          <Label className='text-xs text-muted-foreground'>
-                            Date<span className='text-red-500'>*</span>
-                          </Label>
-                          <Input
-                            type='date'
-                            value={campaignData.scheduledDate}
-                            onChange={(e) => {
-                              onCampaignDataChange({ ...campaignData, scheduledDate: e.target.value })
-                            }}
-                            className='w-[120px]'
-                          />
-                        </div>
-                        <div className='space-y-1'>
-                          <Label className='text-xs text-muted-foreground'>
-                            Time<span className='text-red-500'>*</span>
-                          </Label>
-                          <Input
-                            type='time'
-                            value={campaignData.scheduledTime}
-                            onChange={(e) => {
-                              onCampaignDataChange({ ...campaignData, scheduledTime: e.target.value })
-                            }}
-                            className='w-[120px]'
-                          />
-                        </div>
-                      </div>
-                    )}
                     {campaignData.scheduleType === 'windows' && (
                       <div className='ml-6 space-y-4 border-l-2 border-muted pl-4'>
                         <div className='text-xs text-muted-foreground bg-blue-50 p-2 rounded border border-blue-200'>
