@@ -90,7 +90,7 @@ export function SendingScheduleCalendar({ campaignData }: SendingScheduleCalenda
         dayMaxEvents={true}
         weekends={true}
         events={calendarEvents}
-        height="100%"
+        height="auto"
         nowIndicator={true}
         slotMinTime="00:00:00"
         slotMaxTime="24:00:00"
