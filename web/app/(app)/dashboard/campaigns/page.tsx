@@ -47,6 +47,9 @@ import { contactsApi, ContactSpreadsheet } from '@/lib/api/contacts'
 import { campaignsApi, MessageTemplateGroup, MessageTemplate, ReorderTemplateGroupsDto } from '@/lib/api/campaigns'
 import { ApiEndpoints } from '@/config/api'
 import httpBrowserClient from '@/lib/httpBrowserClient'
+import { Calendar as BigCalendar, momentLocalizer } from 'react-big-calendar'
+import moment from 'moment'
+import 'react-big-calendar/lib/css/react-big-calendar.css'
 
 
 interface Campaign {
@@ -1568,103 +1571,15 @@ export default function CampaignsPage() {
 
                         </div>
 
-                          {/* Right Column - Selected Templates */}
+                          {/* Right Column - Sending Schedule */}
                           <div className='flex flex-col h-full overflow-hidden min-h-0'>
-                            <Label className='text-sm font-medium mb-2 flex-shrink-0'>Selected Templates</Label>
-                            <div className='flex-1 border rounded-lg p-4 bg-gray-50 overflow-y-auto min-h-0'>
-                            {createCampaignData.selectedTemplates.length === 0 ? (
-                              <div className='flex items-center justify-center h-full text-center text-muted-foreground'>
-                                <div>
-                                  <MessageSquare className='h-8 w-8 mx-auto mb-2 opacity-50' />
-                                  <p className='text-sm'>No templates selected</p>
-                                  <p className='text-xs'>Select templates to see them here</p>
-                                </div>
-                              </div>
-                            ) : (
-                                <div className='space-y-3 h-full overflow-y-auto'>
-                                {(() => {
-                                  // Group selected templates by their template groups
-                                  const groupedTemplates = new Map()
-
-                                  createCampaignData.selectedTemplates.forEach(templateId => {
-                                    let foundTemplate = null
-                                    let foundGroup = null
-
-                                    for (const group of templateGroups) {
-                                      const template = group.templates.find(t => t._id === templateId)
-                                      if (template) {
-                                        foundTemplate = template
-                                        foundGroup = group
-                                        break
-                                      }
-                                    }
-
-                                    if (foundTemplate && foundGroup) {
-                                      if (!groupedTemplates.has(foundGroup._id)) {
-                                        groupedTemplates.set(foundGroup._id, {
-                                          group: foundGroup,
-                                          templates: []
-                                        })
-                                      }
-                                      groupedTemplates.get(foundGroup._id).templates.push(foundTemplate)
-                                    }
-                                  })
-
-                                  return Array.from(groupedTemplates.values()).map(({ group, templates }) => {
-                                    const isGroupExpanded = expandedGroups.has(`selected-${group._id}`)
-
-                                    return (
-                                      <div key={group._id} className='space-y-1'>
-                                        <div
-                                          className='flex items-center justify-between cursor-pointer p-1 rounded hover:bg-gray-100'
-                                          onClick={() => {
-                                            const newExpanded = new Set(expandedGroups)
-                                            const groupKey = `selected-${group._id}`
-                                            if (isGroupExpanded) {
-                                              newExpanded.delete(groupKey)
-                                            } else {
-                                              newExpanded.add(groupKey)
-                                            }
-                                            setExpandedGroups(newExpanded)
-                                          }}
-                                        >
-                                          <div className='flex items-center gap-2'>
-                                            {isGroupExpanded ? (
-                                              <ChevronDown className='h-3 w-3 text-muted-foreground' />
-                                            ) : (
-                                              <ChevronRight className='h-3 w-3 text-muted-foreground' />
-                                            )}
-                                            <span className='text-xs font-medium text-muted-foreground'>{group.name}</span>
-                                          </div>
-                                          <span className='text-xs text-muted-foreground'>{templates.length}</span>
-                                        </div>
-
-                                        {isGroupExpanded && (
-                                          <div className='space-y-1 ml-2'>
-                                              {templates.map(template => (
-                                                <TemplateItem
-                                                  key={template._id}
-                                                  template={template}
-                                                  onRemove={() => {
-                                                    setCreateCampaignData(prev => ({
-                                                      ...prev,
-                                                      selectedTemplates: prev.selectedTemplates.filter(id => id !== template._id)
-                                                    }))
-                                                  }}
-                                                />
-                                              ))}
-                                          </div>
-                                        )}
-                                      </div>
-                                    )
-                                  })
-                                })()}
-                              </div>
-                            )}
+                            <Label className='text-sm font-medium mb-2 flex-shrink-0'>Sending Schedule</Label>
+                            <div className='flex-1 border rounded-lg p-4 bg-white overflow-hidden min-h-0'>
+                              <SendingScheduleCalendar />
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </TabsContent>
+                      </TabsContent>
 
                       <TabsContent value='preview' className='flex-1 overflow-y-auto p-4 min-h-0'>
                       <div className='bg-muted/50 p-4 rounded-lg space-y-4'>
@@ -2560,6 +2475,115 @@ export default function CampaignsPage() {
             <div className='h-0'></div>
           )}
         </div>
+      </div>
+    </div>
+  )
+}
+
+const localizer = momentLocalizer(moment)
+
+interface SendingWindow {
+  id: string
+  title: string
+  start: Date
+  end: Date
+}
+
+function SendingScheduleCalendar() {
+  const [currentDate, setCurrentDate] = useState(new Date())
+  const [sendingWindows, setSendingWindows] = useState<SendingWindow[]>([])
+
+  const handleSelectSlot = useCallback(({ start, end }: { start: Date; end: Date }) => {
+    const newWindow: SendingWindow = {
+      id: Math.random().toString(36).substr(2, 9),
+      title: 'Sending Window',
+      start,
+      end,
+    }
+    setSendingWindows(prev => [...prev, newWindow])
+  }, [])
+
+  const handleSelectEvent = useCallback((event: SendingWindow) => {
+    setSendingWindows(prev => prev.filter(window => window.id !== event.id))
+  }, [])
+
+  const navigateToWeek = useCallback((direction: 'prev' | 'next') => {
+    const newDate = new Date(currentDate)
+    if (direction === 'prev') {
+      newDate.setDate(newDate.getDate() - 7)
+    } else {
+      newDate.setDate(newDate.getDate() + 7)
+    }
+    setCurrentDate(newDate)
+  }, [currentDate])
+
+  const getWeekRange = () => {
+    const startOfWeek = moment(currentDate).startOf('week')
+    const endOfWeek = moment(currentDate).endOf('week')
+    return `${startOfWeek.format('MM/DD')} - ${endOfWeek.format('MM/DD')}`
+  }
+
+  return (
+    <div className='h-full flex flex-col'>
+      <div className='flex items-center justify-between mb-4'>
+        <div className='flex items-center gap-2'>
+          <Button
+            variant='outline'
+            size='sm'
+            onClick={() => navigateToWeek('prev')}
+          >
+            <ChevronLeft className='h-4 w-4' />
+          </Button>
+          <span className='text-sm font-medium'>{getWeekRange()}</span>
+          <Button
+            variant='outline'
+            size='sm'
+            onClick={() => navigateToWeek('next')}
+          >
+            <ChevronRight className='h-4 w-4' />
+          </Button>
+        </div>
+        <span className='text-xs text-muted-foreground'>Click and drag to create sending windows</span>
+      </div>
+
+      <div className='flex-1 min-h-0'>
+        <BigCalendar
+          localizer={localizer}
+          events={sendingWindows}
+          startAccessor='start'
+          endAccessor='end'
+          view='week'
+          views={['week']}
+          date={currentDate}
+          onNavigate={setCurrentDate}
+          onSelectSlot={handleSelectSlot}
+          onSelectEvent={handleSelectEvent}
+          selectable
+          step={30}
+          timeslots={2}
+          min={new Date(2024, 0, 1, 0, 0)}
+          max={new Date(2024, 0, 1, 23, 59)}
+          style={{ height: '100%' }}
+          eventPropGetter={() => ({
+            style: {
+              backgroundColor: '#3b82f6',
+              borderRadius: '4px',
+              border: 'none',
+              color: 'white',
+              fontSize: '12px',
+            }
+          })}
+          dayPropGetter={(date) => ({
+            style: {
+              backgroundColor: 'white',
+            }
+          })}
+          formats={{
+            timeGutterFormat: 'h:mm A',
+            eventTimeRangeFormat: ({ start, end }, culture, localizer) =>
+              `${localizer?.format(start, 'h:mm A', culture)} - ${localizer?.format(end, 'h:mm A', culture)}`,
+          }}
+        />
       </div>
     </div>
   )
