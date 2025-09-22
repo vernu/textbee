@@ -3,7 +3,8 @@
     "allow": [
       "Read(//mnt/c/Users/**)",
       "Bash(curl:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(wc:*)"
     ],
     "deny": [],
     "ask": []
