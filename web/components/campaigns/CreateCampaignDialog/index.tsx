@@ -526,55 +526,58 @@ export function CreateCampaignDialog({
                           <p className='text-xs text-red-600'>{dateValidationErrors.endDateError}</p>
                         )}
                       </div>
-                      <div className='space-y-1 flex-1'>
-                        <Label className='text-xs text-muted-foreground'>
-                          Timezone
-                        </Label>
-                        <div className="relative">
-                          <Select
-                            open={timezoneDropdownOpen}
-                            onOpenChange={setTimezoneDropdownOpen}
-                            value={campaignData.timezone}
-                            onValueChange={(value) => {
-                              onCampaignDataChange({ ...campaignData, timezone: value })
-                              setTimezoneDropdownOpen(false)
-                              setTimezoneSearch('')
-                              // Re-validate dates when timezone changes
-                              validateDates(campaignData.campaignStartDate, campaignData.campaignEndDate)
-                            }}
-                          >
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select timezone..." />
-                            </SelectTrigger>
-                            <SelectContent className="max-h-60">
-                              <div className="p-2 border-b">
-                                <Input
-                                  placeholder="Search timezones..."
-                                  value={timezoneSearch}
-                                  onChange={(e) => setTimezoneSearch(e.target.value)}
-                                  className="h-8 text-sm"
-                                  onClick={(e) => e.stopPropagation()}
-                                />
-                              </div>
-                              <div className="overflow-y-auto max-h-40">
-                                {filteredTimezones.length > 0 ? (
-                                  filteredTimezones.map(tz => (
-                                    <SelectItem key={tz} value={tz}>
-                                      {tz.replace(/_/g, ' ')} ({new Date().toLocaleTimeString('en-US', {
-                                        timeZone: tz,
-                                        timeZoneName: 'short'
-                                      }).split(' ').pop()})
-                                    </SelectItem>
-                                  ))
-                                ) : (
-                                  <div className="py-2 px-3 text-sm text-muted-foreground">
-                                    No timezones found
-                                  </div>
-                                )}
-                              </div>
-                            </SelectContent>
-                          </Select>
-                        </div>
+                    </div>
+                    <div className='space-y-1'>
+                      <Label className='text-xs text-muted-foreground'>
+                        Timezone
+                      </Label>
+                      <div className="relative">
+                        <Select
+                          open={timezoneDropdownOpen}
+                          onOpenChange={setTimezoneDropdownOpen}
+                          value={campaignData.timezone}
+                          onValueChange={(value) => {
+                            onCampaignDataChange({ ...campaignData, timezone: value })
+                            setTimezoneDropdownOpen(false)
+                            setTimezoneSearch('')
+                            // Re-validate dates when timezone changes
+                            validateDates(campaignData.campaignStartDate, campaignData.campaignEndDate)
+                          }}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select timezone..." />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-60">
+                            <div className="p-2 border-b">
+                              <Input
+                                placeholder="Search timezones..."
+                                value={timezoneSearch}
+                                onChange={(e) => setTimezoneSearch(e.target.value)}
+                                className="h-8 text-sm"
+                                onClick={(e) => e.stopPropagation()}
+                                onKeyDown={(e) => e.stopPropagation()}
+                                onFocus={(e) => e.stopPropagation()}
+                                autoFocus={false}
+                              />
+                            </div>
+                            <div className="overflow-y-auto max-h-40">
+                              {filteredTimezones.length > 0 ? (
+                                filteredTimezones.map(tz => (
+                                  <SelectItem key={tz} value={tz}>
+                                    {tz.replace(/_/g, ' ')} ({new Date().toLocaleTimeString('en-US', {
+                                      timeZone: tz,
+                                      timeZoneName: 'short'
+                                    }).split(' ').pop()})
+                                  </SelectItem>
+                                ))
+                              ) : (
+                                <div className="py-2 px-3 text-sm text-muted-foreground">
+                                  No timezones found
+                                </div>
+                              )}
+                            </div>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                   </div>

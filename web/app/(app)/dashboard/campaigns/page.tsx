@@ -74,37 +74,44 @@ export default function CampaignsPage() {
   const [selectedCampaigns, setSelectedCampaigns] = useState<string[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [createCampaignOpen, setCreateCampaignOpen] = useState(false)
-  const [createCampaignData, setCreateCampaignData] = useState({
-    name: '',
-    description: '',
-    status: 'draft' as 'active' | 'draft' | 'inactive' | 'completed',
-    selectedContacts: [] as string[],
-    selectedTemplates: [] as string[], // Changed from messageTemplateGroups to selectedTemplates
-    sendDevices: [] as string[],
-    scheduleType: 'now' as 'now' | 'later' | 'windows' | 'weekday',
-    scheduledDate: '',
-    scheduledTime: '',
-    campaignStartDate: new Date().toISOString().split('T')[0], // Default to today
-    campaignEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Default to one month from now
-    sendingWindows: [] as Array<{ startDate: string; startTime: string; endDate: string; endTime: string }>,
-    weekdayWindows: {
-      monday: [] as Array<{ startTime: string; endTime: string }>,
-      tuesday: [] as Array<{ startTime: string; endTime: string }>,
-      wednesday: [] as Array<{ startTime: string; endTime: string }>,
-      thursday: [] as Array<{ startTime: string; endTime: string }>,
-      friday: [] as Array<{ startTime: string; endTime: string }>,
-      saturday: [] as Array<{ startTime: string; endTime: string }>,
-      sunday: [] as Array<{ startTime: string; endTime: string }>
-    },
-    weekdayEnabled: {
-      monday: true,
-      tuesday: true,
-      wednesday: true,
-      thursday: true,
-      friday: true,
-      saturday: false,
-      sunday: false
-    },
+  const [createCampaignData, setCreateCampaignData] = useState(() => {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: timezone })
+    const oneMonthLater = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA', { timeZone: timezone })
+
+    return {
+      name: '',
+      description: '',
+      status: 'draft' as 'active' | 'draft' | 'inactive' | 'completed',
+      selectedContacts: [] as string[],
+      selectedTemplates: [] as string[], // Changed from messageTemplateGroups to selectedTemplates
+      sendDevices: [] as string[],
+      scheduleType: 'now' as 'now' | 'later' | 'windows' | 'weekday',
+      scheduledDate: '',
+      scheduledTime: '',
+      campaignStartDate: today, // Default to today in selected timezone
+      campaignEndDate: oneMonthLater, // Default to one month from now in selected timezone
+      timezone: timezone,
+      sendingWindows: [] as Array<{ startDate: string; startTime: string; endDate: string; endTime: string }>,
+      weekdayWindows: {
+        monday: [] as Array<{ startTime: string; endTime: string }>,
+        tuesday: [] as Array<{ startTime: string; endTime: string }>,
+        wednesday: [] as Array<{ startTime: string; endTime: string }>,
+        thursday: [] as Array<{ startTime: string; endTime: string }>,
+        friday: [] as Array<{ startTime: string; endTime: string }>,
+        saturday: [] as Array<{ startTime: string; endTime: string }>,
+        sunday: [] as Array<{ startTime: string; endTime: string }>
+      },
+      weekdayEnabled: {
+        monday: true,
+        tuesday: true,
+        wednesday: true,
+        thursday: true,
+        friday: true,
+        saturday: false,
+        sunday: false
+      },
+    }
   })
   const [manageTemplatesOpen, setManageTemplatesOpen] = useState(false)
   const [dateValidationErrors, setDateValidationErrors] = useState({
@@ -133,6 +140,19 @@ export default function CampaignsPage() {
     return errors.startDateError === '' && errors.endDateError === ''
   }
 
+  // Update campaign start date when schedule type is "now" or timezone changes
+  useEffect(() => {
+    if (createCampaignData.scheduleType === 'now' || createCampaignOpen) {
+      const currentDate = new Date().toLocaleDateString('en-CA', { timeZone: createCampaignData.timezone })
+      if (createCampaignData.campaignStartDate !== currentDate) {
+        setCreateCampaignData(prev => ({
+          ...prev,
+          campaignStartDate: currentDate
+        }))
+      }
+    }
+  }, [createCampaignData.scheduleType, createCampaignData.timezone, createCampaignOpen])
+
   // Validate dates when dialog opens or schedule type changes
   useEffect(() => {
     if (createCampaignOpen) {
@@ -142,11 +162,11 @@ export default function CampaignsPage() {
 
   // Validation functions for each stage
   const validateDetailsStage = () => {
-    return createCampaignData.name.trim() !== '' && createCampaignData.selectedContacts.length > 0
+    return createCampaignData.selectedContacts.length > 0 && createCampaignData.selectedTemplates.length > 0
   }
 
   const validateConfigureStage = () => {
-    const hasTemplates = createCampaignData.selectedTemplates.length > 0
+    const hasName = createCampaignData.name.trim() !== ''
     const hasDevices = createCampaignData.sendDevices.length > 0
     const hasValidDates = createCampaignData.campaignStartDate &&
                          createCampaignData.campaignEndDate &&
@@ -162,7 +182,7 @@ export default function CampaignsPage() {
        Object.entries(createCampaignData.weekdayWindows).some(([day, dayWindows]) =>
          createCampaignData.weekdayEnabled[day as keyof typeof createCampaignData.weekdayEnabled] && dayWindows.length > 0))
 
-    return hasTemplates && hasDevices && hasValidDates && hasValidSchedule
+    return hasName && hasDevices && hasValidDates && hasValidSchedule
   }
 
   const canNavigateToTab = (targetTab: string) => {
