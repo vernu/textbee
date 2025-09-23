@@ -13,62 +13,129 @@ export function SendingScheduleCalendar({ campaignData }: SendingScheduleCalenda
   // Convert Schedule Send settings to calendar events
   const calendarEvents = useMemo(() => {
     const events: CalendarEvent[] = []
+    // Get current time in the selected timezone
+    const timezone = campaignData.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone
+    const now = new Date()
 
-    if (campaignData.scheduleType === 'later' && campaignData.scheduledDate && campaignData.scheduledTime) {
-      // This will be a regular event when we implement actual scheduling
-      // For now, show it as a background event to indicate when sending will happen
-      events.push({
-        id: 'scheduled-send',
-        title: '',
-        start: `${campaignData.scheduledDate}T${campaignData.scheduledTime}`,
-        end: `${campaignData.scheduledDate}T${campaignData.scheduledTime}`,
-        display: 'background',
-        backgroundColor: '#dcfce7', // light green
-        className: 'scheduled-send-time'
-      })
+    if (campaignData.scheduleType === 'now') {
+      // Shade all time from now through campaign end date
+      if (campaignData.campaignEndDate) {
+        const startTime = now.toISOString()
+        const endTime = `${campaignData.campaignEndDate}T23:59:59`
+
+        events.push({
+          id: 'send-now-period',
+          title: '',
+          start: startTime,
+          end: endTime,
+          display: 'background',
+          backgroundColor: '#dcfce7', // light green
+          className: 'send-now-period'
+        })
+      }
+    } else if (campaignData.scheduleType === 'later') {
+      // Shade all time from campaign start date through campaign end date, but not before current time
+      if (campaignData.campaignStartDate && campaignData.campaignEndDate) {
+        // Parse dates in the selected timezone
+        const campaignStart = new Date(`${campaignData.campaignStartDate}T00:00:00`)
+        const campaignEnd = new Date(`${campaignData.campaignEndDate}T23:59:59`)
+
+        // Use the later of campaign start time or current time
+        const effectiveStart = campaignStart > now ? campaignStart : now
+
+        if (effectiveStart <= campaignEnd) {
+          events.push({
+            id: 'scheduled-send-period',
+            title: '',
+            start: effectiveStart.toISOString(),
+            end: campaignEnd.toISOString(),
+            display: 'background',
+            backgroundColor: '#dcfce7', // light green
+            className: 'scheduled-send-period'
+          })
+        }
+      }
     } else if (campaignData.scheduleType === 'windows' && campaignData.sendingWindows.length > 0) {
-      // Show sending windows as background events (available times)
+      // Show sending windows as background events, but not before current time
       campaignData.sendingWindows.forEach((window, index) => {
         if (window.startDate && window.startTime && window.endDate && window.endTime) {
-          events.push({
-            id: `window-${index}`,
-            title: '',
-            start: `${window.startDate}T${window.startTime}`,
-            end: `${window.endDate}T${window.endTime}`,
-            display: 'background',
-            backgroundColor: '#3b82f6', // blue with more opacity
-            className: 'sending-window-available'
-          })
+          const windowStart = new Date(`${window.startDate}T${window.startTime}`)
+          const windowEnd = new Date(`${window.endDate}T${window.endTime}`)
+
+          // Use the later of window start time or current time
+          const effectiveStart = windowStart > now ? windowStart : now
+
+          // Only create event if there's still time remaining after current time
+          if (effectiveStart < windowEnd) {
+            events.push({
+              id: `window-${index}`,
+              title: '',
+              start: effectiveStart.toISOString(),
+              end: windowEnd.toISOString(),
+              display: 'background',
+              backgroundColor: '#3b82f6', // blue
+              className: 'sending-window-available'
+            })
+          }
         }
       })
     } else if (campaignData.scheduleType === 'weekday') {
-      // Show weekday-based windows as background events
-      const today = new Date()
-      const currentWeekStart = new Date(today.getFullYear(), today.getMonth(), today.getDate() - today.getDay())
+      // Show weekday-based windows for all weeks from campaign start to end date
+      if (campaignData.campaignStartDate && campaignData.campaignEndDate) {
+        // Parse dates in the selected timezone
+        const startDate = new Date(campaignData.campaignStartDate + 'T00:00:00')
+        const endDate = new Date(campaignData.campaignEndDate + 'T23:59:59')
 
-      Object.entries(campaignData.weekdayWindows).forEach(([day, dayWindows]) => {
-        if (campaignData.weekdayEnabled[day as keyof typeof campaignData.weekdayEnabled] && Array.isArray(dayWindows)) {
-          const dayIndex = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'].indexOf(day)
+        // Generate events for each day between start and end dates
+        const currentDate = new Date(startDate)
+        while (currentDate <= endDate) {
+          const dayName = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][currentDate.getDay()]
+          const dayWindows = campaignData.weekdayWindows[dayName as keyof typeof campaignData.weekdayWindows]
 
-          dayWindows.forEach((window, index) => {
-            if (window.startTime && window.endTime) {
-              const windowDate = new Date(currentWeekStart)
-              windowDate.setDate(currentWeekStart.getDate() + dayIndex)
-              const dateStr = windowDate.toISOString().split('T')[0]
+          if (campaignData.weekdayEnabled[dayName as keyof typeof campaignData.weekdayEnabled] && Array.isArray(dayWindows)) {
+            dayWindows.forEach((window, index) => {
+              if (window.startTime && window.endTime) {
+                // Validate that end time is after start time
+                const startTimeMinutes = window.startTime.split(':').reduce((acc, time) => (60 * acc) + +time, 0)
+                const endTimeMinutes = window.endTime.split(':').reduce((acc, time) => (60 * acc) + +time, 0)
 
-              events.push({
-                id: `${day}-${index}`,
-                title: '',
-                start: `${dateStr}T${window.startTime}`,
-                end: `${dateStr}T${window.endTime}`,
-                display: 'background',
-                backgroundColor: '#3b82f6', // blue
-                className: 'weekday-window-available'
-              })
-            }
-          })
+                if (endTimeMinutes <= startTimeMinutes) {
+                  // Skip invalid time ranges (end time before or equal to start time)
+                  return
+                }
+
+                // Use local date string to avoid timezone issues
+                const year = currentDate.getFullYear()
+                const month = String(currentDate.getMonth() + 1).padStart(2, '0')
+                const day = String(currentDate.getDate()).padStart(2, '0')
+                const dateStr = `${year}-${month}-${day}`
+
+                const windowStart = new Date(`${dateStr}T${window.startTime}`)
+                const windowEnd = new Date(`${dateStr}T${window.endTime}`)
+
+                // Use the later of window start time or current time
+                const effectiveStart = windowStart > now ? windowStart : now
+
+                // Only create event if there's still time remaining after current time
+                if (effectiveStart < windowEnd) {
+                  events.push({
+                    id: `${dayName}-${dateStr}-${index}`,
+                    title: '',
+                    start: effectiveStart.toISOString(),
+                    end: windowEnd.toISOString(),
+                    display: 'background',
+                    backgroundColor: '#3b82f6', // blue
+                    className: 'weekday-window-available'
+                  })
+                }
+              }
+            })
+          }
+
+          // Move to next day
+          currentDate.setDate(currentDate.getDate() + 1)
         }
-      })
+      }
     }
 
     return events

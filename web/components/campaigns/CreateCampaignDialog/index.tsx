@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useToast } from '@/hooks/use-toast'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -89,19 +89,37 @@ export function CreateCampaignDialog({
   onCreateCampaign
 }: CreateCampaignDialogProps) {
   const [activeTab, setActiveTab] = useState('details')
+  const [timezoneSearch, setTimezoneSearch] = useState('')
+  const [timezoneDropdownOpen, setTimezoneDropdownOpen] = useState(false)
   const { toast } = useToast()
+
+  // Memoized filtered timezones
+  const filteredTimezones = useMemo(() => {
+    const allTimezones = Intl.supportedValuesOf('timeZone')
+    if (!timezoneSearch.trim()) {
+      return allTimezones
+    }
+    return allTimezones.filter(tz =>
+      tz.toLowerCase().includes(timezoneSearch.toLowerCase()) ||
+      tz.replace(/_/g, ' ').toLowerCase().includes(timezoneSearch.toLowerCase())
+    )
+  }, [timezoneSearch])
 
   // Date validation function
   const validateDates = (startDate: string, endDate: string) => {
-    const today = new Date().toISOString().split('T')[0]
+    // Get today's date in the selected timezone
+    const today = new Date().toLocaleDateString('en-CA', {
+      timeZone: campaignData.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone
+    })
     const errors = { startDateError: '', endDateError: '' }
 
     // Don't validate start date if schedule type is 'now' (disabled field)
-    if (campaignData.scheduleType !== 'now' && startDate && startDate < today) {
+    // Allow today's date by checking if startDate is strictly less than today
+    if (campaignData.scheduleType !== 'now' && startDate && new Date(startDate + 'T00:00:00') < new Date(today + 'T00:00:00')) {
       errors.startDateError = 'Campaign start date cannot be before today'
     }
 
-    if (startDate && endDate && new Date(endDate) < new Date(startDate)) {
+    if (startDate && endDate && new Date(endDate + 'T00:00:00') < new Date(startDate + 'T00:00:00')) {
       errors.endDateError = 'Campaign end date cannot be before start date'
     }
 
@@ -453,49 +471,111 @@ export function CreateCampaignDialog({
                   </Select>
 
                   {/* Campaign Start and End Date fields */}
-                  <div className='flex gap-4'>
-                    <div className='space-y-1 flex-1'>
-                      <Label className='text-xs text-muted-foreground'>
-                        Campaign Start Date<span className='text-red-500'>*</span>
-                      </Label>
-                      <Input
-                        type='date'
-                        value={campaignData.campaignStartDate}
-                        disabled={campaignData.scheduleType === 'now'}
-                        onChange={(e) => {
-                          const newStartDate = e.target.value
-                          onCampaignDataChange({
-                            ...campaignData,
-                            campaignStartDate: newStartDate
-                          })
-                          validateDates(newStartDate, campaignData.campaignEndDate)
-                        }}
-                        className='w-full'
-                      />
-                      {dateValidationErrors.startDateError && (
-                        <p className='text-xs text-red-600'>{dateValidationErrors.startDateError}</p>
-                      )}
+                  <div className='space-y-2'>
+                    {/* Timezone info display */}
+                    <div className='text-xs text-muted-foreground bg-blue-50 p-2 rounded border border-blue-200'>
+                      <strong>Current timezone:</strong> {campaignData.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone}
+                      {' '}({new Date().toLocaleTimeString('en-US', {
+                        timeZone: campaignData.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
+                        timeZoneName: 'short'
+                      }).split(' ').pop()}) - Today is {new Date().toLocaleDateString('en-CA', {
+                        timeZone: campaignData.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone
+                      })}
                     </div>
-                    <div className='space-y-1 flex-1'>
-                      <Label className='text-xs text-muted-foreground'>
-                        Campaign End Date<span className='text-red-500'>*</span>
-                      </Label>
-                      <Input
-                        type='date'
-                        value={campaignData.campaignEndDate}
-                        onChange={(e) => {
-                          const newEndDate = e.target.value
-                          onCampaignDataChange({
-                            ...campaignData,
-                            campaignEndDate: newEndDate
-                          })
-                          validateDates(campaignData.campaignStartDate, newEndDate)
-                        }}
-                        className='w-full'
-                      />
-                      {dateValidationErrors.endDateError && (
-                        <p className='text-xs text-red-600'>{dateValidationErrors.endDateError}</p>
-                      )}
+                    <div className='flex gap-4'>
+                      <div className='space-y-1 flex-1'>
+                        <Label className='text-xs text-muted-foreground'>
+                          Campaign Start Date<span className='text-red-500'>*</span>
+                        </Label>
+                        <Input
+                          type='date'
+                          value={campaignData.campaignStartDate}
+                          disabled={campaignData.scheduleType === 'now'}
+                          onChange={(e) => {
+                            const newStartDate = e.target.value
+                            onCampaignDataChange({
+                              ...campaignData,
+                              campaignStartDate: newStartDate
+                            })
+                            validateDates(newStartDate, campaignData.campaignEndDate)
+                          }}
+                          className='w-full'
+                        />
+                        {dateValidationErrors.startDateError && (
+                          <p className='text-xs text-red-600'>{dateValidationErrors.startDateError}</p>
+                        )}
+                      </div>
+                      <div className='space-y-1 flex-1'>
+                        <Label className='text-xs text-muted-foreground'>
+                          Campaign End Date<span className='text-red-500'>*</span>
+                        </Label>
+                        <Input
+                          type='date'
+                          value={campaignData.campaignEndDate}
+                          onChange={(e) => {
+                            const newEndDate = e.target.value
+                            onCampaignDataChange({
+                              ...campaignData,
+                              campaignEndDate: newEndDate
+                            })
+                            validateDates(campaignData.campaignStartDate, newEndDate)
+                          }}
+                          className='w-full'
+                        />
+                        {dateValidationErrors.endDateError && (
+                          <p className='text-xs text-red-600'>{dateValidationErrors.endDateError}</p>
+                        )}
+                      </div>
+                      <div className='space-y-1 flex-1'>
+                        <Label className='text-xs text-muted-foreground'>
+                          Timezone
+                        </Label>
+                        <div className="relative">
+                          <Select
+                            open={timezoneDropdownOpen}
+                            onOpenChange={setTimezoneDropdownOpen}
+                            value={campaignData.timezone}
+                            onValueChange={(value) => {
+                              onCampaignDataChange({ ...campaignData, timezone: value })
+                              setTimezoneDropdownOpen(false)
+                              setTimezoneSearch('')
+                              // Re-validate dates when timezone changes
+                              validateDates(campaignData.campaignStartDate, campaignData.campaignEndDate)
+                            }}
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Select timezone..." />
+                            </SelectTrigger>
+                            <SelectContent className="max-h-60">
+                              <div className="p-2 border-b">
+                                <Input
+                                  placeholder="Search timezones..."
+                                  value={timezoneSearch}
+                                  onChange={(e) => setTimezoneSearch(e.target.value)}
+                                  className="h-8 text-sm"
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                              </div>
+                              <div className="overflow-y-auto max-h-40">
+                                {filteredTimezones.length > 0 ? (
+                                  filteredTimezones.map(tz => (
+                                    <SelectItem key={tz} value={tz}>
+                                      {tz.replace(/_/g, ' ')} ({new Date().toLocaleTimeString('en-US', {
+                                        timeZone: tz,
+                                        timeZoneName: 'short'
+                                      }).split(' ').pop()})
+                                    </SelectItem>
+                                  ))
+                                ) : (
+                                  <div className="py-2 px-3 text-sm text-muted-foreground">
+                                    No timezones found
+                                  </div>
+                                )}
+                              </div>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
                     </div>
                   </div>
 

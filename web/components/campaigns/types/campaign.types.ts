@@ -65,6 +65,7 @@ export interface CreateCampaignData {
   scheduledTime: string
   campaignStartDate: string
   campaignEndDate: string
+  timezone: string
   sendingWindows: SendingWindow[]
   weekdayWindows: WeekdayWindows
   weekdayEnabled: WeekdayEnabled
@@ -225,6 +226,7 @@ export const DEFAULT_CREATE_CAMPAIGN_DATA: Omit<CreateCampaignData, 'campaignSta
   scheduleType: 'now',
   scheduledDate: '',
   scheduledTime: '',
+  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
   sendingWindows: [],
   weekdayWindows: DEFAULT_WEEKDAY_WINDOWS,
   weekdayEnabled: DEFAULT_WEEKDAY_ENABLED
