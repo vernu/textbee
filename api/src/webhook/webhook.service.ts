@@ -289,6 +289,17 @@ export class WebhookService {
       webhookSubscription.signingSecret = updateWebhookDto.signingSecret
     }
 
+    if (
+      updateWebhookDto.hasOwnProperty('events') &&
+      updateWebhookDto.events.length === 0
+    ) {
+      throw new HttpException(
+        'Choose atleast one event to receive',
+        HttpStatus.BAD_REQUEST,
+      )
+    } else if (updateWebhookDto.hasOwnProperty('events')) {
+      webhookSubscription.events = updateWebhookDto.events
+    }
     await webhookSubscription.save()
 
     return webhookSubscription
