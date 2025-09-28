@@ -316,7 +316,7 @@ export class WebhookService {
       return
     }
 
-    if (event === WebhookEvent.MESSAGE_RECEIVED) {
+    if (Object.values(WebhookEvent).includes(event)) {
       const payload = {
         smsId: sms._id,
         sender: sms.sender,
