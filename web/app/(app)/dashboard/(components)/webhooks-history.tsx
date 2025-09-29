@@ -156,7 +156,6 @@ const WebhooksHistory = () => {
     'MESSAGE_DELIVERED',
     'MESSAGE_FAILED',
     'UNKNOWN_STATE',
-    'SMS_STATUS_UPDATED',
   ]
   return (
     <div className="flex flex-col gap-y-4">
