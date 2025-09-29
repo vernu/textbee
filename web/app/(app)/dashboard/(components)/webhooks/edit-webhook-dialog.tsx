@@ -18,13 +18,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import * as z from 'zod'
@@ -35,6 +29,18 @@ import httpBrowserClient from '@/lib/httpBrowserClient'
 import { ApiEndpoints } from '@/config/api'
 import { useToast } from '@/hooks/use-toast'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 const formSchema = z.object({
   deliveryUrl: z.string().url({ message: 'Please enter a valid URL' }),
@@ -95,6 +101,15 @@ export function EditWebhookDialog({
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     updateWebhook(values)
   }
+
+  const message_events = [
+    'MESSAGE_RECEIVED',
+    'MESSAGE_SENT',
+    'MESSAGE_DELIVERED',
+    'MESSAGE_FAILED',
+    'UNKNOWN_STATE',
+    'SMS_STATUS_UPDATED',
+  ]
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -158,21 +173,39 @@ export function EditWebhookDialog({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Events</FormLabel>
-                  <Select
-                    value={field.value[0]}
-                    onValueChange={(value) => field.onChange([value])}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder='Select events to subscribe to' />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value={WEBHOOK_EVENTS.MESSAGE_RECEIVED}>
-                        SMS Received
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant='outline'
+                          className='w-full justify-between'
+                        >
+                          {field.value && field.value.length > 0
+                            ? `${field.value.length} events selected`
+                            : 'Select events to subscribe to'}
+                        </Button>
+                      </FormControl>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className='w-full'>
+                      {message_events.map((event) => (
+                        <DropdownMenuCheckboxItem
+                          key={event}
+                          checked={field.value?.includes(event) || false}
+                          onCheckedChange={(checked) => {
+                            const currentValues = field.value || []
+                            const newValues = checked
+                              ? [...currentValues, event]
+                              : currentValues.filter((v: string) => v !== event)
+                            field.onChange(newValues)
+                          }}
+                          // 👇 prevent menu from closing
+                          onSelect={(e) => e.preventDefault()}
+                        >
+                          {event}
+                        </DropdownMenuCheckboxItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                   <FormDescription>
                     Choose the events you want to receive notifications for
                   </FormDescription>
@@ -197,4 +230,4 @@ export function EditWebhookDialog({
       </DialogContent>
     </Dialog>
   )
-} 
+}

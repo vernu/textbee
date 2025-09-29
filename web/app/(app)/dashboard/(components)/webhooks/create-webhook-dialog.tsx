@@ -19,12 +19,17 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import * as z from 'zod'
@@ -90,6 +95,15 @@ export function CreateWebhookDialog({
     createWebhookMutation.mutate(values)
   }
 
+  const message_events = [
+    'MESSAGE_RECEIVED',
+    'MESSAGE_SENT',
+    'MESSAGE_DELIVERED',
+    'MESSAGE_FAILED',
+    'UNKNOWN_STATE',
+    'SMS_STATUS_UPDATED',
+  ]
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='sm:max-w-[500px]'>
@@ -153,21 +167,39 @@ export function CreateWebhookDialog({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Events</FormLabel>
-                  <Select
-                    value={field.value[0]}
-                    onValueChange={(value) => field.onChange([value])}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder='Select events to subscribe to' />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value={WEBHOOK_EVENTS.MESSAGE_RECEIVED}>
-                        SMS Received
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant='outline'
+                          className='w-full justify-between'
+                        >
+                          {field.value && field.value.length > 0
+                            ? `${field.value.length} events selected`
+                            : 'Select events to subscribe to'}
+                        </Button>
+                      </FormControl>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className='w-full'>
+                      {message_events.map((event) => (
+                        <DropdownMenuCheckboxItem
+                          key={event}
+                          checked={field.value?.includes(event) || false}
+                          onCheckedChange={(checked) => {
+                            const currentValues = field.value || []
+                            const newValues = checked
+                              ? [...currentValues, event]
+                              : currentValues.filter((v: string) => v !== event)
+                            field.onChange(newValues)
+                          }}
+                          // 👇 prevent menu from closing
+                          onSelect={(e) => e.preventDefault()}
+                        >
+                          {event}
+                        </DropdownMenuCheckboxItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                   <FormDescription>
                     Choose the events you want to receive notifications for
                   </FormDescription>
@@ -183,10 +215,10 @@ export function CreateWebhookDialog({
               >
                 Cancel
               </Button>
-              <Button 
-                type='submit' 
+              <Button
+               type='submit'
                 disabled={createWebhookMutation.isPending}
-              >
+                >
                 {createWebhookMutation.isPending ? 'Creating...' : 'Create'}
               </Button>
             </div>
@@ -195,4 +227,4 @@ export function CreateWebhookDialog({
       </DialogContent>
     </Dialog>
   )
-} 
+}
