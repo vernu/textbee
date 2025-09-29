@@ -754,7 +754,7 @@ recipient,
     }
     
     // Update the SMS
-    await this.smsModel.findByIdAndUpdate(dto.smsId, { $set: updateData });
+    const updatedSms = await this.smsModel.findByIdAndUpdate(dto.smsId, { $set: updateData });
     
     // Check if all SMS in batch have the same status, then update batch status
     if (dto.smsBatchId) {
@@ -794,7 +794,7 @@ recipient,
             event = WebhookEvent.UNKNOWN_STATE
           }
       this.webhookService.deliverNotification({
-        sms,
+        sms: updatedSms,
         user: device.user,
         event,
       });
