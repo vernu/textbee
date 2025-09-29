@@ -16,6 +16,7 @@ import { Cron } from '@nestjs/schedule'
 import { CronExpression } from '@nestjs/schedule'
 import * as crypto from 'crypto'
 import mongoose from 'mongoose'
+import { SMS } from 'src/gateway/schemas/sms.schema'
 
 @Injectable()
 export class WebhookService {
@@ -319,8 +320,8 @@ export class WebhookService {
       throw new HttpException('Invalid event type', HttpStatus.BAD_REQUEST)
     }
 
-    
-    const payload = {
+      
+    let payload: Record<string, any>= {
       smsId: sms._id,
       message: sms.message,
       deviceId: sms.device,
@@ -328,41 +329,56 @@ export class WebhookService {
       webhookEvent: event,
     };
 
-    if (event === WebhookEvent.MESSAGE_RECEIVED) {
-      Object.assign(payload, {
-        sender: sms.sender,
-        receivedAt: sms.receivedAt,
-      });
-    } else if (event === WebhookEvent.MESSAGE_DELIVERED) {
-      Object.assign(payload, {
-        smsBatchId: sms.smsBatch,
-        status: sms.status,
-        recipient: sms.recipient,
-        sentAt: sms.sentAt,
-        deliveredAt: sms.deliveredAt,
-      });
-    } else if (event === WebhookEvent.MESSAGE_SENT) {
-      Object.assign(payload, {
-        smsBatchId: sms.smsBatch,
-        status: sms.status,
-        recipient: sms.recipient,
-        sentAt: sms.sentAt,
-      });
-    } else if (event === WebhookEvent.MESSAGE_FAILED) {
-      Object.assign(payload, {
-        smsBatchId: sms.smsBatch,
-        status: sms.status,
-        recipient: sms.recipient,
-        errorCode: sms.errorCode,
-        errorMessage: sms.errorMessage,
-        failedAt: sms.failedAt,
-      });
-    } else if (event === WebhookEvent.UNKNOWN_STATE) {
-      Object.assign(payload, {
-        smsBatchId: sms.smsBatch,
-        status: sms.status,
-        recipient: sms.recipient,
-      });
+    switch (event) {
+      case WebhookEvent.MESSAGE_RECEIVED:
+        payload = {
+          ...payload,
+          sender: sms.sender,
+          receivedAt: sms.receivedAt,
+        };
+        break;
+
+      case WebhookEvent.MESSAGE_DELIVERED:
+        payload = {
+          ...payload,
+          smsBatchId: sms.smsBatch,
+          status: sms.status,
+          recipient: sms.recipient,
+          sentAt: sms.sentAt,
+          deliveredAt: sms.deliveredAt,
+        };
+        break;
+
+      case WebhookEvent.MESSAGE_SENT:
+        payload = {
+          ...payload,
+          smsBatchId: sms.smsBatch,
+          status: sms.status,
+          recipient: sms.recipient,
+          sentAt: sms.sentAt,
+        };
+        break;
+
+      case WebhookEvent.MESSAGE_FAILED:
+        payload = {
+          ...payload,
+          smsBatchId: sms.smsBatch,
+          status: sms.status,
+          recipient: sms.recipient,
+          errorCode: sms.errorCode,
+          errorMessage: sms.errorMessage,
+          failedAt: sms.failedAt,
+        };
+        break;
+
+      case WebhookEvent.UNKNOWN_STATE:
+        payload = {
+          ...payload,
+          smsBatchId: sms.smsBatch,
+          status: sms.status,
+          recipient: sms.recipient,
+        };
+        break;
     }
 
       const webhookNotification = await this.webhookNotificationModel.create({
