@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Code } from '@/components/ui/code'
 import { AlertCircle } from 'lucide-react'
 
-const SAMPLE_PAYLOAD = {
+const message_received_payload = {
   smsId: 'smsId',
   sender: '+123456789',
   message: 'message',
@@ -18,6 +18,34 @@ const SAMPLE_PAYLOAD = {
   deviceId: 'deviceId',
   webhookSubscriptionId: 'webhookSubscriptionId',
   webhookEvent: 'sms.received',
+}
+const message_send_template = {
+  smsId: 'smsId',
+  smsBatchId: "smsBatchId",
+  message: 'message',
+  status: "delivered",
+  recipient: "+123456789",
+  deviceId: 'deviceId',
+  webhookSubscriptionId: 'webhookSubscriptionId',
+  webhookEvent: 'sms.received',
+}
+
+const sms_delivered_payload = {
+  ...message_send_template,
+  sentAt: "datetime",
+  deliveredAt: 'datetime',
+}
+const sms_sent_payload = {
+  ...message_send_template,
+  status: "sent"
+}
+
+const sms_sent_failed = {
+   ...message_send_template,
+  status: "failed",
+  errorCode: "ErorCode",
+  errorMessage: "Error",
+  failedAt: "datetime"
 }
 
 const VERIFICATION_CODE = `
@@ -91,7 +119,7 @@ export function WebhookDocs() {
         <AccordionContent className='px-3 sm:px-4 pb-4'>
           <div className='space-y-2 mt-2 text-sm text-muted-foreground'>
             <p>
-              When a new SMS is received, we&apos;ll send a POST request to your
+              When a new SMS is received or SMS status is updated, we&apos;ll send a POST request to your
               webhook URL with the event data. Your endpoint should:
             </p>
             <ul className='list-disc pl-6 space-y-1'>
@@ -139,7 +167,27 @@ export function WebhookDocs() {
             <TabsContent value='payload'>
               <div className='space-y-4 mt-4'>
                 <h4 className='text-sm font-medium'>Sample Payload</h4>
-                <Code>{JSON.stringify(SAMPLE_PAYLOAD, null, 2)}</Code>
+                <Tabs defaultValue='message_received'>
+
+                <TabsList>
+                  <TabsTrigger value='message_received'>Message Received</TabsTrigger>
+                  <TabsTrigger value='message_sent'>Message Sent</TabsTrigger>
+                  <TabsTrigger value='message_delivered'>Message Delivered</TabsTrigger>
+                  <TabsTrigger value='message_failed'>Message Failed</TabsTrigger>
+                </TabsList>
+                <TabsContent value='message_received'>
+                  <Code>{JSON.stringify(message_received_payload, null, 2)}</Code>
+                </TabsContent>
+                <TabsContent value='message_sent'>
+                  <Code>{JSON.stringify(sms_sent_payload, null, 2)}</Code>
+                </TabsContent>
+                <TabsContent value='message_delivered'>
+                  <Code>{JSON.stringify(sms_delivered_payload, null, 2)}</Code>
+                </TabsContent>
+                <TabsContent value='message_failed'>
+                  <Code>{JSON.stringify(sms_sent_failed, null, 2)}</Code>
+                </TabsContent>
+                </Tabs>
               </div>
             </TabsContent>
 

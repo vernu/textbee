@@ -57,7 +57,7 @@ export function DataTable<TData, TValue>({
   const handleRowClick = (row: any) => {
     // Assuming your row data has smsData property
     if (row.original.smsData) {
-      setSelectedSms(row.original.smsData)
+      setSelectedSms({...row.original.smsData, webhookStatus: row.original.status})
       setSelectedPayload(row.original.payload)
       setIsModalOpen(true)
     }
