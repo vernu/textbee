@@ -27,17 +27,18 @@ const message_send_template = {
   recipient: "+123456789",
   deviceId: 'deviceId',
   webhookSubscriptionId: 'webhookSubscriptionId',
-  webhookEvent: 'sms.received',
 }
 
 const sms_delivered_payload = {
   ...message_send_template,
   sentAt: "datetime",
   deliveredAt: 'datetime',
+  webhookEvent: 'sms.delivered',
 }
 const sms_sent_payload = {
   ...message_send_template,
-  status: "sent"
+  status: "sent",
+  webhookEvent: 'sms.sent',
 }
 
 const sms_sent_failed = {
@@ -45,7 +46,8 @@ const sms_sent_failed = {
   status: "failed",
   errorCode: "ErorCode",
   errorMessage: "Error",
-  failedAt: "datetime"
+  failedAt: "datetime",
+  webhookEvent: 'sms.send_failed',
 }
 
 const VERIFICATION_CODE = `
