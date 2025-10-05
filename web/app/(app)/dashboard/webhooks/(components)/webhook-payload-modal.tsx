@@ -23,6 +23,7 @@ interface SmsData {
   status: string
   type: string
   updatedAt: string
+  webhookStatus: string
   __v: number
 }
 
