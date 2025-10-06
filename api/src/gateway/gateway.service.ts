@@ -569,6 +569,7 @@ recipient,
         sms,
         user: device.user,
         event: WebhookEvent.MESSAGE_RECEIVED,
+        status: 'received'
       })
       .catch((e) => {
         console.log(e)
@@ -801,6 +802,7 @@ const updatedSms = await this.smsModel.findByIdAndUpdate(
         sms: updatedSms,
         user: device.user,
         event,
+        status: normalizedStatus
       });
     } catch (error) {
       console.error('Failed to trigger webhook event:', error);

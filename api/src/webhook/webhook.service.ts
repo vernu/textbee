@@ -306,7 +306,7 @@ export class WebhookService {
     return webhookSubscription
   }
 
-  async deliverNotification({ sms, user, event }) {
+  async deliverNotification({ sms, user, event, status }) {
     const webhookSubscription = await this.webhookSubscriptionModel.findOne({
       user: user._id,
       events: { $in: [event] },
@@ -342,7 +342,7 @@ export class WebhookService {
         payload = {
           ...payload,
           smsBatchId: sms.smsBatch,
-          status: sms.status,
+          status,
           recipient: sms.recipient,
           sentAt: sms.sentAt,
           deliveredAt: sms.deliveredAt,
@@ -353,7 +353,7 @@ export class WebhookService {
         payload = {
           ...payload,
           smsBatchId: sms.smsBatch,
-          status: sms.status,
+          status,
           recipient: sms.recipient,
           sentAt: sms.sentAt,
         };
@@ -363,7 +363,7 @@ export class WebhookService {
         payload = {
           ...payload,
           smsBatchId: sms.smsBatch,
-          status: sms.status,
+          status,
           recipient: sms.recipient,
           errorCode: sms.errorCode,
           errorMessage: sms.errorMessage,
@@ -375,7 +375,7 @@ export class WebhookService {
         payload = {
           ...payload,
           smsBatchId: sms.smsBatch,
-          status: sms.status,
+          status,
           recipient: sms.recipient,
         };
         break;
