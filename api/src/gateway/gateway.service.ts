@@ -754,7 +754,11 @@ recipient,
     }
     
     // Update the SMS
-    const updatedSms = await this.smsModel.findByIdAndUpdate(dto.smsId, { $set: updateData });
+const updatedSms = await this.smsModel.findByIdAndUpdate(
+  dto.smsId,
+  { $set: updateData },
+  { new: true } 
+);
     
     // Check if all SMS in batch have the same status, then update batch status
     if (dto.smsBatchId) {
