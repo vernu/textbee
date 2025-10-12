@@ -12,28 +12,17 @@ import { DialogHeader, DialogTitle, Dialog, DialogContent } from '@/components/u
 export default function CommunityLinks() {
    const [socialOpen, setSocialOpen] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState("");
-  const [index, setIndex] = useState(0);
-  const icons = [
-    "/images/facebook.svg",
-    "/images/x.svg",
-    "/images/linkedin2.svg",
-    "/images/reddit.svg",
-    "/images/pinterest.svg",
-    "/images/whatsapp.svg",
-    "/images/telegram.svg",
-    "/images/gmail.svg",
-  ];
-
-  const socialLinks = [
-    "https://www.facebook.com/sharer/sharer.php?u=https://textbee.dev",
-    "https://twitter.com/intent/tweet?url=https://textbee.dev&text=Check%20out%20TextBee!%20",
-    "https://www.linkedin.com/sharing/share-offsite/?url=https://textbee.dev",
-    "https://www.reddit.com/submit?url=https://textbee.dev&title=Check%20out%20TextBee!%20",
-    "https://pinterest.com/pin/create/button/?url=https://textbee.dev&description=Check%20out%20TextBee!%20&media=https://textbee.dev/og-image.png",
-    "https://api.whatsapp.com/send?text=Check%20out%20TextBee!%20%20https://textbee.dev",
-    "https://t.me/share/url?url=https://textbee.dev&text=Check%20out%20TextBee!%20",
-    "mailto:?subject=Check%20out%20TextBee!%20&body=Here’s%20the%20link:%20https://textbee.dev",
-  ];
+  const socials = [
+    { icon: "/images/facebook.svg", url: "https://www.facebook.com/sharer/sharer.php?u=https://textbee.dev" },
+    { icon: "/images/x.svg", url: "https://twitter.com/intent/tweet?url=https://textbee.dev&text=Check%20out%20TextBee!%20" },
+  { icon: "/images/linkedin2.svg", url: "https://www.linkedin.com/sharing/share-offsite/?url=https://textbee.dev" },
+  { icon: "/images/reddit.svg", url: "https://www.reddit.com/submit?url=https://textbee.dev&title=Check%20out%20TextBee!%20" },
+  { icon: "/images/pinterest.svg", url: "https://pinterest.com/pin/create/button/?url=https://textbee.dev&description=Check%20out%20TextBee!%20&media=https://textbee.dev/og-image.png" },
+  { icon: "/images/whatsapp.svg", url: "https://api.whatsapp.com/send?text=Check%20out%20TextBee!%20%20https://textbee.dev" },
+  { icon: "/images/telegram.svg", url: "https://t.me/share/url?url=https://textbee.dev&text=Check%20out%20TextBee!%20" },
+  { icon: "/images/gmail.svg", url: "mailto:?subject=Check%20out%20TextBee!%20&body=Here’s%20the%20link:%20https://textbee.dev" }
+]
+const [currentUrl,setCurrentUrl] = useState(socials[0].url);
 
   const copyToClipboard = (content: string) => {
     navigator.clipboard.writeText(content);
@@ -181,14 +170,14 @@ export default function CommunityLinks() {
           <p className="text-md">Share this link via</p>
           <div className="flex flex-col gap-4">
             <div className="flex justify-between bg-white rounded-md p-2 items-center">
-              {icons.map((icon, ind) => (
+              {socials.map(({icon, url}) => (
                 <button
                   key={icon}
                   type="button"
                   title={icon}
-                  onClick={() => setIndex(ind)}
+                  onClick={() => setCurrentUrl(url)}
                   className={`${
-                    index === ind
+                    currentUrl === url
                       ? "border-primary border-2"
                       : "border-gray-400"
                   } p-1 rounded-md border`}
@@ -201,14 +190,14 @@ export default function CommunityLinks() {
             <div className="flex items-center gap-2 border-2 rounded-md p-2 border-gray-500 w-full">
               <LinkIcon className="w-7 h-7 flex-shrink-0 text-blue-600 dark:text-blue-400 font-bold" />{" "}
               <Link
-                href={socialLinks[index]}
+                href={currentUrl}
                 className="text-blue-500 dark:text-blue-400 break-all"
                 target="_blank"
               >
-                {socialLinks[index]}
+                {currentUrl}
               </Link>
             </div>
-            <Button onClick={() => copyToClipboard(socialLinks[index])}>
+            <Button onClick={() => copyToClipboard(currentUrl)}>
               Copy
             </Button>
           </div>
