@@ -100,8 +100,10 @@ export function CreateWebhookDialog({
     'MESSAGE_SENT',
     'MESSAGE_DELIVERED',
     'MESSAGE_FAILED',
-    'UNKNOWN_STATE',
-    'SMS_STATUS_UPDATED',
+    
+    // TODO: handle these events better in the future
+    // 'UNKNOWN_STATE',
+    // 'SMS_STATUS_UPDATED',
   ]
 
   return (
