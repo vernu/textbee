@@ -15,15 +15,10 @@ export const metadata: Metadata = {
 }
 
 export default async function RootLayout({ children }: PropsWithChildren) {
-  const session: Session | null = await getServerSession(authOptions as any)
-
   return (
     <html lang='en'>
       <body>
         <main>{children}</main>
-        <Analytics user={session?.user} />
-        <Footer />
-        <Toaster />
       </body>
     </html>
   )

@@ -15,12 +15,12 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { Menu, LogOut, LayoutDashboard, MessageSquarePlus } from 'lucide-react'
-import { signOut, useSession } from 'next-auth/react'
+import { signOut } from 'next-auth/react'
 import { Routes } from '@/config/routes'
 import ThemeToggle from './theme-toggle'
+import { Session } from 'next-auth'
 
-export default function AppHeader() {
-  const session = useSession()
+export default function AppHeader({ session }: { session: Session }) {
   const router = useRouter()
 
   const handleLogout = () => {
@@ -29,8 +29,8 @@ export default function AppHeader() {
   }
 
   const isAuthenticated = useMemo(
-    () => session.status === 'authenticated' && session.data?.user,
-    [session.status, session.data?.user]
+    () => session?.user,
+    [session?.user]
   )
 
   const AuthenticatedMenu = () => (
@@ -39,23 +39,23 @@ export default function AppHeader() {
         <Button variant='ghost' className='relative h-8 w-8 rounded-full'>
           <Avatar className='h-8 w-8'>
             <AvatarImage
-              src={session.data?.user?.avatar}
-              alt={session.data?.user?.name}
+              src={session.user?.avatar}
+              alt={session.user?.name}
             />
             <AvatarFallback>
-              {session.data?.user?.name?.charAt(0)}
+              {session.user?.name?.charAt(0)}
             </AvatarFallback>
           </Avatar>
           <div className='hidden md:block'>
-            {session.data?.user?.name?.split(' ')[0]}
+            {session.user?.name?.split(' ')[0]}
           </div>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className='w-56' align='end' forceMount>
         <DropdownMenuItem className='flex flex-col items-start'>
-          <div className='font-medium'>{session.data?.user?.name}</div>
+          <div className='font-medium'>{session.user?.name}</div>
           <div className='text-xs text-muted-foreground'>
-            {session.data?.user?.email}
+            {session.user?.email}
           </div>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
@@ -88,17 +88,17 @@ export default function AppHeader() {
               <div className='flex items-center gap-2 py-2'>
                 <Avatar className='h-8 w-8'>
                   <AvatarImage
-                    src={session.data?.user?.avatar}
-                    alt={session.data?.user?.name}
+                    src={session.user?.avatar}
+                    alt={session.user?.name}
                   />
                   <AvatarFallback>
-                    {session.data?.user?.name?.charAt(0)}
+                    {session.user?.name?.charAt(0)}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <div className='font-medium'>{session.data?.user?.name}</div>
+                  <div className='font-medium'>{session.user?.name}</div>
                   <div className='text-xs text-muted-foreground'>
-                    {session.data?.user?.email}
+                    {session.user?.email}
                   </div>
                 </div>
               </div>
