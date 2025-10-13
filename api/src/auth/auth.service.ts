@@ -219,6 +219,9 @@ export class AuthService {
     user.password = hashedPassword
     await user.save()
 
+    passwordReset.expiresAt = new Date(Date.now())
+    await passwordReset.save()
+
     this.mailService.sendEmailFromTemplate({
       to: user.email,
       subject: 'textbee.dev - Password Reset',
