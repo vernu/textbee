@@ -477,10 +477,7 @@ export class BillingService {
 
       return true
     } catch (error) {
-      if (
-        error instanceof HttpException &&
-        error.getStatus() === HttpStatus.TOO_MANY_REQUESTS
-      ) {
+      if (error instanceof HttpException) {
         throw error
       }
       console.error('canPerformAction: Exception in canPerformAction')

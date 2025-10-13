@@ -23,6 +23,7 @@ interface SmsData {
   status: string
   type: string
   updatedAt: string
+  webhookStatus: string
   __v: number
 }
 
@@ -37,7 +38,7 @@ export function WebhookPayloadModal({ isOpen, onClose, smsData, payload }: Webho
   const { toast } = useToast()
   
   if (!smsData) return null
-
+  
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString('en-US', {
       year: 'numeric',
@@ -109,29 +110,11 @@ export function WebhookPayloadModal({ isOpen, onClose, smsData, payload }: Webho
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Sender Information */}
-            <div className="space-y-2">
-              <h3 className="font-semibold text-sm flex items-center gap-2">
-                Sender
-              </h3>
-              <p className="text-sm bg-muted/30 rounded-md p-2">
-                {smsData.sender}
-              </p>
-            </div>
-
-            {/* Message Type */}
-            <div className="space-y-2">
-              <h3 className="font-semibold text-sm">Message Type</h3>
-              <p className="text-sm bg-muted/30 rounded-md p-2 capitalize">
-                {smsData.type.toLowerCase()}
-              </p>
-            </div>
-
             {/* Status */}
             <div className="space-y-2">
-              <h3 className="font-semibold text-sm">Status</h3>
+              <h3 className="font-semibold text-sm">Webhook Notification Status</h3>
               <p className="text-sm bg-muted/30 rounded-md p-2 capitalize">
-                {smsData.status}
+                {smsData.webhookStatus}
               </p>
             </div>
             

@@ -149,6 +149,14 @@ const WebhooksHistory = () => {
     setCurrentDevice(deviceId)
     setPage(1)
   }
+
+  const message_events = [
+    'MESSAGE_RECEIVED',
+    'MESSAGE_SENT',
+    'MESSAGE_DELIVERED',
+    'MESSAGE_FAILED',
+    'UNKNOWN_STATE',
+  ]
   return (
     <div className="flex flex-col gap-y-4">
       <div className="bg-gradient-to-r from-brand-50 to-sky-50 dark:from-brand-950/30 dark:to-sky-950/30 rounded-lg shadow-sm border border-brand-100 dark:border-brand-800/50 p-4 mb-4">
@@ -206,18 +214,14 @@ const WebhooksHistory = () => {
                       All Events
                     </div>
                   </SelectItem>
-                  <SelectItem value="MESSAGE_RECEIVED">
+                    {message_events.map((event, index) => (
+                        <SelectItem value={event} key={event}>
                     <div className="flex items-center gap-1.5">
-                      <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
-                      MESSAGE_RECEIVED
+                      <div className="h-1.5 w-1.5 rounded-full bg-gray-500" />
+                      {event}
                     </div>
                   </SelectItem>
-                  <SelectItem value="SMS_STATUS_UPDATED">
-                    <div className="flex items-center gap-1.5">
-                      <div className="h-1.5 w-1.5 rounded-full bg-brand-500" />
-                      SMS_STATUS_UPDATED
-                    </div>
-                  </SelectItem>
+                      ))}
                 </SelectContent>
               </Select>
             </div>
