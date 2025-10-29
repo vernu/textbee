@@ -26,7 +26,11 @@ import { BillingNotificationsProcessor } from 'src/billing/queue/billing-notific
       name: 'billing-notifications',
       defaultJobOptions: {
         attempts: 2,
-        removeOnComplete: true,
+        backoff: {
+          type: 'exponential',
+          delay: 1000,
+        },
+        removeOnComplete: false,
         removeOnFail: false,
       },
     }),

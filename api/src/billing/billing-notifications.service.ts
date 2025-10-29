@@ -62,7 +62,7 @@ export class BillingNotificationsService {
       {
         delay: 30000,
         attempts: 3,
-        removeOnComplete: true,
+        removeOnComplete: false,
         backoff: { type: 'exponential', delay: 2000 },
         jobId: updated._id.toString(),
       },
