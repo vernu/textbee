@@ -605,39 +605,31 @@ export class BillingService {
         }
 
         //if plan is pro and monthly limit is exceeded, give them 30% more monthly limit
-        if (plan.name?.startsWith('pro') && monthlyExceeded && !dailyExceeded && !bulkExceeded) {
+        if (
+          plan.name?.startsWith('pro') &&
+          monthlyExceeded &&
+          !dailyExceeded &&
+          !bulkExceeded
+        ) {
           const extendedMonthlyLimit = Math.floor(plan.monthlyLimit * 1.3)
           const exceedsExtended =
             processedSmsLastMonth + value > extendedMonthlyLimit
           if (!exceedsExtended) {
             return true
           }
-          throw new HttpException(
-            {
-              message: message,
-              hasReachedLimit: true,
-              dailyLimit: plan.dailyLimit,
-              dailyRemaining: plan.dailyLimit - processedSmsToday,
-              monthlyRemaining: plan.monthlyLimit - processedSmsLastMonth,
-              bulkSendLimit: plan.bulkSendLimit,
-              monthlyLimit: plan.monthlyLimit,
-            },
-            HttpStatus.TOO_MANY_REQUESTS,
-          )
-        } else {
-          throw new HttpException(
-            {
-              message: message,
-              hasReachedLimit: true,
-              dailyLimit: plan.dailyLimit,
-              dailyRemaining: plan.dailyLimit - processedSmsToday,
-              monthlyRemaining: plan.monthlyLimit - processedSmsLastMonth,
-              bulkSendLimit: plan.bulkSendLimit,
-              monthlyLimit: plan.monthlyLimit,
-            },
-            HttpStatus.TOO_MANY_REQUESTS,
-          )
         }
+        throw new HttpException(
+          {
+            message: message,
+            hasReachedLimit: true,
+            dailyLimit: plan.dailyLimit,
+            dailyRemaining: plan.dailyLimit - processedSmsToday,
+            monthlyRemaining: plan.monthlyLimit - processedSmsLastMonth,
+            bulkSendLimit: plan.bulkSendLimit,
+            monthlyLimit: plan.monthlyLimit,
+          },
+          HttpStatus.TOO_MANY_REQUESTS,
+        )
       }
 
       return true

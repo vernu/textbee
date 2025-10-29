@@ -40,6 +40,15 @@ export class BillingNotificationsProcessor {
       return
     }
 
+    // Ensure we do not resend within the dedupe window
+    const notif = await this.notificationModel.findById(payload.notificationId)
+    if (!notif) return
+    const windowMs = this.getDedupeWindowMs(payload.type as any)
+    const lastSentAt = notif.lastEmailSentAt || notif.createdAt
+    if (lastSentAt && lastSentAt.getTime() >= Date.now() - windowMs) {
+      return
+    }
+
     const subject = this.subjectForType(payload.type, payload.title)
     const ctaUrlBase = process.env.FRONTEND_URL || 'https://app.textbee.dev'
     const isEmailVerification = payload.type === 'email_verification_required'
@@ -67,6 +76,19 @@ export class BillingNotificationsProcessor {
       { _id: payload.notificationId },
       { $inc: { sentEmailCount: 1 }, $set: { lastEmailSentAt: new Date() } },
     )
+  }
+
+  private getDedupeWindowMs(type: string) {
+    const map: Record<string, number> = {
+      email_verification_required: 24,
+      daily_limit_reached: 12,
+      monthly_limit_reached: 48,
+      bulk_sms_limit_reached: 12,
+      daily_limit_approaching: 24,
+      monthly_limit_approaching: 48,
+    }
+    const hours = map[type] ?? 24
+    return hours * 60 * 60 * 1000
   }
 
   private subjectForType(type: string, fallback: string) {

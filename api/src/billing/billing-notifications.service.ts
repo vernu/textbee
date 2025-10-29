@@ -28,23 +28,35 @@ export class BillingNotificationsService {
   ) {}
 
   async notifyOnce({ userId, type, title, message, meta = {}, sendEmail = true }: NotifyOnceInput) {
-    const recent = await this.findRecentSimilar(userId, type)
-    if (recent) {
-      return recent
+    const windowMs = this.getDedupeWindowMs(type)
+    const existing = await this.notificationModel.findOne({
+      user: new Types.ObjectId(userId),
+      type,
+    })
+
+    if (existing) {
+      const lastSentAt = existing.lastEmailSentAt || existing.createdAt
+      if (lastSentAt && lastSentAt.getTime() >= Date.now() - windowMs) {
+        return existing
+      }
     }
 
-    const created = await this.createNotification(userId, type, title, message, meta)
+    const updated = await this.notificationModel.findOneAndUpdate(
+      { user: new Types.ObjectId(userId), type },
+      { $set: { title, message, meta }, $setOnInsert: { user: new Types.ObjectId(userId), type } },
+      { upsert: true, new: true, setDefaultsOnInsert: true },
+    )
 
     await this.billingQueue.add(
       'send',
       {
-        notificationId: created._id,
-        userId: created.user,
-        type: created.type,
-        title: created.title,
-        message: created.message,
-        meta: created.meta,
-        createdAt: created.createdAt,
+        notificationId: updated._id,
+        userId: updated.user,
+        type: updated.type,
+        title: updated.title,
+        message: updated.message,
+        meta: updated.meta,
+        createdAt: updated.createdAt,
         sendEmail,
       },
       {
@@ -52,10 +64,11 @@ export class BillingNotificationsService {
         attempts: 3,
         removeOnComplete: true,
         backoff: { type: 'exponential', delay: 2000 },
+        jobId: updated._id.toString(),
       },
     )
 
-    return created
+    return updated
   }
 
   async listForUser(userId: Types.ObjectId | string, { limit = 50 } = {}) {
@@ -78,30 +91,7 @@ export class BillingNotificationsService {
     return hours * 60 * 60 * 1000
   }
 
-  private async findRecentSimilar(userId: Types.ObjectId | string, type: BillingNotificationType) {
-    const since = new Date(Date.now() - this.getDedupeWindowMs(type))
-    return this.notificationModel.findOne({
-      user: new Types.ObjectId(userId),
-      type,
-      createdAt: { $gte: since },
-    })
-  }
-
-  private async createNotification(
-    userId: Types.ObjectId | string,
-    type: BillingNotificationType,
-    title: string,
-    message: string,
-    meta: Record<string, any>,
-  ) {
-    return this.notificationModel.create({
-      user: new Types.ObjectId(userId),
-      type,
-      title,
-      message,
-      meta,
-    })
-  }
+  // upsert-based single-document per user+type; dedupe controlled by window
 
 }
 
