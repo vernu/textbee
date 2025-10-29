@@ -35,7 +35,7 @@ export class BillingNotificationsService {
     })
 
     if (existing) {
-      const lastSentAt = existing.lastEmailSentAt || existing.createdAt
+      const lastSentAt = existing.lastEmailSentAt
       if (lastSentAt && lastSentAt.getTime() >= Date.now() - windowMs) {
         return existing
       }

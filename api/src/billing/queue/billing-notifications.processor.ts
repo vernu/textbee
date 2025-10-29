@@ -44,7 +44,7 @@ export class BillingNotificationsProcessor {
     const notif = await this.notificationModel.findById(payload.notificationId)
     if (!notif) return
     const windowMs = this.getDedupeWindowMs(payload.type as any)
-    const lastSentAt = notif.lastEmailSentAt || notif.createdAt
+    const lastSentAt = notif.lastEmailSentAt
     if (lastSentAt && lastSentAt.getTime() >= Date.now() - windowMs) {
       return
     }
