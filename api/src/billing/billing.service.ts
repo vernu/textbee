@@ -85,8 +85,8 @@ export class BillingService {
               .notifyOnce({
                 userId: user._id,
                 type: BillingNotificationType.DAILY_LIMIT_APPROACHING,
-                title: 'Daily limit approaching',
-                message: `You have used ${Math.round(dailyPct * 100)}% of your daily limit. ${plan.dailyLimit - processedSmsToday} messages remaining today.`,
+                title: 'You’re nearing today’s SMS limit',
+                message: `You’ve used ${Math.round(dailyPct * 100)}% of today’s SMS allocation. ${plan.dailyLimit - processedSmsToday} messages remain for today. Consider upgrading your plan or scheduling sends for later.`,
                 meta: { processedSmsToday, dailyLimit: plan.dailyLimit },
                 sendEmail: true,
               })
@@ -100,8 +100,8 @@ export class BillingService {
               .notifyOnce({
                 userId: user._id,
                 type: BillingNotificationType.MONTHLY_LIMIT_APPROACHING,
-                title: 'Monthly limit approaching',
-                message: `You have used ${Math.round(monthlyPct * 100)}% of your monthly limit. ${plan.monthlyLimit - processedSmsLastMonth} messages remaining this month.`,
+                title: 'You’re nearing this month’s SMS limit',
+                message: `You’ve used ${Math.round(monthlyPct * 100)}% of this month’s SMS allocation. ${plan.monthlyLimit - processedSmsLastMonth} messages remain this billing period. Upgrade to increase your monthly capacity.`,
                 meta: { processedSmsLastMonth, monthlyLimit: plan.monthlyLimit },
                 sendEmail: true,
               })
@@ -135,8 +135,8 @@ export class BillingService {
             .notifyOnce({
               userId: user._id,
               type: BillingNotificationType.DAILY_LIMIT_APPROACHING,
-              title: 'Daily limit approaching',
-              message: `You have used ${Math.round(dailyPct * 100)}% of your daily limit. ${plan.dailyLimit - processedSmsToday} messages remaining today.`,
+              title: 'You’re nearing today’s SMS limit',
+              message: `You’ve used ${Math.round(dailyPct * 100)}% of today’s SMS allocation. ${plan.dailyLimit - processedSmsToday} messages remain for today. Consider upgrading your plan or scheduling sends for later.`,
               meta: { processedSmsToday, dailyLimit: plan.dailyLimit },
               sendEmail: true,
             })
@@ -150,8 +150,8 @@ export class BillingService {
             .notifyOnce({
               userId: user._id,
               type: BillingNotificationType.MONTHLY_LIMIT_APPROACHING,
-              title: 'Monthly limit approaching',
-              message: `You have used ${Math.round(monthlyPct * 100)}% of your monthly limit. ${plan.monthlyLimit - processedSmsLastMonth} messages remaining this month.`,
+              title: 'You’re nearing this month’s SMS limit',
+              message: `You’ve used ${Math.round(monthlyPct * 100)}% of this month’s SMS allocation. ${plan.monthlyLimit - processedSmsLastMonth} messages remain this billing period. Upgrade to increase your monthly capacity.`,
               meta: { processedSmsLastMonth, monthlyLimit: plan.monthlyLimit },
               sendEmail: true,
             })
@@ -500,17 +500,17 @@ export class BillingService {
 
         if (dailyExceeded) {
           hasReachedLimit = true
-          message = `Daily limit reached. ${Math.max(0, plan.dailyLimit - processedSmsToday)} remaining today.`
+          message = `Daily SMS limit reached — you’ve used your full daily allocation. ${Math.max(0, plan.dailyLimit - processedSmsToday)} messages remain for today. Upgrade to increase your daily capacity or try again tomorrow.`
         }
 
         if (monthlyExceeded) {
           hasReachedLimit = true
-          message = `Monthly limit reached. ${Math.max(0, plan.monthlyLimit - processedSmsLastMonth)} remaining this month.`
+          message = `Monthly SMS limit reached — you’ve used this billing period’s allocation. Upgrade to continue sending immediately, or wait for the next billing period.`
         }
 
         if (bulkExceeded) {
           hasReachedLimit = true
-          message = `Bulk send limit is ${plan.bulkSendLimit} messages per batch.`
+          message = `Bulk send limit exceeded — your plan allows up to ${plan.bulkSendLimit} messages per batch. Split your send into smaller batches or upgrade your plan.`
         }
       }
 
@@ -534,18 +534,22 @@ export class BillingService {
         )
         // send a deduped notification (single call here for minimal change)
         let type: BillingNotificationType
+        let titleForEmail = ''
         if (dailyExceeded) {
           type = BillingNotificationType.DAILY_LIMIT_REACHED
+          titleForEmail = 'Daily SMS limit reached'
         } else if (monthlyExceeded) {
           type = BillingNotificationType.MONTHLY_LIMIT_REACHED
+          titleForEmail = 'Monthly SMS limit reached'
         } else if (bulkExceeded) {
           type = BillingNotificationType.BULK_SMS_LIMIT_REACHED
+          titleForEmail = 'Bulk send limit exceeded'
         }
         if (type) {
           await this.billingNotifications.notifyOnce({
             userId: user._id,
             type,
-            title: message.split('.')[0],
+            title: titleForEmail || 'Usage limit notice',
             message,
             meta: {
               processedSmsToday,
