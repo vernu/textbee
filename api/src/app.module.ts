@@ -19,6 +19,7 @@ import { BillingModule } from './billing/billing.module'
 import { ConfigModule, ConfigService } from '@nestjs/config'
 import { BullModule } from '@nestjs/bull'
 import { SupportModule } from './support/support.module'
+import { EventEmitterModule } from '@nestjs/event-emitter'
 
 @Injectable()
 export class LoggerMiddleware implements NestMiddleware {
@@ -36,6 +37,7 @@ export class LoggerMiddleware implements NestMiddleware {
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    EventEmitterModule.forRoot(),
     ThrottlerModule.forRoot([
       {
         ttl: 60000,

@@ -14,6 +14,9 @@ import { MailModule } from 'src/mail/mail.module'
 import { PolarWebhookPayload, PolarWebhookPayloadSchema } from './schemas/polar-webhook-payload.schema'
 import { Device, DeviceSchema } from '../gateway/schemas/device.schema'
 import { CheckoutSession, CheckoutSessionSchema } from './schemas/checkout-session.schema'
+import { BillingNotification, BillingNotificationSchema } from './schemas/billing-notification.schema'
+import { BillingNotificationsService } from './billing-notifications.service'
+import { BillingNotificationsListener } from './billing-notifications.listener'
 
 @Module({
   imports: [
@@ -23,6 +26,7 @@ import { CheckoutSession, CheckoutSessionSchema } from './schemas/checkout-sessi
       { name: PolarWebhookPayload.name, schema: PolarWebhookPayloadSchema },
       { name: Device.name, schema: DeviceSchema },
       { name: CheckoutSession.name, schema: CheckoutSessionSchema },
+      { name: BillingNotification.name, schema: BillingNotificationSchema },
     ]),
     forwardRef(() => AuthModule),
     forwardRef(() => UsersModule),
@@ -30,7 +34,7 @@ import { CheckoutSession, CheckoutSessionSchema } from './schemas/checkout-sessi
     MailModule,
   ],
   controllers: [BillingController],
-  providers: [BillingService, AbandonedCheckoutService],
-  exports: [BillingService, AbandonedCheckoutService],
+  providers: [BillingService, AbandonedCheckoutService, BillingNotificationsService, BillingNotificationsListener],
+  exports: [BillingService, AbandonedCheckoutService, BillingNotificationsService],
 })
 export class BillingModule {}

@@ -18,6 +18,7 @@ import {
   PolarWebhookPayloadDocument,
 } from './schemas/polar-webhook-payload.schema'
 import { CheckoutSession, CheckoutSessionDocument } from './schemas/checkout-session.schema'
+import { BillingNotificationsService, BillingNotificationType } from './billing-notifications.service'
 
 @Injectable()
 export class BillingService {
@@ -34,6 +35,7 @@ export class BillingService {
     private polarWebhookPayloadModel: Model<PolarWebhookPayloadDocument>,
     @InjectModel(CheckoutSession.name)
     private checkoutSessionModel: Model<CheckoutSessionDocument>,
+    private readonly billingNotifications: BillingNotificationsService,
   ) {
     this.polarApi = new Polar({
       accessToken: process.env.POLAR_ACCESS_TOKEN ?? '',
@@ -74,6 +76,39 @@ export class BillingService {
 
     if (subscription) {
       const plan = subscription.plan
+      // fire-and-forget: approaching threshold notifications
+      try {
+        if (plan?.dailyLimit && plan.dailyLimit > 0) {
+          const dailyPct = processedSmsToday / plan.dailyLimit
+          if (dailyPct >= 0.8 && processedSmsToday < plan.dailyLimit) {
+            this.billingNotifications
+              .notifyOnce({
+                userId: user._id,
+                type: BillingNotificationType.DAILY_LIMIT_APPROACHING,
+                title: 'Daily limit approaching',
+                message: `You have used ${Math.round(dailyPct * 100)}% of your daily limit. ${plan.dailyLimit - processedSmsToday} messages remaining today.`,
+                meta: { processedSmsToday, dailyLimit: plan.dailyLimit },
+                sendEmail: true,
+              })
+              .catch(() => {})
+          }
+        }
+        if (plan?.monthlyLimit && plan.monthlyLimit > 0) {
+          const monthlyPct = processedSmsLastMonth / plan.monthlyLimit
+          if (monthlyPct >= 0.8 && processedSmsLastMonth < plan.monthlyLimit) {
+            this.billingNotifications
+              .notifyOnce({
+                userId: user._id,
+                type: BillingNotificationType.MONTHLY_LIMIT_APPROACHING,
+                title: 'Monthly limit approaching',
+                message: `You have used ${Math.round(monthlyPct * 100)}% of your monthly limit. ${plan.monthlyLimit - processedSmsLastMonth} messages remaining this month.`,
+                meta: { processedSmsLastMonth, monthlyLimit: plan.monthlyLimit },
+                sendEmail: true,
+              })
+              .catch(() => {})
+          }
+        }
+      } catch {}
       return {
         ...subscription.toObject(),
         usage: {
@@ -90,6 +125,40 @@ export class BillingService {
     }
 
     const plan = await this.planModel.findOne({ name: 'free' })
+
+    // fire-and-forget: approaching threshold notifications
+    try {
+      if (plan?.dailyLimit && plan.dailyLimit > 0) {
+        const dailyPct = processedSmsToday / plan.dailyLimit
+        if (dailyPct >= 0.8 && processedSmsToday < plan.dailyLimit) {
+          this.billingNotifications
+            .notifyOnce({
+              userId: user._id,
+              type: BillingNotificationType.DAILY_LIMIT_APPROACHING,
+              title: 'Daily limit approaching',
+              message: `You have used ${Math.round(dailyPct * 100)}% of your daily limit. ${plan.dailyLimit - processedSmsToday} messages remaining today.`,
+              meta: { processedSmsToday, dailyLimit: plan.dailyLimit },
+              sendEmail: true,
+            })
+            .catch(() => {})
+        }
+      }
+      if (plan?.monthlyLimit && plan.monthlyLimit > 0) {
+        const monthlyPct = processedSmsLastMonth / plan.monthlyLimit
+        if (monthlyPct >= 0.8 && processedSmsLastMonth < plan.monthlyLimit) {
+          this.billingNotifications
+            .notifyOnce({
+              userId: user._id,
+              type: BillingNotificationType.MONTHLY_LIMIT_APPROACHING,
+              title: 'Monthly limit approaching',
+              message: `You have used ${Math.round(monthlyPct * 100)}% of your monthly limit. ${plan.monthlyLimit - processedSmsLastMonth} messages remaining this month.`,
+              meta: { processedSmsLastMonth, monthlyLimit: plan.monthlyLimit },
+              sendEmail: true,
+            })
+            .catch(() => {})
+        }
+      }
+    } catch {}
 
     return {
       plan,
@@ -416,29 +485,32 @@ export class BillingService {
         },
       })
 
+      let dailyExceeded = false
+      let monthlyExceeded = false
+      let bulkExceeded = false
+
       if (['send_sms', 'receive_sms', 'bulk_send_sms'].includes(action)) {
-        // check daily limit
-        if (
-          plan.dailyLimit !== -1 &&
-          processedSmsToday + value > plan.dailyLimit
-        ) {
+        const dailyFinite = plan.dailyLimit !== -1
+        const monthlyFinite = plan.monthlyLimit !== -1
+
+        // exceeded checks
+        dailyExceeded = dailyFinite && processedSmsToday + value > plan.dailyLimit
+        monthlyExceeded = monthlyFinite && processedSmsLastMonth + value > plan.monthlyLimit
+        bulkExceeded = plan.bulkSendLimit !== -1 && value > plan.bulkSendLimit
+
+        if (dailyExceeded) {
           hasReachedLimit = true
-          message = `You have reached your daily limit, you only have ${plan.dailyLimit - processedSmsToday} remaining`
+          message = `Daily limit reached. ${Math.max(0, plan.dailyLimit - processedSmsToday)} remaining today.`
         }
 
-        // check monthly limit
-        if (
-          plan.monthlyLimit !== -1 &&
-          processedSmsLastMonth + value > plan.monthlyLimit
-        ) {
+        if (monthlyExceeded) {
           hasReachedLimit = true
-          message = `You have reached your monthly limit, you only have ${plan.monthlyLimit - processedSmsLastMonth} remaining`
+          message = `Monthly limit reached. ${Math.max(0, plan.monthlyLimit - processedSmsLastMonth)} remaining this month.`
         }
 
-        // check bulk send limit
-        if (plan.bulkSendLimit !== -1 && value > plan.bulkSendLimit) {
+        if (bulkExceeded) {
           hasReachedLimit = true
-          message = `You can only send ${plan.bulkSendLimit} sms at a time`
+          message = `Bulk send limit is ${plan.bulkSendLimit} messages per batch.`
         }
       }
 
@@ -460,7 +532,32 @@ export class BillingService {
             monthlyLimit: plan.monthlyLimit,
           }),
         )
-
+        // send a deduped notification (single call here for minimal change)
+        let type: BillingNotificationType
+        if (dailyExceeded) {
+          type = BillingNotificationType.DAILY_LIMIT_REACHED
+        } else if (monthlyExceeded) {
+          type = BillingNotificationType.MONTHLY_LIMIT_REACHED
+        } else if (bulkExceeded) {
+          type = BillingNotificationType.BULK_SMS_LIMIT_REACHED
+        }
+        if (type) {
+          await this.billingNotifications.notifyOnce({
+            userId: user._id,
+            type,
+            title: message.split('.')[0],
+            message,
+            meta: {
+              processedSmsToday,
+              processedSmsLastMonth,
+              attempted: value,
+              dailyLimit: plan.dailyLimit,
+              monthlyLimit: plan.monthlyLimit,
+              bulkSendLimit: plan.bulkSendLimit,
+            },
+            sendEmail: true,
+          })
+        }
         throw new HttpException(
           {
             message: message,
