@@ -1,4 +1,9 @@
-import { BadRequestException, HttpException, HttpStatus, Injectable } from '@nestjs/common'
+import {
+  BadRequestException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+} from '@nestjs/common'
 import { InjectModel } from '@nestjs/mongoose'
 import { Model, Types } from 'mongoose'
 import { Plan, PlanDocument } from './schemas/plan.schema'
@@ -17,8 +22,14 @@ import {
   PolarWebhookPayload,
   PolarWebhookPayloadDocument,
 } from './schemas/polar-webhook-payload.schema'
-import { CheckoutSession, CheckoutSessionDocument } from './schemas/checkout-session.schema'
-import { BillingNotificationsService, BillingNotificationType } from './billing-notifications.service'
+import {
+  CheckoutSession,
+  CheckoutSessionDocument,
+} from './schemas/checkout-session.schema'
+import {
+  BillingNotificationsService,
+  BillingNotificationType,
+} from './billing-notifications.service'
 
 @Injectable()
 export class BillingService {
@@ -60,7 +71,7 @@ export class BillingService {
 
     // Get user's devices and usage data
     const userDevices = await this.deviceModel.find({ user: user._id }, '_id')
-    const deviceIds = userDevices.map(d => d._id)
+    const deviceIds = userDevices.map((d) => d._id)
 
     const processedSmsToday = await this.smsModel.countDocuments({
       device: { $in: deviceIds },
@@ -102,7 +113,10 @@ export class BillingService {
                 type: BillingNotificationType.MONTHLY_LIMIT_APPROACHING,
                 title: 'You’re nearing this month’s SMS limit',
                 message: `You’ve used ${Math.round(monthlyPct * 100)}% of this month’s SMS allocation. ${plan.monthlyLimit - processedSmsLastMonth} messages remain this billing period. Upgrade to increase your monthly capacity.`,
-                meta: { processedSmsLastMonth, monthlyLimit: plan.monthlyLimit },
+                meta: {
+                  processedSmsLastMonth,
+                  monthlyLimit: plan.monthlyLimit,
+                },
                 sendEmail: true,
               })
               .catch(() => {})
@@ -116,11 +130,21 @@ export class BillingService {
           processedSmsLastMonth,
           dailyLimit: plan.dailyLimit,
           monthlyLimit: plan.monthlyLimit,
-          dailyRemaining: plan.dailyLimit === -1 ? -1 : plan.dailyLimit - processedSmsToday,
-          monthlyRemaining: plan.monthlyLimit === -1 ? -1 : plan.monthlyLimit - processedSmsLastMonth,
-          dailyUsagePercentage: plan.dailyLimit === -1 ? 0 : Math.round((processedSmsToday / plan.dailyLimit) * 100),
-          monthlyUsagePercentage: plan.monthlyLimit === -1 ? 0 : Math.round((processedSmsLastMonth / plan.monthlyLimit) * 100),
-        }
+          dailyRemaining:
+            plan.dailyLimit === -1 ? -1 : plan.dailyLimit - processedSmsToday,
+          monthlyRemaining:
+            plan.monthlyLimit === -1
+              ? -1
+              : plan.monthlyLimit - processedSmsLastMonth,
+          dailyUsagePercentage:
+            plan.dailyLimit === -1
+              ? 0
+              : Math.round((processedSmsToday / plan.dailyLimit) * 100),
+          monthlyUsagePercentage:
+            plan.monthlyLimit === -1
+              ? 0
+              : Math.round((processedSmsLastMonth / plan.monthlyLimit) * 100),
+        },
       }
     }
 
@@ -168,11 +192,21 @@ export class BillingService {
         processedSmsLastMonth,
         dailyLimit: plan.dailyLimit,
         monthlyLimit: plan.monthlyLimit,
-        dailyRemaining: plan.dailyLimit === -1 ? -1 : plan.dailyLimit - processedSmsToday,
-        monthlyRemaining: plan.monthlyLimit === -1 ? -1 : plan.monthlyLimit - processedSmsLastMonth,
-        dailyUsagePercentage: plan.dailyLimit === -1 ? 0 : Math.round((processedSmsToday / plan.dailyLimit) * 100),
-        monthlyUsagePercentage: plan.monthlyLimit === -1 ? 0 : Math.round((processedSmsLastMonth / plan.monthlyLimit) * 100),
-      }
+        dailyRemaining:
+          plan.dailyLimit === -1 ? -1 : plan.dailyLimit - processedSmsToday,
+        monthlyRemaining:
+          plan.monthlyLimit === -1
+            ? -1
+            : plan.monthlyLimit - processedSmsLastMonth,
+        dailyUsagePercentage:
+          plan.dailyLimit === -1
+            ? 0
+            : Math.round((processedSmsToday / plan.dailyLimit) * 100),
+        monthlyUsagePercentage:
+          plan.monthlyLimit === -1
+            ? 0
+            : Math.round((processedSmsLastMonth / plan.monthlyLimit) * 100),
+      },
     }
   }
 
@@ -209,7 +243,8 @@ export class BillingService {
 
     // const product = await this.polarApi.products.get(selectedPlan.polarProductId)
 
-    const discountId = payload.discountId ?? process.env.POLAR_DEFAULT_DISCOUNT_ID
+    const discountId =
+      payload.discountId ?? process.env.POLAR_DEFAULT_DISCOUNT_ID
 
     try {
       const checkoutOptions: any = {
@@ -239,22 +274,26 @@ export class BillingService {
       } catch (error) {
         console.error('failed to get discount', error)
       }
-      
 
       const checkout = await this.polarApi.checkouts.create(checkoutOptions)
-      
-      
-      this.checkoutSessionModel.updateOne({
-        user: user._id,
-      },{
-        user: user._id,
-        checkoutSessionId: checkout.id,
-        checkoutUrl: checkout.url,
-        expiresAt: new Date(checkout.expiresAt),
-        payload: checkout,
-      }, { upsert: true }).catch((error) => {
-        console.error(error)
-      })
+
+      this.checkoutSessionModel
+        .updateOne(
+          {
+            user: user._id,
+          },
+          {
+            user: user._id,
+            checkoutSessionId: checkout.id,
+            checkoutUrl: checkout.url,
+            expiresAt: new Date(checkout.expiresAt),
+            payload: checkout,
+          },
+          { upsert: true },
+        )
+        .catch((error) => {
+          console.error(error)
+        })
 
       return { redirectUrl: checkout.url }
     } catch (error) {
@@ -472,7 +511,7 @@ export class BillingService {
 
       // Get user's devices and then count SMS
       const userDevices = await this.deviceModel.find({ user: user._id }, '_id')
-      const deviceIds = userDevices.map(d => d._id)
+      const deviceIds = userDevices.map((d) => d._id)
 
       const processedSmsToday = await this.smsModel.countDocuments({
         device: { $in: deviceIds },
@@ -494,8 +533,10 @@ export class BillingService {
         const monthlyFinite = plan.monthlyLimit !== -1
 
         // exceeded checks
-        dailyExceeded = dailyFinite && processedSmsToday + value > plan.dailyLimit
-        monthlyExceeded = monthlyFinite && processedSmsLastMonth + value > plan.monthlyLimit
+        dailyExceeded =
+          dailyFinite && processedSmsToday + value > plan.dailyLimit
+        monthlyExceeded =
+          monthlyFinite && processedSmsLastMonth + value > plan.monthlyLimit
         bulkExceeded = plan.bulkSendLimit !== -1 && value > plan.bulkSendLimit
 
         if (dailyExceeded) {
@@ -562,18 +603,41 @@ export class BillingService {
             sendEmail: true,
           })
         }
-        throw new HttpException(
-          {
-            message: message,
-            hasReachedLimit: true,
-            dailyLimit: plan.dailyLimit,
-            dailyRemaining: plan.dailyLimit - processedSmsToday,
-            monthlyRemaining: plan.monthlyLimit - processedSmsLastMonth,
-            bulkSendLimit: plan.bulkSendLimit,
-            monthlyLimit: plan.monthlyLimit,
-          },
-          HttpStatus.TOO_MANY_REQUESTS,
-        )
+
+        //if plan is pro and monthly limit is exceeded, give them 30% more monthly limit
+        if (plan.name?.startsWith('pro') && monthlyExceeded && !dailyExceeded && !bulkExceeded) {
+          const extendedMonthlyLimit = Math.floor(plan.monthlyLimit * 1.3)
+          const exceedsExtended =
+            processedSmsLastMonth + value > extendedMonthlyLimit
+          if (!exceedsExtended) {
+            return true
+          }
+          throw new HttpException(
+            {
+              message: message,
+              hasReachedLimit: true,
+              dailyLimit: plan.dailyLimit,
+              dailyRemaining: plan.dailyLimit - processedSmsToday,
+              monthlyRemaining: plan.monthlyLimit - processedSmsLastMonth,
+              bulkSendLimit: plan.bulkSendLimit,
+              monthlyLimit: plan.monthlyLimit,
+            },
+            HttpStatus.TOO_MANY_REQUESTS,
+          )
+        } else {
+          throw new HttpException(
+            {
+              message: message,
+              hasReachedLimit: true,
+              dailyLimit: plan.dailyLimit,
+              dailyRemaining: plan.dailyLimit - processedSmsToday,
+              monthlyRemaining: plan.monthlyLimit - processedSmsLastMonth,
+              bulkSendLimit: plan.bulkSendLimit,
+              monthlyLimit: plan.monthlyLimit,
+            },
+            HttpStatus.TOO_MANY_REQUESTS,
+          )
+        }
       }
 
       return true
@@ -596,8 +660,10 @@ export class BillingService {
     const plan = await this.planModel.findById(subscription.plan)
 
     // First get all devices belonging to the user
-    const userDevices = await this.deviceModel.find({ user: new Types.ObjectId(userId) }).select('_id')
-    const deviceIds = userDevices.map(device => device._id)
+    const userDevices = await this.deviceModel
+      .find({ user: new Types.ObjectId(userId) })
+      .select('_id')
+    const deviceIds = userDevices.map((device) => device._id)
 
     const processedSmsToday = await this.smsModel.countDocuments({
       device: { $in: deviceIds },
