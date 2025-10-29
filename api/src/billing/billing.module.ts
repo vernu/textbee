@@ -16,10 +16,20 @@ import { Device, DeviceSchema } from '../gateway/schemas/device.schema'
 import { CheckoutSession, CheckoutSessionSchema } from './schemas/checkout-session.schema'
 import { BillingNotification, BillingNotificationSchema } from './schemas/billing-notification.schema'
 import { BillingNotificationsService } from './billing-notifications.service'
-import { BillingNotificationsListener } from './billing-notifications.listener'
+// import { BillingNotificationsListener } from './billing-notifications.listener'
+import { BullModule } from '@nestjs/bull'
+import { BillingNotificationsProcessor } from 'src/billing/queue/billing-notifications.processor'
 
 @Module({
   imports: [
+    BullModule.registerQueue({
+      name: 'billing-notifications',
+      defaultJobOptions: {
+        attempts: 2,
+        removeOnComplete: true,
+        removeOnFail: false,
+      },
+    }),
     MongooseModule.forFeature([
       { name: Plan.name, schema: PlanSchema },
       { name: Subscription.name, schema: SubscriptionSchema },
@@ -34,7 +44,7 @@ import { BillingNotificationsListener } from './billing-notifications.listener'
     MailModule,
   ],
   controllers: [BillingController],
-  providers: [BillingService, AbandonedCheckoutService, BillingNotificationsService, BillingNotificationsListener],
+  providers: [BillingService, AbandonedCheckoutService, BillingNotificationsService, BillingNotificationsProcessor],
   exports: [BillingService, AbandonedCheckoutService, BillingNotificationsService],
 })
 export class BillingModule {}

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { InjectModel } from '@nestjs/mongoose'
-import { EventEmitter2 } from '@nestjs/event-emitter'
+import { InjectQueue } from '@nestjs/bull'
+import { Queue } from 'bull'
 import { Model, Types } from 'mongoose'
 import {
   BillingNotification,
@@ -23,7 +24,7 @@ export class BillingNotificationsService {
   constructor(
     @InjectModel(BillingNotification.name)
     private readonly notificationModel: Model<BillingNotificationDocument>,
-    private readonly eventEmitter: EventEmitter2,
+    @InjectQueue('billing-notifications') private readonly billingQueue: Queue,
   ) {}
 
   async notifyOnce({ userId, type, title, message, meta = {}, sendEmail = true }: NotifyOnceInput) {
@@ -34,7 +35,25 @@ export class BillingNotificationsService {
 
     const created = await this.createNotification(userId, type, title, message, meta)
 
-    this.emitCreatedEvent(created, { sendEmail })
+    await this.billingQueue.add(
+      'send',
+      {
+        notificationId: created._id,
+        userId: created.user,
+        type: created.type,
+        title: created.title,
+        message: created.message,
+        meta: created.meta,
+        createdAt: created.createdAt,
+        sendEmail,
+      },
+      {
+        delay: 30000,
+        attempts: 3,
+        removeOnComplete: true,
+        backoff: { type: 'exponential', delay: 2000 },
+      },
+    )
 
     return created
   }
@@ -84,18 +103,6 @@ export class BillingNotificationsService {
     })
   }
 
-  private emitCreatedEvent(notification: BillingNotificationDocument, options: { sendEmail: boolean }) {
-    this.eventEmitter.emit('billing.notification.created', {
-      notificationId: notification._id,
-      userId: notification.user,
-      type: notification.type,
-      title: notification.title,
-      message: notification.message,
-      meta: notification.meta,
-      createdAt: notification.createdAt,
-      sendEmail: options.sendEmail,
-    })
-  }
 }
 
 export { BillingNotificationType }
