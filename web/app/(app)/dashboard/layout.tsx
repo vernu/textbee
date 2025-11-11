@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 import AccountDeletionAlert from './(components)/account-deletion-alert'
 import UpgradeToProAlert from './(components)/upgrade-to-pro-alert'
 import VerifyEmailAlert from './(components)/verify-email-alert'
+import { SurveyModal } from '@/components/shared/survey-modal'
 
 export default function DashboardLayout({
   children,
@@ -88,6 +89,8 @@ export default function DashboardLayout({
 
       {/* Bottom padding for mobile to account for the fixed navigation */}
       <div className='h-16 md:hidden'></div>
+      
+      <SurveyModal />
     </div>
   )
 }
