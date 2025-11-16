@@ -29,8 +29,8 @@ export default function CheckoutPage({ params }) {
         if (retries > 0) {
           initiateCheckout(retries - 1)
         } else {
-          setError('Failed to create checkout session. Please try again.')
-          console.error(error)
+          setError(error.response?.data?.message || 'Failed to create checkout session. Please try again or contact billing@textbee.dev.')
+          console.error(error.response?.data?.message)
         }
       }
     },
