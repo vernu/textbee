@@ -87,35 +87,46 @@ export class BillingService {
 
     if (subscription) {
       const plan = subscription.plan
-      // fire-and-forget: approaching threshold notifications
+      const effectiveLimits = this.getEffectiveLimits(subscription, plan)
+
       try {
-        if (plan?.dailyLimit && plan.dailyLimit > 0) {
-          const dailyPct = processedSmsToday / plan.dailyLimit
-          if (dailyPct >= 0.8 && processedSmsToday < plan.dailyLimit) {
+        if (effectiveLimits.dailyLimit && effectiveLimits.dailyLimit > 0) {
+          const dailyPct = processedSmsToday / effectiveLimits.dailyLimit
+          if (
+            dailyPct >= 0.8 &&
+            processedSmsToday < effectiveLimits.dailyLimit
+          ) {
             this.billingNotifications
               .notifyOnce({
                 userId: user._id,
                 type: BillingNotificationType.DAILY_LIMIT_APPROACHING,
-                title: 'You’re nearing today’s SMS limit',
-                message: `You’ve used ${Math.round(dailyPct * 100)}% of today’s SMS allocation. ${plan.dailyLimit - processedSmsToday} messages remain for today. Consider upgrading your plan or scheduling sends for later.`,
-                meta: { processedSmsToday, dailyLimit: plan.dailyLimit },
+                title: "You're nearing today's SMS limit",
+                message: `You've used ${Math.round(dailyPct * 100)}% of today's SMS allocation. ${effectiveLimits.dailyLimit - processedSmsToday} messages remain for today. Consider upgrading your plan or scheduling sends for later.`,
+                meta: {
+                  processedSmsToday,
+                  dailyLimit: effectiveLimits.dailyLimit,
+                },
                 sendEmail: true,
               })
               .catch(() => {})
           }
         }
-        if (plan?.monthlyLimit && plan.monthlyLimit > 0) {
-          const monthlyPct = processedSmsLastMonth / plan.monthlyLimit
-          if (monthlyPct >= 0.8 && processedSmsLastMonth < plan.monthlyLimit) {
+        if (effectiveLimits.monthlyLimit && effectiveLimits.monthlyLimit > 0) {
+          const monthlyPct =
+            processedSmsLastMonth / effectiveLimits.monthlyLimit
+          if (
+            monthlyPct >= 0.8 &&
+            processedSmsLastMonth < effectiveLimits.monthlyLimit
+          ) {
             this.billingNotifications
               .notifyOnce({
                 userId: user._id,
                 type: BillingNotificationType.MONTHLY_LIMIT_APPROACHING,
-                title: 'You’re nearing this month’s SMS limit',
-                message: `You’ve used ${Math.round(monthlyPct * 100)}% of this month’s SMS allocation. ${plan.monthlyLimit - processedSmsLastMonth} messages remain this billing period. Upgrade to increase your monthly capacity.`,
+                title: "You're nearing this month's SMS limit",
+                message: `You've used ${Math.round(monthlyPct * 100)}% of this month's SMS allocation. ${effectiveLimits.monthlyLimit - processedSmsLastMonth} messages remain this billing period. Upgrade to increase your monthly capacity.`,
                 meta: {
                   processedSmsLastMonth,
-                  monthlyLimit: plan.monthlyLimit,
+                  monthlyLimit: effectiveLimits.monthlyLimit,
                 },
                 sendEmail: true,
               })
@@ -128,55 +139,71 @@ export class BillingService {
         usage: {
           processedSmsToday,
           processedSmsLastMonth,
-          dailyLimit: plan.dailyLimit,
-          monthlyLimit: plan.monthlyLimit,
+          dailyLimit: effectiveLimits.dailyLimit,
+          monthlyLimit: effectiveLimits.monthlyLimit,
           dailyRemaining:
-            plan.dailyLimit === -1 ? -1 : plan.dailyLimit - processedSmsToday,
-          monthlyRemaining:
-            plan.monthlyLimit === -1
+            effectiveLimits.dailyLimit === -1
               ? -1
-              : plan.monthlyLimit - processedSmsLastMonth,
+              : effectiveLimits.dailyLimit - processedSmsToday,
+          monthlyRemaining:
+            effectiveLimits.monthlyLimit === -1
+              ? -1
+              : effectiveLimits.monthlyLimit - processedSmsLastMonth,
           dailyUsagePercentage:
-            plan.dailyLimit === -1
+            effectiveLimits.dailyLimit === -1
               ? 0
-              : Math.round((processedSmsToday / plan.dailyLimit) * 100),
+              : Math.round(
+                  (processedSmsToday / effectiveLimits.dailyLimit) * 100,
+                ),
           monthlyUsagePercentage:
-            plan.monthlyLimit === -1
+            effectiveLimits.monthlyLimit === -1
               ? 0
-              : Math.round((processedSmsLastMonth / plan.monthlyLimit) * 100),
+              : Math.round(
+                  (processedSmsLastMonth / effectiveLimits.monthlyLimit) * 100,
+                ),
         },
       }
     }
 
     const plan = await this.planModel.findOne({ name: 'free' })
+    const effectiveLimits = this.getEffectiveLimits(null, plan)
 
     // fire-and-forget: approaching threshold notifications
     try {
-      if (plan?.dailyLimit && plan.dailyLimit > 0) {
-        const dailyPct = processedSmsToday / plan.dailyLimit
-        if (dailyPct >= 0.8 && processedSmsToday < plan.dailyLimit) {
+      if (effectiveLimits.dailyLimit && effectiveLimits.dailyLimit > 0) {
+        const dailyPct = processedSmsToday / effectiveLimits.dailyLimit
+        if (dailyPct >= 0.8 && processedSmsToday < effectiveLimits.dailyLimit) {
           this.billingNotifications
             .notifyOnce({
               userId: user._id,
               type: BillingNotificationType.DAILY_LIMIT_APPROACHING,
-              title: 'You’re nearing today’s SMS limit',
-              message: `You’ve used ${Math.round(dailyPct * 100)}% of today’s SMS allocation. ${plan.dailyLimit - processedSmsToday} messages remain for today. Consider upgrading your plan or scheduling sends for later.`,
-              meta: { processedSmsToday, dailyLimit: plan.dailyLimit },
+              title: "You're nearing today's SMS limit",
+              message: `You've used ${Math.round(dailyPct * 100)}% of today's SMS allocation. ${effectiveLimits.dailyLimit - processedSmsToday} messages remain for today. Consider upgrading your plan or scheduling sends for later.`,
+              meta: {
+                processedSmsToday,
+                dailyLimit: effectiveLimits.dailyLimit,
+              },
               sendEmail: true,
             })
             .catch(() => {})
         }
       }
-      if (plan?.monthlyLimit && plan.monthlyLimit > 0) {
-        const monthlyPct = processedSmsLastMonth / plan.monthlyLimit
-        if (monthlyPct >= 0.8 && processedSmsLastMonth < plan.monthlyLimit) {
+      if (effectiveLimits.monthlyLimit && effectiveLimits.monthlyLimit > 0) {
+        const monthlyPct = processedSmsLastMonth / effectiveLimits.monthlyLimit
+        if (
+          monthlyPct >= 0.8 &&
+          processedSmsLastMonth < effectiveLimits.monthlyLimit
+        ) {
           this.billingNotifications
             .notifyOnce({
               userId: user._id,
               type: BillingNotificationType.MONTHLY_LIMIT_APPROACHING,
-              title: 'You’re nearing this month’s SMS limit',
-              message: `You’ve used ${Math.round(monthlyPct * 100)}% of this month’s SMS allocation. ${plan.monthlyLimit - processedSmsLastMonth} messages remain this billing period. Upgrade to increase your monthly capacity.`,
-              meta: { processedSmsLastMonth, monthlyLimit: plan.monthlyLimit },
+              title: "You're nearing this month's SMS limit",
+              message: `You've used ${Math.round(monthlyPct * 100)}% of this month's SMS allocation. ${effectiveLimits.monthlyLimit - processedSmsLastMonth} messages remain this billing period. Upgrade to increase your monthly capacity.`,
+              meta: {
+                processedSmsLastMonth,
+                monthlyLimit: effectiveLimits.monthlyLimit,
+              },
               sendEmail: true,
             })
             .catch(() => {})
@@ -190,22 +217,28 @@ export class BillingService {
       usage: {
         processedSmsToday,
         processedSmsLastMonth,
-        dailyLimit: plan.dailyLimit,
-        monthlyLimit: plan.monthlyLimit,
+        dailyLimit: effectiveLimits.dailyLimit,
+        monthlyLimit: effectiveLimits.monthlyLimit,
         dailyRemaining:
-          plan.dailyLimit === -1 ? -1 : plan.dailyLimit - processedSmsToday,
-        monthlyRemaining:
-          plan.monthlyLimit === -1
+          effectiveLimits.dailyLimit === -1
             ? -1
-            : plan.monthlyLimit - processedSmsLastMonth,
+            : effectiveLimits.dailyLimit - processedSmsToday,
+        monthlyRemaining:
+          effectiveLimits.monthlyLimit === -1
+            ? -1
+            : effectiveLimits.monthlyLimit - processedSmsLastMonth,
         dailyUsagePercentage:
-          plan.dailyLimit === -1
+          effectiveLimits.dailyLimit === -1
             ? 0
-            : Math.round((processedSmsToday / plan.dailyLimit) * 100),
+            : Math.round(
+                (processedSmsToday / effectiveLimits.dailyLimit) * 100,
+              ),
         monthlyUsagePercentage:
-          plan.monthlyLimit === -1
+          effectiveLimits.monthlyLimit === -1
             ? 0
-            : Math.round((processedSmsLastMonth / plan.monthlyLimit) * 100),
+            : Math.round(
+                (processedSmsLastMonth / effectiveLimits.monthlyLimit) * 100,
+              ),
       },
     }
   }
@@ -233,6 +266,14 @@ export class BillingService {
     const selectedPlan = await this.planModel.findOne({
       name: payload.planName,
     })
+
+    const currentSubscription = await this.getCurrentSubscription(user)
+    if (currentSubscription?.plan?.name ===  payload.planName) {
+      throw new BadRequestException({
+        message: `You are already on ${payload.planName} plan, please contact billing@textbee.dev to get a custom plan`,
+        code: 'ALREADY_ON_PLAN',
+      })
+    }
 
     if (
       !selectedPlan?.polarMonthlyProductId &&
@@ -358,6 +399,22 @@ export class BillingService {
     }
   }
 
+  private getEffectiveLimits(subscription: any, plan: any) {
+    if (!subscription) {
+      return {
+        dailyLimit: plan.dailyLimit,
+        monthlyLimit: plan.monthlyLimit,
+        bulkSendLimit: plan.bulkSendLimit,
+      }
+    }
+
+    return {
+      dailyLimit: subscription.customDailyLimit ?? plan.dailyLimit,
+      monthlyLimit: subscription.customMonthlyLimit ?? plan.monthlyLimit,
+      bulkSendLimit: subscription.customBulkSendLimit ?? plan.bulkSendLimit,
+    }
+  }
+
   async getUserLimits(userId: string) {
     const subscription = await this.subscriptionModel
       .findOne({ user: new Types.ObjectId(userId), isActive: true })
@@ -366,21 +423,11 @@ export class BillingService {
     if (!subscription) {
       // Default to free plan limits
       const freePlan = await this.planModel.findOne({ name: 'free' })
-      return {
-        dailyLimit: freePlan.dailyLimit,
-        monthlyLimit: freePlan.monthlyLimit,
-        bulkSendLimit: freePlan.bulkSendLimit,
-      }
+      return this.getEffectiveLimits(null, freePlan)
     }
 
-    // For custom plans, use custom limits if set
-    return {
-      dailyLimit: subscription.customDailyLimit || subscription.plan.dailyLimit,
-      monthlyLimit:
-        subscription.customMonthlyLimit || subscription.plan.monthlyLimit,
-      bulkSendLimit:
-        subscription.customBulkSendLimit || subscription.plan.bulkSendLimit,
-    }
+    // Use custom limits if set, otherwise fall back to plan limits
+    return this.getEffectiveLimits(subscription, subscription.plan)
   }
 
   async switchPlan({
@@ -501,9 +548,18 @@ export class BillingService {
         plan = await this.planModel.findById(subscription.plan)
       }
 
+      const effectiveLimits = this.getEffectiveLimits(subscription, plan)
+
       if (plan.name?.startsWith('custom')) {
-        // TODO: for now custom plans are unlimited
-        return true
+        // For custom plans, check if custom limits are set to unlimited (-1)
+        if (
+          effectiveLimits.dailyLimit === -1 &&
+          effectiveLimits.monthlyLimit === -1 &&
+          effectiveLimits.bulkSendLimit === -1
+        ) {
+          return true
+        }
+        // Otherwise, continue with limit checks using effective limits
       }
 
       let hasReachedLimit = false
@@ -529,29 +585,32 @@ export class BillingService {
       let bulkExceeded = false
 
       if (['send_sms', 'receive_sms', 'bulk_send_sms'].includes(action)) {
-        const dailyFinite = plan.dailyLimit !== -1
-        const monthlyFinite = plan.monthlyLimit !== -1
+        const dailyFinite = effectiveLimits.dailyLimit !== -1
+        const monthlyFinite = effectiveLimits.monthlyLimit !== -1
 
         // exceeded checks
         dailyExceeded =
-          dailyFinite && processedSmsToday + value > plan.dailyLimit
+          dailyFinite && processedSmsToday + value > effectiveLimits.dailyLimit
         monthlyExceeded =
-          monthlyFinite && processedSmsLastMonth + value > plan.monthlyLimit
-        bulkExceeded = plan.bulkSendLimit !== -1 && value > plan.bulkSendLimit
+          monthlyFinite &&
+          processedSmsLastMonth + value > effectiveLimits.monthlyLimit
+        bulkExceeded =
+          effectiveLimits.bulkSendLimit !== -1 &&
+          value > effectiveLimits.bulkSendLimit
 
         if (dailyExceeded) {
           hasReachedLimit = true
-          message = `Daily SMS limit reached — you’ve used your full daily allocation. ${Math.max(0, plan.dailyLimit - processedSmsToday)} messages remain for today. Upgrade to increase your daily capacity or try again tomorrow.`
+          message = `Daily SMS limit reached — you've used your full daily allocation. ${Math.max(0, effectiveLimits.dailyLimit - processedSmsToday)} messages remain for today. Upgrade to increase your daily capacity or try again tomorrow.`
         }
 
         if (monthlyExceeded) {
           hasReachedLimit = true
-          message = `Monthly SMS limit reached — you’ve used this billing period’s allocation. Upgrade to continue sending immediately, or wait for the next billing period.`
+          message = `Monthly SMS limit reached — you've used this billing period's allocation. Upgrade to continue sending immediately, or wait for the next billing period.`
         }
 
         if (bulkExceeded) {
           hasReachedLimit = true
-          message = `Bulk send limit exceeded — your plan allows up to ${plan.bulkSendLimit} messages per batch. Split your send into smaller batches or upgrade your plan.`
+          message = `Bulk send limit exceeded — your plan allows up to ${effectiveLimits.bulkSendLimit} messages per batch. Split your send into smaller batches or upgrade your plan.`
         }
       }
 
@@ -566,14 +625,15 @@ export class BillingService {
             value,
             message,
             hasReachedLimit: true,
-            dailyLimit: plan.dailyLimit,
-            dailyRemaining: plan.dailyLimit - processedSmsToday,
-            monthlyRemaining: plan.monthlyLimit - processedSmsLastMonth,
-            bulkSendLimit: plan.bulkSendLimit,
-            monthlyLimit: plan.monthlyLimit,
+            dailyLimit: effectiveLimits.dailyLimit,
+            dailyRemaining: effectiveLimits.dailyLimit - processedSmsToday,
+            monthlyRemaining:
+              effectiveLimits.monthlyLimit - processedSmsLastMonth,
+            bulkSendLimit: effectiveLimits.bulkSendLimit,
+            monthlyLimit: effectiveLimits.monthlyLimit,
           }),
         )
-        // send a deduped notification (single call here for minimal change)
+
         let type: BillingNotificationType
         let titleForEmail = ''
         if (dailyExceeded) {
@@ -596,22 +656,24 @@ export class BillingService {
               processedSmsToday,
               processedSmsLastMonth,
               attempted: value,
-              dailyLimit: plan.dailyLimit,
-              monthlyLimit: plan.monthlyLimit,
-              bulkSendLimit: plan.bulkSendLimit,
+              dailyLimit: effectiveLimits.dailyLimit,
+              monthlyLimit: effectiveLimits.monthlyLimit,
+              bulkSendLimit: effectiveLimits.bulkSendLimit,
             },
             sendEmail: true,
           })
         }
 
-        //if plan is pro and monthly limit is exceeded, give them 30% more monthly limit
+        // if plan is not free and monthly limit is exceeded, give them 80% more monthly limit
         if (
-          plan.name?.startsWith('pro') &&
+          plan.name !== 'free' &&
           monthlyExceeded &&
           !dailyExceeded &&
           !bulkExceeded
         ) {
-          const extendedMonthlyLimit = Math.floor(plan.monthlyLimit * 1.3)
+          const extendedMonthlyLimit = Math.floor(
+            effectiveLimits.monthlyLimit * 1.8,
+          )
           const exceedsExtended =
             processedSmsLastMonth + value > extendedMonthlyLimit
           if (!exceedsExtended) {
@@ -622,11 +684,12 @@ export class BillingService {
           {
             message: message,
             hasReachedLimit: true,
-            dailyLimit: plan.dailyLimit,
-            dailyRemaining: plan.dailyLimit - processedSmsToday,
-            monthlyRemaining: plan.monthlyLimit - processedSmsLastMonth,
-            bulkSendLimit: plan.bulkSendLimit,
-            monthlyLimit: plan.monthlyLimit,
+            dailyLimit: effectiveLimits.dailyLimit,
+            dailyRemaining: effectiveLimits.dailyLimit - processedSmsToday,
+            monthlyRemaining:
+              effectiveLimits.monthlyLimit - processedSmsLastMonth,
+            bulkSendLimit: effectiveLimits.bulkSendLimit,
+            monthlyLimit: effectiveLimits.monthlyLimit,
           },
           HttpStatus.TOO_MANY_REQUESTS,
         )
@@ -649,7 +712,14 @@ export class BillingService {
       isActive: true,
     })
 
-    const plan = await this.planModel.findById(subscription.plan)
+    let plan: PlanDocument
+    if (!subscription) {
+      plan = await this.planModel.findOne({ name: 'free' })
+    } else {
+      plan = await this.planModel.findById(subscription.plan)
+    }
+
+    const effectiveLimits = this.getEffectiveLimits(subscription, plan)
 
     // First get all devices belonging to the user
     const userDevices = await this.deviceModel
@@ -672,11 +742,17 @@ export class BillingService {
     return {
       processedSmsToday,
       processedSmsLastMonth,
-      dailyLimit: plan.dailyLimit,
-      monthlyLimit: plan.monthlyLimit,
-      bulkSendLimit: plan.bulkSendLimit,
-      dailyRemaining: plan.dailyLimit - processedSmsToday,
-      monthlyRemaining: plan.monthlyLimit - processedSmsLastMonth,
+      dailyLimit: effectiveLimits.dailyLimit,
+      monthlyLimit: effectiveLimits.monthlyLimit,
+      bulkSendLimit: effectiveLimits.bulkSendLimit,
+      dailyRemaining:
+        effectiveLimits.dailyLimit === -1
+          ? -1
+          : effectiveLimits.dailyLimit - processedSmsToday,
+      monthlyRemaining:
+        effectiveLimits.monthlyLimit === -1
+          ? -1
+          : effectiveLimits.monthlyLimit - processedSmsLastMonth,
     }
   }
 
