@@ -14,15 +14,33 @@ import { MailModule } from 'src/mail/mail.module'
 import { PolarWebhookPayload, PolarWebhookPayloadSchema } from './schemas/polar-webhook-payload.schema'
 import { Device, DeviceSchema } from '../gateway/schemas/device.schema'
 import { CheckoutSession, CheckoutSessionSchema } from './schemas/checkout-session.schema'
+import { BillingNotification, BillingNotificationSchema } from './schemas/billing-notification.schema'
+import { BillingNotificationsService } from './billing-notifications.service'
+// import { BillingNotificationsListener } from './billing-notifications.listener'
+import { BullModule } from '@nestjs/bull'
+import { BillingNotificationsProcessor } from 'src/billing/queue/billing-notifications.processor'
 
 @Module({
   imports: [
+    BullModule.registerQueue({
+      name: 'billing-notifications',
+      defaultJobOptions: {
+        attempts: 2,
+        backoff: {
+          type: 'exponential',
+          delay: 1000,
+        },
+        removeOnComplete: false,
+        removeOnFail: false,
+      },
+    }),
     MongooseModule.forFeature([
       { name: Plan.name, schema: PlanSchema },
       { name: Subscription.name, schema: SubscriptionSchema },
       { name: PolarWebhookPayload.name, schema: PolarWebhookPayloadSchema },
       { name: Device.name, schema: DeviceSchema },
       { name: CheckoutSession.name, schema: CheckoutSessionSchema },
+      { name: BillingNotification.name, schema: BillingNotificationSchema },
     ]),
     forwardRef(() => AuthModule),
     forwardRef(() => UsersModule),
@@ -30,7 +48,7 @@ import { CheckoutSession, CheckoutSessionSchema } from './schemas/checkout-sessi
     MailModule,
   ],
   controllers: [BillingController],
-  providers: [BillingService, AbandonedCheckoutService],
-  exports: [BillingService, AbandonedCheckoutService],
+  providers: [BillingService, AbandonedCheckoutService, BillingNotificationsService, BillingNotificationsProcessor],
+  exports: [BillingService, AbandonedCheckoutService, BillingNotificationsService],
 })
 export class BillingModule {}
