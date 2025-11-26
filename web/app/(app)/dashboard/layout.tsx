@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 import AccountDeletionAlert from './(components)/account-deletion-alert'
 import UpgradeToProAlert from './(components)/upgrade-to-pro-alert'
 import VerifyEmailAlert from './(components)/verify-email-alert'
+import BlackFridayModal from './(components)/black-friday-modal'
 import { SurveyModal } from '@/components/shared/survey-modal'
 
 export default function DashboardLayout({
@@ -52,7 +53,8 @@ export default function DashboardLayout({
         <div className='space-y-2 p-4'>
           <VerifyEmailAlert />
           <AccountDeletionAlert />
-          <UpgradeToProAlert />
+          {/* <UpgradeToProAlert /> */}
+          <BlackFridayModal />
         </div>
         {children}
       </main>
@@ -89,8 +91,8 @@ export default function DashboardLayout({
 
       {/* Bottom padding for mobile to account for the fixed navigation */}
       <div className='h-16 md:hidden'></div>
-      
-      <SurveyModal />
+
+      {/* <SurveyModal /> */}
     </div>
   )
 }
@@ -111,11 +113,10 @@ function NavItem({
     <Link
       href={href}
       prefetch={true}
-      className={`flex flex-col items-center p-2 rounded-md transition-colors w-20 ${
-        isActive
-          ? 'border border-brand-500 dark:border-brand-400 bg-brand-100/20 dark:bg-brand-900/10 text-brand-600 dark:text-brand-400'
-          : 'text-gray-700 dark:text-gray-200 hover:bg-brand-100/20 dark:hover:bg-brand-900/10 hover:text-brand-600 dark:hover:text-brand-400'
-      }`}
+      className={`flex flex-col items-center p-2 rounded-md transition-colors w-20 ${isActive
+        ? 'border border-brand-500 dark:border-brand-400 bg-brand-100/20 dark:bg-brand-900/10 text-brand-600 dark:text-brand-400'
+        : 'text-gray-700 dark:text-gray-200 hover:bg-brand-100/20 dark:hover:bg-brand-900/10 hover:text-brand-600 dark:hover:text-brand-400'
+        }`}
     >
       <span
         className={
@@ -147,11 +148,10 @@ function MobileNavItem({
     <Link
       href={href}
       prefetch={true}
-      className={`flex flex-col items-center justify-center p-2 rounded-md w-[23%] ${
-        isActive
-          ? 'border border-brand-500 dark:border-brand-400 bg-brand-100/20 dark:bg-brand-900/10 text-brand-600 dark:text-brand-400'
-          : 'text-gray-700 dark:text-gray-300 hover:text-brand-600 dark:hover:text-brand-400'
-      }`}
+      className={`flex flex-col items-center justify-center p-2 rounded-md w-[23%] ${isActive
+        ? 'border border-brand-500 dark:border-brand-400 bg-brand-100/20 dark:bg-brand-900/10 text-brand-600 dark:text-brand-400'
+        : 'text-gray-700 dark:text-gray-300 hover:text-brand-600 dark:hover:text-brand-400'
+        }`}
     >
       <span
         className={
