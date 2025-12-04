@@ -42,7 +42,7 @@ const sms_sent_payload = {
 }
 
 const sms_sent_failed = {
-   ...message_send_template,
+  ...message_send_template,
   status: "failed",
   errorCode: "ErorCode",
   errorMessage: "Error",
@@ -57,10 +57,9 @@ const crypto = require('crypto');
 function verifyWebhookSignature(payload, signature, secret) {
   const hmac = crypto.createHmac('sha256', secret);
   const digest = hmac.update(JSON.stringify(payload)).digest('hex');
-  const signatureHash = signature.split('=')[1];
   
   return crypto.timingSafeEqual(
-    Buffer.from(signatureHash),
+    Buffer.from(signature),
     Buffer.from(digest)
   );
 }
@@ -95,7 +94,7 @@ def verify_signature(payload, signature, secret):
         json.dumps(payload).encode('utf-8'),
         hashlib.sha256
     ).hexdigest()
-    return hmac.compare_digest(signature.split('=')[1], expected)
+    return hmac.compare_digest(signature, expected)
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
@@ -160,7 +159,7 @@ export function WebhookDocs() {
                   <li>Payload in JSON format</li>
                   <li>X-Signature header for verification</li>
                   <li>
-                    Signature format: sha256=HMAC_SHA256(payload, secret)
+                    Signature format: HMAC_SHA256(payload, secret)
                   </li>
                 </ul>
               </div>
