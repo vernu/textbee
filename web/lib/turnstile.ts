@@ -85,6 +85,7 @@ export const useTurnstile = ({
 }: UseTurnstileOptions): UseTurnstileResult => {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const widgetIdRef = useRef<string | null>(null)
+  const containerEl = containerRef.current
   const onTokenRef = useRef(onToken)
   const onErrorRef = useRef(onError)
   const onExpireRef = useRef(onExpire)
@@ -117,7 +118,7 @@ export const useTurnstile = ({
   useEffect(() => {
     if (
       !isReady ||
-      !containerRef.current ||
+      !containerEl ||
       !window.turnstile ||
       !siteKey ||
       widgetIdRef.current
@@ -126,9 +127,9 @@ export const useTurnstile = ({
     }
 
     // Defensive: clear any existing content to avoid duplicate render in StrictMode.
-    containerRef.current.innerHTML = ''
+    containerEl.innerHTML = ''
 
-    widgetIdRef.current = window.turnstile.render(containerRef.current, {
+    widgetIdRef.current = window.turnstile.render(containerEl, {
       sitekey: siteKey,
       callback: (receivedToken) => {
         setToken(receivedToken)
@@ -155,7 +156,7 @@ export const useTurnstile = ({
         widgetIdRef.current = null
       }
     }
-  }, [isReady, siteKey])
+  }, [isReady, siteKey, containerEl])
 
   return {
     containerRef,
