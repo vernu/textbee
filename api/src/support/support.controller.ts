@@ -7,10 +7,14 @@ import { SupportService } from './support.service'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'
 import { Request } from 'express'
 import { OptionalAuthGuard } from '../auth/guards/optional-auth.guard'
+import { TurnstileService } from '../common/turnstile.service'
 
 @Controller('support')
 export class SupportController {
-  constructor(private readonly supportService: SupportService) {}
+  constructor(
+    private readonly supportService: SupportService,
+    private readonly turnstileService: TurnstileService,
+  ) {}
 
   @UseGuards(OptionalAuthGuard)
   @Post('customer-support')
@@ -18,6 +22,8 @@ export class SupportController {
     @Body() createSupportMessageDto: CreateSupportMessageDto,
     @Req() req: Request,
   ) {
+    await this.turnstileService.verify(createSupportMessageDto.turnstileToken)
+
     const ip = req.ip || (req.headers['x-forwarded-for'] as string)
     const userAgent = req.headers['user-agent'] as string
 
@@ -36,9 +42,11 @@ export class SupportController {
   @UseGuards(JwtAuthGuard)
   @Post('request-account-deletion')
   async requestAccountDeletion(
-    @Body() body: { message: string },
+    @Body() body: { message: string; turnstileToken: string },
     @Req() req: Request,
   ) {
+    await this.turnstileService.verify(body.turnstileToken)
+
     const ip = req.ip || (req.headers['x-forwarded-for'] as string)
     const userAgent = req.headers['user-agent'] as string
     const user = req.user
@@ -51,6 +59,7 @@ export class SupportController {
       message: body.message,
       ip,
       userAgent,
+      turnstileToken: body.turnstileToken,
     }
 
     return this.supportService.requestAccountDeletion(createSupportMessageDto)

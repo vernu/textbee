@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -18,11 +18,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { useTurnstile } from '@/lib/turnstile'
 
 export default function DeleteAccountForm() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [deleteConfirmEmail, setDeleteConfirmEmail] = useState('')
   const [deleteReason, setDeleteReason] = useState('')
+  const [turnstileError, setTurnstileError] = useState<string | null>(null)
   const { toast } = useToast()
 
   const { data: currentUser } = useQuery({
@@ -32,6 +34,26 @@ export default function DeleteAccountForm() {
         .get(ApiEndpoints.auth.whoAmI())
         .then((res) => res.data?.data),
   })
+
+  const {
+    containerRef: turnstileRef,
+    token: turnstileToken,
+    error: turnstileHookError,
+  } = useTurnstile({
+    siteKey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
+  })
+
+  useEffect(() => {
+    if (turnstileToken) {
+      setTurnstileError(null)
+    }
+  }, [turnstileToken])
+
+  useEffect(() => {
+    if (turnstileHookError) {
+      setTurnstileError(turnstileHookError)
+    }
+  }, [turnstileHookError])
 
   const handleDeleteAccount = () => {
     if (deleteConfirmEmail !== currentUser?.email) {
@@ -43,6 +65,9 @@ export default function DeleteAccountForm() {
       toast({
         title: 'Please enter a reason for deletion',
       })
+      return
+    } else if (!turnstileToken) {
+      setTurnstileError('Please complete the bot verification')
       return
     }
     requestAccountDeletion()
@@ -57,6 +82,7 @@ export default function DeleteAccountForm() {
     mutationFn: () =>
       httpBrowserClient.post(ApiEndpoints.support.requestAccountDeletion(), {
         message: deleteReason,
+        turnstileToken,
       }),
     onSuccess: () => {
       toast({
@@ -121,6 +147,16 @@ export default function DeleteAccountForm() {
                 value={deleteConfirmEmail}
                 onChange={(e) => setDeleteConfirmEmail(e.target.value)}
               />
+
+              <div className='mt-4 space-y-2'>
+                <div
+                  ref={turnstileRef}
+                  className='min-h-[65px] w-full flex justify-center'
+                />
+                {turnstileError && (
+                  <p className='text-sm text-destructive'>{turnstileError}</p>
+                )}
+              </div>
 
               {requestAccountDeletionError && (
                 <p className='text-sm text-destructive'>
