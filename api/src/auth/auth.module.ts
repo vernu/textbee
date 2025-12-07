@@ -8,6 +8,7 @@ import { AuthService } from './auth.service'
 import { JwtStrategy } from './jwt.strategy'
 import { ApiKey, ApiKeySchema } from './schemas/api-key.schema'
 import { MailModule } from 'src/mail/mail.module'
+import { CommonModule } from '../common/common.module'
 import {
   PasswordReset,
   PasswordResetSchema,
@@ -44,9 +45,16 @@ import { OptionalAuthGuard } from './guards/optional-auth.guard'
       signOptions: { expiresIn: process.env.JWT_EXPIRATION || '60d' },
     }),
     MailModule,
+    CommonModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, AuthGuard, OptionalAuthGuard, MongooseModule],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    AuthGuard,
+    OptionalAuthGuard,
+    MongooseModule,
+  ],
   exports: [AuthService, JwtModule, AuthGuard, OptionalAuthGuard],
 })
 export class AuthModule {}

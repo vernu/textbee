@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
@@ -17,10 +18,14 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Routes } from '@/config/routes'
+import { useTurnstile } from '@/lib/turnstile'
 
 const loginSchema = z.object({
   email: z.string().email({ message: 'Invalid email address' }),
   password: z.string().min(1, { message: 'Password is required' }),
+  turnstileToken: z
+    .string()
+    .min(1, { message: 'Please complete the bot verification' }),
 })
 
 type LoginFormValues = z.infer<typeof loginSchema>
@@ -33,16 +38,54 @@ export default function LoginForm() {
     defaultValues: {
       email: '',
       password: '',
+      turnstileToken: '',
     },
   })
 
+  const {
+    containerRef: turnstileRef,
+    token: turnstileToken,
+    error: turnstileError,
+  } = useTurnstile({
+    siteKey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
+    onToken: (token) =>
+      form.setValue('turnstileToken', token, { shouldValidate: true }),
+    onError: (message) =>
+      form.setError('turnstileToken', { type: 'manual', message }),
+    onExpire: (message) =>
+      form.setError('turnstileToken', { type: 'manual', message }),
+  })
+
+  useEffect(() => {
+    if (turnstileToken) {
+      form.clearErrors('turnstileToken')
+    }
+  }, [turnstileToken, form])
+
+  useEffect(() => {
+    if (turnstileError) {
+      form.setError('turnstileToken', { type: 'manual', message: turnstileError })
+    }
+  }, [turnstileError, form])
+
   const onSubmit = async (data: LoginFormValues) => {
+    form.clearErrors()
+
+    if (!data.turnstileToken) {
+      form.setError('turnstileToken', {
+        type: 'manual',
+        message: 'Please complete the bot verification',
+      })
+      return
+    }
+
     try {
       const result = await signIn('email-password-login', {
         redirect: true,
         callbackUrl: Routes.dashboard,
         email: data.email,
         password: data.password,
+        turnstileToken: data.turnstileToken,
       })
 
       if (result?.error) {
@@ -91,6 +134,22 @@ export default function LoginForm() {
                   type='password'
                   {...field}
                   className='dark:text-white dark:bg-gray-800'
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name='turnstileToken'
+          render={() => (
+            <FormItem>
+              <FormLabel className='text-sm'>Bot verification</FormLabel>
+              <FormControl>
+                <div
+                  ref={turnstileRef}
+                  className='min-h-[65px] w-full flex justify-center'
                 />
               </FormControl>
               <FormMessage />
