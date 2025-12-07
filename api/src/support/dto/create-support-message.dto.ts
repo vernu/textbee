@@ -39,6 +39,10 @@ export class CreateSupportMessageDto {
   @IsString()
   message: string
 
+  @IsNotEmpty()
+  @IsString()
+  turnstileToken: string
+
   @IsOptional()
   @IsString()
   ip?: string

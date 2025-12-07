@@ -145,7 +145,6 @@ export default function LoginForm() {
           name='turnstileToken'
           render={() => (
             <FormItem>
-              <FormLabel className='text-sm'>Bot verification</FormLabel>
               <FormControl>
                 <div
                   ref={turnstileRef}

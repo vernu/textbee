@@ -2,6 +2,8 @@ import {
   Injectable,
   ConflictException,
   NotFoundException,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common'
 import { InjectModel } from '@nestjs/mongoose'
 import { isValidObjectId, Model, Types } from 'mongoose'
@@ -28,20 +30,33 @@ export class SupportService {
   async createSupportMessage(
     createSupportMessageDto: CreateSupportMessageDto,
   ): Promise<{ message: string }> {
+    const { turnstileToken, ...sanitizedDto } = createSupportMessageDto
     try {
+      // Check rate limit: max 3 requests per 24 hours
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
+      const recentRequestsCount = await this.supportMessageModel.countDocuments({
+        email: sanitizedDto.email,
+        createdAt: { $gte: twentyFourHoursAgo },
+      })
+
+      if (recentRequestsCount >= 3) {
+        throw new HttpException(
+          'Too many support requests. Please try again later.',
+          HttpStatus.TOO_MANY_REQUESTS,
+        )
+      }
+
       // Create and save the support message
-      const createdMessage = new this.supportMessageModel(
-        createSupportMessageDto,
-      )
+      const createdMessage = new this.supportMessageModel(sanitizedDto)
       const savedMessage = await createdMessage.save()
 
       // Determine if the user is registered
       let user = null
       if (
-        createSupportMessageDto.user &&
-        isValidObjectId(createSupportMessageDto.user)
+        sanitizedDto.user &&
+        isValidObjectId(sanitizedDto.user)
       ) {
-        user = await this.userModel.findById(createSupportMessageDto.user)
+        user = await this.userModel.findById(sanitizedDto.user)
       }
 
       // Send confirmation email to user
@@ -53,10 +68,10 @@ export class SupportService {
         template: 'customer-support-confirmation',
         context: {
           name: createSupportMessageDto.name,
-          email: createSupportMessageDto.email,
-          phone: createSupportMessageDto.phone || 'Not provided',
-          category: createSupportMessageDto.category,
-          message: createSupportMessageDto.message,
+          email: sanitizedDto.email,
+          phone: sanitizedDto.phone || 'Not provided',
+          category: sanitizedDto.category,
+          message: sanitizedDto.message,
           appLogoUrl:
             process.env.APP_LOGO_URL || 'https://textbee.dev/logo.png',
           currentYear: new Date().getFullYear(),
@@ -74,16 +89,17 @@ export class SupportService {
   async requestAccountDeletion(
     createSupportMessageDto: CreateSupportMessageDto,
   ): Promise<{ message: string }> {
+    const { turnstileToken, ...sanitizedDto } = createSupportMessageDto
     try {
       // Check if user exists
       if (
-        !createSupportMessageDto.user ||
-        !isValidObjectId(createSupportMessageDto.user)
+        !sanitizedDto.user ||
+        !isValidObjectId(sanitizedDto.user)
       ) {
         throw new NotFoundException('User not found')
       }
 
-      const userId = new Types.ObjectId(createSupportMessageDto.user.toString())
+      const userId = new Types.ObjectId(sanitizedDto.user.toString())
       const user = await this.userModel.findById(userId)
 
       if (!user) {
@@ -104,7 +120,7 @@ export class SupportService {
 
       // Create and save the support message
       const createdMessage = new this.supportMessageModel(
-        createSupportMessageDto,
+        sanitizedDto,
       )
       const savedMessage = await createdMessage.save()
 
@@ -113,7 +129,7 @@ export class SupportService {
         { _id: userId },
         {
           accountDeletionRequestedAt: new Date(),
-          accountDeletionReason: createSupportMessageDto.message || null,
+          accountDeletionReason: sanitizedDto.message || null,
         },
       )
 
@@ -127,7 +143,7 @@ export class SupportService {
         context: {
           name: user.name,
           email: user.email,
-          message: createSupportMessageDto.message || 'No reason provided',
+          message: sanitizedDto.message || 'No reason provided',
           appLogoUrl:
             process.env.APP_LOGO_URL || 'https://textbee.dev/logo.png',
           currentYear: new Date().getFullYear(),

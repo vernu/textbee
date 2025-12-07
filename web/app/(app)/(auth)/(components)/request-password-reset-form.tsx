@@ -135,7 +135,6 @@ export default function RequestPasswordResetForm() {
                   name='turnstileToken'
                   render={() => (
                     <FormItem>
-                      <FormLabel className='text-sm'>Bot verification</FormLabel>
                       <FormControl>
                         <div
                           ref={turnstileRef}
