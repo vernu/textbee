@@ -54,7 +54,7 @@ export default function DashboardLayout({
           <VerifyEmailAlert />
           <AccountDeletionAlert />
           {/* <UpgradeToProAlert /> */}
-          <BlackFridayModal />
+          {/* <BlackFridayModal /> */}
         </div>
         {children}
       </main>
