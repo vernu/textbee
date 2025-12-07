@@ -1,11 +1,24 @@
 import 'dotenv/config'
-import { VersioningType } from '@nestjs/common'
+import { VersioningType, Logger } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
 import { AppModule } from './app.module'
 import * as firebase from 'firebase-admin'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
 import * as express from 'express'
 import { NestExpressApplication } from '@nestjs/platform-express'
+
+// Global error handlers to prevent server crashes
+const logger = new Logger('GlobalErrorHandler')
+
+process.on('uncaughtException', (error: Error) => {
+  logger.error('Uncaught Exception:', error.stack || error.message)
+  // Don't exit the process for uncaught exceptions in production
+  // process.exit(1)
+})
+
+process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
+  logger.error('Unhandled Rejection at:', promise, 'reason:', reason)
+})
 
 async function bootstrap() {
   const app: NestExpressApplication = await NestFactory.create(AppModule)
