@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -28,9 +29,13 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import httpBrowserClient from '@/lib/httpBrowserClient'
 import { ApiEndpoints } from '@/config/api'
 import { Routes } from '@/config/routes'
+import { useTurnstile } from '@/lib/turnstile'
 
 const requestPasswordResetSchema = z.object({
   email: z.string().email({ message: 'Invalid email address' }),
+  turnstileToken: z
+    .string()
+    .min(1, { message: 'Please complete the bot verification' }),
 })
 
 type RequestPasswordResetFormValues = z.infer<typeof requestPasswordResetSchema>
@@ -40,13 +45,49 @@ export default function RequestPasswordResetForm() {
     resolver: zodResolver(requestPasswordResetSchema),
     defaultValues: {
       email: '',
+      turnstileToken: '',
     },
   })
+
+  const {
+    containerRef: turnstileRef,
+    token: turnstileToken,
+    error: turnstileError,
+  } = useTurnstile({
+    siteKey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
+    onToken: (token) =>
+      form.setValue('turnstileToken', token, { shouldValidate: true }),
+    onError: (message) =>
+      form.setError('turnstileToken', { type: 'manual', message }),
+    onExpire: (message) =>
+      form.setError('turnstileToken', { type: 'manual', message }),
+  })
+
+  useEffect(() => {
+    if (turnstileToken) {
+      form.clearErrors('turnstileToken')
+    }
+  }, [turnstileToken, form])
+
+  useEffect(() => {
+    if (turnstileError) {
+      form.setError('turnstileToken', { type: 'manual', message: turnstileError })
+    }
+  }, [turnstileError, form])
 
   const onRequestPasswordReset = async (
     data: RequestPasswordResetFormValues
   ) => {
     form.clearErrors()
+
+    if (!data.turnstileToken) {
+      form.setError('turnstileToken', {
+        type: 'manual',
+        message: 'Please complete the bot verification',
+      })
+      return
+    }
+
     try {
       await httpBrowserClient.post(
         ApiEndpoints.auth.requestPasswordReset(),
@@ -84,6 +125,22 @@ export default function RequestPasswordResetForm() {
                       <FormLabel>Email</FormLabel>
                       <FormControl>
                         <Input placeholder='m@example.com' {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name='turnstileToken'
+                  render={() => (
+                    <FormItem>
+                      <FormLabel className='text-sm'>Bot verification</FormLabel>
+                      <FormControl>
+                        <div
+                          ref={turnstileRef}
+                          className='min-h-[65px] w-full flex justify-center'
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
