@@ -92,7 +92,7 @@ export default function DashboardLayout({
       {/* Bottom padding for mobile to account for the fixed navigation */}
       <div className='h-16 md:hidden'></div>
 
-      {/* <SurveyModal /> */}
+      <SurveyModal />
     </div>
   )
 }
