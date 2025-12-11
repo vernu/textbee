@@ -1,0 +1,30 @@
+web:
+  enabled: true
+  service:
+    enabled: true
+    type: LoadBalancer
+    annotations:
+      tailscale.com/expose: "true"
+      tailscale.com/hostname: "textbee-web"
+api:
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 80
+  service:
+    enabled: true
+  ingress:
+    enabled: true
+    hosts: 
+      - host: textbee-api.demo.com
+        paths:
+          - path: /
+            pathType: Prefix
+    className: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    tls:
+      - secretName: textbee-api-tls
+        hosts:
+          - textbee-api.demo.com
