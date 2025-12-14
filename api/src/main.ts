@@ -1,4 +1,5 @@
 import 'dotenv/config'
+import * as crypto from 'crypto'
 import { VersioningType, Logger } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
 import { AppModule } from './app.module'
@@ -6,6 +7,11 @@ import * as firebase from 'firebase-admin'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
 import * as express from 'express'
 import { NestExpressApplication } from '@nestjs/platform-express'
+
+// Ensure crypto is available globally for @nestjs/schedule
+if (typeof globalThis.crypto === 'undefined') {
+  globalThis.crypto = crypto as any
+}
 
 // Global error handlers to prevent server crashes
 const logger = new Logger('GlobalErrorHandler')
