@@ -10,10 +10,10 @@ export class AccessLog {
   _id?: Types.ObjectId
 
   @Prop({ type: Types.ObjectId, ref: ApiKey.name })
-  apiKey: ApiKey
+  apiKey: ApiKey | Types.ObjectId
 
   @Prop({ type: Types.ObjectId, ref: User.name })
-  user: User
+  user: User | Types.ObjectId
 
   @Prop({ type: String })
   url: string

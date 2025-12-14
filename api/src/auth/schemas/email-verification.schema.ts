@@ -9,7 +9,7 @@ export class EmailVerification {
   _id?: Types.ObjectId
 
   @Prop({ type: Types.ObjectId, ref: User.name })
-  user: User
+  user: User | Types.ObjectId
 
   @Prop({ type: String })
   verificationCode: string // hashed

@@ -6,6 +6,7 @@ import { Cron, CronExpression } from '@nestjs/schedule'
 import { MailService } from '../mail/mail.service'
 import { BillingService } from '../billing/billing.service'
 import { Device, DeviceDocument } from '../gateway/schemas/device.schema'
+import { Plan } from 'src/billing/schemas/plan.schema'
 
 @Injectable()
 export class UsersService {
@@ -136,7 +137,7 @@ export class UsersService {
             user._id.toString(),
           )
 
-          if (subscription?.plan?.name === 'free') {
+          if ((subscription?.plan as Plan)?.name === 'free') {
             const devices = await this.deviceModel.find({ user: user._id })
 
             if (devices.length === 0 || devices.map(device=>device.sentSMSCount + device.receivedSMSCount).reduce((a,b)=>a+b,0) == 0) {

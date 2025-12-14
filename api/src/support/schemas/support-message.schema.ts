@@ -7,7 +7,7 @@ export type SupportMessageDocument = SupportMessage & Document
 @Schema({ timestamps: true })
 export class SupportMessage {
   @Prop({ type: Types.ObjectId, ref: User.name })
-  user: User
+  user: User | Types.ObjectId
 
   @Prop()
   name: string

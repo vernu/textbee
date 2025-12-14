@@ -10,10 +10,10 @@ export class SMS {
   _id?: Types.ObjectId
 
   @Prop({ type: Types.ObjectId, ref: Device.name, required: true })
-  device: Device
+  device: Device | Types.ObjectId
 
   @Prop({ type: Types.ObjectId, ref: SMSBatch.name })
-  smsBatch: SMSBatch
+  smsBatch: SMSBatch | Types.ObjectId
 
   @Prop({ type: String })
   message: string

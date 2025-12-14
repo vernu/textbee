@@ -18,10 +18,10 @@ export type SubscriptionDocument = Subscription & Document
 @Schema({ timestamps: true })
 export class Subscription {
   @Prop({ type: Types.ObjectId, ref: User.name, required: true })
-  user: User
+  user: User | Types.ObjectId
 
   @Prop({ type: Types.ObjectId, ref: Plan.name, required: true })
-  plan: Plan
+  plan: Plan | Types.ObjectId
 
   // @Prop()
   // polarSubscriptionId?: string

@@ -18,7 +18,7 @@ export class BillingNotification {
   _id?: Types.ObjectId
 
   @Prop({ type: Types.ObjectId, ref: User.name, required: true, index: true })
-  user: User
+  user: User | Types.ObjectId
 
   @Prop({ type: String, enum: Object.values(BillingNotificationType), required: true, index: true })
   type: BillingNotificationType

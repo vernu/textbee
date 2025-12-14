@@ -18,7 +18,7 @@ export class ApiKey {
   hashedApiKey: string
 
   @Prop({ type: Types.ObjectId, ref: User.name })
-  user: User
+  user: User | Types.ObjectId
 
   @Prop({ type: Number, default: 0 })
   usageCount: number

@@ -9,6 +9,7 @@ import {
 import { User, UserDocument } from '../users/schemas/user.schema'
 import { MailService } from '../mail/mail.service'
 import { BillingService } from './billing.service'
+import { Plan } from './schemas/plan.schema'
 
 interface EmailConfig {
   template: string
@@ -123,7 +124,7 @@ export class AbandonedCheckoutService {
         const subscription = await this.billingService.getCurrentSubscription(
           session.user,
         )
-        if (subscription.plan.name !== 'free') {
+        if ((subscription?.plan as Plan)?.name !== 'free') {
           this.logger.debug(
             `Skipping email for session ${session._id}: user is not on free plan`,
           )

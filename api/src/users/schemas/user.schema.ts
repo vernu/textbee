@@ -43,6 +43,9 @@ export class User {
 
   @Prop({ type: String })
   accountDeletionReason: string
+
+  @Prop({ type: Object })
+  meta: Object
 }
 
 export const UserSchema = SchemaFactory.createForClass(User)
