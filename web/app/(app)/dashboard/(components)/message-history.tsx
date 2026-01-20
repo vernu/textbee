@@ -44,6 +44,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Spinner } from '@/components/ui/spinner'
 import { toast } from '@/hooks/use-toast'
+import { formatError } from '@/lib/utils/errorHandler'
+import { formatRateLimitMessageForToast } from '@/components/shared/rate-limit-error'
 
 
 // Helper function to format timestamps
@@ -115,9 +117,14 @@ function ReplyDialog({ sms, onClose, open, onOpenChange }: { sms: any; onClose?:
       }, 1500)
     },
     onError: (error: any) => {
+      const formattedError = formatError(error)
+      const description = formattedError.isRateLimit
+        ? formatRateLimitMessageForToast(formattedError.rateLimitData)
+        : formattedError.message || 'Please try again.'
       toast({
         title: 'Failed to send SMS.',
-        description: error.response?.data?.message || 'Please try again.',
+        description,
+        variant: 'destructive',
       })
     },
   })
@@ -264,9 +271,14 @@ function FollowUpDialog({ message, onClose, open, onOpenChange }: { message: any
       }, 1500)
     },
     onError: (error: any) => {
+      const formattedError = formatError(error)
+      const description = formattedError.isRateLimit
+        ? formatRateLimitMessageForToast(formattedError.rateLimitData)
+        : formattedError.message || 'Please try again.'
       toast({
         title: 'Failed to send follow-up SMS.',
-        description: error.response?.data?.message || 'Please try again.',
+        description,
+        variant: 'destructive',
       })
     },
   })

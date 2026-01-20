@@ -27,6 +27,8 @@ import httpBrowserClient from '@/lib/httpBrowserClient'
 import { ApiEndpoints } from '@/config/api'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Spinner } from '@/components/ui/spinner'
+import { formatError } from '@/lib/utils/errorHandler'
+import { RateLimitError } from '@/components/shared/rate-limit-error'
 
 export default function SendSms() {
   const { data: devices, isLoading: isLoadingDevices } = useQuery({
@@ -180,12 +182,23 @@ export default function SendSms() {
                 )}
               </div>
             </div>
-            {sendSmsError && (
-              <div className='flex items-center gap-2 text-destructive'>
-                <p>Error sending SMS: {sendSmsError.message}</p>
-                <X className='h-5 w-5' />
-              </div>
-            )}
+            {sendSmsError && (() => {
+              const formattedError = formatError(sendSmsError)
+              if (formattedError.isRateLimit) {
+                return (
+                  <RateLimitError
+                    errorData={formattedError.rateLimitData}
+                    variant="inline"
+                  />
+                )
+              }
+              return (
+                <div className='flex items-center gap-2 text-destructive'>
+                  <p>Error sending SMS: {formattedError.message}</p>
+                  <X className='h-5 w-5' />
+                </div>
+              )
+            })()}
 
             {isSendSmsSuccess && (
               <div className='flex items-center gap-2'>

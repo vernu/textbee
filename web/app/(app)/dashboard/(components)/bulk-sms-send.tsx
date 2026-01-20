@@ -27,6 +27,8 @@ import { ApiEndpoints } from '@/config/api'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Spinner } from '@/components/ui/spinner'
 import httpBrowserClient from '@/lib/httpBrowserClient'
+import { formatError } from '@/lib/utils/errorHandler'
+import { RateLimitError } from '@/components/shared/rate-limit-error'
 
 const DEFAULT_MAX_FILE_SIZE = 1024 * 1024 // 1 MB
 const DEFAULT_MAX_ROWS = 50
@@ -321,15 +323,27 @@ export default function BulkSMSSend() {
             </div>
           </section>
 
-          {sendingBulkSMSError && (
-            <Alert variant='destructive' className='mt-4'>
-              <AlertCircle className='h-4 w-4' />
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription>
-                {sendingBulkSMSError?.message}
-              </AlertDescription>
-            </Alert>
-          )}
+          {sendingBulkSMSError && (() => {
+            const formattedError = formatError(sendingBulkSMSError)
+            if (formattedError.isRateLimit) {
+              return (
+                <RateLimitError
+                  errorData={formattedError.rateLimitData}
+                  variant="alert"
+                  className="mt-4"
+                />
+              )
+            }
+            return (
+              <Alert variant='destructive' className='mt-4'>
+                <AlertCircle className='h-4 w-4' />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>
+                  {formattedError.message}
+                </AlertDescription>
+              </Alert>
+            )
+          })()}
 
           {isSendingBulkSMSuccess && (
             <Alert variant='default' className='mt-4'>
