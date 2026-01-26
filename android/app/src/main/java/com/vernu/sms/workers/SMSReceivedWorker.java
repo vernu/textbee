@@ -94,13 +94,22 @@ public class SMSReceivedWorker extends Worker {
                 .addTag("sms_received")
                 .build();
         
-        String uniqueWorkName = "sms_received_" + System.currentTimeMillis();
+        // Use fingerprint for unique work name if available, otherwise fallback to timestamp
+        String uniqueWorkName;
+        if (smsDTO.getFingerprint() != null && !smsDTO.getFingerprint().isEmpty()) {
+            uniqueWorkName = "sms_received_" + smsDTO.getFingerprint();
+        } else {
+            // Fallback to timestamp if fingerprint is not available
+            uniqueWorkName = "sms_received_" + System.currentTimeMillis();
+            Log.w(TAG, "Fingerprint not available, using timestamp for work name");
+        }
+        
         WorkManager.getInstance(context)
                 .beginUniqueWork(uniqueWorkName, 
-                        androidx.work.ExistingWorkPolicy.APPEND_OR_REPLACE, 
+                        androidx.work.ExistingWorkPolicy.KEEP, 
                         workRequest)
                 .enqueue();
         
-        Log.d(TAG, "Work enqueued for received SMS from: " + smsDTO.getSender());
+        Log.d(TAG, "Work enqueued for received SMS from: " + smsDTO.getSender() + " with fingerprint: " + uniqueWorkName);
     }
 } 

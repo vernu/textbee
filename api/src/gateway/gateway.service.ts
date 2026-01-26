@@ -545,6 +545,29 @@ recipient,
       ? new Date(dto.receivedAtInMillis)
       : dto.receivedAt
 
+    // Deduplication: Check for existing SMS with same device, sender, message, and receivedAt (within ±5 seconds tolerance)
+    const toleranceMs = 5000 // 5 seconds
+    const toleranceStart = new Date(receivedAt.getTime() - toleranceMs)
+    const toleranceEnd = new Date(receivedAt.getTime() + toleranceMs)
+
+    const existingSMS = await this.smsModel.findOne({
+      device: device._id,
+      type: SMSType.RECEIVED,
+      sender: dto.sender,
+      message: dto.message,
+      receivedAt: {
+        $gte: toleranceStart,
+        $lte: toleranceEnd,
+      },
+    })
+
+    if (existingSMS) {
+      console.log(
+        `Duplicate SMS detected for device ${deviceId}, sender ${dto.sender}, returning existing record: ${existingSMS._id}`,
+      )
+      return existingSMS
+    }
+
     const sms = await this.smsModel.create({
       device: device._id,
       message: dto.message,
