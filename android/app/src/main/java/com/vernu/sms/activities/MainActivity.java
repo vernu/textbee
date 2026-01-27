@@ -32,6 +32,7 @@ import com.vernu.sms.dtos.RegisterDeviceInputDTO;
 import com.vernu.sms.dtos.RegisterDeviceResponseDTO;
 import com.vernu.sms.helpers.SharedPreferenceHelper;
 import com.vernu.sms.helpers.VersionTracker;
+import com.vernu.sms.helpers.HeartbeatManager;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import java.util.Arrays;
 import java.util.Objects;
@@ -107,6 +108,12 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "Starting sticky notification service on app start");
         }
 
+        // Schedule heartbeat if device is enabled and registered
+        if (gatewayEnabled && !deviceId.isEmpty()) {
+            HeartbeatManager.scheduleHeartbeat(mContext);
+            Log.d(TAG, "Scheduling heartbeat on app start");
+        }
+
         if (deviceId == null || deviceId.isEmpty()) {
             registerDeviceBtn.setText("Register");
         } else {
@@ -164,8 +171,12 @@ public class MainActivity extends AppCompatActivity {
                         if (SharedPreferenceHelper.getSharedPreferenceBoolean(mContext, AppConstants.SHARED_PREFS_STICKY_NOTIFICATION_ENABLED_KEY, false)) {
                             TextBeeUtils.startStickyNotificationService(mContext);
                         }
+                        // Schedule heartbeat
+                        HeartbeatManager.scheduleHeartbeat(mContext);
                     } else {
                         TextBeeUtils.stopStickyNotificationService(mContext);
+                        // Cancel heartbeat
+                        HeartbeatManager.cancelHeartbeat(mContext);
                     }
                     compoundButton.setEnabled(true);
                 }
@@ -389,6 +400,21 @@ public class MainActivity extends AppCompatActivity {
                                     SharedPreferenceHelper.setSharedPreferenceString(mContext, AppConstants.SHARED_PREFS_DEVICE_ID_KEY, deviceId);
                                     SharedPreferenceHelper.setSharedPreferenceBoolean(mContext, AppConstants.SHARED_PREFS_GATEWAY_ENABLED_KEY, registerDeviceInput.isEnabled());
                                     gatewaySwitch.setChecked(registerDeviceInput.isEnabled());
+                                    
+                                    // Sync heartbeatIntervalMinutes from server response
+                                    if (response.body().data.get("heartbeatIntervalMinutes") != null) {
+                                        Object intervalObj = response.body().data.get("heartbeatIntervalMinutes");
+                                        if (intervalObj instanceof Number) {
+                                            int intervalMinutes = ((Number) intervalObj).intValue();
+                                            SharedPreferenceHelper.setSharedPreferenceInt(mContext, AppConstants.SHARED_PREFS_HEARTBEAT_INTERVAL_MINUTES_KEY, intervalMinutes);
+                                            Log.d(TAG, "Synced heartbeat interval from server: " + intervalMinutes + " minutes");
+                                        }
+                                    }
+                                    
+                                    // Schedule heartbeat if device is enabled
+                                    if (registerDeviceInput.isEnabled()) {
+                                        HeartbeatManager.scheduleHeartbeat(mContext);
+                                    }
                                 }
                                 
                                 // Update stored version information
@@ -432,6 +458,21 @@ public class MainActivity extends AppCompatActivity {
                                 SharedPreferenceHelper.setSharedPreferenceString(mContext, AppConstants.SHARED_PREFS_DEVICE_ID_KEY, deviceId);
                                 SharedPreferenceHelper.setSharedPreferenceBoolean(mContext, AppConstants.SHARED_PREFS_GATEWAY_ENABLED_KEY, registerDeviceInput.isEnabled());
                                 gatewaySwitch.setChecked(registerDeviceInput.isEnabled());
+                                
+                                // Sync heartbeatIntervalMinutes from server response
+                                if (response.body().data.get("heartbeatIntervalMinutes") != null) {
+                                    Object intervalObj = response.body().data.get("heartbeatIntervalMinutes");
+                                    if (intervalObj instanceof Number) {
+                                        int intervalMinutes = ((Number) intervalObj).intValue();
+                                        SharedPreferenceHelper.setSharedPreferenceInt(mContext, AppConstants.SHARED_PREFS_HEARTBEAT_INTERVAL_MINUTES_KEY, intervalMinutes);
+                                        Log.d(TAG, "Synced heartbeat interval from server: " + intervalMinutes + " minutes");
+                                    }
+                                }
+                                
+                                // Schedule heartbeat if device is enabled
+                                if (registerDeviceInput.isEnabled()) {
+                                    HeartbeatManager.scheduleHeartbeat(mContext);
+                                }
                             }
                             
                             // Update stored version information
@@ -503,6 +544,21 @@ public class MainActivity extends AppCompatActivity {
                                 SharedPreferenceHelper.setSharedPreferenceString(mContext, AppConstants.SHARED_PREFS_DEVICE_ID_KEY, deviceId);
                                 deviceIdTxt.setText(deviceId);
                                 deviceIdEditText.setText(deviceId);
+                                
+                                // Sync heartbeatIntervalMinutes from server response
+                                if (response.body().data.get("heartbeatIntervalMinutes") != null) {
+                                    Object intervalObj = response.body().data.get("heartbeatIntervalMinutes");
+                                    if (intervalObj instanceof Number) {
+                                        int intervalMinutes = ((Number) intervalObj).intValue();
+                                        SharedPreferenceHelper.setSharedPreferenceInt(mContext, AppConstants.SHARED_PREFS_HEARTBEAT_INTERVAL_MINUTES_KEY, intervalMinutes);
+                                        Log.d(TAG, "Synced heartbeat interval from server: " + intervalMinutes + " minutes");
+                                    }
+                                }
+                                
+                                // Schedule heartbeat if device is enabled
+                                if (updateDeviceInput.isEnabled()) {
+                                    HeartbeatManager.scheduleHeartbeat(mContext);
+                                }
                             }
                             
                             // Update stored version information
