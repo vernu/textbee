@@ -160,7 +160,8 @@ public class TextBeeUtils {
                 try {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                         int cardId = subscriptionInfo.getCardId();
-                        if (cardId != SubscriptionManager.INVALID_CARD_ID) {
+                        // INVALID_CARD_ID is -1, check for valid card ID (>= 0)
+                        if (cardId >= 0) {
                             simInfo.setCardId(cardId);
                         }
                     }
