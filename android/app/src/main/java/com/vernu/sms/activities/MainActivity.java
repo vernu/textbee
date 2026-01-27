@@ -30,6 +30,7 @@ import com.vernu.sms.TextBeeUtils;
 import com.vernu.sms.R;
 import com.vernu.sms.dtos.RegisterDeviceInputDTO;
 import com.vernu.sms.dtos.RegisterDeviceResponseDTO;
+import com.vernu.sms.dtos.SimInfoCollectionDTO;
 import com.vernu.sms.helpers.SharedPreferenceHelper;
 import com.vernu.sms.helpers.VersionTracker;
 import com.vernu.sms.helpers.HeartbeatManager;
@@ -375,6 +376,12 @@ public class MainActivity extends AppCompatActivity {
                     registerDeviceInput.setAppVersionCode(BuildConfig.VERSION_CODE);
                     registerDeviceInput.setAppVersionName(BuildConfig.VERSION_NAME);
                     
+                    // Collect SIM information
+                    SimInfoCollectionDTO simInfoCollection = new SimInfoCollectionDTO();
+                    simInfoCollection.setLastUpdated(System.currentTimeMillis());
+                    simInfoCollection.setSims(TextBeeUtils.collectSimInfo(mContext));
+                    registerDeviceInput.setSimInfo(simInfoCollection);
+                    
                     // If the user provided a device ID, use it for updating instead of creating new
                     if (!deviceIdInput.isEmpty()) {
                         Log.d(TAG, "Updating device with deviceId: "+ deviceIdInput);
@@ -524,6 +531,12 @@ public class MainActivity extends AppCompatActivity {
                     updateDeviceInput.setOs(Build.VERSION.BASE_OS);
                     updateDeviceInput.setAppVersionCode(BuildConfig.VERSION_CODE);
                     updateDeviceInput.setAppVersionName(BuildConfig.VERSION_NAME);
+
+                    // Collect SIM information
+                    SimInfoCollectionDTO simInfoCollection = new SimInfoCollectionDTO();
+                    simInfoCollection.setLastUpdated(System.currentTimeMillis());
+                    simInfoCollection.setSims(TextBeeUtils.collectSimInfo(mContext));
+                    updateDeviceInput.setSimInfo(simInfoCollection);
 
                     Call<RegisterDeviceResponseDTO> apiCall = ApiManager.getApiService().updateDevice(deviceIdToUse, apiKey, updateDeviceInput);
                     apiCall.enqueue(new Callback<RegisterDeviceResponseDTO>() {

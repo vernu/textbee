@@ -150,6 +150,41 @@ export class Device {
     locale?: string
     lastUpdated?: Date
   }
+
+  @Prop({
+    type: {
+      lastUpdated: Date,
+      sims: [
+        {
+          subscriptionId: Number,
+          iccId: String,
+          cardId: Number,
+          carrierName: String,
+          displayName: String,
+          simSlotIndex: Number,
+          mcc: String,
+          mnc: String,
+          countryIso: String,
+          subscriptionType: String,
+        },
+      ],
+    },
+  })
+  simInfo: {
+    lastUpdated?: Date
+    sims?: Array<{
+      subscriptionId: number
+      iccId?: string
+      cardId?: number
+      carrierName?: string
+      displayName?: string
+      simSlotIndex?: number
+      mcc?: string
+      mnc?: string
+      countryIso?: string
+      subscriptionType?: string
+    }>
+  }
 }
 
 export const DeviceSchema = SchemaFactory.createForClass(Device)

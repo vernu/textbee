@@ -19,6 +19,7 @@ import com.vernu.sms.activities.MainActivity;
 import com.vernu.sms.helpers.SMSHelper;
 import com.vernu.sms.helpers.SharedPreferenceHelper;
 import com.vernu.sms.models.SMSPayload;
+import com.vernu.sms.TextBeeUtils;
 import com.vernu.sms.dtos.RegisterDeviceInputDTO;
 import com.vernu.sms.dtos.RegisterDeviceResponseDTO;
 import com.vernu.sms.ApiManager;
@@ -63,9 +64,35 @@ public class FCMService extends FirebaseMessagingService {
             return;
         }
 
-        // Get preferred SIM
-        int preferredSim = SharedPreferenceHelper.getSharedPreferenceInt(
-                this, AppConstants.SHARED_PREFS_PREFERRED_SIM_KEY, -1);
+        // Determine which SIM to use (priority: backend-provided > app preference > device default)
+        Integer simSubscriptionId = null;
+        
+        // First, check if backend provided a SIM subscription ID
+        if (smsPayload.getSimSubscriptionId() != null) {
+            int backendSimId = smsPayload.getSimSubscriptionId();
+            // Validate that the subscription ID exists
+            if (TextBeeUtils.isValidSubscriptionId(this, backendSimId)) {
+                simSubscriptionId = backendSimId;
+                Log.d(TAG, "Using backend-provided SIM subscription ID: " + backendSimId);
+            } else {
+                Log.w(TAG, "Backend-provided SIM subscription ID " + backendSimId + " is not valid, falling back to app preference");
+            }
+        }
+        
+        // If backend didn't provide a valid SIM, check app preference
+        if (simSubscriptionId == null) {
+            int preferredSim = SharedPreferenceHelper.getSharedPreferenceInt(
+                    this, AppConstants.SHARED_PREFS_PREFERRED_SIM_KEY, -1);
+            if (preferredSim != -1) {
+                // Validate that the preferred SIM still exists
+                if (TextBeeUtils.isValidSubscriptionId(this, preferredSim)) {
+                    simSubscriptionId = preferredSim;
+                    Log.d(TAG, "Using app-preferred SIM subscription ID: " + preferredSim);
+                } else {
+                    Log.w(TAG, "App-preferred SIM subscription ID " + preferredSim + " is no longer valid, using device default");
+                }
+            }
+        }
         
         // Check if SMS payload contains valid recipients
         String[] recipients = smsPayload.getRecipients();
@@ -82,9 +109,10 @@ public class FCMService extends FirebaseMessagingService {
         for (String recipient : recipients) {
             boolean smsSent;
             
-            // Try to send using default or specific SIM based on preference
-            if (preferredSim == -1) {
+            // Send using determined SIM (or device default if simSubscriptionId is null)
+            if (simSubscriptionId == null) {
                 // Use default SIM
+                Log.d(TAG, "Using device default SIM");
                 smsSent = SMSHelper.sendSMS(
                     recipient, 
                     smsPayload.getMessage(), 
@@ -98,7 +126,7 @@ public class FCMService extends FirebaseMessagingService {
                     smsSent = SMSHelper.sendSMSFromSpecificSim(
                         recipient, 
                         smsPayload.getMessage(), 
-                        preferredSim, 
+                        simSubscriptionId, 
                         smsPayload.getSmsId(), 
                         smsPayload.getSmsBatchId(), 
                         this

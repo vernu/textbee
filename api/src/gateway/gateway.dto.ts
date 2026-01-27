@@ -1,5 +1,45 @@
 import { ApiProperty } from '@nestjs/swagger'
 
+export class SimInfoDTO {
+  @ApiProperty({ type: Number, required: true })
+  subscriptionId: number
+
+  @ApiProperty({ type: String, required: false })
+  iccId?: string
+
+  @ApiProperty({ type: Number, required: false })
+  cardId?: number
+
+  @ApiProperty({ type: String, required: false })
+  carrierName?: string
+
+  @ApiProperty({ type: String, required: false })
+  displayName?: string
+
+  @ApiProperty({ type: Number, required: false })
+  simSlotIndex?: number
+
+  @ApiProperty({ type: String, required: false })
+  mcc?: string
+
+  @ApiProperty({ type: String, required: false })
+  mnc?: string
+
+  @ApiProperty({ type: String, required: false })
+  countryIso?: string
+
+  @ApiProperty({ type: String, required: false, enum: ['PHYSICAL_SIM', 'ESIM'] })
+  subscriptionType?: string
+}
+
+export class SimInfoCollectionDTO {
+  @ApiProperty({ type: Date, required: true })
+  lastUpdated: Date
+
+  @ApiProperty({ type: [SimInfoDTO], required: true })
+  sims: SimInfoDTO[]
+}
+
 export class RegisterDeviceInputDTO {
   @ApiProperty({ type: Boolean })
   enabled?: boolean
@@ -33,6 +73,9 @@ export class RegisterDeviceInputDTO {
 
   @ApiProperty({ type: String })
   appVersionCode?: number
+
+  @ApiProperty({ type: SimInfoCollectionDTO, required: false })
+  simInfo?: SimInfoCollectionDTO
 }
 
 export class SMSData {
@@ -50,6 +93,13 @@ export class SMSData {
     example: ['+2519xxxxxxxx', '+2517xxxxxxxx'],
   })
   recipients: string[]
+
+  @ApiProperty({
+    type: Number,
+    required: false,
+    description: 'Optional SIM subscription ID to use for sending SMS',
+  })
+  simSubscriptionId?: number
 
   // TODO: restructure the Payload such that it contains bactchId, smsId, recipients and message in an optimized way
   // message: string
@@ -406,6 +456,9 @@ export class HeartbeatInputDTO {
     description: 'Whether receive SMS feature is enabled',
   })
   receiveSMSEnabled?: boolean
+
+  @ApiProperty({ type: SimInfoCollectionDTO, required: false })
+  simInfo?: SimInfoCollectionDTO
 }
 
 export class HeartbeatResponseDTO {

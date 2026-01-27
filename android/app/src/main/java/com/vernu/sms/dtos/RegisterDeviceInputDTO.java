@@ -12,6 +12,7 @@ public class RegisterDeviceInputDTO {
     private String osVersion;
     private String appVersionName;
     private int appVersionCode;
+    private SimInfoCollectionDTO simInfo;
 
     public RegisterDeviceInputDTO() {
     }
@@ -106,5 +107,13 @@ public class RegisterDeviceInputDTO {
 
     public void setAppVersionCode(int appVersionCode) {
         this.appVersionCode = appVersionCode;
+    }
+
+    public SimInfoCollectionDTO getSimInfo() {
+        return simInfo;
+    }
+
+    public void setSimInfo(SimInfoCollectionDTO simInfo) {
+        this.simInfo = simInfo;
     }
 }
