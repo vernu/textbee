@@ -299,3 +299,134 @@ export class UpdateSMSStatusDTO {
   })
   errorMessage?: string
 }
+
+export class HeartbeatInputDTO {
+  @ApiProperty({
+    type: String,
+    required: false,
+    description: 'FCM token for push notifications',
+  })
+  fcmToken?: string
+
+  @ApiProperty({
+    type: Number,
+    required: false,
+    description: 'Battery percentage (0-100)',
+  })
+  batteryPercentage?: number
+
+  @ApiProperty({
+    type: Boolean,
+    required: false,
+    description: 'Whether device is currently charging',
+  })
+  isCharging?: boolean
+
+  @ApiProperty({
+    type: String,
+    required: false,
+    description: 'Network type',
+    enum: ['wifi', 'cellular', 'none'],
+  })
+  networkType?: 'wifi' | 'cellular' | 'none'
+
+  @ApiProperty({
+    type: String,
+    required: false,
+    description: 'App version name',
+  })
+  appVersionName?: string
+
+  @ApiProperty({
+    type: Number,
+    required: false,
+    description: 'App version code',
+  })
+  appVersionCode?: number
+
+  @ApiProperty({
+    type: Number,
+    required: false,
+    description: 'Device uptime in milliseconds since boot',
+  })
+  deviceUptimeMillis?: number
+
+  @ApiProperty({
+    type: Number,
+    required: false,
+    description: 'Free memory in bytes',
+  })
+  memoryFreeBytes?: number
+
+  @ApiProperty({
+    type: Number,
+    required: false,
+    description: 'Total memory in bytes',
+  })
+  memoryTotalBytes?: number
+
+  @ApiProperty({
+    type: Number,
+    required: false,
+    description: 'Max memory in bytes',
+  })
+  memoryMaxBytes?: number
+
+  @ApiProperty({
+    type: Number,
+    required: false,
+    description: 'Available storage in bytes',
+  })
+  storageAvailableBytes?: number
+
+  @ApiProperty({
+    type: Number,
+    required: false,
+    description: 'Total storage in bytes',
+  })
+  storageTotalBytes?: number
+
+  @ApiProperty({
+    type: String,
+    required: false,
+    description: 'Device timezone (e.g., "America/New_York")',
+  })
+  timezone?: string
+
+  @ApiProperty({
+    type: String,
+    required: false,
+    description: 'Device locale (e.g., "en_US")',
+  })
+  locale?: string
+
+  @ApiProperty({
+    type: Boolean,
+    required: false,
+    description: 'Whether receive SMS feature is enabled',
+  })
+  receiveSMSEnabled?: boolean
+}
+
+export class HeartbeatResponseDTO {
+  @ApiProperty({
+    type: Boolean,
+    required: true,
+    description: 'Whether the heartbeat was successful',
+  })
+  success: boolean
+
+  @ApiProperty({
+    type: Boolean,
+    required: true,
+    description: 'Whether the FCM token was updated',
+  })
+  fcmTokenUpdated: boolean
+
+  @ApiProperty({
+    type: Date,
+    required: true,
+    description: 'Server timestamp of the heartbeat',
+  })
+  lastHeartbeat: Date
+}
