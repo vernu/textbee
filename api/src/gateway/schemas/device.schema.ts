@@ -77,12 +77,12 @@ export class Device {
 
   @Prop({
     type: {
-      type: String,
+      networkType: String,
       lastUpdated: Date,
     },
   })
   networkInfo: {
-    type?: 'wifi' | 'cellular' | 'none'
+    networkType?: 'wifi' | 'cellular' | 'none'
     lastUpdated?: Date
   }
 
