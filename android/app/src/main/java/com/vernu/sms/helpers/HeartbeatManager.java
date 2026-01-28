@@ -4,6 +4,7 @@ import android.content.Context;
 import android.util.Log;
 
 import androidx.work.Constraints;
+import androidx.work.ExistingPeriodicWorkPolicy;
 import androidx.work.NetworkType;
 import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkManager;
@@ -16,11 +17,15 @@ import java.util.concurrent.TimeUnit;
 public class HeartbeatManager {
     private static final String TAG = "HeartbeatManager";
     private static final int MIN_INTERVAL_MINUTES = 15; // Android WorkManager minimum
+    private static final String UNIQUE_WORK_NAME = "heartbeat_unique_work";
 
     public static void scheduleHeartbeat(Context context) {
+        // Use application context to ensure WorkManager works even when app is closed
+        Context appContext = context.getApplicationContext();
+        
         // Get interval from shared preferences (default 30 minutes)
         int intervalMinutes = SharedPreferenceHelper.getSharedPreferenceInt(
-            context,
+            appContext,
             AppConstants.SHARED_PREFS_HEARTBEAT_INTERVAL_MINUTES_KEY,
             30
         );
@@ -32,9 +37,6 @@ public class HeartbeatManager {
         }
 
         Log.d(TAG, "Scheduling heartbeat with interval: " + intervalMinutes + " minutes");
-
-        // Cancel any existing heartbeat work
-        cancelHeartbeat(context);
 
         // Create constraints
         Constraints constraints = new Constraints.Builder()
@@ -51,16 +53,28 @@ public class HeartbeatManager {
             .addTag(AppConstants.HEARTBEAT_WORK_TAG)
             .build();
 
-        // Enqueue the work
-        WorkManager.getInstance(context)
-            .enqueue(heartbeatWork);
+        // Use enqueueUniquePeriodicWork to ensure only one periodic work exists
+        // This ensures the work persists across app restarts and device reboots
+        WorkManager.getInstance(appContext)
+            .enqueueUniquePeriodicWork(
+                UNIQUE_WORK_NAME,
+                ExistingPeriodicWorkPolicy.REPLACE,
+                heartbeatWork
+            );
 
-        Log.d(TAG, "Heartbeat scheduled successfully");
+        Log.d(TAG, "Heartbeat scheduled successfully with unique work name: " + UNIQUE_WORK_NAME);
     }
 
     public static void cancelHeartbeat(Context context) {
         Log.d(TAG, "Cancelling heartbeat work");
-        WorkManager.getInstance(context)
+        Context appContext = context.getApplicationContext();
+        
+        // Cancel by unique work name (more reliable)
+        WorkManager.getInstance(appContext)
+            .cancelUniqueWork(UNIQUE_WORK_NAME);
+        
+        // Also cancel by tag as fallback
+        WorkManager.getInstance(appContext)
             .cancelAllWorkByTag(AppConstants.HEARTBEAT_WORK_TAG);
     }
 
