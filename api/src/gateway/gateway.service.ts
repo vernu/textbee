@@ -991,40 +991,36 @@ const updatedSms = await this.smsModel.findByIdAndUpdate(
 
     // Update batteryInfo if provided
     if (input.batteryPercentage !== undefined || input.isCharging !== undefined) {
-      updateData.batteryInfo = {
-        ...(device.batteryInfo || {}),
-        ...(input.batteryPercentage !== undefined && { percentage: input.batteryPercentage }),
-        ...(input.isCharging !== undefined && { isCharging: input.isCharging }),
-        lastUpdated: now,
+      if (input.batteryPercentage !== undefined) {
+        updateData['batteryInfo.percentage'] = input.batteryPercentage
       }
+      if (input.isCharging !== undefined) {
+        updateData['batteryInfo.isCharging'] = input.isCharging
+      }
+      updateData['batteryInfo.lastUpdated'] = now
     }
 
     // Update networkInfo if provided
     if (input.networkType !== undefined) {
-      updateData.networkInfo = {
-        ...(device.networkInfo || {}),
-        type: input.networkType,
-        lastUpdated: now,
-      }
+      updateData['networkInfo.networkType'] = input.networkType
+      updateData['networkInfo.lastUpdated'] = now
     }
 
     // Update appVersionInfo if provided
     if (input.appVersionName !== undefined || input.appVersionCode !== undefined) {
-      updateData.appVersionInfo = {
-        ...(device.appVersionInfo || {}),
-        ...(input.appVersionName !== undefined && { versionName: input.appVersionName }),
-        ...(input.appVersionCode !== undefined && { versionCode: input.appVersionCode }),
-        lastUpdated: now,
+      if (input.appVersionName !== undefined) {
+        updateData['appVersionInfo.versionName'] = input.appVersionName
       }
+      if (input.appVersionCode !== undefined) {
+        updateData['appVersionInfo.versionCode'] = input.appVersionCode
+      }
+      updateData['appVersionInfo.lastUpdated'] = now
     }
 
     // Update deviceUptimeInfo if provided
     if (input.deviceUptimeMillis !== undefined) {
-      updateData.deviceUptimeInfo = {
-        ...(device.deviceUptimeInfo || {}),
-        uptimeMillis: input.deviceUptimeMillis,
-        lastUpdated: now,
-      }
+      updateData['deviceUptimeInfo.uptimeMillis'] = input.deviceUptimeMillis
+      updateData['deviceUptimeInfo.lastUpdated'] = now
     }
 
     // Update memoryInfo if any memory field provided
@@ -1033,13 +1029,16 @@ const updatedSms = await this.smsModel.findByIdAndUpdate(
       input.memoryTotalBytes !== undefined ||
       input.memoryMaxBytes !== undefined
     ) {
-      updateData.memoryInfo = {
-        ...(device.memoryInfo || {}),
-        ...(input.memoryFreeBytes !== undefined && { freeBytes: input.memoryFreeBytes }),
-        ...(input.memoryTotalBytes !== undefined && { totalBytes: input.memoryTotalBytes }),
-        ...(input.memoryMaxBytes !== undefined && { maxBytes: input.memoryMaxBytes }),
-        lastUpdated: now,
+      if (input.memoryFreeBytes !== undefined) {
+        updateData['memoryInfo.freeBytes'] = input.memoryFreeBytes
       }
+      if (input.memoryTotalBytes !== undefined) {
+        updateData['memoryInfo.totalBytes'] = input.memoryTotalBytes
+      }
+      if (input.memoryMaxBytes !== undefined) {
+        updateData['memoryInfo.maxBytes'] = input.memoryMaxBytes
+      }
+      updateData['memoryInfo.lastUpdated'] = now
     }
 
     // Update storageInfo if any storage field provided
@@ -1047,22 +1046,24 @@ const updatedSms = await this.smsModel.findByIdAndUpdate(
       input.storageAvailableBytes !== undefined ||
       input.storageTotalBytes !== undefined
     ) {
-      updateData.storageInfo = {
-        ...(device.storageInfo || {}),
-        ...(input.storageAvailableBytes !== undefined && { availableBytes: input.storageAvailableBytes }),
-        ...(input.storageTotalBytes !== undefined && { totalBytes: input.storageTotalBytes }),
-        lastUpdated: now,
+      if (input.storageAvailableBytes !== undefined) {
+        updateData['storageInfo.availableBytes'] = input.storageAvailableBytes
       }
+      if (input.storageTotalBytes !== undefined) {
+        updateData['storageInfo.totalBytes'] = input.storageTotalBytes
+      }
+      updateData['storageInfo.lastUpdated'] = now
     }
 
     // Update systemInfo if timezone or locale provided
     if (input.timezone !== undefined || input.locale !== undefined) {
-      updateData.systemInfo = {
-        ...(device.systemInfo || {}),
-        ...(input.timezone !== undefined && { timezone: input.timezone }),
-        ...(input.locale !== undefined && { locale: input.locale }),
-        lastUpdated: now,
+      if (input.timezone !== undefined) {
+        updateData['systemInfo.timezone'] = input.timezone
       }
+      if (input.locale !== undefined) {
+        updateData['systemInfo.locale'] = input.locale
+      }
+      updateData['systemInfo.lastUpdated'] = now
     }
 
     // Update simInfo if provided
