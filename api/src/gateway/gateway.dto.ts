@@ -101,6 +101,14 @@ export class SMSData {
   })
   simSubscriptionId?: number
 
+  @ApiProperty({
+    type: String,
+    required: false,
+    description: 'Optional ISO 8601 date string to schedule SMS for future delivery (e.g., "2024-01-15T10:30:00Z"). Must be a future date.',
+    example: '2024-01-15T10:30:00Z',
+  })
+  scheduledAt?: string
+
   // TODO: restructure the Payload such that it contains bactchId, smsId, recipients and message in an optimized way
   // message: string
   // bactchId: string
