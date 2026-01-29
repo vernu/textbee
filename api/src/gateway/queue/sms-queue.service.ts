@@ -32,6 +32,7 @@ export class SmsQueueService {
     deviceId: string,
     fcmMessages: Message[],
     smsBatchId: string,
+    delayMs?: number,
   ) {
     this.logger.debug(`Adding send-sms job for batch ${smsBatchId}`)
 
@@ -41,8 +42,13 @@ export class SmsQueueService {
       batches.push(fcmMessages.slice(i, i + this.maxSmsBatchSize))
     }
 
+    // If delayMs is provided, use it for all batches (scheduled send)
+    // Otherwise, use the existing delay multiplier logic
+    const useScheduledDelay = delayMs !== undefined && delayMs >= 0
+
     let delayMultiplier = 1;
     for (const batch of batches) {
+      const delay = useScheduledDelay ? delayMs : 1000 * delayMultiplier++
       await this.smsQueue.add(
         'send-sms',
         {
@@ -53,7 +59,7 @@ export class SmsQueueService {
         {
           priority: 1, // TODO: Make this dynamic based on users subscription plan
           attempts: 1,
-          delay: 1000 * delayMultiplier++,
+          delay: delay,
           backoff: {
             type: 'exponential',
             delay: 5000, // 5 seconds
