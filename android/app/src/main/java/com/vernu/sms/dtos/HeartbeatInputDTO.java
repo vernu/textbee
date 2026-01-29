@@ -16,6 +16,7 @@ public class HeartbeatInputDTO {
     private String timezone;
     private String locale;
     private Boolean receiveSMSEnabled;
+    private SimInfoCollectionDTO simInfo;
 
     public HeartbeatInputDTO() {
     }
@@ -138,5 +139,13 @@ public class HeartbeatInputDTO {
 
     public void setReceiveSMSEnabled(Boolean receiveSMSEnabled) {
         this.receiveSMSEnabled = receiveSMSEnabled;
+    }
+
+    public SimInfoCollectionDTO getSimInfo() {
+        return simInfo;
+    }
+
+    public void setSimInfo(SimInfoCollectionDTO simInfo) {
+        this.simInfo = simInfo;
     }
 }

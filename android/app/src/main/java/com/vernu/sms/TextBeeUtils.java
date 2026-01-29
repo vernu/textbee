@@ -15,6 +15,7 @@ import androidx.core.content.ContextCompat;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.vernu.sms.services.StickyNotificationService;
 import com.vernu.sms.helpers.SharedPreferenceHelper;
+import com.vernu.sms.dtos.SimInfoDTO;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -116,5 +117,172 @@ public class TextBeeUtils {
      */
     public static void logException(Throwable throwable, String message) {
         logException(throwable, message, null);
+    }
+
+    /**
+     * Collects all available SIM information (physical SIMs and eSIMs) from the device
+     * 
+     * @param context The application context
+     * @return List of SimInfoDTO objects containing SIM information, or empty list if permission not granted
+     */
+    public static List<SimInfoDTO> collectSimInfo(Context context) {
+        List<SimInfoDTO> simInfoList = new ArrayList<>();
+
+        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
+            Log.w(TAG, "READ_PHONE_STATE permission not granted, cannot collect SIM info");
+            return simInfoList;
+        }
+
+        try {
+            SubscriptionManager subscriptionManager = SubscriptionManager.from(context);
+            List<SubscriptionInfo> subscriptionInfoList = subscriptionManager.getActiveSubscriptionInfoList();
+
+            if (subscriptionInfoList == null) {
+                Log.d(TAG, "No active subscriptions found");
+                return simInfoList;
+            }
+
+            for (SubscriptionInfo subscriptionInfo : subscriptionInfoList) {
+                SimInfoDTO simInfo = new SimInfoDTO();
+                simInfo.setSubscriptionId(subscriptionInfo.getSubscriptionId());
+
+                // Get ICCID (may be null for eSIM)
+                try {
+                    String iccId = subscriptionInfo.getIccId();
+                    if (iccId != null && !iccId.isEmpty()) {
+                        simInfo.setIccId(iccId);
+                    }
+                } catch (Exception e) {
+                    Log.d(TAG, "Could not get ICCID for subscription " + subscriptionInfo.getSubscriptionId());
+                }
+
+                // Get Card ID
+                try {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        int cardId = subscriptionInfo.getCardId();
+                        if (cardId != SubscriptionManager.INVALID_CARD_ID) {
+                            simInfo.setCardId(cardId);
+                        }
+                    }
+                } catch (Exception e) {
+                    Log.d(TAG, "Could not get Card ID for subscription " + subscriptionInfo.getSubscriptionId());
+                }
+
+                // Get carrier name
+                try {
+                    CharSequence carrierName = subscriptionInfo.getCarrierName();
+                    if (carrierName != null) {
+                        simInfo.setCarrierName(carrierName.toString());
+                    }
+                } catch (Exception e) {
+                    Log.d(TAG, "Could not get carrier name for subscription " + subscriptionInfo.getSubscriptionId());
+                }
+
+                // Get display name
+                try {
+                    CharSequence displayName = subscriptionInfo.getDisplayName();
+                    if (displayName != null) {
+                        simInfo.setDisplayName(displayName.toString());
+                    }
+                } catch (Exception e) {
+                    Log.d(TAG, "Could not get display name for subscription " + subscriptionInfo.getSubscriptionId());
+                }
+
+                // Get SIM slot index
+                try {
+                    int simSlotIndex = subscriptionInfo.getSimSlotIndex();
+                    if (simSlotIndex >= 0) {
+                        simInfo.setSimSlotIndex(simSlotIndex);
+                    }
+                } catch (Exception e) {
+                    Log.d(TAG, "Could not get SIM slot index for subscription " + subscriptionInfo.getSubscriptionId());
+                }
+
+                // Get MCC
+                try {
+                    String mcc = subscriptionInfo.getMccString();
+                    if (mcc != null && !mcc.isEmpty()) {
+                        simInfo.setMcc(mcc);
+                    }
+                } catch (Exception e) {
+                    Log.d(TAG, "Could not get MCC for subscription " + subscriptionInfo.getSubscriptionId());
+                }
+
+                // Get MNC
+                try {
+                    String mnc = subscriptionInfo.getMncString();
+                    if (mnc != null && !mnc.isEmpty()) {
+                        simInfo.setMnc(mnc);
+                    }
+                } catch (Exception e) {
+                    Log.d(TAG, "Could not get MNC for subscription " + subscriptionInfo.getSubscriptionId());
+                }
+
+                // Get country ISO
+                try {
+                    String countryIso = subscriptionInfo.getCountryIso();
+                    if (countryIso != null && !countryIso.isEmpty()) {
+                        simInfo.setCountryIso(countryIso);
+                    }
+                } catch (Exception e) {
+                    Log.d(TAG, "Could not get country ISO for subscription " + subscriptionInfo.getSubscriptionId());
+                }
+
+                // Get subscription type (0 = physical SIM, 1 = eSIM)
+                try {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        int subscriptionType = subscriptionInfo.getSubscriptionType();
+                        if (subscriptionType == SubscriptionManager.SUBSCRIPTION_TYPE_LOCAL_SIM) {
+                            simInfo.setSubscriptionType("PHYSICAL_SIM");
+                        } else if (subscriptionType == SubscriptionManager.SUBSCRIPTION_TYPE_REMOTE_SIM) {
+                            simInfo.setSubscriptionType("ESIM");
+                        }
+                    } else {
+                        // For older Android versions, default to PHYSICAL_SIM
+                        simInfo.setSubscriptionType("PHYSICAL_SIM");
+                    }
+                } catch (Exception e) {
+                    Log.d(TAG, "Could not get subscription type for subscription " + subscriptionInfo.getSubscriptionId());
+                }
+
+                simInfoList.add(simInfo);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error collecting SIM info: " + e.getMessage(), e);
+        }
+
+        return simInfoList;
+    }
+
+    /**
+     * Validates if a subscription ID exists in the active subscriptions
+     * 
+     * @param context The application context
+     * @param subscriptionId The subscription ID to validate
+     * @return true if the subscription ID exists, false otherwise
+     */
+    public static boolean isValidSubscriptionId(Context context, int subscriptionId) {
+        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
+            return false;
+        }
+
+        try {
+            SubscriptionManager subscriptionManager = SubscriptionManager.from(context);
+            List<SubscriptionInfo> subscriptionInfoList = subscriptionManager.getActiveSubscriptionInfoList();
+
+            if (subscriptionInfoList == null) {
+                return false;
+            }
+
+            for (SubscriptionInfo subscriptionInfo : subscriptionInfoList) {
+                if (subscriptionInfo.getSubscriptionId() == subscriptionId) {
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error validating subscription ID: " + e.getMessage(), e);
+        }
+
+        return false;
     }
 }

@@ -46,13 +46,23 @@ export class GatewayService {
       buildId: input.buildId,
     })
 
+    const deviceData: any = { ...input, user }
+    
+    // Handle simInfo if provided
+    if (input.simInfo) {
+      deviceData.simInfo = {
+        ...input.simInfo,
+        lastUpdated: input.simInfo.lastUpdated || new Date(),
+      }
+    }
+
     if (device && device.appVersionCode <= 11) {
       return await this.updateDevice(device._id.toString(), {
-        ...input,
+        ...deviceData,
         enabled: true,
       })
     } else {
-      return await this.deviceModel.create({ ...input, user })
+      return await this.deviceModel.create(deviceData)
     }
   }
 
@@ -82,10 +92,20 @@ export class GatewayService {
     if (input.enabled !== false) {
       input.enabled = true;
     }
+
+    const updateData: any = { ...input }
+    
+    // Handle simInfo if provided
+    if (input.simInfo) {
+      updateData.simInfo = {
+        ...input.simInfo,
+        lastUpdated: input.simInfo.lastUpdated || new Date(),
+      }
+    }
     
     return await this.deviceModel.findByIdAndUpdate(
       deviceId,
-      { $set: input },
+      { $set: updateData },
       { new: true },
     )
   }
@@ -183,12 +203,18 @@ export class GatewayService {
         recipient,
         requestedAt: new Date(),
         status: 'pending',
+        ...(smsData.simSubscriptionId !== undefined && {
+          simSubscriptionId: smsData.simSubscriptionId,
+        }),
       })
       const updatedSMSData = {
         smsId: sms._id,
         smsBatchId: smsBatch._id,
         message,
         recipients: [recipient],
+        ...(smsData.simSubscriptionId !== undefined && {
+          simSubscriptionId: smsData.simSubscriptionId,
+        }),
 
         // Legacy fields to be removed in the future
         smsBody: message,
@@ -376,15 +402,21 @@ export class GatewayService {
           smsBatch: smsBatch._id,
           message: message,
           type: SMSType.SENT,
-recipient,
+          recipient,
           requestedAt: new Date(),
           status: 'pending',
+          ...(smsData.simSubscriptionId !== undefined && {
+            simSubscriptionId: smsData.simSubscriptionId,
+          }),
         })
         const updatedSMSData = {
           smsId: sms._id,
           smsBatchId: smsBatch._id,
           message,
           recipients: [recipient],
+          ...(smsData.simSubscriptionId !== undefined && {
+            simSubscriptionId: smsData.simSubscriptionId,
+          }),
 
           // Legacy fields to be removed in the future
           smsBody: message,
@@ -1030,6 +1062,14 @@ const updatedSms = await this.smsModel.findByIdAndUpdate(
         ...(input.timezone !== undefined && { timezone: input.timezone }),
         ...(input.locale !== undefined && { locale: input.locale }),
         lastUpdated: now,
+      }
+    }
+
+    // Update simInfo if provided
+    if (input.simInfo !== undefined) {
+      updateData.simInfo = {
+        ...input.simInfo,
+        lastUpdated: input.simInfo.lastUpdated || now,
       }
     }
 

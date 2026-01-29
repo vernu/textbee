@@ -21,7 +21,9 @@ import com.vernu.sms.AppConstants;
 import com.vernu.sms.BuildConfig;
 import com.vernu.sms.dtos.HeartbeatInputDTO;
 import com.vernu.sms.dtos.HeartbeatResponseDTO;
+import com.vernu.sms.dtos.SimInfoCollectionDTO;
 import com.vernu.sms.helpers.SharedPreferenceHelper;
+import com.vernu.sms.TextBeeUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -178,6 +180,12 @@ public class HeartbeatWorker extends Worker {
                 false
             );
             heartbeatInput.setReceiveSMSEnabled(receiveSMSEnabled);
+
+            // Collect SIM information
+            SimInfoCollectionDTO simInfoCollection = new SimInfoCollectionDTO();
+            simInfoCollection.setLastUpdated(System.currentTimeMillis());
+            simInfoCollection.setSims(TextBeeUtils.collectSimInfo(context));
+            heartbeatInput.setSimInfo(simInfoCollection);
 
             // Send heartbeat request
             Call<HeartbeatResponseDTO> call = ApiManager.getApiService().heartbeat(deviceId, apiKey, heartbeatInput);
