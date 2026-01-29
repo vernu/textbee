@@ -15,6 +15,7 @@ import com.vernu.sms.TextBeeUtils;
 import com.vernu.sms.dtos.RegisterDeviceInputDTO;
 import com.vernu.sms.dtos.RegisterDeviceResponseDTO;
 import com.vernu.sms.helpers.SharedPreferenceHelper;
+import com.vernu.sms.helpers.HeartbeatManager;
 import com.vernu.sms.services.StickyNotificationService;
 
 import retrofit2.Call;
@@ -54,6 +55,17 @@ public class BootCompletedReceiver extends BroadcastReceiver {
             // Only proceed if both device ID and API key are available
             if (!deviceId.isEmpty() && !apiKey.isEmpty()) {
                 updateDeviceInfo(context, deviceId, apiKey);
+                
+                // Schedule heartbeat if device is enabled
+                boolean deviceEnabled = SharedPreferenceHelper.getSharedPreferenceBoolean(
+                    context,
+                    AppConstants.SHARED_PREFS_GATEWAY_ENABLED_KEY,
+                    false
+                );
+                if (deviceEnabled) {
+                    Log.i(TAG, "Device booted, scheduling heartbeat");
+                    HeartbeatManager.scheduleHeartbeat(context);
+                }
             }
         }
     }
@@ -85,6 +97,18 @@ public class BootCompletedReceiver extends BroadcastReceiver {
                         public void onResponse(Call<RegisterDeviceResponseDTO> call, Response<RegisterDeviceResponseDTO> response) {
                             if (response.isSuccessful()) {
                                 Log.d(TAG, "Device info updated successfully after boot");
+                                
+                                // Sync heartbeatIntervalMinutes from server response
+                                if (response.body() != null && response.body().data != null) {
+                                    if (response.body().data.get("heartbeatIntervalMinutes") != null) {
+                                        Object intervalObj = response.body().data.get("heartbeatIntervalMinutes");
+                                        if (intervalObj instanceof Number) {
+                                            int intervalMinutes = ((Number) intervalObj).intValue();
+                                            SharedPreferenceHelper.setSharedPreferenceInt(context, AppConstants.SHARED_PREFS_HEARTBEAT_INTERVAL_MINUTES_KEY, intervalMinutes);
+                                            Log.d(TAG, "Synced heartbeat interval from server: " + intervalMinutes + " minutes");
+                                        }
+                                    }
+                                }
                             } else {
                                 Log.e(TAG, "Failed to update device info after boot. Response code: " + response.code());
                             }

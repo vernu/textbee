@@ -26,6 +26,8 @@ import {
   SendBulkSMSInputDTO,
   SendSMSInputDTO,
   UpdateSMSStatusDTO,
+  HeartbeatInputDTO,
+  HeartbeatResponseDTO,
 } from './gateway.dto'
 import { GatewayService } from './gateway.service'
 import { CanModifyDevice } from './guards/can-modify-device.guard'
@@ -68,6 +70,18 @@ export class GatewayController {
   ) {
     const data = await this.gatewayService.updateDevice(deviceId, input)
     return { data }
+  }
+
+  @ApiOperation({ summary: 'Device heartbeat' })
+  @UseGuards(AuthGuard, CanModifyDevice)
+  @Post('/devices/:id/heartbeat')
+  @HttpCode(HttpStatus.OK)
+  async heartbeat(
+    @Param('id') deviceId: string,
+    @Body() input: HeartbeatInputDTO,
+  ): Promise<HeartbeatResponseDTO> {
+    const data = await this.gatewayService.heartbeat(deviceId, input)
+    return data
   }
 
   @ApiOperation({ summary: 'Delete device' })

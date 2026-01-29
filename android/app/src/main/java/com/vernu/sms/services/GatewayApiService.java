@@ -4,6 +4,8 @@ import com.vernu.sms.dtos.SMSDTO;
 import com.vernu.sms.dtos.SMSForwardResponseDTO;
 import com.vernu.sms.dtos.RegisterDeviceInputDTO;
 import com.vernu.sms.dtos.RegisterDeviceResponseDTO;
+import com.vernu.sms.dtos.HeartbeatInputDTO;
+import com.vernu.sms.dtos.HeartbeatResponseDTO;
 
 import retrofit2.Call;
 import retrofit2.http.Body;
@@ -24,4 +26,7 @@ public interface GatewayApiService {
 
     @PATCH("gateway/devices/{deviceId}/sms-status")
     Call<SMSForwardResponseDTO> updateSMSStatus(@Path("deviceId") String deviceId, @Header("x-api-key") String apiKey, @Body() SMSDTO body);
+
+    @POST("gateway/devices/{deviceId}/heartbeat")
+    Call<HeartbeatResponseDTO> heartbeat(@Path("deviceId") String deviceId, @Header("x-api-key") String apiKey, @Body() HeartbeatInputDTO body);
 }

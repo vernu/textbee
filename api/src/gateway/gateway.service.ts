@@ -10,6 +10,8 @@ import {
   SendBulkSMSInputDTO,
   SendSMSInputDTO,
   UpdateSMSStatusDTO,
+  HeartbeatInputDTO,
+  HeartbeatResponseDTO,
 } from './gateway.dto'
 import { User } from '../users/schemas/user.schema'
 import { AuthService } from '../auth/auth.service'
@@ -916,5 +918,130 @@ const updatedSms = await this.smsModel.findByIdAndUpdate(
       batch: smsBatch,
       messages: smsMessages
     };
+  }
+
+  async heartbeat(
+    deviceId: string,
+    input: HeartbeatInputDTO,
+  ): Promise<HeartbeatResponseDTO> {
+    const device = await this.deviceModel.findById(deviceId)
+
+    if (!device) {
+      throw new HttpException(
+        {
+          success: false,
+          error: 'Device not found',
+        },
+        HttpStatus.NOT_FOUND,
+      )
+    }
+
+    const now = new Date()
+    const updateData: any = {
+      lastHeartbeat: now,
+    }
+
+    let fcmTokenUpdated = false
+
+    // Update FCM token if provided and different
+    if (input.fcmToken && input.fcmToken !== device.fcmToken) {
+      updateData.fcmToken = input.fcmToken
+      fcmTokenUpdated = true
+    }
+
+    // Update receiveSMSEnabled if provided and different
+    if (
+      input.receiveSMSEnabled !== undefined &&
+      input.receiveSMSEnabled !== device.receiveSMSEnabled
+    ) {
+      updateData.receiveSMSEnabled = input.receiveSMSEnabled
+    }
+
+    // Update batteryInfo if provided
+    if (input.batteryPercentage !== undefined || input.isCharging !== undefined) {
+      updateData.batteryInfo = {
+        ...(device.batteryInfo || {}),
+        ...(input.batteryPercentage !== undefined && { percentage: input.batteryPercentage }),
+        ...(input.isCharging !== undefined && { isCharging: input.isCharging }),
+        lastUpdated: now,
+      }
+    }
+
+    // Update networkInfo if provided
+    if (input.networkType !== undefined) {
+      updateData.networkInfo = {
+        ...(device.networkInfo || {}),
+        type: input.networkType,
+        lastUpdated: now,
+      }
+    }
+
+    // Update appVersionInfo if provided
+    if (input.appVersionName !== undefined || input.appVersionCode !== undefined) {
+      updateData.appVersionInfo = {
+        ...(device.appVersionInfo || {}),
+        ...(input.appVersionName !== undefined && { versionName: input.appVersionName }),
+        ...(input.appVersionCode !== undefined && { versionCode: input.appVersionCode }),
+        lastUpdated: now,
+      }
+    }
+
+    // Update deviceUptimeInfo if provided
+    if (input.deviceUptimeMillis !== undefined) {
+      updateData.deviceUptimeInfo = {
+        ...(device.deviceUptimeInfo || {}),
+        uptimeMillis: input.deviceUptimeMillis,
+        lastUpdated: now,
+      }
+    }
+
+    // Update memoryInfo if any memory field provided
+    if (
+      input.memoryFreeBytes !== undefined ||
+      input.memoryTotalBytes !== undefined ||
+      input.memoryMaxBytes !== undefined
+    ) {
+      updateData.memoryInfo = {
+        ...(device.memoryInfo || {}),
+        ...(input.memoryFreeBytes !== undefined && { freeBytes: input.memoryFreeBytes }),
+        ...(input.memoryTotalBytes !== undefined && { totalBytes: input.memoryTotalBytes }),
+        ...(input.memoryMaxBytes !== undefined && { maxBytes: input.memoryMaxBytes }),
+        lastUpdated: now,
+      }
+    }
+
+    // Update storageInfo if any storage field provided
+    if (
+      input.storageAvailableBytes !== undefined ||
+      input.storageTotalBytes !== undefined
+    ) {
+      updateData.storageInfo = {
+        ...(device.storageInfo || {}),
+        ...(input.storageAvailableBytes !== undefined && { availableBytes: input.storageAvailableBytes }),
+        ...(input.storageTotalBytes !== undefined && { totalBytes: input.storageTotalBytes }),
+        lastUpdated: now,
+      }
+    }
+
+    // Update systemInfo if timezone or locale provided
+    if (input.timezone !== undefined || input.locale !== undefined) {
+      updateData.systemInfo = {
+        ...(device.systemInfo || {}),
+        ...(input.timezone !== undefined && { timezone: input.timezone }),
+        ...(input.locale !== undefined && { locale: input.locale }),
+        lastUpdated: now,
+      }
+    }
+
+    // Update device with all changes
+    await this.deviceModel.findByIdAndUpdate(deviceId, {
+      $set: updateData,
+    })
+
+    return {
+      success: true,
+      fcmTokenUpdated,
+      lastHeartbeat: now,
+    }
   }
 }
