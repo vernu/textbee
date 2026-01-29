@@ -18,6 +18,8 @@ import com.vernu.sms.R;
 import com.vernu.sms.activities.MainActivity;
 import com.vernu.sms.helpers.SMSHelper;
 import com.vernu.sms.helpers.SharedPreferenceHelper;
+import com.vernu.sms.helpers.HeartbeatHelper;
+import com.vernu.sms.helpers.HeartbeatManager;
 import com.vernu.sms.models.SMSPayload;
 import com.vernu.sms.TextBeeUtils;
 import com.vernu.sms.dtos.RegisterDeviceInputDTO;
@@ -37,7 +39,16 @@ public class FCMService extends FirebaseMessagingService {
         Log.d(TAG, remoteMessage.getData().toString());
 
         try {
-            // Parse SMS payload data
+            // Check message type first
+            String messageType = remoteMessage.getData().get("type");
+            
+            if ("heartbeat_check".equals(messageType)) {
+                // Handle heartbeat check request from backend
+                handleHeartbeatCheck();
+                return;
+            }
+
+            // Parse SMS payload data (legacy handling)
             Gson gson = new Gson();
             SMSPayload smsPayload = gson.fromJson(remoteMessage.getData().get("smsData"), SMSPayload.class);
 
@@ -52,6 +63,45 @@ public class FCMService extends FirebaseMessagingService {
             }
         } catch (Exception e) {
             Log.e(TAG, "Error processing FCM message: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Handle heartbeat check request from backend
+     */
+    private void handleHeartbeatCheck() {
+        Log.d(TAG, "Received heartbeat check request from backend");
+        
+        // Check if device is eligible for heartbeat
+        if (!HeartbeatHelper.isDeviceEligibleForHeartbeat(this)) {
+            Log.d(TAG, "Device not eligible for heartbeat, skipping heartbeat check");
+            return;
+        }
+
+        // Get device ID and API key
+        String deviceId = SharedPreferenceHelper.getSharedPreferenceString(
+            this,
+            AppConstants.SHARED_PREFS_DEVICE_ID_KEY,
+            ""
+        );
+
+        String apiKey = SharedPreferenceHelper.getSharedPreferenceString(
+            this,
+            AppConstants.SHARED_PREFS_API_KEY_KEY,
+            ""
+        );
+
+        // Send heartbeat using shared helper
+        boolean success = HeartbeatHelper.sendHeartbeat(this, deviceId, apiKey);
+
+        if (success) {
+            Log.d(TAG, "Heartbeat sent successfully in response to backend check");
+            // Ensure scheduled work is added if missing
+            HeartbeatManager.scheduleHeartbeat(this);
+        } else {
+            Log.e(TAG, "Failed to send heartbeat in response to backend check");
+            // Still try to ensure scheduled work is added
+            HeartbeatManager.scheduleHeartbeat(this);
         }
     }
 

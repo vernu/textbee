@@ -1118,38 +1118,6 @@ const updatedSms = await this.smsModel.findByIdAndUpdate(
       updateData['deviceUptimeInfo.lastUpdated'] = now
     }
 
-    // Update memoryInfo if any memory field provided
-    if (
-      input.memoryFreeBytes !== undefined ||
-      input.memoryTotalBytes !== undefined ||
-      input.memoryMaxBytes !== undefined
-    ) {
-      if (input.memoryFreeBytes !== undefined) {
-        updateData['memoryInfo.freeBytes'] = input.memoryFreeBytes
-      }
-      if (input.memoryTotalBytes !== undefined) {
-        updateData['memoryInfo.totalBytes'] = input.memoryTotalBytes
-      }
-      if (input.memoryMaxBytes !== undefined) {
-        updateData['memoryInfo.maxBytes'] = input.memoryMaxBytes
-      }
-      updateData['memoryInfo.lastUpdated'] = now
-    }
-
-    // Update storageInfo if any storage field provided
-    if (
-      input.storageAvailableBytes !== undefined ||
-      input.storageTotalBytes !== undefined
-    ) {
-      if (input.storageAvailableBytes !== undefined) {
-        updateData['storageInfo.availableBytes'] = input.storageAvailableBytes
-      }
-      if (input.storageTotalBytes !== undefined) {
-        updateData['storageInfo.totalBytes'] = input.storageTotalBytes
-      }
-      updateData['storageInfo.lastUpdated'] = now
-    }
-
     // Update systemInfo if timezone or locale provided
     if (input.timezone !== undefined || input.locale !== undefined) {
       if (input.timezone !== undefined) {
