@@ -20,7 +20,7 @@
             android:layout_height="wrap_content"
             android:background="?attr/colorPrimary"
             android:orientation="vertical"
-            android:padding="24dp">
+            android:padding="28dp">
 
             <TextView
                 android:layout_width="match_parent"
@@ -28,18 +28,25 @@
                 android:text="textbee.dev - sms gateway"
                 android:textAlignment="center"
                 android:textColor="@color/white"
-                android:textSize="22sp"
-                android:textStyle="bold" />
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.02"
+                android:shadowColor="#80000000"
+                android:shadowDx="0"
+                android:shadowDy="2"
+                android:shadowRadius="4" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:layout_marginBottom="8dp"
+                android:layout_marginTop="10dp"
+                android:layout_marginBottom="10dp"
                 android:text="Your ultimate solution for seamless SMS communication"
                 android:textAlignment="center"
                 android:textColor="@color/white"
-                android:textSize="12sp" />
+                android:textSize="13sp"
+                android:letterSpacing="0.01"
+                android:alpha="0.95" />
         </LinearLayout>
 
         <!-- Device Info Card -->
@@ -50,21 +57,21 @@
             android:layout_marginTop="-24dp"
             android:layout_marginBottom="16dp"
             app:cardBackgroundColor="@color/background_secondary"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="4dp">
+            app:cardCornerRadius="12dp"
+            app:cardElevation="6dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:orientation="horizontal"
-                android:padding="6dp">
+                android:padding="12dp">
 
                 <ImageView
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
+                    android:layout_width="52dp"
+                    android:layout_height="52dp"
                     android:layout_gravity="center"
-                    android:padding="3dp"
+                    android:padding="6dp"
                     android:src="@drawable/ic_baseline_phone_android_24"
                     android:tint="?attr/colorPrimary" />
 
@@ -72,7 +79,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
-                    android:layout_marginStart="3dp"
+                    android:layout_marginStart="8dp"
                     android:layout_weight="1"
                     android:orientation="vertical">
 
@@ -109,11 +116,11 @@
 
                         <ImageButton
                             android:id="@+id/copyDeviceIdImgBtn"
-                            android:layout_width="24dp"
-                            android:layout_height="24dp"
-                            android:layout_marginStart="2dp"
+                            android:layout_width="26dp"
+                            android:layout_height="26dp"
+                            android:layout_marginStart="4dp"
                             android:background="?attr/selectableItemBackgroundBorderless"
-                            android:padding="2dp"
+                            android:padding="4dp"
                             android:src="@drawable/ic_baseline_content_copy_24"
                             android:tint="?attr/colorPrimary" />
                     </LinearLayout>
@@ -163,23 +170,24 @@
                 android:layout_marginHorizontal="16dp"
                 android:layout_marginBottom="16dp"
                 app:cardBackgroundColor="@color/background_secondary"
-                app:cardCornerRadius="8dp"
-                app:cardElevation="2dp">
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:padding="20dp">
 
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginBottom="16dp"
+                        android:layout_marginBottom="18dp"
                         android:text="Account Information"
                         android:textColor="@color/text_primary"
-                        android:textSize="18sp"
-                        android:textStyle="bold" />
+                        android:textSize="19sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.01" />
 
                     <!-- Device ID Input Field -->
                     <com.google.android.material.textfield.TextInputLayout
@@ -212,13 +220,15 @@
                         android:hint="API Key"
                         app:boxBackgroundColor="@android:color/transparent"
                         app:boxStrokeColor="?attr/colorPrimary"
-                        app:hintTextColor="?attr/colorPrimary">
+                        app:hintTextColor="?attr/colorPrimary"
+                        app:endIconMode="password_toggle"
+                        app:endIconTint="?attr/colorPrimary">
 
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/apiKeyEditText"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:inputType="text"
+                            android:inputType="textPassword"
                             android:textColor="@color/text_primary"
                             android:textIsSelectable="true" />
                     </com.google.android.material.textfield.TextInputLayout>
@@ -247,9 +257,14 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:backgroundTint="?attr/colorPrimary"
-                            android:paddingHorizontal="24dp"
+                            android:paddingHorizontal="28dp"
+                            android:paddingVertical="12dp"
                             android:text="Connect"
-                            android:textColor="@color/white" />
+                            android:textColor="@color/white"
+                            android:textSize="15sp"
+                            android:letterSpacing="0.01"
+                            style="@style/Widget.MaterialComponents.Button"
+                            app:cornerRadius="8dp" />
 
                         <View
                             android:layout_width="0dp"
@@ -259,11 +274,20 @@
                             android:id="@+id/scanQRButton"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_margin="5dp"
+                            android:layout_marginStart="8dp"
                             android:drawableLeft="@drawable/ic_baseline_qr_code_24"
+                            android:drawablePadding="6dp"
+                            android:paddingHorizontal="20dp"
+                            android:paddingVertical="12dp"
                             android:text="Scan QR"
-                            android:textColor="@color/black"
-                            android:theme="@style/Theme.Design.Light" />
+                            android:textColor="?attr/colorPrimary"
+                            android:textSize="15sp"
+                            android:letterSpacing="0.01"
+                            android:backgroundTint="@android:color/transparent"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                            app:cornerRadius="8dp"
+                            app:strokeColor="?attr/colorPrimary"
+                            app:strokeWidth="1.5dp" />
 
                     </LinearLayout>
                 </LinearLayout>
@@ -276,23 +300,24 @@
                 android:layout_marginHorizontal="16dp"
                 android:layout_marginBottom="16dp"
                 app:cardBackgroundColor="@color/background_secondary"
-                app:cardCornerRadius="8dp"
-                app:cardElevation="2dp">
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:padding="20dp">
 
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginBottom="16dp"
+                        android:layout_marginBottom="18dp"
                         android:text="Configuration"
                         android:textColor="@color/text_primary"
-                        android:textSize="18sp"
-                        android:textStyle="bold" />
+                        android:textSize="19sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.01" />
 
                     <!-- Permissions Section -->
                     <LinearLayout
@@ -323,16 +348,23 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:backgroundTint="?attr/colorPrimary"
+                            android:paddingHorizontal="24dp"
+                            android:paddingVertical="12dp"
                             android:text="Grant SMS Permissions"
                             android:textColor="@color/white"
-                            android:visibility="visible" />
+                            android:textSize="15sp"
+                            android:letterSpacing="0.01"
+                            android:visibility="visible"
+                            style="@style/Widget.MaterialComponents.Button"
+                            app:cornerRadius="8dp" />
                     </LinearLayout>
 
                     <View
                         android:layout_width="match_parent"
-                        android:layout_height="1dp"
+                        android:layout_height="1.5dp"
                         android:background="@color/divider"
-                        android:layout_marginBottom="16dp" />
+                        android:alpha="0.6"
+                        android:layout_marginBottom="18dp" />
 
                     <!-- Receive SMS Toggle -->
                     <LinearLayout
@@ -400,11 +432,11 @@
                                 android:gravity="center_vertical">
                                 
                                 <ImageView
-                                    android:layout_width="16dp"
-                                    android:layout_height="16dp"
+                                    android:layout_width="18dp"
+                                    android:layout_height="18dp"
                                     android:src="@android:drawable/ic_dialog_info"
                                     android:tint="?attr/colorPrimary"
-                                    android:layout_marginEnd="4dp" />
+                                    android:layout_marginEnd="6dp" />
                                 
                                 <TextView
                                     android:layout_width="wrap_content"
@@ -424,9 +456,10 @@
 
                     <View
                         android:layout_width="match_parent"
-                        android:layout_height="1dp"
+                        android:layout_height="1.5dp"
                         android:background="@color/divider"
-                        android:layout_marginBottom="16dp" />
+                        android:alpha="0.6"
+                        android:layout_marginBottom="18dp" />
 
                     <!-- Default SIM Selection -->
                     <TextView
@@ -462,38 +495,41 @@
                 android:layout_marginHorizontal="16dp"
                 android:layout_marginBottom="16dp"
                 app:cardBackgroundColor="@color/background_secondary"
-                app:cardCornerRadius="8dp"
-                app:cardElevation="2dp">
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:padding="20dp">
 
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginBottom="8dp"
+                        android:layout_marginBottom="12dp"
                         android:text="How To Use"
                         android:textColor="@color/text_primary"
-                        android:textSize="18sp"
-                        android:textStyle="bold" />
+                        android:textSize="19sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.01" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
-                        android:layout_marginBottom="8dp">
+                        android:layout_marginBottom="10dp"
+                        android:gravity="center_vertical">
 
                         <TextView
-                            android:layout_width="24dp"
-                            android:layout_height="24dp"
-                            android:layout_marginEnd="8dp"
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:layout_marginEnd="12dp"
                             android:background="?attr/colorPrimary"
                             android:gravity="center"
                             android:text="1"
                             android:textColor="@color/white"
+                            android:textSize="14sp"
                             android:textStyle="bold" />
 
                         <TextView
@@ -512,16 +548,18 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
-                        android:layout_marginBottom="8dp">
+                        android:layout_marginBottom="10dp"
+                        android:gravity="center_vertical">
 
                         <TextView
-                            android:layout_width="24dp"
-                            android:layout_height="24dp"
-                            android:layout_marginEnd="8dp"
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:layout_marginEnd="12dp"
                             android:background="?attr/colorPrimary"
                             android:gravity="center"
                             android:text="2"
                             android:textColor="@color/white"
+                            android:textSize="14sp"
                             android:textStyle="bold" />
 
                         <TextView
@@ -534,16 +572,18 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal">
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
 
                         <TextView
-                            android:layout_width="24dp"
-                            android:layout_height="24dp"
-                            android:layout_marginEnd="8dp"
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:layout_marginEnd="12dp"
                             android:background="?attr/colorPrimary"
                             android:gravity="center"
                             android:text="3"
                             android:textColor="@color/white"
+                            android:textSize="14sp"
                             android:textStyle="bold" />
 
                         <TextView
@@ -562,14 +602,14 @@
                 android:layout_marginHorizontal="16dp"
                 android:layout_marginBottom="24dp"
                 app:cardBackgroundColor="@color/background_secondary"
-                app:cardCornerRadius="8dp"
-                app:cardElevation="2dp">
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:padding="20dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -578,11 +618,12 @@
                         android:gravity="center_horizontal">
 
                         <ImageView
-                            android:layout_width="32dp"
-                            android:layout_height="32dp"
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
                             android:src="@drawable/ic_baseline_info_24"
                             android:tint="?attr/colorPrimary"
-                            android:layout_marginEnd="12dp" />
+                            android:padding="4dp"
+                            android:layout_marginEnd="14dp" />
 
                         <LinearLayout
                             android:layout_width="match_parent"
