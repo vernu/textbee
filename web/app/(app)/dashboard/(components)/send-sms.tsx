@@ -29,6 +29,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { Spinner } from '@/components/ui/spinner'
 import { formatError } from '@/lib/utils/errorHandler'
 import { RateLimitError } from '@/components/shared/rate-limit-error'
+import { formatDeviceName } from '@/lib/utils'
 
 export default function SendSms() {
   const { data: devices, isLoading: isLoadingDevices } = useQuery({
@@ -104,7 +105,7 @@ export default function SendSms() {
                             value={device._id}
                             disabled={!device.enabled}
                           >
-                            {device.brand} {device.model}{' '}
+                            {formatDeviceName(device)}{' '}
                             {device.enabled ? '' : '(disabled)'}
                           </SelectItem>
                         ))}
