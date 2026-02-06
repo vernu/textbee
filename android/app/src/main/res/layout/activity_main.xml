@@ -22,31 +22,50 @@
             android:orientation="vertical"
             android:padding="28dp">
 
-            <TextView
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="textbee.dev - sms gateway"
-                android:textAlignment="center"
-                android:textColor="@color/white"
-                android:textSize="24sp"
-                android:textStyle="bold"
-                android:letterSpacing="0.02"
-                android:shadowColor="#80000000"
-                android:shadowDx="0"
-                android:shadowDy="2"
-                android:shadowRadius="4" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginBottom="16dp">
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:layout_marginBottom="10dp"
-                android:text="Your ultimate solution for seamless SMS communication"
-                android:textAlignment="center"
-                android:textColor="@color/white"
-                android:textSize="13sp"
-                android:letterSpacing="0.01"
-                android:alpha="0.95" />
+                <ImageView
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_marginEnd="12dp"
+                    android:src="@mipmap/ic_launcher"
+                    android:contentDescription="App Icon" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="textbee.dev - sms gateway"
+                        android:textColor="@color/white"
+                        android:textSize="24sp"
+                        android:textStyle="bold"
+                        android:letterSpacing="0.02"
+                        android:shadowColor="#80000000"
+                        android:shadowDx="0"
+                        android:shadowDy="2"
+                        android:shadowRadius="4" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Streamline your SMS workflows"
+                        android:textColor="@color/white"
+                        android:textSize="13sp"
+                        android:letterSpacing="0.01"
+                        android:alpha="0.95" />
+                </LinearLayout>
+            </LinearLayout>
         </LinearLayout>
 
         <!-- Device Info Card -->
