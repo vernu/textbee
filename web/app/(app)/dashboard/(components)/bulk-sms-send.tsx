@@ -262,7 +262,6 @@ export default function BulkSMSSend() {
                     <SelectValue placeholder='Select SIM (optional)' />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value=''>None (use default)</SelectItem>
                     {availableSims.map((sim) => (
                       <SelectItem
                         key={sim.subscriptionId}
