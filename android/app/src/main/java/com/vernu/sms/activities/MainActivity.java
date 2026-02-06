@@ -35,6 +35,9 @@ import com.vernu.sms.helpers.SharedPreferenceHelper;
 import com.vernu.sms.helpers.VersionTracker;
 import com.vernu.sms.helpers.HeartbeatManager;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
+import com.google.gson.Gson;
+import okhttp3.ResponseBody;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
 import retrofit2.Call;
@@ -159,7 +162,7 @@ public class MainActivity extends AppCompatActivity {
                 public void onResponse(Call<RegisterDeviceResponseDTO> call, Response<RegisterDeviceResponseDTO> response) {
                     Log.d(TAG, response.toString());
                     if (!response.isSuccessful()) {
-                        Snackbar.make(view, response.message().isEmpty() ? "An error occurred :( "+ response.code() : response.message(), Snackbar.LENGTH_LONG).show();
+                        Snackbar.make(view, extractErrorMessage(response), Snackbar.LENGTH_LONG).show();
                         compoundButton.setEnabled(true);
                         return;
                     }
@@ -257,7 +260,8 @@ public class MainActivity extends AppCompatActivity {
             
             // Create radio buttons for each SIM with proper styling
             TextBeeUtils.getAvailableSimSlots(mContext).forEach(subscriptionInfo -> {
-                String simInfo = "SIM " + (subscriptionInfo.getSimSlotIndex() + 1) + " (" + subscriptionInfo.getDisplayName() + ")";
+                String displayName = subscriptionInfo.getDisplayName() != null ? subscriptionInfo.getDisplayName().toString() : "Unknown";
+                String simInfo = displayName + " (Subscription ID: " + subscriptionInfo.getSubscriptionId() + ")";
                 RadioButton radioButton = new RadioButton(mContext);
                 radioButton.setText(simInfo);
                 radioButton.setId(subscriptionInfo.getSubscriptionId());
@@ -290,6 +294,44 @@ public class MainActivity extends AppCompatActivity {
             Snackbar.make(defaultSimSlotRadioGroup.getRootView(), "Error: " + e.getMessage(), Snackbar.LENGTH_LONG).show();
             Log.e(TAG, "SIM_SLOT_ERROR "+ e.getMessage());
         }
+    }
+    
+    /**
+     * Extracts error message from API response, trying multiple sources:
+     * 1. Error message from response body (error field)
+     * 2. Response message from HTTP headers
+     * 3. Generic error with status code as fallback
+     */
+    private String extractErrorMessage(Response<?> response) {
+        // Try to parse error from response body
+        try {
+            ResponseBody errorBody = response.errorBody();
+            if (errorBody != null) {
+                String errorBodyString = errorBody.string();
+                if (errorBodyString != null && !errorBodyString.isEmpty()) {
+                    try {
+                        Gson gson = new Gson();
+                        RegisterDeviceResponseDTO errorResponse = gson.fromJson(errorBodyString, RegisterDeviceResponseDTO.class);
+                        if (errorResponse != null && errorResponse.error != null && !errorResponse.error.isEmpty()) {
+                            return errorResponse.error;
+                        }
+                    } catch (Exception e) {
+                        // If JSON parsing fails, try to extract message from raw string
+                        Log.d(TAG, "Could not parse error response as JSON: " + errorBodyString);
+                    }
+                }
+            }
+        } catch (IOException e) {
+            Log.d(TAG, "Could not read error body: " + e.getMessage());
+        }
+        
+        // Fall back to response message
+        if (response.message() != null && !response.message().isEmpty()) {
+            return response.message();
+        }
+        
+        // Final fallback to generic error with status code
+        return "An error occurred :( " + response.code();
     }
     
     /**
@@ -391,7 +433,7 @@ public class MainActivity extends AppCompatActivity {
                             public void onResponse(Call<RegisterDeviceResponseDTO> call, Response<RegisterDeviceResponseDTO> response) {
                                 Log.d(TAG, response.toString());
                                 if (!response.isSuccessful()) {
-                                    Snackbar.make(view, response.message().isEmpty() ? "An error occurred :( "+ response.code() : response.message(), Snackbar.LENGTH_LONG).show();
+                                    Snackbar.make(view, extractErrorMessage(response), Snackbar.LENGTH_LONG).show();
                                     registerDeviceBtn.setEnabled(true);
                                     registerDeviceBtn.setText("Update");
                                     return;
@@ -445,18 +487,18 @@ public class MainActivity extends AppCompatActivity {
                     }
 
                     Call<RegisterDeviceResponseDTO> apiCall = ApiManager.getApiService().registerDevice(newKey, registerDeviceInput);
-                    apiCall.enqueue(new Callback<RegisterDeviceResponseDTO>() {
-                        @Override
-                        public void onResponse(Call<RegisterDeviceResponseDTO> call, Response<RegisterDeviceResponseDTO> response) {
-                            Log.d(TAG, response.toString());
-                            if (!response.isSuccessful()) {
-                                Snackbar.make(view, response.message().isEmpty() ? "An error occurred :( "+ response.code() : response.message(), Snackbar.LENGTH_LONG).show();
-                                registerDeviceBtn.setEnabled(true);
-                                registerDeviceBtn.setText("Update");
-                                return;
-                            }
-                            SharedPreferenceHelper.setSharedPreferenceString(mContext, AppConstants.SHARED_PREFS_API_KEY_KEY, newKey);
-                            Snackbar.make(view, "Device Registration Successful :)", Snackbar.LENGTH_LONG).show();
+                        apiCall.enqueue(new Callback<RegisterDeviceResponseDTO>() {
+                            @Override
+                            public void onResponse(Call<RegisterDeviceResponseDTO> call, Response<RegisterDeviceResponseDTO> response) {
+                                Log.d(TAG, response.toString());
+                                if (!response.isSuccessful()) {
+                                    Snackbar.make(view, extractErrorMessage(response), Snackbar.LENGTH_LONG).show();
+                                    registerDeviceBtn.setEnabled(true);
+                                    registerDeviceBtn.setText("Update");
+                                    return;
+                                }
+                                SharedPreferenceHelper.setSharedPreferenceString(mContext, AppConstants.SHARED_PREFS_API_KEY_KEY, newKey);
+                                Snackbar.make(view, "Device Registration Successful :)", Snackbar.LENGTH_LONG).show();
                             
                             if (response.body() != null && response.body().data != null && response.body().data.get("_id") != null) {
                                 deviceId = response.body().data.get("_id").toString();
@@ -544,7 +586,7 @@ public class MainActivity extends AppCompatActivity {
                         public void onResponse(Call<RegisterDeviceResponseDTO> call, Response<RegisterDeviceResponseDTO> response) {
                             Log.d(TAG, response.toString());
                             if (!response.isSuccessful()) {
-                                Snackbar.make(view, response.message().isEmpty() ? "An error occurred :( "+ response.code() : response.message(), Snackbar.LENGTH_LONG).show();
+                                Snackbar.make(view, extractErrorMessage(response), Snackbar.LENGTH_LONG).show();
                                 registerDeviceBtn.setEnabled(true);
                                 registerDeviceBtn.setText("Update");
                                 return;
