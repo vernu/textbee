@@ -152,7 +152,7 @@ export default function SendSms() {
                     render={({ field }) => (
                       <Select
                         onValueChange={(value) =>
-                          field.onChange(value ? Number(value) : undefined)
+                          field.onChange(Number(value))
                         }
                         value={field.value?.toString()}
                       >
@@ -160,7 +160,6 @@ export default function SendSms() {
                           <SelectValue placeholder='Select SIM (optional)' />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value=''>None (use default)</SelectItem>
                           {availableSims.map((sim) => (
                             <SelectItem
                               key={sim.subscriptionId}
