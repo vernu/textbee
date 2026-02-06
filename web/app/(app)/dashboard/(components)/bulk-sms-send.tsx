@@ -111,6 +111,9 @@ export default function BulkSMSSend() {
         return row[key.trim()] || ''
       }),
       recipients: [row[selectedColumn]],
+      ...(selectedSimSubscriptionId !== undefined && {
+        simSubscriptionId: selectedSimSubscriptionId,
+      }),
     }))
     const payload = {
       messageTemplate,
@@ -123,6 +126,9 @@ export default function BulkSMSSend() {
   }
 
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null)
+  const [selectedSimSubscriptionId, setSelectedSimSubscriptionId] = useState<
+    number | undefined
+  >(undefined)
 
   const { data: devices } = useQuery({
     queryKey: ['devices'],
@@ -141,6 +147,17 @@ export default function BulkSMSSend() {
   } = useMutation({
     mutationFn: handleSendBulkSMS,
   })
+
+  const selectedDevice = devices?.data?.find(
+    (device) => device._id === selectedDeviceId
+  )
+
+  const availableSims =
+    selectedDevice?.simInfo?.sims &&
+    Array.isArray(selectedDevice.simInfo.sims) &&
+    selectedDevice.simInfo.sims.length > 0
+      ? selectedDevice.simInfo.sims
+      : []
 
   const isStep2Disabled = csvData.length === 0
   const isStep3Disabled = isStep2Disabled || !selectedColumn || !messageTemplate
@@ -206,7 +223,10 @@ export default function BulkSMSSend() {
             <div>
               <Label htmlFor='device-select'>Select Device</Label>
               <Select
-                onValueChange={setSelectedDeviceId}
+                onValueChange={(value) => {
+                  setSelectedDeviceId(value)
+                  setSelectedSimSubscriptionId(undefined)
+                }}
                 value={selectedDeviceId}
               >
                 <SelectTrigger id='device-select'>
@@ -226,6 +246,35 @@ export default function BulkSMSSend() {
                 </SelectContent>
               </Select>
             </div>
+
+            {availableSims.length > 1 && (
+              <div>
+                <Label htmlFor='sim-select'>Select SIM (optional)</Label>
+                <Select
+                  onValueChange={(value) =>
+                    setSelectedSimSubscriptionId(
+                      value ? Number(value) : undefined
+                    )
+                  }
+                  value={selectedSimSubscriptionId?.toString()}
+                >
+                  <SelectTrigger id='sim-select'>
+                    <SelectValue placeholder='Select SIM (optional)' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value=''>None (use default)</SelectItem>
+                    {availableSims.map((sim) => (
+                      <SelectItem
+                        key={sim.subscriptionId}
+                        value={sim.subscriptionId.toString()}
+                      >
+                        {sim.displayName || 'SIM'} ({sim.subscriptionId})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className='space-y-4'>
               <div>
