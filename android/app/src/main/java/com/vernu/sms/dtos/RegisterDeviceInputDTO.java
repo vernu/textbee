@@ -6,6 +6,7 @@ public class RegisterDeviceInputDTO {
     private String brand;
     private String manufacturer;
     private String model;
+    private String name;
     private String serial;
     private String buildId;
     private String os;
@@ -59,6 +60,14 @@ public class RegisterDeviceInputDTO {
 
     public void setModel(String model) {
         this.model = model;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getSerial() {

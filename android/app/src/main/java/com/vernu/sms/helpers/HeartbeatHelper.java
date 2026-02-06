@@ -153,6 +153,17 @@ public class HeartbeatHelper {
                 if (responseBody.fcmTokenUpdated) {
                     Log.d(TAG, "FCM token was updated during heartbeat");
                 }
+                
+                // Sync device name from heartbeat response (ignore if blank)
+                if (responseBody.name != null && !responseBody.name.trim().isEmpty()) {
+                    SharedPreferenceHelper.setSharedPreferenceString(
+                        context,
+                        AppConstants.SHARED_PREFS_DEVICE_NAME_KEY,
+                        responseBody.name
+                    );
+                    Log.d(TAG, "Synced device name from heartbeat: " + responseBody.name);
+                }
+                
                 Log.d(TAG, "Heartbeat sent successfully");
                 return true;
             } else {
