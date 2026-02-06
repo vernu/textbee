@@ -56,6 +56,9 @@ export class RegisterDeviceInputDTO {
   @ApiProperty({ type: String })
   model?: string
 
+  @ApiProperty({ type: String, required: false })
+  name?: string
+
   @ApiProperty({ type: String })
   serial?: string
 
@@ -490,4 +493,11 @@ export class HeartbeatResponseDTO {
     description: 'Server timestamp of the heartbeat',
   })
   lastHeartbeat: Date
+
+  @ApiProperty({
+    type: String,
+    required: false,
+    description: 'Device name (if updated)',
+  })
+  name?: string
 }
