@@ -10,6 +10,8 @@ import {
   SendBulkSMSInputDTO,
   SendSMSInputDTO,
   UpdateSMSStatusDTO,
+  HeartbeatInputDTO,
+  HeartbeatResponseDTO,
 } from './gateway.dto'
 import { User } from '../users/schemas/user.schema'
 import { AuthService } from '../auth/auth.service'
@@ -44,13 +46,28 @@ export class GatewayService {
       buildId: input.buildId,
     })
 
+    const deviceData: any = { ...input, user }
+    
+    // Set default name to "brand model" if not provided
+    if (!deviceData.name && input.brand && input.model) {
+      deviceData.name = `${input.brand} ${input.model}`
+    }
+    
+    // Handle simInfo if provided
+    if (input.simInfo) {
+      deviceData.simInfo = {
+        ...input.simInfo,
+        lastUpdated: input.simInfo.lastUpdated || new Date(),
+      }
+    }
+
     if (device && device.appVersionCode <= 11) {
       return await this.updateDevice(device._id.toString(), {
-        ...input,
+        ...deviceData,
         enabled: true,
       })
     } else {
-      return await this.deviceModel.create({ ...input, user })
+      return await this.deviceModel.create(deviceData)
     }
   }
 
@@ -80,10 +97,20 @@ export class GatewayService {
     if (input.enabled !== false) {
       input.enabled = true;
     }
+
+    const updateData: any = { ...input }
+    
+    // Handle simInfo if provided
+    if (input.simInfo) {
+      updateData.simInfo = {
+        ...input.simInfo,
+        lastUpdated: input.simInfo.lastUpdated || new Date(),
+      }
+    }
     
     return await this.deviceModel.findByIdAndUpdate(
       deviceId,
-      { $set: input },
+      { $set: updateData },
       { new: true },
     )
   }
@@ -102,6 +129,55 @@ export class GatewayService {
 
     return {}
     // return await this.deviceModel.findByIdAndDelete(deviceId)
+  }
+
+  private calculateDelayFromScheduledAt(scheduledAt?: string): number | undefined {
+    if (!scheduledAt) {
+      return undefined
+    }
+
+    try {
+      const scheduledDate = new Date(scheduledAt)
+      
+      // Check if date is valid
+      if (isNaN(scheduledDate.getTime())) {
+        throw new HttpException(
+          {
+            success: false,
+            error: 'Invalid scheduledAt format. Must be a valid ISO 8601 date string.',
+          },
+          HttpStatus.BAD_REQUEST,
+        )
+      }
+
+      const now = Date.now()
+      const scheduledTime = scheduledDate.getTime()
+      const delayMs = scheduledTime - now
+
+      // Reject past dates
+      if (delayMs < 0) {
+        throw new HttpException(
+          {
+            success: false,
+            error: 'scheduledAt must be a future date',
+          },
+          HttpStatus.BAD_REQUEST,
+        )
+      }
+
+      return delayMs
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error
+      }
+      throw new HttpException(
+        {
+          success: false,
+          error: 'Invalid scheduledAt format. Must be a valid ISO 8601 date string.',
+        },
+        HttpStatus.BAD_REQUEST,
+      )
+    }
   }
 
   async sendSMS(deviceId: string, smsData: SendSMSInputDTO): Promise<any> {
@@ -135,6 +211,20 @@ export class GatewayService {
         {
           success: false,
           error: 'Invalid recipients',
+        },
+        HttpStatus.BAD_REQUEST,
+      )
+    }
+
+    // Calculate delay from scheduledAt if provided
+    const delayMs = this.calculateDelayFromScheduledAt(smsData.scheduledAt)
+
+    // Validate that scheduling requires queue to be enabled
+    if (delayMs !== undefined && !this.smsQueueService.isQueueEnabled()) {
+      throw new HttpException(
+        {
+          success: false,
+          error: 'SMS scheduling requires queue to be enabled',
         },
         HttpStatus.BAD_REQUEST,
       )
@@ -181,12 +271,18 @@ export class GatewayService {
         recipient,
         requestedAt: new Date(),
         status: 'pending',
+        ...(smsData.simSubscriptionId !== undefined && {
+          simSubscriptionId: smsData.simSubscriptionId,
+        }),
       })
       const updatedSMSData = {
         smsId: sms._id,
         smsBatchId: smsBatch._id,
         message,
         recipients: [recipient],
+        ...(smsData.simSubscriptionId !== undefined && {
+          simSubscriptionId: smsData.simSubscriptionId,
+        }),
 
         // Legacy fields to be removed in the future
         smsBody: message,
@@ -219,6 +315,7 @@ export class GatewayService {
           deviceId,
           fcmMessages,
           smsBatch._id.toString(),
+          delayMs,
         )
 
         return {
@@ -339,6 +436,18 @@ export class GatewayService {
       body.messages.map((m) => m.recipients).flat().length,
     )
 
+    // Check if any message has scheduledAt and validate queue is enabled
+    const hasScheduledMessages = body.messages.some((m) => m.scheduledAt)
+    if (hasScheduledMessages && !this.smsQueueService.isQueueEnabled()) {
+      throw new HttpException(
+        {
+          success: false,
+          error: 'SMS scheduling requires queue to be enabled',
+        },
+        HttpStatus.BAD_REQUEST,
+      )
+    }
+
     const { messageTemplate, messages } = body
 
     const smsBatch = await this.smsBatchModel.create({
@@ -353,7 +462,8 @@ export class GatewayService {
       status: 'pending',
     })
 
-    const fcmMessages: Message[] = []
+    // Track FCM messages with their calculated delays for grouping
+    const fcmMessagesWithDelays: Array<{ message: Message; delayMs?: number }> = []
 
     for (const smsData of messages) {
       const message = smsData.message
@@ -367,6 +477,9 @@ export class GatewayService {
         continue
       }
 
+      // Calculate delay for this message's scheduledAt
+      const delayMs = this.calculateDelayFromScheduledAt(smsData.scheduledAt)
+
       for (let recipient of recipients) {
         recipient =  recipient.replace(/\s+/g, "")
         const sms = await this.smsModel.create({
@@ -374,15 +487,21 @@ export class GatewayService {
           smsBatch: smsBatch._id,
           message: message,
           type: SMSType.SENT,
-recipient,
+          recipient,
           requestedAt: new Date(),
           status: 'pending',
+          ...(smsData.simSubscriptionId !== undefined && {
+            simSubscriptionId: smsData.simSubscriptionId,
+          }),
         })
         const updatedSMSData = {
           smsId: sms._id,
           smsBatchId: smsBatch._id,
           message,
           recipients: [recipient],
+          ...(smsData.simSubscriptionId !== undefined && {
+            simSubscriptionId: smsData.simSubscriptionId,
+          }),
 
           // Legacy fields to be removed in the future
           smsBody: message,
@@ -399,19 +518,32 @@ recipient,
             priority: 'high',
           },
         }
-        fcmMessages.push(fcmMessage)
+        fcmMessagesWithDelays.push({ message: fcmMessage, delayMs })
       }
     }
 
     // Check if we should use the queue
     if (this.smsQueueService.isQueueEnabled()) {
       try {
-        // Add to queue
-        await this.smsQueueService.addSendSmsJob(
-          deviceId,
-          fcmMessages,
-          smsBatch._id.toString(),
-        )
+        // Group messages by delay (undefined delay means immediate, group together)
+        const messagesByDelay = new Map<number | undefined, Message[]>()
+        for (const { message, delayMs } of fcmMessagesWithDelays) {
+          const delayKey = delayMs !== undefined ? delayMs : undefined
+          if (!messagesByDelay.has(delayKey)) {
+            messagesByDelay.set(delayKey, [])
+          }
+          messagesByDelay.get(delayKey)!.push(message)
+        }
+
+        // Queue each group with its respective delay
+        for (const [delayMs, messages] of messagesByDelay.entries()) {
+          await this.smsQueueService.addSendSmsJob(
+            deviceId,
+            messages,
+            smsBatch._id.toString(),
+            delayMs,
+          )
+        }
 
         return {
           success: true,
@@ -426,7 +558,7 @@ recipient,
             status: 'failed',
             error: e.message,
             successCount: 0,
-            failureCount: fcmMessages.length,
+            failureCount: fcmMessagesWithDelays.length,
           },
         })
 
@@ -447,6 +579,8 @@ recipient,
       }
     }
 
+    // For non-queue path, convert back to simple array
+    const fcmMessages = fcmMessagesWithDelays.map(({ message }) => message)
     const fcmMessagesBatches = fcmMessages.map((m) => [m])
     const fcmResponses: BatchResponse[] = []
 
@@ -544,6 +678,29 @@ recipient,
     const receivedAt = dto.receivedAtInMillis
       ? new Date(dto.receivedAtInMillis)
       : dto.receivedAt
+
+    // Deduplication: Check for existing SMS with same device, sender, message, and receivedAt (within ±5 seconds tolerance)
+    const toleranceMs = 5000 // 5 seconds
+    const toleranceStart = new Date(receivedAt.getTime() - toleranceMs)
+    const toleranceEnd = new Date(receivedAt.getTime() + toleranceMs)
+
+    const existingSMS = await this.smsModel.findOne({
+      device: device._id,
+      type: SMSType.RECEIVED,
+      sender: dto.sender,
+      message: dto.message,
+      receivedAt: {
+        $gte: toleranceStart,
+        $lte: toleranceEnd,
+      },
+    })
+
+    if (existingSMS) {
+      console.log(
+        `Duplicate SMS detected for device ${deviceId}, sender ${dto.sender}, returning existing record: ${existingSMS._id}`,
+      )
+      return existingSMS
+    }
 
     const sms = await this.smsModel.create({
       device: device._id,
@@ -893,5 +1050,111 @@ const updatedSms = await this.smsModel.findByIdAndUpdate(
       batch: smsBatch,
       messages: smsMessages
     };
+  }
+
+  async heartbeat(
+    deviceId: string,
+    input: HeartbeatInputDTO,
+  ): Promise<HeartbeatResponseDTO> {
+    const device = await this.deviceModel.findById(deviceId)
+
+    if (!device) {
+      throw new HttpException(
+        {
+          success: false,
+          error: 'Device not found',
+        },
+        HttpStatus.NOT_FOUND,
+      )
+    }
+
+    const now = new Date()
+    const updateData: any = {
+      lastHeartbeat: now,
+    }
+
+    let fcmTokenUpdated = false
+
+    // Update FCM token if provided and different
+    if (input.fcmToken && input.fcmToken !== device.fcmToken) {
+      updateData.fcmToken = input.fcmToken
+      fcmTokenUpdated = true
+    }
+
+    // Update receiveSMSEnabled if provided and different
+    if (
+      input.receiveSMSEnabled !== undefined &&
+      input.receiveSMSEnabled !== device.receiveSMSEnabled
+    ) {
+      updateData.receiveSMSEnabled = input.receiveSMSEnabled
+    }
+
+    // Update batteryInfo if provided
+    if (input.batteryPercentage !== undefined || input.isCharging !== undefined) {
+      if (input.batteryPercentage !== undefined) {
+        updateData['batteryInfo.percentage'] = input.batteryPercentage
+      }
+      if (input.isCharging !== undefined) {
+        updateData['batteryInfo.isCharging'] = input.isCharging
+      }
+      updateData['batteryInfo.lastUpdated'] = now
+    }
+
+    // Update networkInfo if provided
+    if (input.networkType !== undefined) {
+      updateData['networkInfo.networkType'] = input.networkType
+      updateData['networkInfo.lastUpdated'] = now
+    }
+
+    // Update appVersionInfo if provided
+    if (input.appVersionName !== undefined || input.appVersionCode !== undefined) {
+      if (input.appVersionName !== undefined) {
+        updateData['appVersionInfo.versionName'] = input.appVersionName
+      }
+      if (input.appVersionCode !== undefined) {
+        updateData['appVersionInfo.versionCode'] = input.appVersionCode
+      }
+      updateData['appVersionInfo.lastUpdated'] = now
+    }
+
+    // Update deviceUptimeInfo if provided
+    if (input.deviceUptimeMillis !== undefined) {
+      updateData['deviceUptimeInfo.uptimeMillis'] = input.deviceUptimeMillis
+      updateData['deviceUptimeInfo.lastUpdated'] = now
+    }
+
+    // Update systemInfo if timezone or locale provided
+    if (input.timezone !== undefined || input.locale !== undefined) {
+      if (input.timezone !== undefined) {
+        updateData['systemInfo.timezone'] = input.timezone
+      }
+      if (input.locale !== undefined) {
+        updateData['systemInfo.locale'] = input.locale
+      }
+      updateData['systemInfo.lastUpdated'] = now
+    }
+
+    // Update simInfo if provided
+    if (input.simInfo !== undefined) {
+      updateData.simInfo = {
+        ...input.simInfo,
+        lastUpdated: input.simInfo.lastUpdated || now,
+      }
+    }
+
+    // Update device with all changes
+    await this.deviceModel.findByIdAndUpdate(deviceId, {
+      $set: updateData,
+    })
+
+    // Fetch updated device to get current name
+    const updatedDevice = await this.deviceModel.findById(deviceId)
+
+    return {
+      success: true,
+      fcmTokenUpdated,
+      lastHeartbeat: now,
+      name: updatedDevice?.name,
+    }
   }
 }

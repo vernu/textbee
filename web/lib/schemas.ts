@@ -21,6 +21,7 @@ export const sendSmsSchema = z.object({
     .max(1600, {
       message: 'Message cannot exceed 1600 characters',
     }),
+  simSubscriptionId: z.number().optional(),
 })
 
 export type SendSmsFormData = z.infer<typeof sendSmsSchema>

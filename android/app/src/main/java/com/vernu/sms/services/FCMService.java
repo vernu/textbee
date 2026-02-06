@@ -18,7 +18,10 @@ import com.vernu.sms.R;
 import com.vernu.sms.activities.MainActivity;
 import com.vernu.sms.helpers.SMSHelper;
 import com.vernu.sms.helpers.SharedPreferenceHelper;
+import com.vernu.sms.helpers.HeartbeatHelper;
+import com.vernu.sms.helpers.HeartbeatManager;
 import com.vernu.sms.models.SMSPayload;
+import com.vernu.sms.TextBeeUtils;
 import com.vernu.sms.dtos.RegisterDeviceInputDTO;
 import com.vernu.sms.dtos.RegisterDeviceResponseDTO;
 import com.vernu.sms.ApiManager;
@@ -36,7 +39,16 @@ public class FCMService extends FirebaseMessagingService {
         Log.d(TAG, remoteMessage.getData().toString());
 
         try {
-            // Parse SMS payload data
+            // Check message type first
+            String messageType = remoteMessage.getData().get("type");
+            
+            if ("heartbeat_check".equals(messageType)) {
+                // Handle heartbeat check request from backend
+                handleHeartbeatCheck();
+                return;
+            }
+
+            // Parse SMS payload data (legacy handling)
             Gson gson = new Gson();
             SMSPayload smsPayload = gson.fromJson(remoteMessage.getData().get("smsData"), SMSPayload.class);
 
@@ -55,6 +67,45 @@ public class FCMService extends FirebaseMessagingService {
     }
 
     /**
+     * Handle heartbeat check request from backend
+     */
+    private void handleHeartbeatCheck() {
+        Log.d(TAG, "Received heartbeat check request from backend");
+        
+        // Check if device is eligible for heartbeat
+        if (!HeartbeatHelper.isDeviceEligibleForHeartbeat(this)) {
+            Log.d(TAG, "Device not eligible for heartbeat, skipping heartbeat check");
+            return;
+        }
+
+        // Get device ID and API key
+        String deviceId = SharedPreferenceHelper.getSharedPreferenceString(
+            this,
+            AppConstants.SHARED_PREFS_DEVICE_ID_KEY,
+            ""
+        );
+
+        String apiKey = SharedPreferenceHelper.getSharedPreferenceString(
+            this,
+            AppConstants.SHARED_PREFS_API_KEY_KEY,
+            ""
+        );
+
+        // Send heartbeat using shared helper
+        boolean success = HeartbeatHelper.sendHeartbeat(this, deviceId, apiKey);
+
+        if (success) {
+            Log.d(TAG, "Heartbeat sent successfully in response to backend check");
+            // Ensure scheduled work is added if missing
+            HeartbeatManager.scheduleHeartbeat(this);
+        } else {
+            Log.e(TAG, "Failed to send heartbeat in response to backend check");
+            // Still try to ensure scheduled work is added
+            HeartbeatManager.scheduleHeartbeat(this);
+        }
+    }
+
+    /**
      * Send SMS to recipients using the provided payload
      */
     private void sendSMS(SMSPayload smsPayload) {
@@ -63,9 +114,35 @@ public class FCMService extends FirebaseMessagingService {
             return;
         }
 
-        // Get preferred SIM
-        int preferredSim = SharedPreferenceHelper.getSharedPreferenceInt(
-                this, AppConstants.SHARED_PREFS_PREFERRED_SIM_KEY, -1);
+        // Determine which SIM to use (priority: backend-provided > app preference > device default)
+        Integer simSubscriptionId = null;
+        
+        // First, check if backend provided a SIM subscription ID
+        if (smsPayload.getSimSubscriptionId() != null) {
+            int backendSimId = smsPayload.getSimSubscriptionId();
+            // Validate that the subscription ID exists
+            if (TextBeeUtils.isValidSubscriptionId(this, backendSimId)) {
+                simSubscriptionId = backendSimId;
+                Log.d(TAG, "Using backend-provided SIM subscription ID: " + backendSimId);
+            } else {
+                Log.w(TAG, "Backend-provided SIM subscription ID " + backendSimId + " is not valid, falling back to app preference");
+            }
+        }
+        
+        // If backend didn't provide a valid SIM, check app preference
+        if (simSubscriptionId == null) {
+            int preferredSim = SharedPreferenceHelper.getSharedPreferenceInt(
+                    this, AppConstants.SHARED_PREFS_PREFERRED_SIM_KEY, -1);
+            if (preferredSim != -1) {
+                // Validate that the preferred SIM still exists
+                if (TextBeeUtils.isValidSubscriptionId(this, preferredSim)) {
+                    simSubscriptionId = preferredSim;
+                    Log.d(TAG, "Using app-preferred SIM subscription ID: " + preferredSim);
+                } else {
+                    Log.w(TAG, "App-preferred SIM subscription ID " + preferredSim + " is no longer valid, using device default");
+                }
+            }
+        }
         
         // Check if SMS payload contains valid recipients
         String[] recipients = smsPayload.getRecipients();
@@ -82,9 +159,10 @@ public class FCMService extends FirebaseMessagingService {
         for (String recipient : recipients) {
             boolean smsSent;
             
-            // Try to send using default or specific SIM based on preference
-            if (preferredSim == -1) {
+            // Send using determined SIM (or device default if simSubscriptionId is null)
+            if (simSubscriptionId == null) {
                 // Use default SIM
+                Log.d(TAG, "Using device default SIM");
                 smsSent = SMSHelper.sendSMS(
                     recipient, 
                     smsPayload.getMessage(), 
@@ -98,7 +176,7 @@ public class FCMService extends FirebaseMessagingService {
                     smsSent = SMSHelper.sendSMSFromSpecificSim(
                         recipient, 
                         smsPayload.getMessage(), 
-                        preferredSim, 
+                        simSubscriptionId, 
                         smsPayload.getSmsId(), 
                         smsPayload.getSmsBatchId(), 
                         this

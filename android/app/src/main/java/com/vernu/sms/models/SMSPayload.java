@@ -6,6 +6,7 @@ public class SMSPayload {
     private String message;
     private String smsId;
     private String smsBatchId;
+    private Integer simSubscriptionId;
 
     // Legacy fields that are no longer used
     private String[] receivers;
@@ -44,5 +45,13 @@ public class SMSPayload {
 
     public void setSmsBatchId(String smsBatchId) {
         this.smsBatchId = smsBatchId;
+    }
+
+    public Integer getSimSubscriptionId() {
+        return simSubscriptionId;
+    }
+
+    public void setSimSubscriptionId(Integer simSubscriptionId) {
+        this.simSubscriptionId = simSubscriptionId;
     }
 }

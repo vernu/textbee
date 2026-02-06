@@ -50,6 +50,7 @@ describe('GatewayService', () => {
   const mockSmsModel = {
     create: jest.fn(),
     find: jest.fn(),
+    findOne: jest.fn(),
     updateMany: jest.fn(),
     countDocuments: jest.fn(),
   }
@@ -179,7 +180,7 @@ describe('GatewayService', () => {
       })
       expect(service.updateDevice).toHaveBeenCalledWith(
         mockDevice._id.toString(),
-        { ...mockDeviceInput, enabled: true }
+        { ...mockDeviceInput, enabled: true, user: mockUser }
       )
       expect(result).toBeDefined()
       
@@ -538,6 +539,7 @@ describe('GatewayService', () => {
 
     beforeEach(() => {
       mockDeviceModel.findById.mockResolvedValue(mockDevice)
+      mockSmsModel.findOne.mockResolvedValue(null)
       mockSmsModel.create.mockResolvedValue(mockSms)
       mockDeviceModel.findByIdAndUpdate.mockImplementation(() => ({
         exec: jest.fn().mockResolvedValue(true),

@@ -102,6 +102,14 @@ public class SMSStatusReceiver extends BroadcastReceiver {
                 smsDTO.setErrorMessage(errorMessage);
                 Log.e(TAG, "SMS failed to send - ID: " + smsDTO.getSmsId() + ", Error code: " + resultCode + ", Error: " + errorMessage);
                 break;
+            case SmsManager.RESULT_NETWORK_ERROR:
+                errorMessage = "Network error";
+                smsDTO.setStatus("FAILED");
+                smsDTO.setFailedAtInMillis(timestamp);
+                smsDTO.setErrorCode(String.valueOf(resultCode));
+                smsDTO.setErrorMessage(errorMessage);
+                Log.e(TAG, "SMS failed to send - ID: " + smsDTO.getSmsId() + ", Error code: " + resultCode + ", Error: " + errorMessage);
+                break;
             default:
                 errorMessage = "Unknown error";
                 smsDTO.setStatus("FAILED");

@@ -46,6 +46,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { toast } from '@/hooks/use-toast'
 import { formatError } from '@/lib/utils/errorHandler'
 import { formatRateLimitMessageForToast } from '@/components/shared/rate-limit-error'
+import { formatDeviceName } from '@/lib/utils'
 
 
 // Helper function to format timestamps
@@ -192,7 +193,7 @@ function ReplyDialog({ sms, onClose, open, onOpenChange }: { sms: any; onClose?:
                     <SelectContent>
                       {devices?.data?.map((device: any) => (
                         <SelectItem key={device._id} value={device._id}>
-                          {device.brand} {device.model}{' '}
+                          {formatDeviceName(device)}{' '}
                           {device.enabled ? '' : '(disabled)'}
                         </SelectItem>
                       ))}
@@ -357,7 +358,7 @@ function FollowUpDialog({ message, onClose, open, onOpenChange }: { message: any
                     <SelectContent>
                       {devices?.data?.map((device: any) => (
                         <SelectItem key={device._id} value={device._id}>
-                          {device.brand} {device.model}{' '}
+                          {formatDeviceName(device)}{' '}
                           {device.enabled ? '' : '(disabled)'}
                         </SelectItem>
                       ))}
@@ -788,7 +789,7 @@ export default function MessageHistory() {
                     <SelectItem key={device._id} value={device._id}>
                       <div className='flex items-center gap-2'>
                         <span className='font-medium'>
-                          {device.brand} {device.model}
+                          {formatDeviceName(device)}
                         </span>
                         {!device.enabled && (
                           <Badge

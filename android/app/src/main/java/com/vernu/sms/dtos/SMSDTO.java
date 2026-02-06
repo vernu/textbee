@@ -6,6 +6,7 @@ public class SMSDTO {
     private String sender;
     private String message = "";
     private long receivedAtInMillis;
+    private String fingerprint;
 
     private String smsId;
     private String smsBatchId;
@@ -106,5 +107,13 @@ public class SMSDTO {
 
     public void setErrorMessage(String errorMessage) {
         this.errorMessage = errorMessage;
+    }
+
+    public String getFingerprint() {
+        return fingerprint;
+    }
+
+    public void setFingerprint(String fingerprint) {
+        this.fingerprint = fingerprint;
     }
 }

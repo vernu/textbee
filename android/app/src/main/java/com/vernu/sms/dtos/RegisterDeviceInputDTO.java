@@ -6,12 +6,14 @@ public class RegisterDeviceInputDTO {
     private String brand;
     private String manufacturer;
     private String model;
+    private String name;
     private String serial;
     private String buildId;
     private String os;
     private String osVersion;
     private String appVersionName;
     private int appVersionCode;
+    private SimInfoCollectionDTO simInfo;
 
     public RegisterDeviceInputDTO() {
     }
@@ -60,6 +62,14 @@ public class RegisterDeviceInputDTO {
         this.model = model;
     }
 
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
     public String getSerial() {
         return serial;
     }
@@ -106,5 +116,13 @@ public class RegisterDeviceInputDTO {
 
     public void setAppVersionCode(int appVersionCode) {
         this.appVersionCode = appVersionCode;
+    }
+
+    public SimInfoCollectionDTO getSimInfo() {
+        return simInfo;
+    }
+
+    public void setSimInfo(SimInfoCollectionDTO simInfo) {
+        this.simInfo = simInfo;
     }
 }

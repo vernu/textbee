@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import {
   Card,
   CardContent,
@@ -17,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useForm, useFieldArray, Controller } from 'react-hook-form'
+import { useForm, useFieldArray, Controller, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { sendSmsSchema } from '@/lib/schemas'
 import type { SendSmsFormData } from '@/lib/schemas'
@@ -29,6 +30,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { Spinner } from '@/components/ui/spinner'
 import { formatError } from '@/lib/utils/errorHandler'
 import { RateLimitError } from '@/components/shared/rate-limit-error'
+import { formatDeviceName } from '@/lib/utils'
 
 export default function SendSms() {
   const { data: devices, isLoading: isLoadingDevices } = useQuery({
@@ -55,6 +57,7 @@ export default function SendSms() {
     register,
     control,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<SendSmsFormData>({
     resolver: zodResolver(sendSmsSchema),
@@ -71,6 +74,28 @@ export default function SendSms() {
     // @ts-expect-error
     name: 'recipients',
   })
+
+  const selectedDeviceId = useWatch({
+    control,
+    name: 'deviceId',
+  })
+
+  const selectedDevice = devices?.data?.find(
+    (device) => device._id === selectedDeviceId
+  )
+
+  const availableSims =
+    selectedDevice?.simInfo?.sims &&
+    Array.isArray(selectedDevice.simInfo.sims) &&
+    selectedDevice.simInfo.sims.length > 0
+      ? selectedDevice.simInfo.sims
+      : []
+
+  useEffect(() => {
+    if (selectedDeviceId) {
+      setValue('simSubscriptionId', undefined)
+    }
+  }, [selectedDeviceId, setValue])
 
   return (
     <div>
@@ -104,7 +129,7 @@ export default function SendSms() {
                             value={device._id}
                             disabled={!device.enabled}
                           >
-                            {device.brand} {device.model}{' '}
+                            {formatDeviceName(device)}{' '}
                             {device.enabled ? '' : '(disabled)'}
                           </SelectItem>
                         ))}
@@ -118,6 +143,42 @@ export default function SendSms() {
                   </p>
                 )}
               </div>
+
+              {availableSims.length > 1 && (
+                <div>
+                  <Controller
+                    name='simSubscriptionId'
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        onValueChange={(value) =>
+                          field.onChange(Number(value))
+                        }
+                        value={field.value?.toString()}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder='Select SIM (optional)' />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableSims.map((sim) => (
+                            <SelectItem
+                              key={sim.subscriptionId}
+                              value={sim.subscriptionId.toString()}
+                            >
+                              {sim.displayName || 'SIM'} ({sim.subscriptionId})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {errors.simSubscriptionId && (
+                    <p className='text-sm text-destructive mt-1'>
+                      {errors.simSubscriptionId.message}
+                    </p>
+                  )}
+                </div>
+              )}
 
               <div className='space-y-2'>
                 {fields.map((field, index) => (

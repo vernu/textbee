@@ -62,6 +62,9 @@ export class SMS {
   @Prop({ type: String, default: 'pending' })
   status: 'pending' | 'sent' | 'delivered' | 'failed' | 'unknown' | 'received'
 
+  @Prop({ type: Number, required: false })
+  simSubscriptionId?: number
+
   // misc metadata for debugging
   @Prop({ type: Object })
   metadata: Record<string, any>
