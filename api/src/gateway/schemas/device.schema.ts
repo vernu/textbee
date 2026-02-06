@@ -26,6 +26,9 @@ export class Device {
   @Prop({ type: String })
   model: string
 
+  @Prop({ type: String, required: false })
+  name?: string
+
   @Prop({ type: String })
   serial: string
 

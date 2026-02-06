@@ -29,6 +29,7 @@ import { Spinner } from '@/components/ui/spinner'
 import httpBrowserClient from '@/lib/httpBrowserClient'
 import { formatError } from '@/lib/utils/errorHandler'
 import { RateLimitError } from '@/components/shared/rate-limit-error'
+import { formatDeviceName } from '@/lib/utils'
 
 const DEFAULT_MAX_FILE_SIZE = 1024 * 1024 // 1 MB
 const DEFAULT_MAX_ROWS = 50
@@ -218,7 +219,7 @@ export default function BulkSMSSend() {
                       value={device._id}
                       disabled={!device.enabled}
                     >
-                      {device.brand} - {device.model}{' '}
+                      {formatDeviceName(device)}{' '}
                       {device.enabled ? '' : ' (disabled)'}
                     </SelectItem>
                   ))}

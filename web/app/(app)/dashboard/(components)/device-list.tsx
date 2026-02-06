@@ -10,6 +10,7 @@ import httpBrowserClient from '@/lib/httpBrowserClient'
 import { ApiEndpoints } from '@/config/api'
 import { useQuery } from '@tanstack/react-query'
 import { Skeleton } from '@/components/ui/skeleton'
+import { formatDeviceName } from '@/lib/utils'
 
 export default function DeviceList() {
   const { toast } = useToast()
@@ -83,7 +84,7 @@ export default function DeviceList() {
                   <div className='flex-1'>
                     <div className='flex items-center justify-between'>
                       <h3 className='font-semibold text-sm'>
-                        {device.brand} {device.model}
+                        {formatDeviceName(device)}
                       </h3>
                       <Badge
                         variant={

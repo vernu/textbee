@@ -48,6 +48,11 @@ export class GatewayService {
 
     const deviceData: any = { ...input, user }
     
+    // Set default name to "brand model" if not provided
+    if (!deviceData.name && input.brand && input.model) {
+      deviceData.name = `${input.brand} ${input.model}`
+    }
+    
     // Handle simInfo if provided
     if (input.simInfo) {
       deviceData.simInfo = {
@@ -1142,10 +1147,14 @@ const updatedSms = await this.smsModel.findByIdAndUpdate(
       $set: updateData,
     })
 
+    // Fetch updated device to get current name
+    const updatedDevice = await this.deviceModel.findById(deviceId)
+
     return {
       success: true,
       fcmTokenUpdated,
       lastHeartbeat: now,
+      name: updatedDevice?.name,
     }
   }
 }

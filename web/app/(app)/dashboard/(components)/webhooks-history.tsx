@@ -39,6 +39,7 @@ import {
 } from '@/components/ui/popover'
 import { Calendar } from 'lucide-react'
 import { truncate } from 'fs'
+import { formatDeviceName } from '@/lib/utils'
 
 const WebhooksHistory = () => {
   const {
@@ -179,7 +180,7 @@ const WebhooksHistory = () => {
                     <SelectItem key={device._id} value={device._id}>
                       <div className="flex items-center gap-2">
                         <span className="font-medium">
-                          {device.brand} {device.model}
+                          {formatDeviceName(device)}
                         </span>
                         {!device.enabled && (
                           <Badge

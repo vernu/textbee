@@ -49,7 +49,7 @@ public class MainActivity extends AppCompatActivity {
 
     private Context mContext;
     private Switch gatewaySwitch, receiveSMSSwitch, stickyNotificationSwitch;
-    private EditText apiKeyEditText, fcmTokenEditText, deviceIdEditText;
+    private EditText apiKeyEditText, fcmTokenEditText, deviceIdEditText, deviceNameEditText;
     private Button registerDeviceBtn, grantSMSPermissionBtn, scanQRBtn, checkUpdatesBtn, configureFilterBtn;
     private ImageButton copyDeviceIdImgBtn;
     private TextView deviceBrandAndModelTxt, deviceIdTxt, appVersionNameTxt, appVersionCodeTxt;
@@ -72,6 +72,7 @@ public class MainActivity extends AppCompatActivity {
         apiKeyEditText = findViewById(R.id.apiKeyEditText);
         fcmTokenEditText = findViewById(R.id.fcmTokenEditText);
         deviceIdEditText = findViewById(R.id.deviceIdEditText);
+        deviceNameEditText = findViewById(R.id.deviceNameEditText);
         registerDeviceBtn = findViewById(R.id.registerDeviceBtn);
         grantSMSPermissionBtn = findViewById(R.id.grantSMSPermissionBtn);
         scanQRBtn = findViewById(R.id.scanQRButton);
@@ -147,6 +148,12 @@ public class MainActivity extends AppCompatActivity {
         });
 
         apiKeyEditText.setText(SharedPreferenceHelper.getSharedPreferenceString(mContext, AppConstants.SHARED_PREFS_API_KEY_KEY, ""));
+        String storedDeviceName = SharedPreferenceHelper.getSharedPreferenceString(mContext, AppConstants.SHARED_PREFS_DEVICE_NAME_KEY, "");
+        if (storedDeviceName.isEmpty()) {
+            deviceNameEditText.setText(Build.BRAND + " " + Build.MODEL);
+        } else {
+            deviceNameEditText.setText(storedDeviceName);
+        }
         gatewaySwitch.setChecked(SharedPreferenceHelper.getSharedPreferenceBoolean(mContext, AppConstants.SHARED_PREFS_GATEWAY_ENABLED_KEY, false));
         gatewaySwitch.setOnCheckedChangeListener((compoundButton, isCheked) -> {
             View view = compoundButton.getRootView();
@@ -425,6 +432,13 @@ public class MainActivity extends AppCompatActivity {
                     registerDeviceInput.setAppVersionCode(BuildConfig.VERSION_CODE);
                     registerDeviceInput.setAppVersionName(BuildConfig.VERSION_NAME);
                     
+                    // Get device name from input field or default to "brand model"
+                    String deviceName = deviceNameEditText.getText().toString().trim();
+                    if (deviceName.isEmpty()) {
+                        deviceName = Build.BRAND + " " + Build.MODEL;
+                    }
+                    registerDeviceInput.setName(deviceName);
+                    
                     // Collect SIM information
                     SimInfoCollectionDTO simInfoCollection = new SimInfoCollectionDTO();
                     simInfoCollection.setLastUpdated(System.currentTimeMillis());
@@ -465,6 +479,14 @@ public class MainActivity extends AppCompatActivity {
                                             SharedPreferenceHelper.setSharedPreferenceInt(mContext, AppConstants.SHARED_PREFS_HEARTBEAT_INTERVAL_MINUTES_KEY, intervalMinutes);
                                             Log.d(TAG, "Synced heartbeat interval from server: " + intervalMinutes + " minutes");
                                         }
+                                    }
+                                    
+                                    // Sync device name from server response
+                                    if (response.body().data.get("name") != null) {
+                                        String deviceName = response.body().data.get("name").toString();
+                                        SharedPreferenceHelper.setSharedPreferenceString(mContext, AppConstants.SHARED_PREFS_DEVICE_NAME_KEY, deviceName);
+                                        deviceNameEditText.setText(deviceName);
+                                        Log.d(TAG, "Synced device name from server: " + deviceName);
                                     }
                                     
                                     // Schedule heartbeat if device is enabled
@@ -525,6 +547,14 @@ public class MainActivity extends AppCompatActivity {
                                     }
                                 }
                                 
+                                // Sync device name from server response
+                                if (response.body().data.get("name") != null) {
+                                    String deviceName = response.body().data.get("name").toString();
+                                    SharedPreferenceHelper.setSharedPreferenceString(mContext, AppConstants.SHARED_PREFS_DEVICE_NAME_KEY, deviceName);
+                                    deviceNameEditText.setText(deviceName);
+                                    Log.d(TAG, "Synced device name from server: " + deviceName);
+                                }
+                                
                                 // Schedule heartbeat if device is enabled
                                 if (registerDeviceInput.isEnabled()) {
                                     HeartbeatManager.scheduleHeartbeat(mContext);
@@ -581,6 +611,13 @@ public class MainActivity extends AppCompatActivity {
                     updateDeviceInput.setAppVersionCode(BuildConfig.VERSION_CODE);
                     updateDeviceInput.setAppVersionName(BuildConfig.VERSION_NAME);
 
+                    // Get device name from input field or default to "brand model"
+                    String deviceName = deviceNameEditText.getText().toString().trim();
+                    if (deviceName.isEmpty()) {
+                        deviceName = Build.BRAND + " " + Build.MODEL;
+                    }
+                    updateDeviceInput.setName(deviceName);
+
                     // Collect SIM information
                     SimInfoCollectionDTO simInfoCollection = new SimInfoCollectionDTO();
                     simInfoCollection.setLastUpdated(System.currentTimeMillis());
@@ -615,6 +652,14 @@ public class MainActivity extends AppCompatActivity {
                                         SharedPreferenceHelper.setSharedPreferenceInt(mContext, AppConstants.SHARED_PREFS_HEARTBEAT_INTERVAL_MINUTES_KEY, intervalMinutes);
                                         Log.d(TAG, "Synced heartbeat interval from server: " + intervalMinutes + " minutes");
                                     }
+                                }
+                                
+                                // Sync device name from server response
+                                if (response.body().data.get("name") != null) {
+                                    String deviceName = response.body().data.get("name").toString();
+                                    SharedPreferenceHelper.setSharedPreferenceString(mContext, AppConstants.SHARED_PREFS_DEVICE_NAME_KEY, deviceName);
+                                    deviceNameEditText.setText(deviceName);
+                                    Log.d(TAG, "Synced device name from server: " + deviceName);
                                 }
                                 
                                 // Schedule heartbeat if device is enabled
