@@ -22,4 +22,5 @@ public class AppConstants {
     public static final String HEARTBEAT_WORK_TAG = "heartbeat";
     public static final String SHARED_PREFS_HEARTBEAT_ENABLED_KEY = "HEARTBEAT_ENABLED";
     public static final String SHARED_PREFS_HEARTBEAT_INTERVAL_MINUTES_KEY = "HEARTBEAT_INTERVAL_MINUTES";
+    public static final String SHARED_PREFS_SMS_FILTER_CONFIG_KEY = "SMS_FILTER_CONFIG";
 }

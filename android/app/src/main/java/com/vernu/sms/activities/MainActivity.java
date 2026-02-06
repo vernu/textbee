@@ -7,6 +7,7 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
+import com.vernu.sms.activities.SMSFilterActivity;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -49,7 +50,7 @@ public class MainActivity extends AppCompatActivity {
     private Context mContext;
     private Switch gatewaySwitch, receiveSMSSwitch, stickyNotificationSwitch;
     private EditText apiKeyEditText, fcmTokenEditText, deviceIdEditText;
-    private Button registerDeviceBtn, grantSMSPermissionBtn, scanQRBtn, checkUpdatesBtn;
+    private Button registerDeviceBtn, grantSMSPermissionBtn, scanQRBtn, checkUpdatesBtn, configureFilterBtn;
     private ImageButton copyDeviceIdImgBtn;
     private TextView deviceBrandAndModelTxt, deviceIdTxt, appVersionNameTxt, appVersionCodeTxt;
     private RadioGroup defaultSimSlotRadioGroup;
@@ -81,6 +82,7 @@ public class MainActivity extends AppCompatActivity {
         appVersionNameTxt = findViewById(R.id.appVersionNameTxt);
         appVersionCodeTxt = findViewById(R.id.appVersionCodeTxt);
         checkUpdatesBtn = findViewById(R.id.checkUpdatesBtn);
+        configureFilterBtn = findViewById(R.id.configureFilterBtn);
 
         deviceIdTxt.setText(deviceId);
         deviceIdEditText.setText(deviceId);
@@ -240,6 +242,11 @@ public class MainActivity extends AppCompatActivity {
             String downloadUrl = "https://textbee.dev/download?currentVersion=" + encodedVersionInfo;
             Intent browserIntent = new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(downloadUrl));
             startActivity(browserIntent);
+        });
+
+        configureFilterBtn.setOnClickListener(view -> {
+            Intent filterIntent = new Intent(MainActivity.this, SMSFilterActivity.class);
+            startActivity(filterIntent);
         });
     }
 

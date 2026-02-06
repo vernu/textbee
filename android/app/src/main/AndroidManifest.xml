@@ -82,6 +82,11 @@
             </intent-filter>
         </activity>
         <activity
+            android:name=".activities.SMSFilterActivity"
+            android:exported="false"
+            android:theme="@style/Theme.SMSGateway.NoActionBar"
+            android:parentActivityName=".activities.MainActivity" />
+        <activity
             android:name="com.journeyapps.barcodescanner.CaptureActivity"
             android:screenOrientation="portrait"
             tools:replace="screenOrientation" />

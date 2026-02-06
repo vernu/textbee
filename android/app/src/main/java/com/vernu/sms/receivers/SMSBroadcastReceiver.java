@@ -9,6 +9,7 @@ import android.util.Log;
 import com.vernu.sms.AppConstants;
 import com.vernu.sms.dtos.SMSDTO;
 import com.vernu.sms.helpers.SharedPreferenceHelper;
+import com.vernu.sms.helpers.SMSFilterHelper;
 import com.vernu.sms.workers.SMSReceivedWorker;
 
 import java.security.MessageDigest;
@@ -66,6 +67,14 @@ public class SMSBroadcastReceiver extends BroadcastReceiver {
 //        receivedSMSDTO.setSender(receivedSMS.getSender());
 //        receivedSMSDTO.setMessage(receivedSMS.getMessage());
 //        receivedSMSDTO.setReceivedAt(receivedSMS.getReceivedAt());
+
+        // Apply SMS filter
+        String sender = receivedSMSDTO.getSender();
+        String message = receivedSMSDTO.getMessage();
+        if (sender != null && !SMSFilterHelper.shouldProcessSMS(sender, message, context)) {
+            Log.d(TAG, "SMS from " + sender + " filtered out by filter rules");
+            return;
+        }
 
         // Generate fingerprint for deduplication
         String fingerprint = generateFingerprint(

@@ -394,6 +394,22 @@
                             android:minHeight="32dp" />
                     </LinearLayout>
 
+                    <!-- Filter Configuration Link -->
+                    <Button
+                        android:id="@+id/configureFilterBtn"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
+                        android:text="Configure Filter"
+                        android:textColor="?attr/colorPrimary"
+                        android:textSize="15sp"
+                        android:letterSpacing="0.01"
+                        android:backgroundTint="@android:color/transparent"
+                        android:drawableStart="@android:drawable/ic_menu_manage"
+                        android:drawablePadding="6dp"
+                        android:paddingHorizontal="0dp"
+                        style="@style/Widget.MaterialComponents.Button.TextButton" />
+
                     <!-- Sticky Notification Setting -->
                     <LinearLayout
                         android:layout_width="match_parent"
