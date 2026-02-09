@@ -306,11 +306,14 @@ export class BillingService {
       }
 
       try {
-        const discount = await this.polarApi.discounts.get({
-          id: discountId,
-        })
-        if (discount) {
-          checkoutOptions.discountId = discount.id
+        let discount = null;
+        if (discountId) {
+          discount = await this.polarApi.discounts.get({
+            id: discountId,
+          })
+          if (discount) {
+            checkoutOptions.discountId = discount.id
+          }
         }
       } catch (error) {
         console.error('failed to get discount', error)
