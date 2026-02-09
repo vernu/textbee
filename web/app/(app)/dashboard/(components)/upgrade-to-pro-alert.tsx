@@ -6,6 +6,20 @@ import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
 import { useMemo } from 'react'
 
+const DISCOUNT_CODE_FALLBACK = null
+const DISCOUNT_PERCENTAGE_FALLBACK = null
+
+const envDiscountCode = process.env.NEXT_PUBLIC_DISCOUNT_CODE?.trim()
+const envDiscountPercentage = process.env.NEXT_PUBLIC_DISCOUNT_PERCENTAGE?.trim()
+
+const discountCode = (envDiscountCode !== undefined && envDiscountCode !== '') 
+  ? envDiscountCode 
+  : DISCOUNT_CODE_FALLBACK
+const discountPercentage = (envDiscountPercentage !== undefined && envDiscountPercentage !== '')
+  ? envDiscountPercentage
+  : DISCOUNT_PERCENTAGE_FALLBACK
+const isDiscountEnabled = discountCode !== null && discountCode !== '' && discountPercentage !== null && discountPercentage !== ''
+
 export default function UpgradeToProAlert() {
   const {
     data: currentSubscription,
@@ -43,7 +57,7 @@ export default function UpgradeToProAlert() {
         urgency: 'warning'
       }
     } else {
-      const ctaMessages = [
+      const allCtaMessages = [
         "Upgrade to Pro for exclusive features and benefits!",
         "Offer: You are eligible for a 30% discount when upgrading to Pro!",
         "Unlock premium features with our Pro plan today!",
@@ -51,7 +65,7 @@ export default function UpgradeToProAlert() {
         "Pro users get priority support and advanced features!",
         "Limited time offer: Upgrade to Pro and save 30%!",
       ]
-      const buttonTexts = [
+      const allButtonTexts = [
         "Get Pro Now!",
         "Upgrade Today!",
         "Go Pro!",
@@ -59,12 +73,36 @@ export default function UpgradeToProAlert() {
         "Claim Your Discount!",
         "Upgrade & Save!",
       ]
+      
+      // Filter out discount-related messages if discount is not enabled
+      const ctaMessages = isDiscountEnabled
+        ? allCtaMessages
+        : allCtaMessages.filter(
+            (msg) =>
+              !msg.toLowerCase().includes('discount') &&
+              !msg.toLowerCase().includes('offer') &&
+              !msg.toLowerCase().includes('save') &&
+              !msg.includes('30%')
+          )
+      
+      const buttonTexts = isDiscountEnabled
+        ? allButtonTexts
+        : allButtonTexts.filter(
+            (text) =>
+              !text.toLowerCase().includes('discount') &&
+              !text.toLowerCase().includes('save')
+          )
+      
       const randomIndex = Math.floor(Math.random() * ctaMessages.length)
+      
+      const subMessage = isDiscountEnabled
+        ? `Use discount code ${discountCode} at checkout for a ${discountPercentage}% discount!`
+        : "Unlock premium features, priority support, and advanced capabilities with Pro!"
       
       return {
         bgColor: 'bg-gradient-to-r from-purple-500 to-pink-500',
         message: ctaMessages[randomIndex],
-        subMessage: `Use discount code SAVE30P at checkout for a 30% discount!`,
+        subMessage,
         buttonText: buttonTexts[randomIndex],
         buttonColor: 'bg-red-500 text-white hover:bg-red-600 border-red-500',
         urgency: 'normal'
@@ -87,8 +125,8 @@ export default function UpgradeToProAlert() {
           {alertConfig.message}
         </span>
         <span className='w-full sm:flex-1 text-center sm:text-left text-xs md:text-sm'>
-          {alertConfig.urgency === 'normal' ? (
-            <>Use discount code <strong className="text-yellow-200">SAVE30P</strong> at checkout for a 30% discount!</>
+          {alertConfig.urgency === 'normal' && isDiscountEnabled ? (
+            <>Use discount code <strong className="text-yellow-200">{discountCode}</strong> at checkout for a {discountPercentage}% discount!</>
           ) : (
             alertConfig.subMessage
           )}
