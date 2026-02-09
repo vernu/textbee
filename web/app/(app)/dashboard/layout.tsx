@@ -53,7 +53,7 @@ export default function DashboardLayout({
         <div className='space-y-2 p-4'>
           <VerifyEmailAlert />
           <AccountDeletionAlert />
-          {/* <UpgradeToProAlert /> */}
+          <UpgradeToProAlert />
           {/* <BlackFridayModal /> */}
         </div>
         {children}
