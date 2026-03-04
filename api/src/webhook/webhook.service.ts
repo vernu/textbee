@@ -17,6 +17,7 @@ import { CronExpression } from '@nestjs/schedule'
 import * as crypto from 'crypto'
 import mongoose from 'mongoose'
 import { SMS } from 'src/gateway/schemas/sms.schema'
+import { WebhookQueueService } from './queue/webhook-queue.service'
 
 @Injectable()
 export class WebhookService {
@@ -25,6 +26,7 @@ export class WebhookService {
     private webhookSubscriptionModel: Model<WebhookSubscriptionDocument>,
     @InjectModel(WebhookNotification.name)
     private webhookNotificationModel: Model<WebhookNotificationDocument>,
+    private webhookQueueService: WebhookQueueService,
   ) {}
 
   async findOne({ user, webhookId }) {
@@ -320,14 +322,20 @@ export class WebhookService {
       throw new HttpException('Invalid event type', HttpStatus.BAD_REQUEST)
     }
 
-      
-    let payload: Record<string, any>= {
+    // Generate idempotency key
+    const idempotencyKey = uuidv4()
+
+    // Store delivery URL snapshot for debugging
+    const deliveryUrlSnapshot = webhookSubscription.deliveryUrl
+
+    let payload: Record<string, any> = {
       smsId: sms._id,
       message: sms.message,
       deviceId: sms.device,
       webhookSubscriptionId: webhookSubscription._id,
       webhookEvent: event,
-    };
+      idempotencyKey,
+    }
 
     switch (event) {
       case WebhookEvent.MESSAGE_RECEIVED:
@@ -335,8 +343,8 @@ export class WebhookService {
           ...payload,
           sender: sms.sender,
           receivedAt: sms.receivedAt,
-        };
-        break;
+        }
+        break
 
       case WebhookEvent.MESSAGE_DELIVERED:
         payload = {
@@ -346,8 +354,8 @@ export class WebhookService {
           recipient: sms.recipient,
           sentAt: sms.sentAt,
           deliveredAt: sms.deliveredAt,
-        };
-        break;
+        }
+        break
 
       case WebhookEvent.MESSAGE_SENT:
         payload = {
@@ -356,8 +364,8 @@ export class WebhookService {
           status: sms.status,
           recipient: sms.recipient,
           sentAt: sms.sentAt,
-        };
-        break;
+        }
+        break
 
       case WebhookEvent.MESSAGE_FAILED:
         payload = {
@@ -368,8 +376,8 @@ export class WebhookService {
           errorCode: sms.errorCode,
           errorMessage: sms.errorMessage,
           failedAt: sms.failedAt,
-        };
-        break;
+        }
+        break
 
       case WebhookEvent.UNKNOWN_STATE:
         payload = {
@@ -377,26 +385,37 @@ export class WebhookService {
           smsBatchId: sms.smsBatch,
           status: sms.status,
           recipient: sms.recipient,
-        };
-        break;
+        }
+        break
     }
 
-      const webhookNotification = await this.webhookNotificationModel.create({
-        webhookSubscription: webhookSubscription._id,
-        event,
-        payload,
-        sms,
-      })
+    const webhookNotification = await this.webhookNotificationModel.create({
+      webhookSubscription: webhookSubscription._id,
+      event,
+      payload,
+      sms,
+      idempotencyKey,
+      deliveryUrl: deliveryUrlSnapshot,
+    })
 
-      await this.attemptWebhookDelivery(webhookNotification)  
+    // Queue job instead of synchronous delivery
+    await this.webhookQueueService.addWebhookDeliveryJob(
+      webhookNotification._id.toString(),
+    )
   }
 
-  private async attemptWebhookDelivery(
-    webhookNotification: WebhookNotificationDocument,
-  ) {
+  async attemptWebhookDelivery(notificationId: string) {
     const now = new Date()
-    const webhookSubscriptionId = webhookNotification.webhookSubscription
+    const webhookNotification = await this.webhookNotificationModel.findById(
+      notificationId,
+    )
 
+    if (!webhookNotification) {
+      console.log(`Webhook notification not found for ${notificationId}`)
+      return
+    }
+
+    const webhookSubscriptionId = webhookNotification.webhookSubscription
     const webhookSubscription = await this.webhookSubscriptionModel.findById(
       webhookSubscriptionId,
     )
@@ -423,39 +442,88 @@ export class WebhookService {
       .update(JSON.stringify(webhookNotification.payload))
       .digest('hex')
 
+    let httpStatusCode: number | undefined
+    let responseBody: string | undefined
+    let errorType: 'retryable' | 'non-retryable' | undefined
+
     try {
-      await axios.post(deliveryUrl, webhookNotification.payload, {
+      const response = await axios.post(deliveryUrl, webhookNotification.payload, {
         headers: {
           'X-Signature': signature,
         },
         timeout: 10000,
       })
+
+      httpStatusCode = response.status
+      responseBody = typeof response.data === 'string' 
+        ? response.data.substring(0, 1000)
+        : JSON.stringify(response.data).substring(0, 1000)
+
       webhookNotification.deliveryAttemptCount += 1
       webhookNotification.lastDeliveryAttemptAt = now
       webhookNotification.nextDeliveryAttemptAt = this.getNextDeliveryAttemptAt(
         webhookNotification.deliveryAttemptCount,
       )
       webhookNotification.deliveredAt = now
+      webhookNotification.httpStatusCode = httpStatusCode
+      webhookNotification.responseBody = responseBody
       await webhookNotification.save()
 
       webhookSubscription.successfulDeliveryCount += 1
       webhookSubscription.lastDeliverySuccessAt = now
+      webhookSubscription.deliveryAttemptCount += 1
+      await webhookSubscription.save()
     } catch (e) {
-      console.log(
-        `Failed to deliver webhook notification: ID ${webhookNotification._id}, status code: ${e.response?.status}, message: ${e.message}`,
-      )
+      // Classify error type
+      if (e.response?.status) {
+        httpStatusCode = e.response.status
+        responseBody = typeof e.response.data === 'string'
+          ? e.response.data.substring(0, 1000)
+          : JSON.stringify(e.response.data || {}).substring(0, 1000)
+
+        // 4xx errors are non-retryable, 5xx are retryable
+        if (e.response.status >= 400 && e.response.status < 500) {
+          errorType = 'non-retryable'
+        } else if (e.response.status >= 500) {
+          errorType = 'retryable'
+        }
+      } else {
+        // Network/timeout errors are retryable
+        errorType = 'retryable'
+        responseBody = e.message?.substring(0, 1000)
+      }
+
       webhookNotification.deliveryAttemptCount += 1
       webhookNotification.lastDeliveryAttemptAt = now
-      webhookNotification.nextDeliveryAttemptAt = this.getNextDeliveryAttemptAt(
-        webhookNotification.deliveryAttemptCount,
-      )
+      webhookNotification.httpStatusCode = httpStatusCode
+      webhookNotification.responseBody = responseBody
+      webhookNotification.errorType = errorType
+
+      // For 4xx errors, mark as abandoned after 3rd attempt
+      if (errorType === 'non-retryable' && webhookNotification.deliveryAttemptCount >= 3) {
+        webhookNotification.deliveryAttemptAbortedAt = now
+        webhookNotification.nextDeliveryAttemptAt = undefined
+      } else if (errorType === 'retryable' && webhookNotification.deliveryAttemptCount < 10) {
+        // For retryable errors, schedule next attempt
+        webhookNotification.nextDeliveryAttemptAt = this.getNextDeliveryAttemptAt(
+          webhookNotification.deliveryAttemptCount,
+        )
+      } else {
+        // Max attempts reached
+        webhookNotification.deliveryAttemptAbortedAt = now
+        webhookNotification.nextDeliveryAttemptAt = undefined
+      }
+
       await webhookNotification.save()
 
       webhookSubscription.deliveryFailureCount += 1
       webhookSubscription.lastDeliveryFailureAt = now
-    } finally {
       webhookSubscription.deliveryAttemptCount += 1
       await webhookSubscription.save()
+
+      console.log(
+        `Failed to deliver webhook notification: ID ${webhookNotification._id}, status code: ${httpStatusCode}, error type: ${errorType}, message: ${e.message}`,
+      )
     }
   }
 
@@ -489,9 +557,10 @@ export class WebhookService {
   })
   async checkForNotificationsToDeliver() {
     const now = new Date()
+    const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000)
     const notifications = await this.webhookNotificationModel
       .find({
-        nextDeliveryAttemptAt: { $lte: now },
+        nextDeliveryAttemptAt: { $lte: fiveMinutesAgo },
         deliveredAt: null,
         deliveryAttemptCount: { $lt: 10 },
         deliveryAttemptAbortedAt: null,
@@ -503,10 +572,12 @@ export class WebhookService {
       return
     }
 
-    console.log(`delivering ${notifications.length} webhook notifications`)
+    console.log(`Queueing ${notifications.length} webhook notifications for retry`)
 
     for (const notification of notifications) {
-      await this.attemptWebhookDelivery(notification)
+      await this.webhookQueueService.addWebhookDeliveryJob(
+        notification._id.toString(),
+      )
     }
   }
 }

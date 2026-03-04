@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common'
 import { MongooseModule } from '@nestjs/mongoose'
+import { BullModule } from '@nestjs/bull'
 import { WebhookController } from './webhook.controller'
 import { WebhookService } from './webhook.service'
 import {
@@ -12,6 +13,8 @@ import {
 } from './schemas/webhook-notification.schema'
 import { AuthModule } from 'src/auth/auth.module'
 import { UsersModule } from 'src/users/users.module'
+import { WebhookQueueService } from './queue/webhook-queue.service'
+import { WebhookQueueProcessor } from './queue/webhook-queue.processor'
 
 @Module({
   imports: [
@@ -25,11 +28,19 @@ import { UsersModule } from 'src/users/users.module'
         schema: WebhookNotificationSchema,
       },
     ]),
+    BullModule.registerQueue({
+      name: 'webhook-delivery',
+      defaultJobOptions: {
+        attempts: 1,
+        removeOnComplete: false,
+        removeOnFail: false,
+      },
+    }),
     AuthModule,
     UsersModule,
   ],
   controllers: [WebhookController],
-  providers: [WebhookService],
+  providers: [WebhookService, WebhookQueueService, WebhookQueueProcessor],
   exports: [MongooseModule, WebhookService],
 })
 export class WebhookModule {}

@@ -35,6 +35,21 @@ export class WebhookNotification {
 
   @Prop({ type: Date })
   deliveryAttemptAbortedAt: Date
+
+  @Prop({ type: String })
+  idempotencyKey?: string
+
+  @Prop({ type: String, enum: ['retryable', 'non-retryable'] })
+  errorType?: string
+
+  @Prop({ type: Number })
+  httpStatusCode?: number
+
+  @Prop({ type: String, maxlength: 1000 })
+  responseBody?: string
+
+  @Prop({ type: String })
+  deliveryUrl?: string
 }
 
 export const WebhookNotificationSchema =
