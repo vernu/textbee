@@ -8,6 +8,8 @@ import { Routes } from '@/config/routes'
 declare module 'next-auth' {
   interface Session {
     user: {
+      id?: string
+      role?: string
       phone?: string
       avatar?: string
       accessToken?: string
