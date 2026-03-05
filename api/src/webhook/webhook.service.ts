@@ -570,12 +570,27 @@ export class WebhookService {
   async checkForNotificationsToDeliver() {
     const now = new Date()
     const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000)
+    const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+
+    // Mark notifications older than one month as aborted so they are no longer retried
+    await this.webhookNotificationModel.updateMany(
+      {
+        nextDeliveryAttemptAt: { $lte: fiveMinutesAgo },
+        deliveredAt: null,
+        deliveryAttemptCount: { $lt: 10 },
+        deliveryAttemptAbortedAt: null,
+        createdAt: { $lt: oneMonthAgo },
+      },
+      { $set: { deliveryAttemptAbortedAt: now } },
+    )
+
     const notifications = await this.webhookNotificationModel
       .find({
         nextDeliveryAttemptAt: { $lte: fiveMinutesAgo },
         deliveredAt: null,
         deliveryAttemptCount: { $lt: 10 },
         deliveryAttemptAbortedAt: null,
+        createdAt: { $gte: oneMonthAgo },
       })
       .sort({ nextDeliveryAttemptAt: 1 })
       .limit(200)
