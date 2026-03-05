@@ -40,6 +40,12 @@ export class WebhookSubscription {
 
   @Prop({ type: Date })
   lastDeliveryFailureAt: Date
+
+  @Prop({
+    type: [{ at: { type: Date }, text: { type: String } }],
+    default: [],
+  })
+  notes: { at: Date; text: string }[]
 }
 
 export const WebhookSubscriptionSchema =
