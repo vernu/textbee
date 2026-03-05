@@ -13,6 +13,7 @@ import {
 } from './schemas/webhook-notification.schema'
 import { AuthModule } from 'src/auth/auth.module'
 import { UsersModule } from 'src/users/users.module'
+import { MailModule } from 'src/mail/mail.module'
 import { WebhookQueueService } from './queue/webhook-queue.service'
 import { WebhookQueueProcessor } from './queue/webhook-queue.processor'
 
@@ -38,6 +39,7 @@ import { WebhookQueueProcessor } from './queue/webhook-queue.processor'
     }),
     AuthModule,
     UsersModule,
+    MailModule,
   ],
   controllers: [WebhookController],
   providers: [WebhookService, WebhookQueueService, WebhookQueueProcessor],

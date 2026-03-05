@@ -13,11 +13,12 @@ import {
 import axios from 'axios'
 import { v4 as uuidv4 } from 'uuid'
 import { Cron } from '@nestjs/schedule'
-import { CronExpression } from '@nestjs/schedule'
 import * as crypto from 'crypto'
 import mongoose from 'mongoose'
 import { SMS } from 'src/gateway/schemas/sms.schema'
 import { WebhookQueueService } from './queue/webhook-queue.service'
+import { MailService } from 'src/mail/mail.service'
+import { UsersService } from 'src/users/users.service'
 
 @Injectable()
 export class WebhookService {
@@ -27,6 +28,8 @@ export class WebhookService {
     @InjectModel(WebhookNotification.name)
     private webhookNotificationModel: Model<WebhookNotificationDocument>,
     private webhookQueueService: WebhookQueueService,
+    private mailService: MailService,
+    private usersService: UsersService,
   ) {}
 
   async findOne({ user, webhookId }) {
@@ -557,9 +560,7 @@ export class WebhookService {
   }
 
   // Check for notifications that need to be delivered every 5 minutes
-  @Cron('0 */5 * * * *', {
-    disabled: process.env.NODE_ENV !== 'production',
-  })
+  @Cron('0 */5 * * * *')
   async checkForNotificationsToDeliver() {
     const now = new Date()
     const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000)
@@ -583,6 +584,162 @@ export class WebhookService {
       await this.webhookQueueService.addWebhookDeliveryJob(
         notification._id.toString(),
       )
+    }
+  }
+
+  private getAutoDisableConfig(): {
+    threshold: number
+    lookbackDays: number
+  } {
+    const threshold = Math.max(
+      1,
+      parseInt(process.env.WEBHOOK_AUTO_DISABLE_FAILURE_THRESHOLD ?? '50', 10) || 50,
+    )
+    const lookbackDays = Math.max(
+      1,
+      Math.min(
+        365,
+        parseInt(process.env.WEBHOOK_AUTO_DISABLE_LOOKBACK_DAYS ?? '30', 10) || 30,
+      ),
+    )
+    return { threshold, lookbackDays }
+  }
+
+  @Cron('0 6 * * *')
+  async autoDisableSubscriptionsWithHighFailureRate() {
+    const { threshold, lookbackDays } = this.getAutoDisableConfig()
+    const now = new Date()
+    const since = new Date(now.getTime() - lookbackDays * 24 * 60 * 60 * 1000)
+
+    const subscriptionCounts = await this.webhookNotificationModel.aggregate<{
+      _id: mongoose.Types.ObjectId
+      count: number
+    }>([
+      {
+        $addFields: {
+          _finalizedAt: {
+            $ifNull: ['$lastDeliveryAttemptAt', '$createdAt'],
+          },
+        },
+      },
+      {
+        $match: {
+          deliveredAt: null,
+          _finalizedAt: { $gte: since },
+          $or: [
+            { deliveryAttemptAbortedAt: { $ne: null } },
+            { deliveryAttemptCount: { $gte: 10 } },
+          ],
+        },
+      },
+      { $group: { _id: '$webhookSubscription', count: { $sum: 1 } } },
+      { $match: { count: { $gte: threshold } } },
+    ])
+
+    if (subscriptionCounts.length === 0) {
+      return
+    }
+
+    const subscriptionIds = subscriptionCounts.map((s) => s._id)
+    const countBySubscriptionId = new Map(
+      subscriptionCounts.map((s) => [s._id.toString(), s.count]),
+    )
+
+    const activeSubscriptions = await this.webhookSubscriptionModel.find({
+      _id: { $in: subscriptionIds },
+      isActive: true,
+    })
+
+    const ctaUrlBase = process.env.FRONTEND_URL || 'https://app.textbee.dev'
+    const disabledInThisRun: {
+      subscriptionId: string
+      deliveryUrl: string
+      failureCount: number
+      lookbackDays: number
+      userName: string
+      userEmail: string
+    }[] = []
+
+    for (const subscription of activeSubscriptions) {
+      const failureCount = countBySubscriptionId.get(
+        subscription._id.toString(),
+      ) ?? threshold
+      const noteText = `Auto-disabled: ${failureCount} failed deliveries in the last ${lookbackDays} days. Re-enable in dashboard when your endpoint is ready.`
+      const noteEntry = { at: new Date(), text: noteText }
+
+      const result = await this.webhookSubscriptionModel.updateOne(
+        { _id: subscription._id, isActive: true },
+        {
+          $set: { isActive: false },
+          $push: { notes: noteEntry },
+        },
+      )
+
+      if (result.modifiedCount === 0) {
+        continue
+      }
+
+      const user = await this.usersService.findOne({
+        _id: subscription.user,
+      })
+
+      disabledInThisRun.push({
+        subscriptionId: subscription._id.toString(),
+        deliveryUrl: subscription.deliveryUrl ?? '',
+        failureCount,
+        lookbackDays,
+        userName: user?.name ?? '—',
+        userEmail: user?.email ?? '—',
+      })
+
+      if (!user?.email) {
+        console.log(
+          `Webhook subscription ${subscription._id} auto-disabled but no user/email to notify`,
+        )
+        continue
+      }
+
+      try {
+        await this.mailService.sendEmailFromTemplate({
+          to: user.email,
+          subject: 'Webhook subscription disabled – textbee',
+          template: 'webhook-subscription-disabled',
+          context: {
+            name: user.name?.split(' ')?.[0] || 'there',
+            title: 'Webhook subscription disabled',
+            message: `Your webhook had ${failureCount} failed deliveries in the last ${lookbackDays} days and was automatically disabled. Re-enable it in the dashboard when your endpoint is ready.`,
+            ctaUrl: `${ctaUrlBase}/dashboard/account`,
+            ctaLabel: 'View webhooks',
+            brandName: 'textbee.dev',
+          },
+        })
+      } catch (e) {
+        console.log(
+          `Failed to send webhook-disabled email to ${user.email}:`,
+          e,
+        )
+      }
+    }
+
+    const adminEmail = process.env.ADMIN_EMAIL
+    if (disabledInThisRun.length > 0 && adminEmail) {
+      const runAt = now.toISOString()
+      try {
+        await this.mailService.sendEmailFromTemplate({
+          to: adminEmail,
+          subject: `Webhook auto-disable: ${disabledInThisRun.length} subscription(s) – ${runAt.slice(0, 10)}`,
+          template: 'webhook-auto-disable-admin-summary',
+          context: {
+            title: 'Webhook auto-disable summary',
+            runAt,
+            count: disabledInThisRun.length,
+            disabledList: disabledInThisRun,
+            brandName: 'textbee.dev',
+          },
+        })
+      } catch (e) {
+        console.log(`Failed to send webhook auto-disable admin summary to ${adminEmail}:`, e)
+      }
     }
   }
 }
