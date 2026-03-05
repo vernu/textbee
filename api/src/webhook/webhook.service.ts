@@ -446,12 +446,17 @@ export class WebhookService {
     let responseBody: string | undefined
     let errorType: 'retryable' | 'non-retryable' | undefined
 
+    const deliveryTimeoutMs = Math.min(
+      60000,
+      Math.max(10000, parseInt(process.env.WEBHOOK_DELIVERY_TIMEOUT_MS ?? '30000', 10) || 30000),
+    )
+
     try {
       const response = await axios.post(deliveryUrl, webhookNotification.payload, {
         headers: {
           'X-Signature': signature,
         },
-        timeout: 10000,
+        timeout: deliveryTimeoutMs,
       })
 
       httpStatusCode = response.status
