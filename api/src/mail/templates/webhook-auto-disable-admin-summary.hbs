@@ -27,7 +27,10 @@
           <tr>
             <th>Subscription ID</th>
             <th>Delivery URL</th>
-            <th>Failed count</th>
+            <th>Failed</th>
+            <th>Success</th>
+            <th>Total</th>
+            <th>Failure rate %</th>
             <th>Period (days)</th>
             <th>User name</th>
             <th>User email</th>
@@ -39,6 +42,9 @@
             <td>{{this.subscriptionId}}</td>
             <td class='url'>{{this.deliveryUrl}}</td>
             <td>{{this.failureCount}}</td>
+            <td>{{this.successCount}}</td>
+            <td>{{this.totalAttempts}}</td>
+            <td>{{this.failureRatePercent}}</td>
             <td>{{this.lookbackDays}}</td>
             <td>{{this.userName}}</td>
             <td>{{this.userEmail}}</td>
