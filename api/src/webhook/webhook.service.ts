@@ -15,10 +15,10 @@ import { v4 as uuidv4 } from 'uuid'
 import { Cron } from '@nestjs/schedule'
 import * as crypto from 'crypto'
 import mongoose from 'mongoose'
-import { SMS } from 'src/gateway/schemas/sms.schema'
+import { SMS } from '../gateway/schemas/sms.schema'
 import { WebhookQueueService } from './queue/webhook-queue.service'
-import { MailService } from 'src/mail/mail.service'
-import { UsersService } from 'src/users/users.service'
+import { MailService } from '../mail/mail.service'
+import { UsersService } from '../users/users.service'
 
 @Injectable()
 export class WebhookService {
