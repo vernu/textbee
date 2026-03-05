@@ -590,6 +590,7 @@ export class WebhookService {
   private getAutoDisableConfig(): {
     threshold: number
     lookbackDays: number
+    minFailureRate: number
   } {
     const threshold = Math.max(
       1,
@@ -602,12 +603,19 @@ export class WebhookService {
         parseInt(process.env.WEBHOOK_AUTO_DISABLE_LOOKBACK_DAYS ?? '30', 10) || 30,
       ),
     )
-    return { threshold, lookbackDays }
+    const minFailureRate = Math.min(
+      1,
+      Math.max(
+        0.01,
+        parseFloat(process.env.WEBHOOK_AUTO_DISABLE_MIN_FAILURE_RATE ?? '0.50') || 0.5,
+      ),
+    )
+    return { threshold, lookbackDays, minFailureRate }
   }
 
   @Cron('0 6 * * *')
   async autoDisableSubscriptionsWithHighFailureRate() {
-    const { threshold, lookbackDays } = this.getAutoDisableConfig()
+    const { threshold, lookbackDays, minFailureRate } = this.getAutoDisableConfig()
     const now = new Date()
     const since = new Date(now.getTime() - lookbackDays * 24 * 60 * 60 * 1000)
 
@@ -641,12 +649,52 @@ export class WebhookService {
     }
 
     const subscriptionIds = subscriptionCounts.map((s) => s._id)
-    const countBySubscriptionId = new Map(
+    const failureCountBySubscriptionId = new Map(
       subscriptionCounts.map((s) => [s._id.toString(), s.count]),
     )
 
+    const successCounts = await this.webhookNotificationModel.aggregate<{
+      _id: mongoose.Types.ObjectId
+      count: number
+    }>([
+      {
+        $match: {
+          webhookSubscription: { $in: subscriptionIds },
+          deliveredAt: { $ne: null, $gte: since },
+        },
+      },
+      { $group: { _id: '$webhookSubscription', count: { $sum: 1 } } },
+    ])
+    const successCountBySubscriptionId = new Map(
+      successCounts.map((s) => [s._id.toString(), s.count]),
+    )
+
+    const subscriptionsToDisable: { subscriptionId: string; failureCount: number; successCount: number; totalAttempts: number; failureRatePercent: number }[] = []
+    for (const s of subscriptionCounts) {
+      const sid = s._id.toString()
+      const failureCount = failureCountBySubscriptionId.get(sid) ?? 0
+      const successCount = successCountBySubscriptionId.get(sid) ?? 0
+      const totalAttempts = failureCount + successCount
+      const failureRate = totalAttempts > 0 ? failureCount / totalAttempts : 0
+      if (failureRate >= minFailureRate) {
+        const failureRatePercent = Math.round(failureRate * 100)
+        subscriptionsToDisable.push({
+          subscriptionId: sid,
+          failureCount,
+          successCount,
+          totalAttempts,
+          failureRatePercent,
+        })
+      }
+    }
+
+    if (subscriptionsToDisable.length === 0) {
+      return
+    }
+
+    const subscriptionIdSet = new Set(subscriptionsToDisable.map((s) => s.subscriptionId))
     const activeSubscriptions = await this.webhookSubscriptionModel.find({
-      _id: { $in: subscriptionIds },
+      _id: { $in: subscriptionIds.filter((id) => subscriptionIdSet.has(id.toString())) },
       isActive: true,
     })
 
@@ -655,16 +703,22 @@ export class WebhookService {
       subscriptionId: string
       deliveryUrl: string
       failureCount: number
+      successCount: number
+      totalAttempts: number
+      failureRatePercent: number
       lookbackDays: number
       userName: string
       userEmail: string
     }[] = []
 
     for (const subscription of activeSubscriptions) {
-      const failureCount = countBySubscriptionId.get(
-        subscription._id.toString(),
-      ) ?? threshold
-      const noteText = `Auto-disabled: ${failureCount} failed deliveries in the last ${lookbackDays} days. Re-enable in dashboard when your endpoint is ready.`
+      const stats = subscriptionsToDisable.find(
+        (s) => s.subscriptionId === subscription._id.toString(),
+      )
+      if (!stats) continue
+
+      const { failureCount, successCount, totalAttempts, failureRatePercent } = stats
+      const noteText = `Auto-disabled: ${failureCount} failed and ${successCount} succeeded (${totalAttempts} total) in the last ${lookbackDays} days — failure rate ${failureRatePercent}%. Re-enable in dashboard when your endpoint is ready.`
       const noteEntry = { at: new Date(), text: noteText }
 
       const result = await this.webhookSubscriptionModel.updateOne(
@@ -687,6 +741,9 @@ export class WebhookService {
         subscriptionId: subscription._id.toString(),
         deliveryUrl: subscription.deliveryUrl ?? '',
         failureCount,
+        successCount,
+        totalAttempts,
+        failureRatePercent,
         lookbackDays,
         userName: user?.name ?? '—',
         userEmail: user?.email ?? '—',
@@ -707,7 +764,12 @@ export class WebhookService {
           context: {
             name: user.name?.split(' ')?.[0] || 'there',
             title: 'Webhook subscription disabled',
-            message: `Your webhook had ${failureCount} failed deliveries in the last ${lookbackDays} days and was automatically disabled. Re-enable it in the dashboard when your endpoint is ready.`,
+            message: `Your webhook had ${failureCount} failed and ${successCount} succeeded (${totalAttempts} total) in the last ${lookbackDays} days — failure rate was ${failureRatePercent}%. It was automatically disabled. Re-enable it in the dashboard when your endpoint is ready.`,
+            failureCount,
+            successCount,
+            totalAttempts,
+            failureRatePercent,
+            lookbackDays,
             ctaUrl: `${ctaUrlBase}/dashboard/account`,
             ctaLabel: 'View webhooks',
             brandName: 'textbee.dev',
