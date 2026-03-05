@@ -477,10 +477,13 @@ export class WebhookService {
       webhookNotification.responseBody = responseBody
       await webhookNotification.save()
 
-      webhookSubscription.successfulDeliveryCount += 1
-      webhookSubscription.lastDeliverySuccessAt = now
-      webhookSubscription.deliveryAttemptCount += 1
-      await webhookSubscription.save()
+      await this.webhookSubscriptionModel.updateOne(
+        { _id: webhookSubscriptionId },
+        {
+          $inc: { successfulDeliveryCount: 1, deliveryAttemptCount: 1 },
+          $set: { lastDeliverySuccessAt: now },
+        },
+      )
     } catch (e) {
       // Classify error type
       if (e.response?.status) {
@@ -524,10 +527,13 @@ export class WebhookService {
 
       await webhookNotification.save()
 
-      webhookSubscription.deliveryFailureCount += 1
-      webhookSubscription.lastDeliveryFailureAt = now
-      webhookSubscription.deliveryAttemptCount += 1
-      await webhookSubscription.save()
+      await this.webhookSubscriptionModel.updateOne(
+        { _id: webhookSubscriptionId },
+        {
+          $inc: { deliveryFailureCount: 1, deliveryAttemptCount: 1 },
+          $set: { lastDeliveryFailureAt: now },
+        },
+      )
 
       console.log(
         `Failed to deliver webhook notification: ID ${webhookNotification._id}, status code: ${httpStatusCode}, error type: ${errorType}, message: ${e.message}`,
