@@ -556,8 +556,8 @@ export class WebhookService {
     return new Date(Date.now() + delayInMinutes * 60 * 1000)
   }
 
-  // Check for notifications that need to be delivered every 3 minutes
-  @Cron('0 */3 * * * *', {
+  // Check for notifications that need to be delivered every 5 minutes
+  @Cron('0 */5 * * * *', {
     disabled: process.env.NODE_ENV !== 'production',
   })
   async checkForNotificationsToDeliver() {
@@ -571,7 +571,7 @@ export class WebhookService {
         deliveryAttemptAbortedAt: null,
       })
       .sort({ nextDeliveryAttemptAt: 1 })
-      .limit(30)
+      .limit(200)
 
     if (notifications.length === 0) {
       return
