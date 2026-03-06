@@ -785,19 +785,18 @@ export class WebhookService {
       try {
         await this.mailService.sendEmailFromTemplate({
           to: user.email,
-          subject: 'Webhook subscription disabled – textbee',
+          subject: 'Your webhook was paused – textbee',
           template: 'webhook-subscription-disabled',
           context: {
             name: user.name?.split(' ')?.[0] || 'there',
-            title: 'Webhook subscription disabled',
-            message: `Your webhook had ${failureCount} failed and ${successCount} succeeded (${totalAttempts} total) in the last ${lookbackDays} days — failure rate was ${failureRatePercent}%. It was automatically disabled. Re-enable it in the dashboard when your endpoint is ready.`,
+            title: 'Your webhook was paused',
             failureCount,
             successCount,
             totalAttempts,
             failureRatePercent,
             lookbackDays,
             ctaUrl: `${ctaUrlBase}/dashboard/account`,
-            ctaLabel: 'View webhooks',
+            ctaLabel: 'Re-enable in dashboard',
             brandName: 'textbee.dev',
           },
         })

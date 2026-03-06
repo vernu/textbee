@@ -13,7 +13,7 @@
     <![endif]-->
   </head>
   <body style='margin:0; padding:0; background:#f7f9fc;'>
-    <div class='preheader'>Webhook subscription disabled – {{brandName}}</div>
+    <div class='preheader'>Your webhook was paused due to delivery failures. Re-enable it when ready.</div>
     <table role='presentation' cellpadding='0' cellspacing='0' border='0' width='100%' class='email-bg' style='background:#f7f9fc;'>
       <tr>
         <td align='center' style='padding:24px;'>
@@ -49,8 +49,9 @@
                   <tr>
                     <td class='p-sm' style='padding:28px; font:16px/1.6 Arial, Helvetica, sans-serif; color:#111827;'>
                       <div style='font:700 18px Arial, Helvetica, sans-serif; color:#111827; margin-bottom:8px;'>Hi {{name}},</div>
+                      <p style='margin:0 0 8px 0;'>We've temporarily disabled this webhook so repeated failures don't affect your account.</p>
                       <p style='margin:0 0 8px 0;'>In the last {{lookbackDays}} days: {{failureCount}} failed, {{successCount}} succeeded ({{totalAttempts}} total) — {{failureRatePercent}}% failure rate.</p>
-                      <p style='margin:0 0 16px 0;'>{{message}}</p>
+                      <p style='margin:0 0 16px 0;'>Fix your endpoint, then re-enable the webhook in the dashboard when you're ready.</p>
                       <div style='text-align:center; padding:8px 0 2px;'>
                         <!--[if mso]>
                           <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{{ctaUrl}}" style="height:48px;v-text-anchor:middle;width:260px;" arcsize="10%" strokecolor="#EA580C" fillcolor="#F97316">
