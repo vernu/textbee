@@ -639,6 +639,7 @@ export class WebhookService {
     const { threshold, lookbackDays, minFailureRate } = this.getAutoDisableConfig()
     const now = new Date()
     const since = new Date(now.getTime() - lookbackDays * 24 * 60 * 60 * 1000)
+    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000)
 
     const subscriptionCounts = await this.webhookNotificationModel.aggregate<{
       _id: mongoose.Types.ObjectId
@@ -737,6 +738,10 @@ export class WebhookService {
         (s) => s.subscriptionId === subscription._id.toString(),
       )
       if (!stats) continue
+
+      if (subscription?.lastDeliverySuccessAt >= twentyFourHoursAgo) {
+        continue
+      }
 
       const { failureCount, successCount, totalAttempts, failureRatePercent } = stats
       const noteText = `Auto-disabled: ${failureCount} failed and ${successCount} succeeded (${totalAttempts} total) in the last ${lookbackDays} days — failure rate ${failureRatePercent}%. Re-enable in dashboard when your endpoint is ready.`
