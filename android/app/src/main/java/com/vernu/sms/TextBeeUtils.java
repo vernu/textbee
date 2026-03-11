@@ -199,9 +199,17 @@ public class TextBeeUtils {
                     Log.d(TAG, "Could not get SIM slot index for subscription " + subscriptionInfo.getSubscriptionId());
                 }
 
-                // Get MCC
+                // Get MCC (getMccString() is API 29+; use getMcc() on older devices)
                 try {
-                    String mcc = subscriptionInfo.getMccString();
+                    String mcc = null;
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        mcc = subscriptionInfo.getMccString();
+                    } else {
+                        int mccInt = subscriptionInfo.getMcc();
+                        if (mccInt != Integer.MAX_VALUE) {
+                            mcc = String.format("%03d", mccInt);
+                        }
+                    }
                     if (mcc != null && !mcc.isEmpty()) {
                         simInfo.setMcc(mcc);
                     }
@@ -209,9 +217,17 @@ public class TextBeeUtils {
                     Log.d(TAG, "Could not get MCC for subscription " + subscriptionInfo.getSubscriptionId());
                 }
 
-                // Get MNC
+                // Get MNC (getMncString() is API 29+; use getMnc() on older devices)
                 try {
-                    String mnc = subscriptionInfo.getMncString();
+                    String mnc = null;
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        mnc = subscriptionInfo.getMncString();
+                    } else {
+                        int mncInt = subscriptionInfo.getMnc();
+                        if (mncInt != Integer.MAX_VALUE) {
+                            mnc = String.valueOf(mncInt);
+                        }
+                    }
                     if (mnc != null && !mnc.isEmpty()) {
                         simInfo.setMnc(mnc);
                     }

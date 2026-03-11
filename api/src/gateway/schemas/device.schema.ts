@@ -4,6 +4,9 @@ import { User } from '../../users/schemas/user.schema'
 
 export type DeviceDocument = Device & Document
 
+/** Default delay between SMS sends (seconds). 5s helps avoid carrier/device throttling. */
+export const DEFAULT_SMS_SEND_DELAY_SECONDS = 5
+
 @Schema({ timestamps: true })
 export class Device {
   _id?: Types.ObjectId
@@ -61,6 +64,9 @@ export class Device {
 
   @Prop({ type: Boolean, default: false })
   receiveSMSEnabled: boolean
+
+  @Prop({ type: Number, default: DEFAULT_SMS_SEND_DELAY_SECONDS })
+  smsSendDelaySeconds: number
 
   @Prop({ type: Date })
   lastHeartbeat: Date
