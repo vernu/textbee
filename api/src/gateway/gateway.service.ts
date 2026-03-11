@@ -1089,6 +1089,15 @@ const updatedSms = await this.smsModel.findByIdAndUpdate(
       updateData.receiveSMSEnabled = input.receiveSMSEnabled
     }
 
+    // Update smsSendDelaySeconds if provided (clamp 0-3600)
+    if (input.smsSendDelaySeconds !== undefined) {
+      const clamped = Math.min(
+        3600,
+        Math.max(0, Math.floor(Number(input.smsSendDelaySeconds))),
+      )
+      updateData.smsSendDelaySeconds = clamped
+    }
+
     // Update batteryInfo if provided
     if (input.batteryPercentage !== undefined || input.isCharging !== undefined) {
       if (input.batteryPercentage !== undefined) {
