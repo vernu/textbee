@@ -138,6 +138,14 @@ public class HeartbeatHelper {
             );
             heartbeatInput.setReceiveSMSEnabled(receiveSMSEnabled);
 
+            // SMS send delay (device queue)
+            int smsSendDelaySeconds = SharedPreferenceHelper.getSharedPreferenceInt(
+                context,
+                AppConstants.SHARED_PREFS_SMS_SEND_DELAY_SECONDS_KEY,
+                AppConstants.DEFAULT_SMS_SEND_DELAY_SECONDS
+            );
+            heartbeatInput.setSmsSendDelaySeconds(smsSendDelaySeconds);
+
             // Collect SIM information
             SimInfoCollectionDTO simInfoCollection = new SimInfoCollectionDTO();
             simInfoCollection.setLastUpdated(System.currentTimeMillis());

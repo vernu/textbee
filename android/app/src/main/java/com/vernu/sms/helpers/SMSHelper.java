@@ -9,19 +9,13 @@ import android.os.Build;
 import android.telephony.SubscriptionManager;
 import android.util.Log;
 
-import com.vernu.sms.ApiManager;
 import com.vernu.sms.AppConstants;
 import com.vernu.sms.TextBeeUtils;
 import com.vernu.sms.dtos.SMSDTO;
-import com.vernu.sms.dtos.SMSForwardResponseDTO;
 import com.vernu.sms.receivers.SMSStatusReceiver;
-import com.vernu.sms.services.GatewayApiService;
+import com.vernu.sms.workers.SMSStatusUpdateWorker;
 
 import java.util.ArrayList;
-
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 
 public class SMSHelper {
     private static final String TAG = "SMSHelper";
@@ -179,25 +173,8 @@ public class SMSHelper {
             Log.e(TAG, "Device ID or API key not found");
             return;
         }
-        
-        GatewayApiService apiService = ApiManager.getApiService();
-        Call<SMSForwardResponseDTO> call = apiService.updateSMSStatus(deviceId, apiKey, smsDTO);
-        
-        call.enqueue(new Callback<SMSForwardResponseDTO>() {
-            @Override
-            public void onResponse(Call<SMSForwardResponseDTO> call, Response<SMSForwardResponseDTO> response) {
-                if (response.isSuccessful()) {
-                    Log.d(TAG, "SMS status updated successfully - ID: " + smsDTO.getSmsId() + ", Status: " + smsDTO.getStatus());
-                } else {
-                    Log.e(TAG, "Failed to update SMS status. Response code: " + response.code());
-                }
-            }
-            
-            @Override
-            public void onFailure(Call<SMSForwardResponseDTO> call, Throwable t) {
-                Log.e(TAG, "API call failed: " + t.getMessage());
-            }
-        });
+
+        SMSStatusUpdateWorker.enqueueWork(context, deviceId, apiKey, smsDTO);
     }
     
     private static PendingIntent createSentPendingIntent(Context context, String smsId, String smsBatchId) {

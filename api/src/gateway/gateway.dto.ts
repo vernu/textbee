@@ -468,6 +468,13 @@ export class HeartbeatInputDTO {
   })
   receiveSMSEnabled?: boolean
 
+  @ApiProperty({
+    type: Number,
+    required: false,
+    description: 'SMS send delay in seconds (0-3600), used by device queue',
+  })
+  smsSendDelaySeconds?: number
+
   @ApiProperty({ type: SimInfoCollectionDTO, required: false })
   simInfo?: SimInfoCollectionDTO
 }
