@@ -48,6 +48,30 @@ export class SmsQueueProcessor {
         `SMS Job ${job.id} completed, success: ${response.successCount}, failures: ${response.failureCount}`,
       )
 
+      // Mark individual SMS records as failed when their FCM push failed
+      for (let i = 0; i < response.responses.length; i++) {
+        if (!response.responses[i].success) {
+          try {
+            const smsData = JSON.parse(fcmMessages[i].data.smsData)
+            await this.smsModel.findByIdAndUpdate(smsData.smsId, {
+              $set: {
+                status: 'failed',
+                failedAt: new Date(),
+                errorCode: 'FCM_DELIVERY_FAILED',
+                errorMessage:
+                  response.responses[i].error?.message ||
+                  'FCM push notification delivery failed',
+              },
+            })
+          } catch (parseError) {
+            this.logger.error(
+              `Failed to mark SMS as failed for FCM message index ${i}`,
+              parseError,
+            )
+          }
+        }
+      }
+
       // Update device SMS count
       await this.deviceModel
         .findByIdAndUpdate(deviceId, {
@@ -76,6 +100,26 @@ export class SmsQueueProcessor {
       return response
     } catch (error) {
       this.logger.error(`Failed to process SMS job ${job.id}`, error)
+
+      // Mark all individual SMS in this batch of FCM messages as failed
+      for (const fcmMessage of fcmMessages) {
+        try {
+          const smsData = JSON.parse(fcmMessage.data.smsData)
+          await this.smsModel.findByIdAndUpdate(smsData.smsId, {
+            $set: {
+              status: 'failed',
+              failedAt: new Date(),
+              errorCode: 'FCM_SEND_ERROR',
+              errorMessage: error?.message || 'FCM sendEach call failed',
+            },
+          })
+        } catch (parseError) {
+          this.logger.error(
+            'Failed to mark SMS as failed after FCM error',
+            parseError,
+          )
+        }
+      }
 
       const smsBatch = await this.smsBatchModel.findByIdAndUpdate(
         smsBatchId,
