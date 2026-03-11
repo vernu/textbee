@@ -16,12 +16,11 @@ import com.google.gson.Gson;
 import com.vernu.sms.AppConstants;
 import com.vernu.sms.R;
 import com.vernu.sms.activities.MainActivity;
-import com.vernu.sms.helpers.SMSHelper;
 import com.vernu.sms.helpers.SharedPreferenceHelper;
 import com.vernu.sms.helpers.HeartbeatHelper;
 import com.vernu.sms.helpers.HeartbeatManager;
 import com.vernu.sms.models.SMSPayload;
-import com.vernu.sms.TextBeeUtils;
+import com.vernu.sms.workers.SmsSendWorker;
 import com.vernu.sms.dtos.RegisterDeviceInputDTO;
 import com.vernu.sms.dtos.RegisterDeviceResponseDTO;
 import com.vernu.sms.ApiManager;
@@ -106,7 +105,8 @@ public class FCMService extends FirebaseMessagingService {
     }
 
     /**
-     * Send SMS to recipients using the provided payload
+     * Enqueue SMS to recipients via the device-side send queue.
+     * SIM resolution and rate limiting are handled by SmsSendWorker.
      */
     private void sendSMS(SMSPayload smsPayload) {
         if (smsPayload == null) {
@@ -114,91 +114,19 @@ public class FCMService extends FirebaseMessagingService {
             return;
         }
 
-        // Determine which SIM to use (priority: backend-provided > app preference > device default)
-        Integer simSubscriptionId = null;
-        
-        // First, check if backend provided a SIM subscription ID
-        if (smsPayload.getSimSubscriptionId() != null) {
-            int backendSimId = smsPayload.getSimSubscriptionId();
-            // Validate that the subscription ID exists
-            if (TextBeeUtils.isValidSubscriptionId(this, backendSimId)) {
-                simSubscriptionId = backendSimId;
-                Log.d(TAG, "Using backend-provided SIM subscription ID: " + backendSimId);
-            } else {
-                Log.w(TAG, "Backend-provided SIM subscription ID " + backendSimId + " is not valid, falling back to app preference");
-            }
-        }
-        
-        // If backend didn't provide a valid SIM, check app preference
-        if (simSubscriptionId == null) {
-            int preferredSim = SharedPreferenceHelper.getSharedPreferenceInt(
-                    this, AppConstants.SHARED_PREFS_PREFERRED_SIM_KEY, -1);
-            if (preferredSim != -1) {
-                // Validate that the preferred SIM still exists
-                if (TextBeeUtils.isValidSubscriptionId(this, preferredSim)) {
-                    simSubscriptionId = preferredSim;
-                    Log.d(TAG, "Using app-preferred SIM subscription ID: " + preferredSim);
-                } else {
-                    Log.w(TAG, "App-preferred SIM subscription ID " + preferredSim + " is no longer valid, using device default");
-                }
-            }
-        }
-        
-        // Check if SMS payload contains valid recipients
         String[] recipients = smsPayload.getRecipients();
         if (recipients == null || recipients.length == 0) {
             Log.e(TAG, "No recipients found in SMS payload");
             return;
         }
-        
-        // Send SMS to each recipient
-        boolean atLeastOneSent = false;
-        int sentCount = 0;
-        int failedCount = 0;
-        
+
         for (String recipient : recipients) {
-            boolean smsSent;
-            
-            // Send using determined SIM (or device default if simSubscriptionId is null)
-            if (simSubscriptionId == null) {
-                // Use default SIM
-                Log.d(TAG, "Using device default SIM");
-                smsSent = SMSHelper.sendSMS(
-                    recipient, 
-                    smsPayload.getMessage(), 
-                    smsPayload.getSmsId(), 
-                    smsPayload.getSmsBatchId(), 
-                    this
-                );
-            } else {
-                // Use specific SIM
-                try {
-                    smsSent = SMSHelper.sendSMSFromSpecificSim(
-                        recipient, 
-                        smsPayload.getMessage(), 
-                        simSubscriptionId, 
-                        smsPayload.getSmsId(), 
-                        smsPayload.getSmsBatchId(), 
-                        this
-                    );
-                } catch (Exception e) {
-                    Log.e(TAG, "Error sending SMS from specific SIM: " + e.getMessage());
-                    smsSent = false;
-                }
-            }
-            
-            // Track sent and failed counts
-            if (smsSent) {
-                sentCount++;
-                atLeastOneSent = true;
-            } else {
-                failedCount++;
-            }
+            SmsSendWorker.enqueue(this, recipient, smsPayload.getMessage(),
+                    smsPayload.getSmsId(), smsPayload.getSmsBatchId(),
+                    smsPayload.getSimSubscriptionId());
         }
-        
-        // Log summary
-        Log.d(TAG, "SMS sending complete - Batch: " + smsPayload.getSmsBatchId() + 
-              ", Sent: " + sentCount + ", Failed: " + failedCount);
+
+        Log.d(TAG, "Enqueued " + recipients.length + " SMS for sending - Batch: " + smsPayload.getSmsBatchId());
     }
 
     @Override

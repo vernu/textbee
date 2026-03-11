@@ -49,7 +49,7 @@ public class MainActivity extends AppCompatActivity {
 
     private Context mContext;
     private Switch gatewaySwitch, receiveSMSSwitch, stickyNotificationSwitch;
-    private EditText apiKeyEditText, fcmTokenEditText, deviceIdEditText, deviceNameEditText;
+    private EditText apiKeyEditText, fcmTokenEditText, deviceIdEditText, deviceNameEditText, smsSendDelayEditText;
     private Button registerDeviceBtn, grantSMSPermissionBtn, scanQRBtn, checkUpdatesBtn, configureFilterBtn;
     private ImageButton copyDeviceIdImgBtn;
     private TextView deviceBrandAndModelTxt, deviceIdTxt, appVersionNameTxt, appVersionCodeTxt;
@@ -84,6 +84,7 @@ public class MainActivity extends AppCompatActivity {
         appVersionCodeTxt = findViewById(R.id.appVersionCodeTxt);
         checkUpdatesBtn = findViewById(R.id.checkUpdatesBtn);
         configureFilterBtn = findViewById(R.id.configureFilterBtn);
+        smsSendDelayEditText = findViewById(R.id.smsSendDelayEditText);
 
         deviceIdTxt.setText(deviceId);
         deviceIdEditText.setText(deviceId);
@@ -255,6 +256,45 @@ public class MainActivity extends AppCompatActivity {
             Intent filterIntent = new Intent(MainActivity.this, SMSFilterActivity.class);
             startActivity(filterIntent);
         });
+
+        // SMS Send Delay setting
+        int currentDelay = SharedPreferenceHelper.getSharedPreferenceInt(
+                mContext, AppConstants.SHARED_PREFS_SMS_SEND_DELAY_SECONDS_KEY, 1);
+        smsSendDelayEditText.setText(String.valueOf(currentDelay));
+        smsSendDelayEditText.setOnFocusChangeListener((v, hasFocus) -> {
+            if (!hasFocus) {
+                saveSendDelay();
+            }
+        });
+        smsSendDelayEditText.setOnEditorActionListener((v, actionId, event) -> {
+            saveSendDelay();
+            return false;
+        });
+    }
+
+    private void saveSendDelay() {
+        String text = smsSendDelayEditText.getText().toString().trim();
+        if (text.isEmpty()) {
+            smsSendDelayEditText.setText("1");
+            SharedPreferenceHelper.setSharedPreferenceInt(mContext, AppConstants.SHARED_PREFS_SMS_SEND_DELAY_SECONDS_KEY, 1);
+            return;
+        }
+        try {
+            int value = Integer.parseInt(text);
+            if (value < 0) {
+                value = 0;
+                smsSendDelayEditText.setText("0");
+                Snackbar.make(smsSendDelayEditText, "Minimum delay is 0 seconds", Snackbar.LENGTH_SHORT).show();
+            } else if (value > 3600) {
+                value = 3600;
+                smsSendDelayEditText.setText("3600");
+                Snackbar.make(smsSendDelayEditText, "Maximum delay is 3600 seconds", Snackbar.LENGTH_SHORT).show();
+            }
+            SharedPreferenceHelper.setSharedPreferenceInt(mContext, AppConstants.SHARED_PREFS_SMS_SEND_DELAY_SECONDS_KEY, value);
+        } catch (NumberFormatException e) {
+            smsSendDelayEditText.setText("1");
+            SharedPreferenceHelper.setSharedPreferenceInt(mContext, AppConstants.SHARED_PREFS_SMS_SEND_DELAY_SECONDS_KEY, 1);
+        }
     }
 
     private void renderAvailableSimOptions() {
