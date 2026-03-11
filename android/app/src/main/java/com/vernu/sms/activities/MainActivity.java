@@ -10,6 +10,10 @@ import android.content.Intent;
 import com.vernu.sms.activities.SMSFilterActivity;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -56,6 +60,9 @@ public class MainActivity extends AppCompatActivity {
     private RadioGroup defaultSimSlotRadioGroup;
     private static final int SCAN_QR_REQUEST_CODE = 49374;
     private static final int PERMISSION_REQUEST_CODE = 0;
+    private static final long SMS_DELAY_SAVE_DEBOUNCE_MS = 3000L;
+    private final Handler smsDelaySaveHandler = new Handler(Looper.getMainLooper());
+    private Runnable smsDelaySaveRunnable;
     private String deviceId = null;
     private static final String TAG = "MainActivity";
 
@@ -257,16 +264,26 @@ public class MainActivity extends AppCompatActivity {
             startActivity(filterIntent);
         });
 
-        // SMS Send Delay setting
+        // SMS Send Delay setting: save 3 seconds after user stops typing
         int currentDelay = SharedPreferenceHelper.getSharedPreferenceInt(
-                mContext, AppConstants.SHARED_PREFS_SMS_SEND_DELAY_SECONDS_KEY, 1);
+                mContext, AppConstants.SHARED_PREFS_SMS_SEND_DELAY_SECONDS_KEY, AppConstants.DEFAULT_SMS_SEND_DELAY_SECONDS);
         smsSendDelayEditText.setText(String.valueOf(currentDelay));
-        smsSendDelayEditText.setOnFocusChangeListener((v, hasFocus) -> {
-            if (!hasFocus) {
-                saveSendDelay();
+        smsDelaySaveRunnable = this::saveSendDelay;
+        smsSendDelayEditText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                smsDelaySaveHandler.removeCallbacks(smsDelaySaveRunnable);
+                smsDelaySaveHandler.postDelayed(smsDelaySaveRunnable, SMS_DELAY_SAVE_DEBOUNCE_MS);
             }
         });
         smsSendDelayEditText.setOnEditorActionListener((v, actionId, event) -> {
+            smsDelaySaveHandler.removeCallbacks(smsDelaySaveRunnable);
             saveSendDelay();
             return false;
         });
@@ -275,8 +292,10 @@ public class MainActivity extends AppCompatActivity {
     private void saveSendDelay() {
         String text = smsSendDelayEditText.getText().toString().trim();
         if (text.isEmpty()) {
-            smsSendDelayEditText.setText("1");
-            SharedPreferenceHelper.setSharedPreferenceInt(mContext, AppConstants.SHARED_PREFS_SMS_SEND_DELAY_SECONDS_KEY, 1);
+            int defaultDelay = AppConstants.DEFAULT_SMS_SEND_DELAY_SECONDS;
+            smsSendDelayEditText.setText(String.valueOf(defaultDelay));
+            SharedPreferenceHelper.setSharedPreferenceInt(mContext, AppConstants.SHARED_PREFS_SMS_SEND_DELAY_SECONDS_KEY, defaultDelay);
+            Snackbar.make(smsSendDelayEditText, "SMS send delay saved (" + defaultDelay + " sec)", Snackbar.LENGTH_SHORT).show();
             return;
         }
         try {
@@ -284,16 +303,22 @@ public class MainActivity extends AppCompatActivity {
             if (value < 0) {
                 value = 0;
                 smsSendDelayEditText.setText("0");
-                Snackbar.make(smsSendDelayEditText, "Minimum delay is 0 seconds", Snackbar.LENGTH_SHORT).show();
+                SharedPreferenceHelper.setSharedPreferenceInt(mContext, AppConstants.SHARED_PREFS_SMS_SEND_DELAY_SECONDS_KEY, 0);
+                Snackbar.make(smsSendDelayEditText, "Minimum delay is 0 seconds. Saved.", Snackbar.LENGTH_SHORT).show();
             } else if (value > 3600) {
                 value = 3600;
                 smsSendDelayEditText.setText("3600");
-                Snackbar.make(smsSendDelayEditText, "Maximum delay is 3600 seconds", Snackbar.LENGTH_SHORT).show();
+                SharedPreferenceHelper.setSharedPreferenceInt(mContext, AppConstants.SHARED_PREFS_SMS_SEND_DELAY_SECONDS_KEY, 3600);
+                Snackbar.make(smsSendDelayEditText, "Maximum delay is 3600 seconds. Saved.", Snackbar.LENGTH_SHORT).show();
+            } else {
+                SharedPreferenceHelper.setSharedPreferenceInt(mContext, AppConstants.SHARED_PREFS_SMS_SEND_DELAY_SECONDS_KEY, value);
+                Snackbar.make(smsSendDelayEditText, "SMS send delay saved (" + value + " sec)", Snackbar.LENGTH_SHORT).show();
             }
-            SharedPreferenceHelper.setSharedPreferenceInt(mContext, AppConstants.SHARED_PREFS_SMS_SEND_DELAY_SECONDS_KEY, value);
         } catch (NumberFormatException e) {
-            smsSendDelayEditText.setText("1");
-            SharedPreferenceHelper.setSharedPreferenceInt(mContext, AppConstants.SHARED_PREFS_SMS_SEND_DELAY_SECONDS_KEY, 1);
+            int defaultDelay = AppConstants.DEFAULT_SMS_SEND_DELAY_SECONDS;
+            smsSendDelayEditText.setText(String.valueOf(defaultDelay));
+            SharedPreferenceHelper.setSharedPreferenceInt(mContext, AppConstants.SHARED_PREFS_SMS_SEND_DELAY_SECONDS_KEY, defaultDelay);
+            Snackbar.make(smsSendDelayEditText, "Invalid value. Reset to " + defaultDelay + " sec.", Snackbar.LENGTH_SHORT).show();
         }
     }
 

@@ -18,7 +18,6 @@ import com.vernu.sms.helpers.SharedPreferenceHelper;
 
 public class SmsSendWorker extends Worker {
     private static final String TAG = "SmsSendWorker";
-    private static final int DEFAULT_DELAY_SECONDS = 1;
     private static final String QUEUE_NAME = "sms_send_queue";
 
     public static final String KEY_PHONE = "phone";
@@ -58,7 +57,7 @@ public class SmsSendWorker extends Worker {
 
         // Enforce rate limit delay
         int delaySeconds = SharedPreferenceHelper.getSharedPreferenceInt(
-                context, AppConstants.SHARED_PREFS_SMS_SEND_DELAY_SECONDS_KEY, DEFAULT_DELAY_SECONDS);
+                context, AppConstants.SHARED_PREFS_SMS_SEND_DELAY_SECONDS_KEY, AppConstants.DEFAULT_SMS_SEND_DELAY_SECONDS);
         delaySeconds = Math.max(0, Math.min(delaySeconds, 3600));
 
         if (delaySeconds > 0) {
