@@ -6,6 +6,8 @@ import { Device, DeviceDocument } from '../schemas/device.schema'
 import * as firebaseAdmin from 'firebase-admin'
 import { Message } from 'firebase-admin/messaging'
 
+const FCM_BATCH_SIZE = 500
+
 @Injectable()
 export class HeartbeatCheckTask {
   private readonly logger = new Logger(HeartbeatCheckTask.name)
@@ -73,23 +75,32 @@ export class HeartbeatCheckTask {
         return
       }
 
-      // Send FCM messages
-      const response = await firebaseAdmin.messaging().sendEach(fcmMessages)
+      // Send FCM messages in batches (FCM allows max 500 per sendEach call)
+      let totalSuccessCount = 0
+      let totalFailureCount = 0
+
+      for (let i = 0; i < fcmMessages.length; i += FCM_BATCH_SIZE) {
+        const batch = fcmMessages.slice(i, i + FCM_BATCH_SIZE)
+        const batchDeviceIds = deviceIds.slice(i, i + FCM_BATCH_SIZE)
+        const response = await firebaseAdmin.messaging().sendEach(batch)
+
+        totalSuccessCount += response.successCount
+        totalFailureCount += response.failureCount
+
+        if (response.failureCount > 0) {
+          response.responses.forEach((resp, index) => {
+            if (!resp.success) {
+              this.logger.error(
+                `Failed to send heartbeat check to device ${batchDeviceIds[index]}: ${resp.error?.message || 'Unknown error'}`,
+              )
+            }
+          })
+        }
+      }
 
       this.logger.log(
-        `Sent ${response.successCount} heartbeat check FCM notification(s), ${response.failureCount} failed`,
+        `Sent ${totalSuccessCount} heartbeat check FCM notification(s), ${totalFailureCount} failed`,
       )
-
-      // Log failures for debugging
-      if (response.failureCount > 0) {
-        response.responses.forEach((resp, index) => {
-          if (!resp.success) {
-            this.logger.error(
-              `Failed to send heartbeat check to device ${deviceIds[index]}: ${resp.error?.message || 'Unknown error'}`,
-            )
-          }
-        })
-      }
     } catch (error) {
       this.logger.error('Error checking and triggering stale heartbeats', error)
     }
