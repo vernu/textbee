@@ -42,6 +42,9 @@ export class SMS {
   requestedAt: Date
 
   @Prop({ type: Date })
+  dispatchedAt: Date
+
+  @Prop({ type: Date })
   sentAt: Date
 
   @Prop({ type: Date })
@@ -60,7 +63,14 @@ export class SMS {
   // failureReason: string
 
   @Prop({ type: String, default: 'pending' })
-  status: 'pending' | 'sent' | 'delivered' | 'failed' | 'unknown' | 'received'
+  status:
+    | 'pending'
+    | 'dispatched'
+    | 'sent'
+    | 'delivered'
+    | 'failed'
+    | 'unknown'
+    | 'received'
 
   @Prop({ type: Number, required: false })
   simSubscriptionId?: number
