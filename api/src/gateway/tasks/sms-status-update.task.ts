@@ -17,50 +17,66 @@ export class SmsStatusUpdateTask {
 
   /**
    * Cron job that runs every 5 minutes to update the status of SMS messages
-   * that have been pending for more than 20 minutes without any status updates.
+   * that have been pending or dispatched for more than 20 minutes without any status updates.
    */
   @Cron(CronExpression.EVERY_5_MINUTES)
   async handlePendingSmsTimeout() {
-    this.logger.log('Running cron job to update stale pending SMS messages');
-    
+    this.logger.log('Running cron job to update stale pending and dispatched SMS messages');
+
     const twentyMinutesAgo = new Date();
     twentyMinutesAgo.setMinutes(twentyMinutesAgo.getMinutes() - 20);
 
     try {
-
-      const result = await this.smsModel.updateMany(
+      const pendingResult = await this.smsModel.updateMany(
         {
           status: 'pending',
           requestedAt: { $lt: twentyMinutesAgo },
         },
         {
-          $set: { 
+          $set: {
             status: 'unknown',
-            errorMessage: 'Status update timeout - no response received after 20 minutes'
-          }
-        }
+            errorMessage:
+              'Status update timeout - no response received after 20 minutes',
+          },
+        },
+      );
+      this.logger.log(
+        `Updated ${pendingResult.modifiedCount} SMS messages from 'pending' to 'unknown' status`,
       );
 
+      const dispatchedResult = await this.smsModel.updateMany(
+        {
+          status: 'dispatched',
+          dispatchedAt: { $lt: twentyMinutesAgo },
+        },
+        {
+          $set: {
+            status: 'unknown',
+            errorMessage:
+              'Status update timeout - no response from device after dispatch',
+          },
+        },
+      );
+      this.logger.log(
+        `Updated ${dispatchedResult.modifiedCount} SMS messages from 'dispatched' to 'unknown' status`,
+      );
 
-
-      this.logger.log(`Updated ${result.modifiedCount} SMS messages from 'pending' to 'unknown' status`);
-      
       const batchResult = await this.smsBatchModel.updateMany(
         {
           status: 'pending',
-          createdAt: { $lt: twentyMinutesAgo }
+          createdAt: { $lt: twentyMinutesAgo },
         },
         {
-          $set: { 
+          $set: {
             status: 'unknown',
-            error: 'Status update timeout - no response received after 20 minutes'
-          }
-        }
+            error:
+              'Status update timeout - no response received after 20 minutes',
+          },
+        },
       );
-
-
-      
-      this.logger.log(`Updated ${batchResult.modifiedCount} SMS batches from 'pending' to 'unknown' status`);
+      this.logger.log(
+        `Updated ${batchResult.modifiedCount} SMS batches from 'pending' to 'unknown' status`,
+      );
     } catch (error) {
       this.logger.error('Error updating stale pending SMS messages', error);
     }

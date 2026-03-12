@@ -7,7 +7,29 @@ import { Device } from '../schemas/device.schema'
 import { SMS } from '../schemas/sms.schema'
 import { SMSBatch } from '../schemas/sms-batch.schema'
 import { WebhookService } from 'src/webhook/webhook.service'
+import { WebhookEvent } from 'src/webhook/webhook-event.enum'
 import { Logger } from '@nestjs/common'
+
+function getFcmErrorCode(error: { code?: string; message?: string } | null): string {
+  if (!error?.code) return 'FCM_DELIVERY_FAILED'
+  const code = String(error.code).toLowerCase()
+  if (
+    code === 'registration-token-not-registered' ||
+    code === 'unregistered'
+  ) {
+    return 'FCM_TOKEN_NOT_REGISTERED'
+  }
+  if (
+    code === 'invalid-registration-token' ||
+    code === 'invalid-argument'
+  ) {
+    return 'FCM_INVALID_REGISTRATION_TOKEN'
+  }
+  if (code === 'mismatched-credential') {
+    return 'FCM_PROJECT_MISMATCH'
+  }
+  return `FCM_DELIVERY_FAILED_${error.code}`
+}
 
 @Processor('sms')
 export class SmsQueueProcessor {
@@ -27,6 +49,16 @@ export class SmsQueueProcessor {
   async handleSendSms(job: Job<any>) {
     this.logger.debug(`Processing send-sms job ${job.id}`)
     const { deviceId, fcmMessages, smsBatchId } = job.data
+
+    const device = await this.deviceModel
+      .findById(deviceId)
+      .populate('user')
+      .exec()
+    if (!device?.user) {
+      this.logger.warn(
+        `Device or user not found for deviceId ${deviceId}, webhooks will be skipped`,
+      )
+    }
 
     try {
       this.smsBatchModel
@@ -53,19 +85,56 @@ export class SmsQueueProcessor {
         if (!response.responses[i].success) {
           try {
             const smsData = JSON.parse(fcmMessages[i].data.smsData)
-            await this.smsModel.findByIdAndUpdate(smsData.smsId, {
-              $set: {
-                status: 'failed',
-                failedAt: new Date(),
-                errorCode: 'FCM_DELIVERY_FAILED',
-                errorMessage:
-                  response.responses[i].error?.message ||
-                  'FCM push notification delivery failed',
+            const fcmError = response.responses[i].error
+            const updatedSms = await this.smsModel.findByIdAndUpdate(
+              smsData.smsId,
+              {
+                $set: {
+                  status: 'failed',
+                  failedAt: new Date(),
+                  errorCode: getFcmErrorCode(fcmError ?? undefined),
+                  errorMessage:
+                    fcmError?.message ||
+                    'FCM push notification delivery failed',
+                },
               },
-            })
+              { new: true },
+            )
+            if (device?.user && updatedSms) {
+              await this.webhookService
+                .deliverNotification({
+                  sms: updatedSms,
+                  user: device.user as any,
+                  event: WebhookEvent.MESSAGE_FAILED,
+                })
+                .catch((e) =>
+                  this.logger.warn(
+                    `Webhook delivery failed for SMS ${updatedSms._id}`,
+                    e?.message,
+                  ),
+                )
+            }
           } catch (parseError) {
             this.logger.error(
               `Failed to mark SMS as failed for FCM message index ${i}`,
+              parseError,
+            )
+          }
+        }
+      }
+
+      // Mark individual SMS records as dispatched when FCM push succeeded
+      const now = new Date()
+      for (let i = 0; i < response.responses.length; i++) {
+        if (response.responses[i].success) {
+          try {
+            const smsData = JSON.parse(fcmMessages[i].data.smsData)
+            await this.smsModel.findByIdAndUpdate(smsData.smsId, {
+              $set: { status: 'dispatched', dispatchedAt: now },
+            })
+          } catch (parseError) {
+            this.logger.error(
+              `Failed to mark SMS as dispatched for FCM message index ${i}`,
               parseError,
             )
           }
@@ -91,11 +160,15 @@ export class SmsQueueProcessor {
         { returnDocument: 'after' },
       )
 
-      if (smsBatch.successCount === smsBatch.recipientCount) {
-        await this.smsBatchModel.findByIdAndUpdate(smsBatchId, {
-          $set: { status: 'completed' },
-        })
-      }
+      const batchStatus =
+        smsBatch.failureCount === smsBatch.recipientCount
+          ? 'failed'
+          : smsBatch.successCount === smsBatch.recipientCount
+            ? 'completed'
+            : 'partial_success'
+      await this.smsBatchModel.findByIdAndUpdate(smsBatchId, {
+        $set: { status: batchStatus },
+      })
 
       return response
     } catch (error) {
@@ -105,14 +178,35 @@ export class SmsQueueProcessor {
       for (const fcmMessage of fcmMessages) {
         try {
           const smsData = JSON.parse(fcmMessage.data.smsData)
-          await this.smsModel.findByIdAndUpdate(smsData.smsId, {
-            $set: {
-              status: 'failed',
-              failedAt: new Date(),
-              errorCode: 'FCM_SEND_ERROR',
-              errorMessage: error?.message || 'FCM sendEach call failed',
+          const updatedSms = await this.smsModel.findByIdAndUpdate(
+            smsData.smsId,
+            {
+              $set: {
+                status: 'failed',
+                failedAt: new Date(),
+                errorCode:
+                  (error as any)?.code != null
+                    ? getFcmErrorCode(error as any)
+                    : 'FCM_SEND_ERROR',
+                errorMessage: error?.message || 'FCM sendEach call failed',
+              },
             },
-          })
+            { new: true },
+          )
+          if (device?.user && updatedSms) {
+            await this.webhookService
+              .deliverNotification({
+                sms: updatedSms,
+                user: device.user as any,
+                event: WebhookEvent.MESSAGE_FAILED,
+              })
+              .catch((e) =>
+                this.logger.warn(
+                  `Webhook delivery failed for SMS ${updatedSms._id}`,
+                  e?.message,
+                ),
+              )
+          }
         } catch (parseError) {
           this.logger.error(
             'Failed to mark SMS as failed after FCM error',

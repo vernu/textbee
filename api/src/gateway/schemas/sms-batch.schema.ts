@@ -33,7 +33,13 @@ export class SMSBatch {
   failureCount: number
 
   @Prop({ type: String, default: 'pending' })
-  status: 'pending' | 'processing' | 'completed' | 'partial_success' | 'failed'
+  status:
+    | 'pending'
+    | 'processing'
+    | 'completed'
+    | 'partial_success'
+    | 'failed'
+    | 'unknown'
 
   @Prop({ type: String })
   error: string
