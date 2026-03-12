@@ -471,8 +471,8 @@ function SmsDetailsDialog({
           </DialogHeader>
 
           <div className="mt-4 space-y-4 text-sm">
-            {/* Info Grid */}
-            <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+            {/* Info Grid - labels 1/3, values 2/3 */}
+            <div className="grid grid-cols-[1fr_2fr] gap-x-6 gap-y-3">
               <div className="font-medium text-muted-foreground">Direction</div>
               <div className="flex items-center gap-1">
                 {isSent ? <ArrowUpRight className="h-4 w-4 text-brand-500" /> :
@@ -506,37 +506,38 @@ function SmsDetailsDialog({
               {message.gatewayMessageId && (
                 <>
                   <div className="font-medium text-muted-foreground">Gateway ID</div>
-                  <div className="font-mono text-xs break-all">{message.gatewayMessageId}</div>
-                </>
-              )}
-
-              {(message.errorCode || message.errorMessage) && (
-                <>
-                  {message.errorCode && (
-                    <>
-                      <div className="font-medium text-muted-foreground">Error code</div>
-                      <div
-                        className="min-w-0 text-destructive text-sm truncate"
-                        title={message.errorCode}
-                      >
-                        {message.errorCode}
-                      </div>
-                    </>
-                  )}
-                  {message.errorMessage && (
-                    <>
-                      <div className="font-medium text-muted-foreground">Error message</div>
-                      <div
-                        className="min-w-0 text-destructive text-sm truncate"
-                        title={message.errorMessage}
-                      >
-                        {message.errorMessage}
-                      </div>
-                    </>
-                  )}
+                  <div className="font-mono text-xs break-all min-w-0">{message.gatewayMessageId}</div>
                 </>
               )}
             </div>
+
+            {/* Error details - full width, multi-line, contained */}
+            {(message.errorCode || message.errorMessage) && (
+              <div className="pt-3 border-t border-border space-y-2 min-w-0">
+                {message.errorCode && (
+                  <div className="min-w-0">
+                    <div className="font-medium text-muted-foreground mb-0.5">Error code</div>
+                    <div
+                      className="w-full min-w-0 max-h-24 overflow-y-auto overflow-x-hidden text-destructive text-sm break-words rounded p-2 bg-destructive/5"
+                      title={message.errorCode}
+                    >
+                      {message.errorCode}
+                    </div>
+                  </div>
+                )}
+                {message.errorMessage && (
+                  <div className="min-w-0">
+                    <div className="font-medium text-muted-foreground mb-0.5">Error message</div>
+                    <div
+                      className="w-full min-w-0 max-h-32 overflow-y-auto overflow-x-hidden text-destructive text-sm break-words rounded p-2 bg-destructive/5"
+                      title={message.errorMessage}
+                    >
+                      {message.errorMessage}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Message Body */}
             <div className="pt-4 border-t border-border">
