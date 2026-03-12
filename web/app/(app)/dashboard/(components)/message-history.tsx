@@ -510,10 +510,30 @@ function SmsDetailsDialog({
                 </>
               )}
 
-              {message.errorMessage && (
+              {(message.errorCode || message.errorMessage) && (
                 <>
-                  <div className="font-medium text-muted-foreground">Error</div>
-                  <div className="text-destructive text-sm">{message.errorMessage}</div>
+                  {message.errorCode && (
+                    <>
+                      <div className="font-medium text-muted-foreground">Error code</div>
+                      <div
+                        className="min-w-0 text-destructive text-sm truncate"
+                        title={message.errorCode}
+                      >
+                        {message.errorCode}
+                      </div>
+                    </>
+                  )}
+                  {message.errorMessage && (
+                    <>
+                      <div className="font-medium text-muted-foreground">Error message</div>
+                      <div
+                        className="min-w-0 text-destructive text-sm truncate"
+                        title={message.errorMessage}
+                      >
+                        {message.errorMessage}
+                      </div>
+                    </>
+                  )}
                 </>
               )}
             </div>
