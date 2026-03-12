@@ -12,7 +12,7 @@ import { Logger } from '@nestjs/common'
 
 function getFcmErrorCode(error: { code?: string; message?: string } | null): string {
   if (!error?.code) return 'FCM_DELIVERY_FAILED'
-  const code = String(error.code).toLowerCase()
+  const code = String(error.code).toLowerCase().replace(/^messaging\//, '')
   if (
     code === 'registration-token-not-registered' ||
     code === 'unregistered'
@@ -29,6 +29,14 @@ function getFcmErrorCode(error: { code?: string; message?: string } | null): str
     return 'FCM_PROJECT_MISMATCH'
   }
   return `FCM_DELIVERY_FAILED_${error.code}`
+}
+
+const FCM_ACTIONABLE_MESSAGE =
+  'The device token is invalid. Please open the textbee mobile app, click on the update button to resync and try again.'
+
+function getFcmErrorMessage(error: { code?: string; message?: string } | null | undefined): string {
+  const rawPart = `FCM_DELIVERY_FAILED: ${error?.message || 'FCM delivery failed'}`
+  return `${rawPart} — ${FCM_ACTIONABLE_MESSAGE}`
 }
 
 @Processor('sms')
@@ -93,9 +101,7 @@ export class SmsQueueProcessor {
                   status: 'failed',
                   failedAt: new Date(),
                   errorCode: getFcmErrorCode(fcmError ?? undefined),
-                  errorMessage:
-                    fcmError?.message ||
-                    'FCM push notification delivery failed',
+                  errorMessage: getFcmErrorMessage(fcmError ?? undefined),
                 },
               },
               { new: true },
@@ -188,7 +194,7 @@ export class SmsQueueProcessor {
                   (error as any)?.code != null
                     ? getFcmErrorCode(error as any)
                     : 'FCM_SEND_ERROR',
-                errorMessage: error?.message || 'FCM sendEach call failed',
+                errorMessage: getFcmErrorMessage(error as any),
               },
             },
             { new: true },
