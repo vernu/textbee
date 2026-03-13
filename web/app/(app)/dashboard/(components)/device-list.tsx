@@ -3,14 +3,20 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Smartphone, Battery, Signal, Copy } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import httpBrowserClient from '@/lib/httpBrowserClient'
 import { ApiEndpoints } from '@/config/api'
+import { Routes } from '@/config/routes'
 import { useQuery } from '@tanstack/react-query'
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatDeviceName } from '@/lib/utils'
+import {
+  DeviceVersionCandidate,
+  getDeviceVersionCode,
+  isDeviceOutdated,
+  latestAppVersionCode,
+} from './update-app-helpers'
 
 export default function DeviceList() {
   const { toast } = useToast()
@@ -86,14 +92,24 @@ export default function DeviceList() {
                       <h3 className='font-semibold text-sm'>
                         {formatDeviceName(device)}
                       </h3>
-                      <Badge
-                        variant={
-                          device.status === 'online' ? 'default' : 'secondary'
-                        }
-                        className='text-xs'
-                      >
-                        {device.enabled ? 'Enabled' : 'Disabled'}
-                      </Badge>
+                      <div className='flex items-center gap-2'>
+                        {isDeviceOutdated(device as DeviceVersionCandidate) && (
+                          <Badge
+                            variant='outline'
+                            className='border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300'
+                          >
+                            Update available
+                          </Badge>
+                        )}
+                        <Badge
+                          variant={
+                            device.status === 'online' ? 'default' : 'secondary'
+                          }
+                          className='text-xs'
+                        >
+                          {device.enabled ? 'Enabled' : 'Disabled'}
+                        </Badge>
+                      </div>
                     </div>
                     <div className='flex items-center space-x-2 mt-1'>
                       <code className='relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-xs'>
@@ -117,6 +133,11 @@ export default function DeviceList() {
                         <Signal className='h-3 w-3 mr-1' />-
                       </div>
                       <div>
+                        App version:{' '}
+                        {getDeviceVersionCode(device as DeviceVersionCandidate) ??
+                          'unknown'}
+                      </div>
+                      <div>
                         Registered at:{' '}
                         {new Date(device.createdAt).toLocaleString('en-US', {
                           dateStyle: 'medium',
@@ -124,6 +145,31 @@ export default function DeviceList() {
                         })}
                       </div>
                     </div>
+                    {isDeviceOutdated(device as DeviceVersionCandidate) && (
+                      <div className='mt-3 flex items-center justify-between gap-2 rounded-lg border border-brand-100 bg-brand-50/60 px-3 py-2 dark:border-brand-900/50 dark:bg-brand-950/20'>
+                        <p className='text-xs text-muted-foreground'>
+                          This device is behind the latest supported version{' '}
+                          <span className='font-medium text-foreground'>
+                            {latestAppVersionCode}
+                          </span>
+                          .
+                        </p>
+                        <Button
+                          variant='outline'
+                          size='sm'
+                          asChild
+                          className='shrink-0'
+                        >
+                          <a
+                            href={Routes.downloadAndroidApp}
+                            target='_blank'
+                            rel='noreferrer'
+                          >
+                            Update app
+                          </a>
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
