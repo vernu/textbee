@@ -55,7 +55,7 @@ export class SmsQueueProcessor {
     concurrency: 10,
   })
   async handleSendSms(job: Job<any>) {
-    this.logger.debug(`Processing send-sms job ${job.id}`)
+    // this.logger.debug(`Processing send-sms job ${job.id}`)
     const { deviceId, fcmMessages, smsBatchId } = job.data
 
     const device = await this.deviceModel
@@ -84,9 +84,9 @@ export class SmsQueueProcessor {
 
       const response = await firebaseAdmin.messaging().sendEach(fcmMessages)
 
-      this.logger.debug(
-        `SMS Job ${job.id} completed, success: ${response.successCount}, failures: ${response.failureCount}`,
-      )
+      // this.logger.debug(
+      //   `SMS Job ${job.id}( smsBatchId: ${smsBatchId}) completed, success: ${response.successCount}, failures: ${response.failureCount}`,
+      // )
 
       // Mark individual SMS records as failed when their FCM push failed
       for (let i = 0; i < response.responses.length; i++) {

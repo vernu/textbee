@@ -14,7 +14,7 @@ export class WebhookQueueProcessor {
     concurrency: 10,
   })
   async handleWebhookDelivery(job: Job<{ notificationId: string }>) {
-    this.logger.debug(`Processing webhook delivery job ${job.id} for notification ${job.data.notificationId}`)
+    // this.logger.debug(`Processing webhook delivery job ${job.id} for notification ${job.data.notificationId}`)
 
     try {
       await this.webhookService.attemptWebhookDelivery(job.data.notificationId)

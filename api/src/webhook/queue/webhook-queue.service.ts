@@ -12,7 +12,7 @@ export class WebhookQueueService {
   ) {}
 
   async addWebhookDeliveryJob(notificationId: string) {
-    this.logger.debug(`Adding webhook delivery job for notification ${notificationId}`)
+    // this.logger.debug(`Adding webhook delivery job for notification ${notificationId}`)
 
     await this.webhookQueue.add(
       'deliver-webhook',

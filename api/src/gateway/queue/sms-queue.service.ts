@@ -34,7 +34,7 @@ export class SmsQueueService {
     smsBatchId: string,
     delayMs?: number,
   ) {
-    this.logger.debug(`Adding send-sms job for batch ${smsBatchId}`)
+    // this.logger.debug(`Adding send-sms job for batch ${smsBatchId}`)
 
     // Split messages into batches of max smsBatchSize messages
     const batches = []
