@@ -530,7 +530,7 @@ export class BillingService {
       }
 
       if (user.emailVerifiedAt === null) {
-        console.error('canPerformAction: User email not verified')
+        console.warn('canPerformAction: User email not verified')
         throw new HttpException(
           {
             message: 'Please verify your email to continue',
@@ -618,8 +618,8 @@ export class BillingService {
       }
 
       if (hasReachedLimit) {
-        console.error('canPerformAction: hasReachedLimit')
-        console.error(
+        console.warn('canPerformAction: hasReachedLimit')
+        console.warn(
           JSON.stringify({
             userId,
             userEmail: user.email,

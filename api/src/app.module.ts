@@ -24,7 +24,6 @@ import { EventEmitterModule } from '@nestjs/event-emitter'
 @Injectable()
 export class LoggerMiddleware implements NestMiddleware {
   use(req: Request, res: Response, next: NextFunction) {
-    console.log('req.originalUrl: ', req.originalUrl)
     if (next) {
       next()
     }
@@ -41,7 +40,7 @@ export class LoggerMiddleware implements NestMiddleware {
     ThrottlerModule.forRoot([
       {
         ttl: 60000,
-        limit: 60,
+        limit: 500,
       },
     ]),
     ScheduleModule.forRoot(),
