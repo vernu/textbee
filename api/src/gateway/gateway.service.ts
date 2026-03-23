@@ -46,6 +46,7 @@ export class GatewayService {
       buildId: input.buildId,
     })
 
+    const now = new Date()
     const deviceData: any = { ...input, user }
     
     // Set default name to "brand model" if not provided
@@ -57,8 +58,14 @@ export class GatewayService {
     if (input.simInfo) {
       deviceData.simInfo = {
         ...input.simInfo,
-        lastUpdated: input.simInfo.lastUpdated || new Date(),
+        lastUpdated: input.simInfo.lastUpdated || now,
       }
+    }
+
+    if (input.fcmToken) {
+      deviceData.fcmTokenUpdatedAt = now
+      deviceData.fcmTokenInvalidatedAt = undefined
+      deviceData.fcmTokenInvalidReason = undefined
     }
 
     if (device && device.appVersionCode <= 11) {
@@ -98,14 +105,21 @@ export class GatewayService {
       input.enabled = true;
     }
 
+    const now = new Date()
     const updateData: any = { ...input }
     
     // Handle simInfo if provided
     if (input.simInfo) {
       updateData.simInfo = {
         ...input.simInfo,
-        lastUpdated: input.simInfo.lastUpdated || new Date(),
+        lastUpdated: input.simInfo.lastUpdated || now,
       }
+    }
+
+    if (input.fcmToken && input.fcmToken !== device.fcmToken) {
+      updateData.fcmTokenUpdatedAt = now
+      updateData.fcmTokenInvalidatedAt = undefined
+      updateData.fcmTokenInvalidReason = undefined
     }
     
     return await this.deviceModel.findByIdAndUpdate(
@@ -1078,6 +1092,9 @@ const updatedSms = await this.smsModel.findByIdAndUpdate(
     // Update FCM token if provided and different
     if (input.fcmToken && input.fcmToken !== device.fcmToken) {
       updateData.fcmToken = input.fcmToken
+      updateData.fcmTokenUpdatedAt = now
+      updateData.fcmTokenInvalidatedAt = undefined
+      updateData.fcmTokenInvalidReason = undefined
       fcmTokenUpdated = true
     }
 

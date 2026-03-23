@@ -20,6 +20,15 @@ export class Device {
   @Prop({ type: String })
   fcmToken: string
 
+  @Prop({ type: Date })
+  fcmTokenUpdatedAt?: Date
+
+  @Prop({ type: Date })
+  fcmTokenInvalidatedAt?: Date
+
+  @Prop({ type: String })
+  fcmTokenInvalidReason?: string
+
   @Prop({ type: String })
   brand: string
 

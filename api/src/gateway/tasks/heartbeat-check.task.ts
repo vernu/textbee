@@ -1,12 +1,43 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { Cron, CronExpression } from '@nestjs/schedule'
 import { InjectModel } from '@nestjs/mongoose'
-import { Model } from 'mongoose'
+import { Model, Types } from 'mongoose'
 import { Device, DeviceDocument } from '../schemas/device.schema'
 import * as firebaseAdmin from 'firebase-admin'
 import { Message } from 'firebase-admin/messaging'
 
 const FCM_BATCH_SIZE = 500
+
+function isPermanentFcmTokenError(
+  error: { code?: string; message?: string } | null | undefined,
+): boolean {
+  if (!error) {
+    return false
+  }
+
+  const normalizedCode = String(error.code || '')
+    .toLowerCase()
+    .replace(/^messaging\//, '')
+  const normalizedMessage = String(error.message || '').toLowerCase()
+
+  if (
+    normalizedCode === 'registration-token-not-registered' ||
+    normalizedCode === 'unregistered' ||
+    normalizedCode === 'invalid-registration-token'
+  ) {
+    return true
+  }
+
+  if (
+    normalizedMessage.includes('requested entity was not found') ||
+    normalizedMessage.includes('not registered') ||
+    normalizedMessage.includes('registration token is not a valid')
+  ) {
+    return true
+  }
+
+  return false
+}
 
 @Injectable()
 export class HeartbeatCheckTask {
@@ -17,10 +48,10 @@ export class HeartbeatCheckTask {
   ) {}
 
   /**
-   * Cron job that runs every 5 minutes to check for devices with stale heartbeats
+   * Cron job that runs hourly to check for devices with stale heartbeats
    * (>30 minutes) and send FCM push notifications to trigger heartbeat requests.
    */
-  @Cron(CronExpression.EVERY_5_MINUTES)
+  @Cron(CronExpression.EVERY_HOUR)
   async checkAndTriggerStaleHeartbeats() {
     this.logger.log('Running cron job to check for stale heartbeats')
 
@@ -36,6 +67,7 @@ export class HeartbeatCheckTask {
           { lastHeartbeat: { $lt: thirtyMinutesAgo } },
         ],
         fcmToken: { $exists: true, $ne: null },
+        fcmTokenInvalidatedAt: { $exists: false },
       })
 
       if (devices.length === 0) {
@@ -88,13 +120,49 @@ export class HeartbeatCheckTask {
         totalFailureCount += response.failureCount
 
         if (response.failureCount > 0) {
+          const invalidationUpdates: Array<{
+            deviceId: string
+            reason: string
+          }> = []
+
           response.responses.forEach((resp, index) => {
             if (!resp.success) {
+              const errorMessage = resp.error?.message || 'Unknown error'
+              const errorCode = resp.error?.code || 'UNKNOWN_ERROR'
+
               this.logger.error(
-                `Failed to send heartbeat check to device ${batchDeviceIds[index]}: ${resp.error?.message || 'Unknown error'}`,
+                `Failed to send heartbeat check to device ${batchDeviceIds[index]}: ${errorMessage}`,
               )
+
+              if (isPermanentFcmTokenError(resp.error)) {
+                invalidationUpdates.push({
+                  deviceId: batchDeviceIds[index],
+                  reason: `${errorCode}: ${errorMessage}`,
+                })
+              }
             }
           })
+
+          if (invalidationUpdates.length > 0) {
+            const invalidatedAt = new Date()
+            await this.deviceModel.bulkWrite(
+              invalidationUpdates.map(({ deviceId, reason }) => ({
+                updateOne: {
+                  filter: { _id: new Types.ObjectId(deviceId) },
+                  update: {
+                    $set: {
+                      fcmTokenInvalidatedAt: invalidatedAt,
+                      fcmTokenInvalidReason: reason,
+                    },
+                  },
+                },
+              })),
+            )
+
+            this.logger.warn(
+              `Marked ${invalidationUpdates.length} device(s) as FCM-token-invalid; heartbeat retries paused until token update`,
+            )
+          }
         }
       }
 
