@@ -180,7 +180,14 @@ describe('GatewayService', () => {
       })
       expect(service.updateDevice).toHaveBeenCalledWith(
         mockDevice._id.toString(),
-        { ...mockDeviceInput, enabled: true, user: mockUser }
+        expect.objectContaining({
+          ...mockDeviceInput,
+          enabled: true,
+          user: mockUser,
+          fcmTokenUpdatedAt: expect.any(Date),
+          fcmTokenInvalidatedAt: undefined,
+          fcmTokenInvalidReason: undefined,
+        }),
       )
       expect(result).toBeDefined()
       
@@ -202,6 +209,9 @@ describe('GatewayService', () => {
       expect(mockDeviceModel.create).toHaveBeenCalledWith({
         ...mockDeviceInput,
         user: mockUser,
+        fcmTokenUpdatedAt: expect.any(Date),
+        fcmTokenInvalidatedAt: undefined,
+        fcmTokenInvalidReason: undefined,
       })
       expect(result).toBeDefined()
     })
