@@ -9,6 +9,7 @@ export class SmsQueueService {
   private readonly logger = new Logger(SmsQueueService.name)
   private readonly useSmsQueue: boolean
   private readonly maxSmsBatchSize: number
+  private readonly immediateQueueDelayMs: number
 
   constructor(
     @InjectQueue('sms') private readonly smsQueue: Queue,
@@ -17,7 +18,11 @@ export class SmsQueueService {
     this.useSmsQueue = this.configService.get<boolean>('USE_SMS_QUEUE', false)
     this.maxSmsBatchSize = this.configService.get<number>(
       'MAX_SMS_BATCH_SIZE',
-      5,
+      100,
+    )
+    this.immediateQueueDelayMs = this.configService.get<number>(
+      'SMS_QUEUE_IMMEDIATE_DELAY_MS',
+      0,
     )
   }
 
@@ -43,12 +48,11 @@ export class SmsQueueService {
     }
 
     // If delayMs is provided, use it for all batches (scheduled send)
-    // Otherwise, use the existing delay multiplier logic
+    // Otherwise rely on queue limiter/concurrency and optionally fixed jitter.
     const useScheduledDelay = delayMs !== undefined && delayMs >= 0
 
-    let delayMultiplier = 1;
     for (const batch of batches) {
-      const delay = useScheduledDelay ? delayMs : 1000 * delayMultiplier++
+      const delay = useScheduledDelay ? delayMs : this.immediateQueueDelayMs
       await this.smsQueue.add(
         'send-sms',
         {
