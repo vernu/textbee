@@ -10,7 +10,7 @@ import { SMSBatch, SMSBatchSchema } from './schemas/sms-batch.schema'
 import { WebhookModule } from 'src/webhook/webhook.module'
 import { BillingModule } from 'src/billing/billing.module'
 import { BullModule } from '@nestjs/bull'
-import { ConfigModule } from '@nestjs/config'
+import { ConfigModule, ConfigService } from '@nestjs/config'
 import { SmsQueueService } from './queue/sms-queue.service'
 import { SmsQueueProcessor } from './queue/sms-queue.processor'
 import { SmsStatusUpdateTask } from './tasks/sms-status-update.task'
@@ -32,17 +32,25 @@ import { HeartbeatCheckTask } from './tasks/heartbeat-check.task'
         schema: SMSBatchSchema,
       },
     ]),
-    BullModule.registerQueue({
+    BullModule.registerQueueAsync({
       name: 'sms',
-      defaultJobOptions: {
-        attempts: 2,
-        backoff: {
-          type: 'exponential',
-          delay: 1000,
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => ({
+        limiter: {
+          max: configService.get<number>('SMS_QUEUE_LIMITER_MAX', 20),
+          duration: configService.get<number>('SMS_QUEUE_LIMITER_DURATION_MS', 1000),
         },
-        removeOnComplete: { age: 24 * 3600 }, // 24 hours
-        removeOnFail: { age: 72 * 3600 }, // 72 hours
-      },
+        defaultJobOptions: {
+          attempts: 2,
+          backoff: {
+            type: 'exponential',
+            delay: 1000,
+          },
+          removeOnComplete: { age: 24 * 3600 }, // 24 hours
+          removeOnFail: { age: 72 * 3600 }, // 72 hours
+        },
+      }),
     }),
     AuthModule,
     UsersModule,

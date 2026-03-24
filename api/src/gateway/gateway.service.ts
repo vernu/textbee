@@ -478,6 +478,13 @@ export class GatewayService {
 
     // Track FCM messages with their calculated delays for grouping
     const fcmMessagesWithDelays: Array<{ message: Message; delayMs?: number }> = []
+    const smsDocumentsToInsert: Array<Record<string, any>> = []
+    const smsToFcmMetadata: Array<{
+      recipient: string
+      message: string
+      simSubscriptionId?: number
+      delayMs?: number
+    }> = []
 
     for (const smsData of messages) {
       const message = smsData.message
@@ -495,8 +502,8 @@ export class GatewayService {
       const delayMs = this.calculateDelayFromScheduledAt(smsData.scheduledAt)
 
       for (let recipient of recipients) {
-        recipient =  recipient.replace(/\s+/g, "")
-        const sms = await this.smsModel.create({
+        recipient = recipient.replace(/\s+/g, "")
+        smsDocumentsToInsert.push({
           device: device._id,
           smsBatch: smsBatch._id,
           message: message,
@@ -508,32 +515,73 @@ export class GatewayService {
             simSubscriptionId: smsData.simSubscriptionId,
           }),
         })
-        const updatedSMSData = {
-          smsId: sms._id,
-          smsBatchId: smsBatch._id,
+        smsToFcmMetadata.push({
+          recipient,
           message,
-          recipients: [recipient],
           ...(smsData.simSubscriptionId !== undefined && {
             simSubscriptionId: smsData.simSubscriptionId,
           }),
-
-          // Legacy fields to be removed in the future
-          smsBody: message,
-          receivers: [recipient],
-        }
-        const stringifiedSMSData = JSON.stringify(updatedSMSData)
-
-        const fcmMessage: Message = {
-          data: {
-            smsData: stringifiedSMSData,
-          },
-          token: device.fcmToken,
-          android: {
-            priority: 'high',
-          },
-        }
-        fcmMessagesWithDelays.push({ message: fcmMessage, delayMs })
+          delayMs,
+        })
       }
+    }
+
+    const insertChunkSize = 500
+    const insertedSmsDocs: any[] = []
+    const hasInsertMany = typeof (this.smsModel as any).insertMany === 'function'
+    for (let i = 0; i < smsDocumentsToInsert.length; i += insertChunkSize) {
+      const chunk = smsDocumentsToInsert.slice(i, i + insertChunkSize)
+      if (hasInsertMany) {
+        const insertedChunk = await (this.smsModel as any).insertMany(chunk, { ordered: true })
+        insertedSmsDocs.push(...insertedChunk)
+        continue
+      }
+
+      // Fallback for mocked/non-standard models that don't expose insertMany
+      for (const smsDocument of chunk) {
+        const createdSmsDoc = await this.smsModel.create(smsDocument)
+        insertedSmsDocs.push(createdSmsDoc)
+      }
+    }
+
+    if (insertedSmsDocs.length !== smsToFcmMetadata.length) {
+      throw new HttpException(
+        {
+          success: false,
+          error: 'Failed to map created SMS records to queue payload',
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      )
+    }
+
+    for (let i = 0; i < insertedSmsDocs.length; i++) {
+      const sms = insertedSmsDocs[i]
+      const metadata = smsToFcmMetadata[i]
+      const updatedSMSData = {
+        smsId: sms._id,
+        smsBatchId: smsBatch._id,
+        message: metadata.message,
+        recipients: [metadata.recipient],
+        ...(metadata.simSubscriptionId !== undefined && {
+          simSubscriptionId: metadata.simSubscriptionId,
+        }),
+
+        // Legacy fields to be removed in the future
+        smsBody: metadata.message,
+        receivers: [metadata.recipient],
+      }
+      const stringifiedSMSData = JSON.stringify(updatedSMSData)
+
+      const fcmMessage: Message = {
+        data: {
+          smsData: stringifiedSMSData,
+        },
+        token: device.fcmToken,
+        android: {
+          priority: 'high',
+        },
+      }
+      fcmMessagesWithDelays.push({ message: fcmMessage, delayMs: metadata.delayMs })
     }
 
     // Check if we should use the queue
@@ -673,7 +721,7 @@ export class GatewayService {
       !dto.sender ||
       !dto.message
     ) {
-      console.log('Invalid received SMS data')
+      console.error(`receiveSMS: Invalid received SMS data (sender: ${dto.sender}, message: ${dto.message}) (receivedAt: ${dto.receivedAt}, receivedAtInMillis: ${dto.receivedAtInMillis})`)
       throw new HttpException(
         {
           success: false,
