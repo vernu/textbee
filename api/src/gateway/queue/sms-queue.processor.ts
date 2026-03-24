@@ -89,37 +89,23 @@ export class SmsQueueProcessor {
       // )
 
       // Mark individual SMS records as failed when their FCM push failed
+      const failedSmsIds: string[] = []
+      const failedUpdates: Array<{
+        smsId: string
+        errorCode: string
+        errorMessage: string
+      }> = []
       for (let i = 0; i < response.responses.length; i++) {
         if (!response.responses[i].success) {
           try {
             const smsData = JSON.parse(fcmMessages[i].data.smsData)
             const fcmError = response.responses[i].error
-            const updatedSms = await this.smsModel.findByIdAndUpdate(
-              smsData.smsId,
-              {
-                $set: {
-                  status: 'failed',
-                  failedAt: new Date(),
-                  errorCode: getFcmErrorCode(fcmError ?? undefined),
-                  errorMessage: getFcmErrorMessage(fcmError ?? undefined),
-                },
-              },
-              { new: true },
-            )
-            if (device?.user && updatedSms) {
-              await this.webhookService
-                .deliverNotification({
-                  sms: updatedSms,
-                  user: device.user as any,
-                  event: WebhookEvent.MESSAGE_FAILED,
-                })
-                .catch((e) =>
-                  this.logger.warn(
-                    `Webhook delivery failed for SMS ${updatedSms._id}`,
-                    e?.message,
-                  ),
-                )
-            }
+            failedSmsIds.push(String(smsData.smsId))
+            failedUpdates.push({
+              smsId: String(smsData.smsId),
+              errorCode: getFcmErrorCode(fcmError ?? undefined),
+              errorMessage: getFcmErrorMessage(fcmError ?? undefined),
+            })
           } catch (parseError) {
             this.logger.error(
               `Failed to mark SMS as failed for FCM message index ${i}`,
@@ -131,19 +117,64 @@ export class SmsQueueProcessor {
 
       // Mark individual SMS records as dispatched when FCM push succeeded
       const now = new Date()
+      const dispatchedSmsIds: string[] = []
       for (let i = 0; i < response.responses.length; i++) {
         if (response.responses[i].success) {
           try {
             const smsData = JSON.parse(fcmMessages[i].data.smsData)
-            await this.smsModel.findByIdAndUpdate(smsData.smsId, {
-              $set: { status: 'dispatched', dispatchedAt: now },
-            })
+            dispatchedSmsIds.push(String(smsData.smsId))
           } catch (parseError) {
             this.logger.error(
               `Failed to mark SMS as dispatched for FCM message index ${i}`,
               parseError,
             )
           }
+        }
+      }
+
+      if (failedUpdates.length > 0) {
+        const failedAt = new Date()
+        for (const failedUpdate of failedUpdates) {
+          await this.smsModel.updateOne(
+            { _id: failedUpdate.smsId as any },
+            {
+              $set: {
+                status: 'failed',
+                failedAt,
+                errorCode: failedUpdate.errorCode,
+                errorMessage: failedUpdate.errorMessage,
+              },
+            },
+          )
+        }
+      }
+
+      if (dispatchedSmsIds.length > 0) {
+        await this.smsModel.updateMany(
+          { _id: { $in: dispatchedSmsIds } as any },
+          {
+            $set: { status: 'dispatched', dispatchedAt: now },
+          },
+        )
+      }
+
+      if (device?.user && failedSmsIds.length > 0) {
+        const failedSmsDocuments = await this.smsModel.find({
+          _id: { $in: failedSmsIds },
+        })
+        for (const failedSms of failedSmsDocuments) {
+          await this.webhookService
+            .deliverNotification({
+              sms: failedSms,
+              user: device.user as any,
+              event: WebhookEvent.MESSAGE_FAILED,
+            })
+            .catch((e) =>
+              this.logger.warn(
+                `Webhook delivery failed for SMS ${failedSms._id}`,
+                e?.message,
+              ),
+            )
         }
       }
 
@@ -181,43 +212,54 @@ export class SmsQueueProcessor {
       this.logger.error(`Failed to process SMS job ${job.id}`, error)
 
       // Mark all individual SMS in this batch of FCM messages as failed
+      const failedSmsIds: string[] = []
       for (const fcmMessage of fcmMessages) {
         try {
           const smsData = JSON.parse(fcmMessage.data.smsData)
-          const updatedSms = await this.smsModel.findByIdAndUpdate(
-            smsData.smsId,
-            {
-              $set: {
-                status: 'failed',
-                failedAt: new Date(),
-                errorCode:
-                  (error as any)?.code != null
-                    ? getFcmErrorCode(error as any)
-                    : 'FCM_SEND_ERROR',
-                errorMessage: getFcmErrorMessage(error as any),
-              },
-            },
-            { new: true },
-          )
-          if (device?.user && updatedSms) {
-            await this.webhookService
-              .deliverNotification({
-                sms: updatedSms,
-                user: device.user as any,
-                event: WebhookEvent.MESSAGE_FAILED,
-              })
-              .catch((e) =>
-                this.logger.warn(
-                  `Webhook delivery failed for SMS ${updatedSms._id}`,
-                  e?.message,
-                ),
-              )
-          }
+          failedSmsIds.push(String(smsData.smsId))
         } catch (parseError) {
           this.logger.error(
             'Failed to mark SMS as failed after FCM error',
             parseError,
           )
+        }
+      }
+
+      if (failedSmsIds.length > 0) {
+        const failedAt = new Date()
+        await this.smsModel.updateMany(
+          { _id: { $in: failedSmsIds } as any },
+          {
+            $set: {
+              status: 'failed',
+              failedAt,
+              errorCode:
+                (error as any)?.code != null
+                  ? getFcmErrorCode(error as any)
+                  : 'FCM_SEND_ERROR',
+              errorMessage: getFcmErrorMessage(error as any),
+            },
+          },
+        )
+      }
+
+      if (device?.user && failedSmsIds.length > 0) {
+        const failedSmsDocuments = await this.smsModel.find({
+          _id: { $in: failedSmsIds },
+        })
+        for (const failedSms of failedSmsDocuments) {
+          await this.webhookService
+            .deliverNotification({
+              sms: failedSms,
+              user: device.user as any,
+              event: WebhookEvent.MESSAGE_FAILED,
+            })
+            .catch((e) =>
+              this.logger.warn(
+                `Webhook delivery failed for SMS ${failedSms._id}`,
+                e?.message,
+              ),
+            )
         }
       }
 
