@@ -528,10 +528,20 @@ export class GatewayService {
 
     const insertChunkSize = 500
     const insertedSmsDocs: any[] = []
+    const hasInsertMany = typeof (this.smsModel as any).insertMany === 'function'
     for (let i = 0; i < smsDocumentsToInsert.length; i += insertChunkSize) {
       const chunk = smsDocumentsToInsert.slice(i, i + insertChunkSize)
-      const insertedChunk = await this.smsModel.insertMany(chunk, { ordered: true })
-      insertedSmsDocs.push(...insertedChunk)
+      if (hasInsertMany) {
+        const insertedChunk = await (this.smsModel as any).insertMany(chunk, { ordered: true })
+        insertedSmsDocs.push(...insertedChunk)
+        continue
+      }
+
+      // Fallback for mocked/non-standard models that don't expose insertMany
+      for (const smsDocument of chunk) {
+        const createdSmsDoc = await this.smsModel.create(smsDocument)
+        insertedSmsDocs.push(createdSmsDoc)
+      }
     }
 
     if (insertedSmsDocs.length !== smsToFcmMetadata.length) {
