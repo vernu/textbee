@@ -512,6 +512,12 @@ export class BillingService {
     action: 'send_sms' | 'receive_sms' | 'bulk_send_sms',
     value: number,
   ) {
+    // Self-hosted mode: bypass all plan/billing limits entirely.
+    // Set SELF_HOSTED=true in your environment to enable this.
+    if (process.env.SELF_HOSTED === 'true') {
+      return true
+    }
+
     try {
       const user = await this.userModel.findById(userId)
       if (user.isBanned) {
