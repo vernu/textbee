@@ -1,3 +1,5 @@
+'use client'
+
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { ApiEndpoints } from '@/config/api'
@@ -19,6 +21,9 @@ const discountPercentage = (envDiscountPercentage !== undefined && envDiscountPe
   ? envDiscountPercentage
   : DISCOUNT_PERCENTAGE_FALLBACK
 const isDiscountEnabled = discountCode !== null && discountCode !== '' && discountPercentage !== null && discountPercentage !== ''
+
+// Self-hosted mode: hide all upgrade prompts when NEXT_PUBLIC_SELF_HOSTED=true
+const isSelfHosted = process.env.NEXT_PUBLIC_SELF_HOSTED === 'true'
 
 export default function UpgradeToProAlert() {
   const {
@@ -109,6 +114,9 @@ export default function UpgradeToProAlert() {
       }
     }
   }, [monthlyUsagePercentage, monthlyLimit, processedSmsLastMonth])
+
+  // Self-hosted mode: never show upgrade prompts
+  if (isSelfHosted) return null
 
   if (isLoadingSubscription || !currentSubscription || subscriptionError) {
     return null

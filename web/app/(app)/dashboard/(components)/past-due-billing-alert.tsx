@@ -9,6 +9,9 @@ import { useQuery } from '@tanstack/react-query'
 import { CreditCard, AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
 
+// Self-hosted mode: hide billing alerts when NEXT_PUBLIC_SELF_HOSTED=true
+const isSelfHosted = process.env.NEXT_PUBLIC_SELF_HOSTED === 'true'
+
 export default function PastDueBillingAlert() {
   const { data: currentSubscription, isLoading: subLoading } = useQuery({
     queryKey: ['currentSubscription'],
@@ -25,6 +28,9 @@ export default function PastDueBillingAlert() {
         .get(ApiEndpoints.auth.whoAmI())
         .then((res) => res.data?.data),
   })
+
+  // Self-hosted mode: no billing alerts ever
+  if (isSelfHosted) return null
 
   if (subLoading || userLoading || !currentSubscription || !currentUser) {
     return null

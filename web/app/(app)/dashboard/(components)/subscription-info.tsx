@@ -1,6 +1,6 @@
 'use client'
 
-import { Calendar, Check, Info } from 'lucide-react'
+import { Calendar, Check, Info, Server } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Spinner } from '@/components/ui/spinner'
 import { useQuery } from '@tanstack/react-query'
@@ -14,6 +14,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+
+// Self-hosted mode: show unlimited plan card when NEXT_PUBLIC_SELF_HOSTED=true
+const isSelfHosted = process.env.NEXT_PUBLIC_SELF_HOSTED === 'true'
 
 export default function SubscriptionInfo() {
   const {
@@ -71,6 +74,51 @@ export default function SubscriptionInfo() {
       </p>
     )
 
+  // Self-hosted mode: render a simplified unlimited plan card
+  if (isSelfHosted) {
+    return (
+      <div className='bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border rounded-lg shadow p-5'>
+        <div className='flex items-center justify-between mb-5'>
+          <div>
+            <h3 className='text-xl font-bold text-gray-900 dark:text-white'>
+              Self-Hosted
+            </h3>
+            <p className='text-sm text-gray-500 dark:text-gray-400'>
+              Self-hosted instance — no limits applied
+            </p>
+          </div>
+          <div className='flex items-center px-2 py-0.5 rounded-full bg-green-50 dark:bg-green-900/30'>
+            <Check className='h-3 w-3 mr-1 text-green-600 dark:text-green-400' />
+            <span className='text-xs font-medium text-green-600 dark:text-green-400'>
+              Active
+            </span>
+          </div>
+        </div>
+
+        <div className='bg-white dark:bg-gray-800 p-4 rounded-md shadow-sm mb-5'>
+          <p className='text-xs text-gray-500 dark:text-gray-400 mb-3 font-medium'>
+            Usage Limits
+          </p>
+          <div className='grid grid-cols-3 gap-3'>
+            {['Daily', 'Monthly', 'Bulk'].map((label) => (
+              <div key={label} className='bg-gray-50 dark:bg-gray-700/50 p-2 rounded-md'>
+                <p className='text-xs text-gray-500 dark:text-gray-400'>{label}</p>
+                <p className='text-sm font-medium text-gray-900 dark:text-white'>
+                  Unlimited
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className='flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400'>
+          <Server className='h-3.5 w-3.5 shrink-0' />
+          <span>Billing is disabled in self-hosted mode</span>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className='bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border rounded-lg shadow p-5'>
       <div className='flex items-center justify-between mb-5'>
@@ -90,6 +138,7 @@ export default function SubscriptionInfo() {
                 )}
                 {currentSubscription?.recurringInterval && (
                   <span className='ml-1'>
+                    {' '}
                     /{' '}
                     {getBillingInterval(currentSubscription?.recurringInterval)}
                   </span>
