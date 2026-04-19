@@ -6,7 +6,6 @@ public class AppConstants {
     public static final String API_BASE_URL = BuildConfig.API_BASE_URL;
     public static final String[] requiredPermissions = new String[]{
             Manifest.permission.SEND_SMS,
-            Manifest.permission.READ_SMS,
             Manifest.permission.RECEIVE_SMS,
             Manifest.permission.READ_PHONE_STATE
     };
