@@ -21,8 +21,7 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.SMSGateway"
-        android:usesCleartextTraffic="true" >
+        android:theme="@style/Theme.SMSGateway" >
 
         <provider
             android:name="androidx.startup.InitializationProvider"
