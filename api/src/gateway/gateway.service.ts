@@ -45,7 +45,8 @@ export class GatewayService {
   ): Promise<any> {
     const device = await this.deviceModel.findOne({
       user: user._id,
-      model: input.model,
+      // `model` collides with Mongoose Query.model in TS 9.6+; use $eq to disambiguate.
+      model: { $eq: input.model },
       buildId: input.buildId,
     })
 
