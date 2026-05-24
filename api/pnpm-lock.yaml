@@ -51,8 +51,8 @@ importers:
         specifier: ^6.5.0
         version: 6.5.0(@nestjs/common@11.1.9(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.9)(reflect-metadata@0.2.2)
       '@polar-sh/sdk':
-        specifier: ^0.41.5
-        version: 0.41.5
+        specifier: ^0.47.1
+        version: 0.47.1
       axios:
         specifier: ^1.13.2
         version: 1.13.2
