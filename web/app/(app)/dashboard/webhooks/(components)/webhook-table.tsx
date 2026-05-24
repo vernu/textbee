@@ -73,20 +73,41 @@ export const columns: ColumnDef<ProductColumns>[] = [
     ),
   },
 ]
-const formatDate = (dateString: string) => {
-  return format(new Date(dateString), 'MMM dd, yyyy h:mm a')
+const formatDate = (dateString?: string) => {
+  if (!dateString) return ''
+  const date = new Date(dateString)
+  if (Number.isNaN(date.getTime())) return ''
+  return format(date, 'MMM dd, yyyy h:mm a')
 }
+
+const buildDeviceLabel = (d: any): string | string[] => {
+  const device = d?.deviceData
+  const sms = d?.smsData
+  const brandModel = device
+    ? [device.brand, device.model].filter(Boolean).join('   ').trim()
+    : ''
+  const smsLine = sms?._id ? `  ${sms._id}` : ''
+
+  if (brandModel && smsLine) {
+    return [brandModel, smsLine]
+  }
+  if (brandModel) {
+    return brandModel
+  }
+  if (smsLine) {
+    return smsLine.trim()
+  }
+  return 'Unknown device'
+}
+
 const ProductClient = ({ data, isLoading, status = 'delivered' }) => {
   const { storeId } = useParams()
   const router = useRouter()
 
   const formatted = data.map((d) => ({
     ...d,
-    deviceName: [
-      `${d.deviceData.brand}   ${d.deviceData.model}`,
-      `  ${d.smsData._id}`,
-    ],
-    createdAt: formatDate(d.createdAt.toString()),
+    deviceName: buildDeviceLabel(d),
+    createdAt: formatDate(d?.createdAt?.toString?.()),
     status: d.computedStatus || status,
     payload: d.payload,
   }))
