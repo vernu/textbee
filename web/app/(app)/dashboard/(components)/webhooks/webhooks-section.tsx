@@ -14,36 +14,17 @@ import { ApiEndpoints } from '@/config/api'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useRouter } from 'next/navigation'
 
-function WebhookCardSkeleton() {
+function WebhookRowSkeleton() {
   return (
-    <div className='rounded-lg border p-6 space-y-4'>
-      <div className='flex items-center justify-between'>
-        <div className='space-y-2'>
-          <Skeleton className='h-5 w-[200px]' />
-          <Skeleton className='h-4 w-[150px]' />
-        </div>
-        <div className='flex space-x-2'>
-          <Skeleton className='h-9 w-9' />
-          <Skeleton className='h-9 w-16' />
-          <Skeleton className='h-9 w-9' />
-        </div>
-      </div>
-      <div className='space-y-4'>
-        <div>
-          <Skeleton className='h-4 w-[100px] mb-2' />
-          <Skeleton className='h-10 w-full' />
-        </div>
-        <div>
-          <Skeleton className='h-4 w-[100px] mb-2' />
-          <Skeleton className='h-10 w-full' />
-        </div>
-        <div>
-          <Skeleton className='h-4 w-[100px] mb-2' />
-          <div className='flex gap-2'>
-            <Skeleton className='h-6 w-20' />
-            <Skeleton className='h-6 w-20' />
-          </div>
-        </div>
+    <div className='flex items-center gap-3 px-3 py-2.5'>
+      <Skeleton className='h-4 w-4 rounded-sm' />
+      <Skeleton className='h-4 w-32' />
+      <Skeleton className='h-5 w-14 rounded-full' />
+      <Skeleton className='hidden md:block h-4 w-48' />
+      <div className='ml-auto flex items-center gap-1.5'>
+        <Skeleton className='h-5 w-9 rounded-full' />
+        <Skeleton className='h-8 w-8 rounded-md' />
+        <Skeleton className='h-8 w-8 rounded-md' />
       </div>
     </div>
   )
@@ -85,14 +66,19 @@ export default function WebhooksSection() {
   const reachedLimit = webhookCount >= MAX_WEBHOOKS_PER_USER
 
   return (
-    <div className='container mx-auto py-4 sm:py-8 px-4 sm:px-6'>
-      <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8'>
+    <div className='container mx-auto py-4 sm:py-6 px-4 sm:px-6'>
+      <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 sm:mb-6'>
         <div>
           <h1 className='text-xl sm:text-2xl font-bold flex flex-wrap items-center gap-2'>
             <Webhook className='h-5 w-5 sm:h-6 sm:w-6' />
             Webhooks
+            {!isLoading && webhookCount > 0 && (
+              <span className='text-sm font-normal text-muted-foreground'>
+                ({webhookCount}/{MAX_WEBHOOKS_PER_USER})
+              </span>
+            )}
           </h1>
-          <p className='text-sm text-muted-foreground mt-2'>
+          <p className='text-sm text-muted-foreground mt-1.5'>
             Manage webhook notifications for your SMS events. You can configure
             up to {MAX_WEBHOOKS_PER_USER} webhooks.
           </p>
@@ -126,21 +112,25 @@ export default function WebhooksSection() {
       <div className='grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8'>
         <div className='space-y-4'>
           {isLoading ? (
-            <div className='grid gap-4'>
-              <WebhookCardSkeleton />
-              <WebhookCardSkeleton />
+            <div className='rounded-md border divide-y'>
+              <WebhookRowSkeleton />
+              <WebhookRowSkeleton />
+              <WebhookRowSkeleton />
+              <WebhookRowSkeleton />
+              <WebhookRowSkeleton />
             </div>
           ) : error ? (
             <div className='rounded-lg border border-destructive/50 p-4 text-destructive'>
               Error: {error.message}
             </div>
           ) : webhooks?.data?.length > 0 ? (
-            <div className='grid gap-4'>
+            <div className='rounded-md border divide-y bg-card overflow-hidden'>
               {webhooks.data.map((webhook) => (
                 <WebhookCard
                   key={webhook._id}
                   webhook={webhook}
                   onEdit={() => handleEditClick(webhook)}
+                  defaultOpen={webhooks.data.length === 1}
                 />
               ))}
             </div>
