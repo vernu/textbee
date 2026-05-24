@@ -12,13 +12,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import httpBrowserClient from '@/lib/httpBrowserClient'
 import { ApiEndpoints } from '@/config/api'
 import { Skeleton } from '@/components/ui/skeleton'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
 function WebhookCardSkeleton() {
@@ -56,6 +49,8 @@ function WebhookCardSkeleton() {
   )
 }
 
+const MAX_WEBHOOKS_PER_USER = 5
+
 export default function WebhooksSection() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
@@ -86,6 +81,9 @@ export default function WebhooksSection() {
     setEditDialogOpen(true)
   }
 
+  const webhookCount = webhooks?.data?.length ?? 0
+  const reachedLimit = webhookCount >= MAX_WEBHOOKS_PER_USER
+
   return (
     <div className='container mx-auto py-4 sm:py-8 px-4 sm:px-6'>
       <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8'>
@@ -95,35 +93,25 @@ export default function WebhooksSection() {
             Webhooks
           </h1>
           <p className='text-sm text-muted-foreground mt-2'>
-            Manage webhook notifications for your SMS events
+            Manage webhook notifications for your SMS events. You can configure
+            up to {MAX_WEBHOOKS_PER_USER} webhooks.
           </p>
         </div>
         <div className='flex gap-x-4'>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div>
-                  <Button
-                    onClick={handleCreateClick}
-                    disabled={webhooks?.data?.length > 0 || isLoading}
-                    variant='default'
-                    className='w-full sm:w-auto'
-                  >
-                    <PlusCircle className='mr-2 h-4 w-4' />
-                    Create Webhook
-                  </Button>
-                </div>
-              </TooltipTrigger>
-              {webhooks?.data?.length > 0 && (
-                <TooltipContent>
-                  <p>
-                    You already have an active webhook subscription. You can
-                    edit or manage the existing webhook instead.
-                  </p>
-                </TooltipContent>
-              )}
-            </Tooltip>
-          </TooltipProvider>
+          <Button
+            onClick={handleCreateClick}
+            disabled={reachedLimit || isLoading}
+            variant='default'
+            className='w-full sm:w-auto'
+            title={
+              reachedLimit
+                ? `You have reached the maximum of ${MAX_WEBHOOKS_PER_USER} webhooks. Delete one to add a new one.`
+                : undefined
+            }
+          >
+            <PlusCircle className='mr-2 h-4 w-4' />
+            Create Webhook
+          </Button>
           <Button
             onClick={() => navigator.push('/dashboard/webhooks')}
             variant='default'
@@ -159,11 +147,12 @@ export default function WebhooksSection() {
           ) : (
             <div className='bg-muted/50 rounded-lg p-8 text-center'>
               <h3 className='text-lg font-medium mb-2'>
-                No webhook configured
+                No webhooks configured
               </h3>
               <p className='text-muted-foreground mb-4'>
-                Create a webhook to receive real-time notifications for SMS
-                events
+                Add a webhook endpoint to receive real-time notifications for
+                SMS events. You can add multiple endpoints for different
+                services.
               </p>
               <Button onClick={handleCreateClick} variant='default'>
                 <PlusCircle className='mr-2 h-4 w-4' />

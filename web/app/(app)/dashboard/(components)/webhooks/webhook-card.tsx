@@ -17,10 +17,10 @@ import { useQueryClient } from '@tanstack/react-query'
 interface WebhookCardProps {
   webhook: WebhookData
   onEdit: () => void
-  onDelete?: () => void
+  onDeleted?: () => void
 }
 
-export function WebhookCard({ webhook, onEdit, onDelete }: WebhookCardProps) {
+export function WebhookCard({ webhook, onEdit, onDeleted }: WebhookCardProps) {
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
   const queryClient = useQueryClient()
@@ -68,7 +68,9 @@ export function WebhookCard({ webhook, onEdit, onDelete }: WebhookCardProps) {
       <CardHeader className='flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4'>
         <div className='space-y-1'>
           <div className='flex flex-wrap items-center gap-2'>
-            <h3 className='text-base font-semibold'>Webhook Endpoint</h3>
+            <h3 className='text-base font-semibold'>
+              {webhook.name?.trim() ? webhook.name : 'Webhook Endpoint'}
+            </h3>
             <Badge variant={webhook.isActive ? 'default' : 'secondary'}>
               {webhook.isActive ? 'Active' : 'Inactive'}
             </Badge>
@@ -78,8 +80,8 @@ export function WebhookCard({ webhook, onEdit, onDelete }: WebhookCardProps) {
           </p>
         </div>
         <div className='flex flex-wrap items-center gap-2'>
-          <Switch 
-            checked={webhook.isActive} 
+          <Switch
+            checked={webhook.isActive}
             onCheckedChange={handleToggle}
             disabled={isLoading}
           />
@@ -87,7 +89,11 @@ export function WebhookCard({ webhook, onEdit, onDelete }: WebhookCardProps) {
             <Edit2 className='h-4 w-4 sm:mr-2' />
             <span className='hidden sm:inline'>Edit</span>
           </Button>
-          <DeleteWebhookButton onDelete={onDelete} />
+          <DeleteWebhookButton
+            webhookId={webhook._id ?? ''}
+            webhookLabel={webhook.name?.trim() || webhook.deliveryUrl}
+            onDeleted={onDeleted}
+          />
         </div>
       </CardHeader>
       <CardContent>

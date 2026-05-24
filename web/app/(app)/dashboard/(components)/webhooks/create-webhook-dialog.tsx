@@ -42,6 +42,10 @@ import { useToast } from '@/hooks/use-toast'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 const formSchema = z.object({
+  name: z
+    .string()
+    .max(64, { message: 'Name must be 64 characters or fewer' })
+    .optional(),
   deliveryUrl: z.string().url({ message: 'Please enter a valid URL' }),
   events: z.array(z.string()).min(1, { message: 'Select at least one event' }),
   isActive: z.boolean().default(true),
@@ -63,6 +67,7 @@ export function CreateWebhookDialog({
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      name: '',
       deliveryUrl: '',
       events: [WEBHOOK_EVENTS.MESSAGE_RECEIVED],
       isActive: true,
@@ -71,8 +76,16 @@ export function CreateWebhookDialog({
   })
 
   const createWebhookMutation = useMutation({
-    mutationFn: (values: z.infer<typeof formSchema>) =>
-      httpBrowserClient.post(ApiEndpoints.gateway.createWebhook(), values),
+    mutationFn: (values: z.infer<typeof formSchema>) => {
+      const payload = {
+        ...values,
+        name: values.name?.trim() ? values.name.trim() : undefined,
+      }
+      return httpBrowserClient.post(
+        ApiEndpoints.gateway.createWebhook(),
+        payload,
+      )
+    },
     onSuccess: () => {
       toast({
         title: 'Success',
@@ -82,10 +95,11 @@ export function CreateWebhookDialog({
       onOpenChange(false)
       form.reset()
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: 'Error',
-        description: 'Failed to create webhook',
+        description:
+          error?.response?.data?.message || 'Failed to create webhook',
         variant: 'destructive',
       })
     },
@@ -118,6 +132,26 @@ export function CreateWebhookDialog({
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
+            <FormField
+              control={form.control}
+              name='name'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name (optional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder='e.g. Production CRM'
+                      {...field}
+                      value={field.value ?? ''}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    A short label to help you tell your webhooks apart
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name='deliveryUrl'

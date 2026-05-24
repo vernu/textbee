@@ -36,6 +36,7 @@ export const ApiEndpoints = {
     getWebhookNotifications: () => '/webhooks/notifications',
     createWebhook: () => '/webhooks',
     updateWebhook: (id: string) => `/webhooks/${id}`,
+    deleteWebhook: (id: string) => `/webhooks/${id}`,
     getStats: () => '/gateway/stats',
   },
   billing: {
