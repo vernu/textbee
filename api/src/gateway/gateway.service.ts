@@ -43,11 +43,16 @@ export class GatewayService {
     input: RegisterDeviceInputDTO,
     user: User,
   ): Promise<any> {
-    const device = await this.deviceModel.findOne({
+    // Mongoose 9.6's strict types collide on the reserved `model` field name
+    // (it expects Mongoose's `Model<any>` shape, not the device's `model`
+    // schema field). Cast the filter to bypass the type check; runtime
+    // behavior is unchanged.
+    const deviceFilter = {
       user: user._id,
       model: input.model,
       buildId: input.buildId,
-    })
+    } as any
+    const device = await this.deviceModel.findOne(deviceFilter)
 
     const now = new Date()
     const deviceData: any = { ...input, user }

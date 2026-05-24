@@ -1,10 +1,9 @@
 'use client'
 
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { DeleteWebhookButton } from './delete-webhook-button'
-import { Edit2, Eye, EyeOff } from 'lucide-react'
+import { ChevronDown, Edit2, Eye, EyeOff } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
 import { useState } from 'react'
 import { useToast } from '@/hooks/use-toast'
@@ -13,29 +12,42 @@ import { WebhookData } from '@/lib/types'
 import httpBrowserClient from '@/lib/httpBrowserClient'
 import { ApiEndpoints } from '@/config/api'
 import { useQueryClient } from '@tanstack/react-query'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
+import { cn } from '@/lib/utils'
 
 interface WebhookCardProps {
   webhook: WebhookData
   onEdit: () => void
-  onDelete?: () => void
+  onDeleted?: () => void
+  defaultOpen?: boolean
 }
 
-export function WebhookCard({ webhook, onEdit, onDelete }: WebhookCardProps) {
+export function WebhookCard({
+  webhook,
+  onEdit,
+  onDeleted,
+  defaultOpen = false,
+}: WebhookCardProps) {
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
   const queryClient = useQueryClient()
   const [showSecret, setShowSecret] = useState(false)
+  const [open, setOpen] = useState(defaultOpen)
 
   const handleToggle = async (checked: boolean) => {
     setIsLoading(true)
     try {
       await httpBrowserClient.patch(
         ApiEndpoints.gateway.updateWebhook(webhook._id),
-        { isActive: checked }
+        { isActive: checked },
       )
-      
+
       await queryClient.invalidateQueries({
-        queryKey: ['webhooks']
+        queryKey: ['webhooks'],
       })
 
       toast({
@@ -56,86 +68,146 @@ export function WebhookCard({ webhook, onEdit, onDelete }: WebhookCardProps) {
   }
 
   const maskSecret = (secret: string) => {
-    // if the secret is less than 18 characters, show all
+    if (!secret) return ''
     if (secret.length <= 18) {
       return secret.slice(0, 18)
     }
-    return secret.slice(0, 18) + '*'.repeat(secret.length - 24)
+    return secret.slice(0, 18) + '*'.repeat(Math.max(6, secret.length - 24))
   }
 
+  const title = webhook.name?.trim() || 'Webhook Endpoint'
+  const eventCount = webhook.events?.length ?? 0
+
+  // Stop the trigger from toggling when interacting with inline actions.
+  const stop = (e: React.SyntheticEvent) => e.stopPropagation()
+
   return (
-    <Card>
-      <CardHeader className='flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4'>
-        <div className='space-y-1'>
-          <div className='flex flex-wrap items-center gap-2'>
-            <h3 className='text-base font-semibold'>Webhook Endpoint</h3>
-            <Badge variant={webhook.isActive ? 'default' : 'secondary'}>
+    <Collapsible open={open} onOpenChange={setOpen} className='group'>
+      <CollapsibleTrigger asChild>
+        <div
+          className={cn(
+            'flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-muted/40 transition-colors',
+            'select-none',
+          )}
+          role='button'
+          aria-expanded={open}
+        >
+          <ChevronDown
+            className={cn(
+              'h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200',
+              open && 'rotate-180',
+            )}
+          />
+
+          <div className='flex min-w-0 flex-1 items-center gap-2'>
+            <span
+              className={cn(
+                'truncate text-sm font-medium',
+                !webhook.isActive && 'text-muted-foreground',
+              )}
+              title={title}
+            >
+              {title}
+            </span>
+            <Badge
+              variant={webhook.isActive ? 'default' : 'secondary'}
+              className='h-5 shrink-0 px-1.5 text-[10px] uppercase tracking-wide'
+            >
               {webhook.isActive ? 'Active' : 'Inactive'}
             </Badge>
+            <span
+              className='hidden md:inline truncate text-xs font-mono text-muted-foreground'
+              title={webhook.deliveryUrl}
+            >
+              {webhook.deliveryUrl}
+            </span>
+            <span className='ml-auto hidden sm:inline shrink-0 text-xs text-muted-foreground whitespace-nowrap'>
+              {eventCount} {eventCount === 1 ? 'event' : 'events'}
+            </span>
           </div>
-          <p className='text-sm text-muted-foreground'>
-            Notifications for SMS events
-          </p>
+
+          <div
+            className='flex shrink-0 items-center gap-1.5'
+            onClick={stop}
+            onPointerDown={stop}
+            onKeyDown={stop}
+          >
+            <Switch
+              checked={webhook.isActive}
+              onCheckedChange={handleToggle}
+              disabled={isLoading}
+              aria-label={webhook.isActive ? 'Disable webhook' : 'Enable webhook'}
+            />
+            <Button
+              variant='ghost'
+              size='icon'
+              className='h-8 w-8'
+              onClick={(e) => {
+                e.stopPropagation()
+                onEdit()
+              }}
+              aria-label='Edit webhook'
+            >
+              <Edit2 className='h-4 w-4' />
+            </Button>
+            <DeleteWebhookButton
+              webhookId={webhook._id ?? ''}
+              webhookLabel={webhook.name?.trim() || webhook.deliveryUrl}
+              onDeleted={onDeleted}
+            />
+          </div>
         </div>
-        <div className='flex flex-wrap items-center gap-2'>
-          <Switch 
-            checked={webhook.isActive} 
-            onCheckedChange={handleToggle}
-            disabled={isLoading}
-          />
-          <Button variant='outline' size='sm' onClick={onEdit}>
-            <Edit2 className='h-4 w-4 sm:mr-2' />
-            <span className='hidden sm:inline'>Edit</span>
-          </Button>
-          <DeleteWebhookButton onDelete={onDelete} />
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className='space-y-4'>
-          <div>
-            <label className='text-sm font-medium'>Delivery URL</label>
-            <div className='flex items-center gap-1 mt-1'>
-              <code className='flex-1 bg-muted px-3 py-2 rounded-md text-sm break-all'>
+      </CollapsibleTrigger>
+
+      <CollapsibleContent>
+        <div className='border-t bg-muted/20 px-3 py-3'>
+          <dl className='grid gap-x-4 gap-y-3 text-sm sm:grid-cols-[120px_minmax(0,1fr)]'>
+            <dt className='pt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground'>
+              Delivery URL
+            </dt>
+            <dd className='flex items-center gap-1 min-w-0'>
+              <code className='flex-1 min-w-0 truncate rounded-md bg-background px-2 py-1.5 font-mono text-xs'>
                 {webhook.deliveryUrl}
               </code>
-              <CopyButton value={webhook.deliveryUrl} label='Copy URL' className="ml-1" />
-            </div>
-          </div>
-          <div>
-            <label className='text-sm font-medium'>Signing Secret</label>
-            <div className='flex items-center gap-1 mt-1'>
-              <code className='flex-1 bg-muted px-3 py-2 rounded-md text-sm font-mono break-all'>
+              <CopyButton value={webhook.deliveryUrl} label='Copy URL' />
+            </dd>
+
+            <dt className='pt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground'>
+              Signing Secret
+            </dt>
+            <dd className='flex items-center gap-1 min-w-0'>
+              <code className='flex-1 min-w-0 truncate rounded-md bg-background px-2 py-1.5 font-mono text-xs'>
                 {showSecret ? webhook.signingSecret : maskSecret(webhook.signingSecret)}
               </code>
-              <div className='flex items-center gap-1 shrink-0 ml-1'>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setShowSecret(!showSecret)}
-                  className="h-8 w-8"
-                >
-                  {showSecret ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </Button>
-                <CopyButton value={webhook.signingSecret} label='Copy Secret' />
-              </div>
-            </div>
-          </div>
-          <div>
-            <label className='text-sm font-medium'>Events</label>
-            <div className='flex flex-wrap gap-2 mt-1'>
+              <Button
+                variant='ghost'
+                size='icon'
+                className='h-8 w-8 shrink-0'
+                onClick={() => setShowSecret((v) => !v)}
+                aria-label={showSecret ? 'Hide signing secret' : 'Show signing secret'}
+              >
+                {showSecret ? (
+                  <EyeOff className='h-4 w-4' />
+                ) : (
+                  <Eye className='h-4 w-4' />
+                )}
+              </Button>
+              <CopyButton value={webhook.signingSecret} label='Copy Secret' />
+            </dd>
+
+            <dt className='pt-1 text-xs font-medium uppercase tracking-wide text-muted-foreground'>
+              Events
+            </dt>
+            <dd className='flex flex-wrap gap-1.5'>
               {webhook.events.map((event) => (
-                <Badge key={event} variant='secondary'>
+                <Badge key={event} variant='secondary' className='font-mono text-[10px]'>
                   {event}
                 </Badge>
               ))}
-            </div>
-          </div>
+            </dd>
+          </dl>
         </div>
-      </CardContent>
-    </Card>
+      </CollapsibleContent>
+    </Collapsible>
   )
 }

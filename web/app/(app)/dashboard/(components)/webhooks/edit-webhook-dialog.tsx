@@ -43,6 +43,10 @@ import {
 } from '@/components/ui/dropdown-menu'
 
 const formSchema = z.object({
+  name: z
+    .string()
+    .max(64, { message: 'Name must be 64 characters or fewer' })
+    .optional(),
   deliveryUrl: z.string().url({ message: 'Please enter a valid URL' }),
   events: z.array(z.string()).min(1, { message: 'Select at least one event' }),
   isActive: z.boolean().default(true),
@@ -66,6 +70,7 @@ export function EditWebhookDialog({
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     values: {
+      name: webhook.name ?? '',
       deliveryUrl: webhook.deliveryUrl,
       events: webhook.events,
       isActive: webhook.isActive,
@@ -75,9 +80,13 @@ export function EditWebhookDialog({
 
   const { mutate: updateWebhook, isPending } = useMutation({
     mutationFn: async (values: z.infer<typeof formSchema>) => {
+      const payload = {
+        ...values,
+        name: values.name?.trim() ? values.name.trim() : '',
+      }
       return httpBrowserClient.patch(
         ApiEndpoints.gateway.updateWebhook(webhook._id),
-        values
+        payload,
       )
     },
     onSuccess: () => {
@@ -89,10 +98,11 @@ export function EditWebhookDialog({
       queryClient.invalidateQueries({ queryKey: ['webhooks'] })
       onOpenChange(false)
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: 'Error',
-        description: 'Failed to update webhook',
+        description:
+          error?.response?.data?.message || 'Failed to update webhook',
         variant: 'destructive',
       })
     },
@@ -124,6 +134,26 @@ export function EditWebhookDialog({
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
+            <FormField
+              control={form.control}
+              name='name'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name (optional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder='e.g. Production CRM'
+                      {...field}
+                      value={field.value ?? ''}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    A short label to help you tell your webhooks apart
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name='deliveryUrl'

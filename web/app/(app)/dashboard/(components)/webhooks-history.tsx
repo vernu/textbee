@@ -21,6 +21,7 @@ import {
   Ellipsis,
   MessageSquare,
   Smartphone,
+  Webhook,
 } from 'lucide-react'
 import React, { useEffect, useRef, useState } from 'react'
 import ProductClient from '../webhooks/(components)/webhook-table'
@@ -54,7 +55,16 @@ const WebhooksHistory = () => {
         .then((res) => res.data),
   })
 
+  const { data: webhooks, isLoading: isLoadingWebhooks } = useQuery({
+    queryKey: ['webhooks'],
+    queryFn: () =>
+      httpBrowserClient
+        .get(ApiEndpoints.gateway.getWebhooks())
+        .then((res) => res.data),
+  })
+
   const [currentDevice, setCurrentDevice] = useState('all')
+  const [currentWebhook, setCurrentWebhook] = useState('all')
   const [eventType, setEventType] = useState('all')
   const [status, setStatus] = useState('all')
   const [dateRange, setDateRange] = useState<any>('90')
@@ -84,6 +94,7 @@ const WebhooksHistory = () => {
       page,
       limit,
       currentDevice,
+      currentWebhook,
       status,
     ],
     enabled: true,
@@ -94,6 +105,8 @@ const WebhooksHistory = () => {
             dateQuery.start
           }&end=${dateQuery.end}&deviceId=${
             currentDevice === 'all' ? '' : currentDevice
+          }&webhookSubscriptionId=${
+            currentWebhook === 'all' ? '' : currentWebhook
           }`
         )
         .then((res) => res.data),
@@ -151,6 +164,11 @@ const WebhooksHistory = () => {
     setPage(1)
   }
 
+  const handleWebhookChange = (webhookId: string) => {
+    setCurrentWebhook(webhookId)
+    setPage(1)
+  }
+
   const message_events = [
     'MESSAGE_RECEIVED',
     'MESSAGE_SENT',
@@ -188,6 +206,43 @@ const WebhooksHistory = () => {
                             className="ml-1 text-xs py-0 h-5"
                           >
                             Disabled
+                          </Badge>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="w-full sm:w-56">
+              <div className="flex items-center gap-2 mb-1.5">
+                <Webhook className="h-3.5 w-3.5 text-brand-500" />
+                <h3 className="text-sm font-medium text-foreground">Webhook</h3>
+              </div>
+              <Select
+                value={currentWebhook}
+                onValueChange={handleWebhookChange}
+              >
+                <SelectTrigger className="w-full bg-white/80 dark:bg-black/20 h-9 text-sm border-brand-200 dark:border-brand-800/70">
+                  <SelectValue placeholder="Select a webhook" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem key="all" value="all">
+                    All webhooks
+                  </SelectItem>
+                  {webhooks?.data?.map((webhook: any) => (
+                    <SelectItem key={webhook._id} value={webhook._id}>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium truncate max-w-[180px]">
+                          {webhook.name?.trim() || webhook.deliveryUrl}
+                        </span>
+                        {!webhook.isActive && (
+                          <Badge
+                            variant="outline"
+                            className="ml-1 text-xs py-0 h-5"
+                          >
+                            Inactive
                           </Badge>
                         )}
                       </div>

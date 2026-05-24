@@ -1,5 +1,6 @@
 export interface WebhookData {
   _id?: string
+  name?: string
   deliveryUrl: string
   events: string[]
   isActive: boolean
