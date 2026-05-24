@@ -36,6 +36,7 @@ export class WebhookService {
     const webhook = await this.webhookSubscriptionModel.findOne({
       _id: webhookId,
       user: user._id,
+      deletedAt: null,
     })
 
     if (!webhook) {
@@ -45,7 +46,10 @@ export class WebhookService {
   }
 
   async findWebhooksForUser({ user }) {
-    return await this.webhookSubscriptionModel.find({ user: user._id })
+    return await this.webhookSubscriptionModel.find({
+      user: user._id,
+      deletedAt: null,
+    })
   }
   async findWebhookNotificationsForUser({
     user,
@@ -56,26 +60,63 @@ export class WebhookService {
     start,
     end,
     deviceId,
+    webhookSubscriptionId,
+  }: {
+    user: any
+    page?: number | string
+    limit?: number | string
+    eventType?: string
+    status?: string
+    start?: Date | string
+    end?: Date | string
+    deviceId?: string
+    webhookSubscriptionId?: string
   }): Promise<{ data: any[]; meta: any }> {
-    const userWebhookSubscription = await this.webhookSubscriptionModel.findOne(
-      {
-        user: user._id,
-      },
+    // History is shown for every webhook subscription the user owns, including
+    // soft-deleted ones, so the historical record is preserved even after the
+    // user removes a webhook.
+    const userSubscriptionIds = await this.webhookSubscriptionModel.distinct(
+      '_id',
+      { user: user._id },
     )
 
-    if (!userWebhookSubscription) {
+    if (userSubscriptionIds.length === 0) {
+      const limitNum = Math.max(1, Number.parseInt(limit?.toString() ?? '10') || 10)
       return {
         data: [],
         meta: {
           page: 1,
-          limit,
+          limit: limitNum,
           total: 0,
           totalPages: 0,
         },
       }
     }
 
-    const matchStage: any = { webhookSubscription: userWebhookSubscription._id }
+    let allowedSubscriptionIds = userSubscriptionIds
+    if (webhookSubscriptionId) {
+      if (!mongoose.Types.ObjectId.isValid(webhookSubscriptionId)) {
+        throw new HttpException(
+          'Invalid webhookSubscriptionId',
+          HttpStatus.BAD_REQUEST,
+        )
+      }
+      const requested = new mongoose.Types.ObjectId(webhookSubscriptionId)
+      const owns = userSubscriptionIds.some((id: any) =>
+        id.equals ? id.equals(requested) : id.toString() === requested.toString(),
+      )
+      if (!owns) {
+        throw new HttpException(
+          'Subscription not found',
+          HttpStatus.NOT_FOUND,
+        )
+      }
+      allowedSubscriptionIds = [requested] as any
+    }
+
+    const matchStage: any = {
+      webhookSubscription: { $in: allowedSubscriptionIds },
+    }
 
     if (eventType) {
       matchStage.event = eventType
@@ -223,28 +264,18 @@ export class WebhookService {
     }
   }
   async create({ user, createWebhookDto }) {
-    const { events, deliveryUrl, signingSecret } = createWebhookDto
+    const { name, events, deliveryUrl, signingSecret } = createWebhookDto
 
-    // Add URL validation
-    try {
-      new URL(deliveryUrl)
-    } catch (e) {
-      throw new HttpException('Invalid delivery URL', HttpStatus.BAD_REQUEST)
-    }
+    this.validateDeliveryUrl(deliveryUrl)
 
     // validate signing secret
-    if (signingSecret.length < 20) {
+    if (!signingSecret || signingSecret.length < 20) {
       throw new HttpException('Invalid signing secret', HttpStatus.BAD_REQUEST)
     }
 
-    const existingSubscription = await this.webhookSubscriptionModel.findOne({
-      user: user._id,
-      events,
-    })
-
-    if (existingSubscription) {
+    if (!Array.isArray(events) || events.length === 0) {
       throw new HttpException(
-        'You have already subscribed to this event',
+        'Choose atleast one event to receive',
         HttpStatus.BAD_REQUEST,
       )
     }
@@ -253,12 +284,25 @@ export class WebhookService {
       throw new HttpException('Invalid event type', HttpStatus.BAD_REQUEST)
     }
 
+    const maxPerUser = this.getMaxWebhooksPerUser()
+    const existingCount = await this.webhookSubscriptionModel.countDocuments({
+      user: user._id,
+      deletedAt: null,
+    })
+    if (existingCount >= maxPerUser) {
+      throw new HttpException(
+        `You can create at most ${maxPerUser} webhook subscriptions`,
+        HttpStatus.BAD_REQUEST,
+      )
+    }
+
     // TODO: Encrypt signing secret
     // const webhookSignatureKey = process.env.WEBHOOK_SIGNATURE_KEY
     // const encryptedSigningSecret = encrypt(signingSecret, webhookSignatureKey)
 
     const webhookSubscription = await this.webhookSubscriptionModel.create({
       user: user._id,
+      name: this.normalizeName(name),
       events,
       deliveryUrl,
       signingSecret,
@@ -271,6 +315,7 @@ export class WebhookService {
     const webhookSubscription = await this.webhookSubscriptionModel.findOne({
       _id: webhookId,
       user: user._id,
+      deletedAt: null,
     })
 
     if (!webhookSubscription) {
@@ -281,7 +326,12 @@ export class WebhookService {
       webhookSubscription.isActive = updateWebhookDto.isActive
     }
 
+    if (updateWebhookDto.hasOwnProperty('name')) {
+      webhookSubscription.name = this.normalizeName(updateWebhookDto.name)
+    }
+
     if (updateWebhookDto.hasOwnProperty('deliveryUrl')) {
+      this.validateDeliveryUrl(updateWebhookDto.deliveryUrl)
       webhookSubscription.deliveryUrl = updateWebhookDto.deliveryUrl
     }
 
@@ -304,6 +354,13 @@ export class WebhookService {
         HttpStatus.BAD_REQUEST,
       )
     } else if (updateWebhookDto.hasOwnProperty('events')) {
+      if (
+        !updateWebhookDto.events.every((event: string) =>
+          Object.values(WebhookEvent).includes(event as WebhookEvent),
+        )
+      ) {
+        throw new HttpException('Invalid event type', HttpStatus.BAD_REQUEST)
+      }
       webhookSubscription.events = updateWebhookDto.events
     }
     await webhookSubscription.save()
@@ -311,31 +368,160 @@ export class WebhookService {
     return webhookSubscription
   }
 
-  async deliverNotification({ sms, user, event }) {
-    const webhookSubscription = await this.webhookSubscriptionModel.findOne({
-      user: user._id,
-      events: { $in: [event] },
-      isActive: true,
-    })
+  async remove({ user, webhookId }) {
+    const result = await this.webhookSubscriptionModel.updateOne(
+      {
+        _id: webhookId,
+        user: user._id,
+        deletedAt: null,
+      },
+      {
+        $set: { deletedAt: new Date(), isActive: false },
+      },
+    )
 
-    if (!webhookSubscription) {
-      return
+    if (result.matchedCount === 0) {
+      throw new HttpException('Subscription not found', HttpStatus.NOT_FOUND)
     }
+
+    return { success: true }
+  }
+
+  private normalizeName(name?: string): string | undefined {
+    if (typeof name !== 'string') return undefined
+    const trimmed = name.trim()
+    if (!trimmed) return undefined
+    return trimmed.slice(0, 64)
+  }
+
+  private getMaxWebhooksPerUser(): number {
+    const raw = parseInt(process.env.MAX_WEBHOOKS_PER_USER ?? '5', 10)
+    if (Number.isNaN(raw) || raw < 1) return 5
+    // Hard upper bound to keep fan-out cost predictable.
+    return Math.min(raw, 25)
+  }
+
+  private validateDeliveryUrl(deliveryUrl: string): void {
+    let parsed: URL
+    try {
+      parsed = new URL(deliveryUrl)
+    } catch (e) {
+      throw new HttpException('Invalid delivery URL', HttpStatus.BAD_REQUEST)
+    }
+
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      throw new HttpException(
+        'Delivery URL must use http or https',
+        HttpStatus.BAD_REQUEST,
+      )
+    }
+
+    if (this.isPrivateOrLoopbackHost(parsed.hostname)) {
+      throw new HttpException(
+        'Delivery URL host is not allowed',
+        HttpStatus.BAD_REQUEST,
+      )
+    }
+  }
+
+  // Defense-in-depth SSRF check based on hostname/IP literal. Does not perform
+  // DNS resolution; the deny-list also catches the metadata IP commonly used
+  // in cloud SSRF attacks.
+  private isPrivateOrLoopbackHost(rawHost: string): boolean {
+    if (!rawHost) return true
+    const host = rawHost.toLowerCase().replace(/^\[/, '').replace(/\]$/, '')
+
+    // Allow the bypass to be opted out for local development / self-hosting.
+    if (process.env.WEBHOOK_ALLOW_PRIVATE_HOSTS === 'true') {
+      return false
+    }
+
+    if (host === 'localhost' || host.endsWith('.localhost')) return true
+    if (host === 'broadcasthost') return true
+
+    // IPv4 literal
+    const ipv4Match = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/)
+    if (ipv4Match) {
+      const octets = ipv4Match.slice(1).map((o) => parseInt(o, 10))
+      if (octets.some((o) => o < 0 || o > 255)) return true
+      const [a, b] = octets
+      if (a === 0) return true
+      if (a === 10) return true
+      if (a === 127) return true
+      if (a === 169 && b === 254) return true
+      if (a === 172 && b >= 16 && b <= 31) return true
+      if (a === 192 && b === 168) return true
+      // Carrier-grade NAT
+      if (a === 100 && b >= 64 && b <= 127) return true
+      // Multicast and reserved
+      if (a >= 224) return true
+      return false
+    }
+
+    // IPv6 literal (very loose check; only block obvious local ranges)
+    if (host.includes(':')) {
+      if (host === '::1' || host === '::') return true
+      if (host.startsWith('fe80:') || host.startsWith('fe80::')) return true
+      if (host.startsWith('fc') || host.startsWith('fd')) return true
+      // IPv4-mapped IPv6 loopback
+      if (host.includes('::ffff:127.') || host.includes('::ffff:0:127.'))
+        return true
+    }
+
+    return false
+  }
+
+  async deliverNotification({ sms, user, event }) {
     if (!Object.values(WebhookEvent).includes(event)) {
       throw new HttpException('Invalid event type', HttpStatus.BAD_REQUEST)
     }
 
-    // Generate idempotency key
-    const idempotencyKey = uuidv4()
+    const webhookSubscriptions = await this.webhookSubscriptionModel.find({
+      user: user._id,
+      events: { $in: [event] },
+      isActive: true,
+      deletedAt: null,
+    })
 
-    // Store delivery URL snapshot for debugging
-    const deliveryUrlSnapshot = webhookSubscription.deliveryUrl
+    if (webhookSubscriptions.length === 0) {
+      return
+    }
+
+    // Fan out: one notification + one queue job per matching subscription.
+    // Use allSettled so a single failed enqueue does not block the others.
+    const results = await Promise.allSettled(
+      webhookSubscriptions.map((subscription) =>
+        this.createAndEnqueueNotification({ subscription, sms, event }),
+      ),
+    )
+
+    for (const result of results) {
+      if (result.status === 'rejected') {
+        console.log(
+          `Failed to fan-out webhook notification for user ${user._id}, event ${event}:`,
+          result.reason,
+        )
+      }
+    }
+  }
+
+  private async createAndEnqueueNotification({
+    subscription,
+    sms,
+    event,
+  }: {
+    subscription: WebhookSubscriptionDocument
+    sms: SMS
+    event: WebhookEvent
+  }) {
+    const idempotencyKey = uuidv4()
+    const deliveryUrlSnapshot = subscription.deliveryUrl
 
     let payload: Record<string, any> = {
       smsId: sms._id,
       message: sms.message,
       deviceId: sms.device,
-      webhookSubscriptionId: webhookSubscription._id,
+      webhookSubscriptionId: subscription._id,
       webhookEvent: event,
       idempotencyKey,
     }
@@ -393,7 +579,7 @@ export class WebhookService {
     }
 
     const webhookNotification = await this.webhookNotificationModel.create({
-      webhookSubscription: webhookSubscription._id,
+      webhookSubscription: subscription._id,
       event,
       payload,
       sms,
@@ -401,7 +587,6 @@ export class WebhookService {
       deliveryUrl: deliveryUrlSnapshot,
     })
 
-    // Queue job instead of synchronous delivery
     await this.webhookQueueService.addWebhookDeliveryJob(
       webhookNotification._id.toString(),
     )
@@ -430,11 +615,11 @@ export class WebhookService {
       return
     }
 
-    if (!webhookSubscription.isActive) {
+    if (!webhookSubscription.isActive || webhookSubscription.deletedAt) {
       webhookNotification.deliveryAttemptAbortedAt = now
       await webhookNotification.save()
       console.log(
-        `Webhook subscription is not active for ${webhookNotification._id}, aborting delivery`,
+        `Webhook subscription is not deliverable for ${webhookNotification._id} (active=${webhookSubscription.isActive}, deleted=${!!webhookSubscription.deletedAt}), aborting delivery`,
       )
       return
     }
@@ -720,6 +905,7 @@ export class WebhookService {
     const activeSubscriptions = await this.webhookSubscriptionModel.find({
       _id: { $in: subscriptionIds.filter((id) => subscriptionIdSet.has(id.toString())) },
       isActive: true,
+      deletedAt: null,
     })
 
     const ctaUrlBase = process.env.FRONTEND_URL || 'https://app.textbee.dev'
@@ -750,7 +936,7 @@ export class WebhookService {
       const noteEntry = { at: new Date(), text: noteText }
 
       const result = await this.webhookSubscriptionModel.updateOne(
-        { _id: subscription._id, isActive: true },
+        { _id: subscription._id, isActive: true, deletedAt: null },
         {
           $set: { isActive: false },
           $push: { notes: noteEntry },

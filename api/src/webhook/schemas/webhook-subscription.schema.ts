@@ -12,6 +12,9 @@ export class WebhookSubscription {
   @Prop({ type: Types.ObjectId, ref: User.name, required: true })
   user: User
 
+  @Prop({ type: String, maxlength: 64, trim: true })
+  name?: string
+
   @Prop({ type: Boolean, default: true })
   isActive: boolean
 
@@ -46,9 +49,15 @@ export class WebhookSubscription {
     default: [],
   })
   notes: { at: Date; text: string }[]
+
+  @Prop({ type: Date })
+  deletedAt?: Date
 }
 
 export const WebhookSubscriptionSchema =
   SchemaFactory.createForClass(WebhookSubscription)
 
-WebhookSubscriptionSchema.index({ user: 1, events: 1 }, { unique: true })
+// Replaces the legacy `{ user, events }` unique index. Multiple subscriptions
+// per user are allowed; this compound index keeps the per-event fan-out query
+// in `deliverNotification` fast.
+WebhookSubscriptionSchema.index({ user: 1, isActive: 1, events: 1 })

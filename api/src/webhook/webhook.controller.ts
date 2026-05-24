@@ -4,6 +4,7 @@ import {
   Param,
   Post,
   Patch,
+  Delete,
   Controller,
   Get,
   UseGuards,
@@ -39,6 +40,7 @@ export class WebhookController {
     @Query('deviceId') deviceId?: string,
     @Query('start') start?: Date,
     @Query('end') end?: Date,
+    @Query('webhookSubscriptionId') webhookSubscriptionId?: string,
   ) {
     const data = await this.webhookService.findWebhookNotificationsForUser({
       user: req.user,
@@ -49,6 +51,7 @@ export class WebhookController {
       start,
       end,
       deviceId,
+      webhookSubscriptionId,
     })
     return { data }
   }
@@ -86,6 +89,19 @@ export class WebhookController {
       user: req.user,
       webhookId,
       updateWebhookDto,
+    })
+    return { data }
+  }
+
+  @Delete(':webhookId')
+  @UseGuards(AuthGuard)
+  async deleteWebhook(
+    @Request() req,
+    @Param('webhookId') webhookId: string,
+  ) {
+    const data = await this.webhookService.remove({
+      user: req.user,
+      webhookId,
     })
     return { data }
   }

@@ -10,7 +10,7 @@ export class WebhookNotification {
   _id?: Types.ObjectId
 
   @Prop({ type: Types.ObjectId, ref: WebhookSubscription.name, required: true })
-  webhookSubscription: WebhookSubscription
+  webhookSubscription: Types.ObjectId | WebhookSubscription
 
   @Prop({ type: String, required: true })
   event: string
