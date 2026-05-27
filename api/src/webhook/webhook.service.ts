@@ -323,7 +323,16 @@ export class WebhookService {
     }
 
     if (updateWebhookDto.hasOwnProperty('isActive')) {
+      const nextIsActive = updateWebhookDto.isActive
+      const wasActive = webhookSubscription.isActive
       webhookSubscription.isActive = updateWebhookDto.isActive
+
+      // If the user is re-enabling an auto-disabled webhook, give it a grace
+      // window so the next cron run doesn't immediately disable it again based
+      // on historical failures still in the lookback window.
+      if (wasActive === false && nextIsActive === true) {
+        webhookSubscription.lastEnabledAt = new Date()
+      }
     }
 
     if (updateWebhookDto.hasOwnProperty('name')) {
@@ -827,6 +836,12 @@ export class WebhookService {
     const now = new Date()
     const since = new Date(now.getTime() - lookbackDays * 24 * 60 * 60 * 1000)
     const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+    const graceHours = Math.max(
+      0,
+      // Default: 30 days
+      parseInt(process.env.WEBHOOK_AUTO_DISABLE_GRACE_HOURS ?? '720', 10) || 720,
+    )
+    const graceSince = new Date(now.getTime() - graceHours * 60 * 60 * 1000)
 
     const subscriptionCounts = await this.webhookNotificationModel.aggregate<{
       _id: mongoose.Types.ObjectId
@@ -926,6 +941,10 @@ export class WebhookService {
         (s) => s.subscriptionId === subscription._id.toString(),
       )
       if (!stats) continue
+
+      if (graceHours > 0 && subscription?.lastEnabledAt >= graceSince) {
+        continue
+      }
 
       if (subscription?.lastDeliverySuccessAt >= twentyFourHoursAgo) {
         continue
