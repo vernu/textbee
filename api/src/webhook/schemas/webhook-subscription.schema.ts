@@ -44,6 +44,12 @@ export class WebhookSubscription {
   @Prop({ type: Date })
   lastDeliveryFailureAt: Date
 
+  // Set when a user re-enables a previously disabled webhook. Used to prevent
+  // the auto-disable cron from immediately disabling again due to historical
+  // failures still within the lookback window.
+  @Prop({ type: Date })
+  lastEnabledAt?: Date
+
   @Prop({
     type: [{ at: { type: Date }, text: { type: String } }],
     default: [],
