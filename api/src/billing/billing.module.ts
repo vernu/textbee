@@ -1,7 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common'
 import { BillingController } from './billing.controller'
 import { BillingService } from './billing.service'
-import { AbandonedCheckoutService } from './abandoned-checkout.service'
 import { PlanSchema } from './schemas/plan.schema'
 import { SubscriptionSchema } from './schemas/subscription.schema'
 import { Plan } from './schemas/plan.schema'
@@ -48,7 +47,7 @@ import { BillingNotificationsProcessor } from 'src/billing/queue/billing-notific
     MailModule,
   ],
   controllers: [BillingController],
-  providers: [BillingService, AbandonedCheckoutService, BillingNotificationsService, BillingNotificationsProcessor],
-  exports: [BillingService, AbandonedCheckoutService, BillingNotificationsService],
+  providers: [BillingService, BillingNotificationsService, BillingNotificationsProcessor],
+  exports: [BillingService, BillingNotificationsService],
 })
 export class BillingModule {}
