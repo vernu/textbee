@@ -77,13 +77,6 @@ export class AuthService {
         name,
         email,
       })
-      this.mailService.sendEmailFromTemplate({
-        to: user.email,
-        subject: 'Welcome to TextBee - Lets get started!',
-        template: 'welcome-1',
-        context: { name: user.name },
-        from: 'vernu vernu@textbee.dev',
-      })
     }
 
     if (user.googleId !== googleId) {
@@ -137,14 +130,6 @@ export class AuthService {
 
     user.lastLoginAt = new Date()
     await user.save()
-
-    this.mailService.sendEmailFromTemplate({
-      to: user.email,
-      subject: 'Welcome to TextBee - Lets get started!',
-      template: 'welcome-1',
-      context: { name: user.name },
-      from: 'vernu vernu@textbee.dev',
-    })
 
     this.sendEmailVerificationEmail(user).catch((e) => {
       console.log('Failed to send email verification email')
@@ -488,7 +473,7 @@ export class AuthService {
         })
     }
 
-    this.accessLogModel
+    /* this.accessLogModel
       .create({
         apiKey,
         user,
@@ -503,7 +488,7 @@ export class AuthService {
       .catch((e) => {
         console.log('Failed to track access log')
         console.log(e)
-      })
+      }) */
   }
 
   async validateEmail(email: string) {
