@@ -3,6 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule'
 import { InjectModel } from '@nestjs/mongoose'
 import { Model } from 'mongoose'
 import {
+  AbandonedEmailType,
   CheckoutSession,
   CheckoutSessionDocument,
 } from './schemas/checkout-session.schema'
@@ -14,14 +15,8 @@ import { Plan } from './schemas/plan.schema'
 interface EmailConfig {
   template: string
   subject: string
-  minutesBeforeExpiry?: number // Send X minutes before expiry
-  minutesAfterExpiry?: number  // Send X minutes after expiry
-  emailType:
-    | 'first_reminder'
-    | 'second_reminder'
-    | 'third_reminder'
-    | 'final_reminder'
-    | 'last_chance'
+  minutesAfterCreation: number
+  emailType: AbandonedEmailType
 }
 
 @Injectable()
@@ -32,10 +27,39 @@ export class AbandonedCheckoutService {
     {
       template: 'abandoned-checkout-10-minutes',
       subject: 'Your TextBee checkout is still open',
-      minutesBeforeExpiry: 15,
+      minutesAfterCreation: 10,
       emailType: 'first_reminder',
     },
-
+    {
+      template: 'abandoned-checkout-1-hour',
+      subject: "Here's what TextBee Pro actually gets you",
+      minutesAfterCreation: 60,
+      emailType: 'second_reminder',
+    },
+    {
+      template: 'abandoned-checkout-24-hours',
+      subject: 'Is TextBee Pro worth $10/month?',
+      minutesAfterCreation: 24 * 60,
+      emailType: 'third_reminder',
+    },
+    {
+      template: 'abandoned-checkout-3-days',
+      subject: 'A quick question from the TextBee founder',
+      minutesAfterCreation: 3 * 24 * 60,
+      emailType: 'fourth_reminder',
+    },
+    {
+      template: 'abandoned-checkout-7-days',
+      subject: 'TextBee Free vs Pro — the full comparison',
+      minutesAfterCreation: 7 * 24 * 60,
+      emailType: 'final_reminder',
+    },
+    {
+      template: 'abandoned-checkout-14-days',
+      subject: 'Closing the loop on your TextBee Pro interest',
+      minutesAfterCreation: 14 * 24 * 60,
+      emailType: 'last_chance',
+    },
   ]
 
   constructor(
@@ -62,48 +86,23 @@ export class AbandonedCheckoutService {
   }
 
   /**
-   * Send reminder emails for a specific email configuration
+   * Send reminder emails for a specific email configuration.
+   * Timing is based on createdAt so it is independent of session expiry.
    */
   private async sendReminderEmails(emailConfig: EmailConfig) {
     const now = new Date()
-    let windowStart: Date, windowEnd: Date
-    let query: any
-
-    if (emailConfig.minutesBeforeExpiry !== undefined) {
-      // BEFORE EXPIRY: Find sessions that will expire in X minutes
-      const targetExpiryTime = new Date(now.getTime() + emailConfig.minutesBeforeExpiry * 60 * 1000)
-      
-      windowStart = new Date(targetExpiryTime.getTime() - 10 * 60 * 1000)
-      windowEnd = new Date(targetExpiryTime.getTime() + 10 * 60 * 1000)
-
-      query = {
-        expiresAt: {
-          $gte: windowStart,
-          $lte: windowEnd,
-        },
-        'abandonedEmails.emailType': { $ne: emailConfig.emailType }, // Don't send duplicate emails
-      }
-    } else if (emailConfig.minutesAfterExpiry !== undefined) {
-      // AFTER EXPIRY: Find sessions that expired X minutes ago
-      const targetExpiryTime = new Date(now.getTime() - emailConfig.minutesAfterExpiry * 60 * 1000)
-      
-      windowStart = new Date(targetExpiryTime.getTime() - 10 * 60 * 1000)
-      windowEnd = new Date(targetExpiryTime.getTime() + 10 * 60 * 1000)
-
-      query = {
-        expiresAt: {
-          $gte: windowStart,
-          $lte: windowEnd,
-        },
-        'abandonedEmails.emailType': { $ne: emailConfig.emailType }, // Don't send duplicate emails
-      }
-    } else {
-      this.logger.error(`Invalid email config: must specify either minutesBeforeExpiry or minutesAfterExpiry`)
-      return
-    }
+    const targetCreatedAt = new Date(now.getTime() - emailConfig.minutesAfterCreation * 60 * 1000)
+    const windowMs = 10 * 60 * 1000 // ±10 min window — safe for a cron that runs every 10 min
 
     const abandonedSessions = await this.checkoutSessionModel
-      .find(query)
+      .find({
+        createdAt: {
+          $gte: new Date(targetCreatedAt.getTime() - windowMs),
+          $lte: new Date(targetCreatedAt.getTime() + windowMs),
+        },
+        isCompleted: { $ne: true },
+        'abandonedEmails.emailType': { $ne: emailConfig.emailType },
+      })
       .populate('user')
       .limit(100)
 
