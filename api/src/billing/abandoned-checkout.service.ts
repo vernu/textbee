@@ -31,7 +31,7 @@ export class AbandonedCheckoutService {
   private readonly emailSchedule: EmailConfig[] = [
     {
       template: 'abandoned-checkout-10-minutes',
-      subject: '⏰ Your textbee pro upgrade is waiting!',
+      subject: 'Your TextBee checkout is still open',
       minutesBeforeExpiry: 15,
       emailType: 'first_reminder',
     },
