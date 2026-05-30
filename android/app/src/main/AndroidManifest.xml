@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    package="com.vernu.sms">
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-feature
         android:name="android.hardware.telephony"
@@ -15,7 +14,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <application
-        android:name=".SMSGatewayApplication"
+        android:name="com.vernu.sms.SMSGatewayApplication"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -29,7 +28,7 @@
             tools:node="remove" />
         
         <service
-            android:name=".services.FCMService"
+            android:name="com.vernu.sms.services.FCMService"
             android:exported="false"
             android:directBootAware="true">
             <intent-filter>
@@ -37,12 +36,12 @@
             </intent-filter>
         </service>
         <service
-            android:name=".services.StickyNotificationService"
+            android:name="com.vernu.sms.services.StickyNotificationService"
             android:enabled="true"
             android:exported="false">
         </service>
         <receiver
-            android:name=".receivers.SMSBroadcastReceiver"
+            android:name="com.vernu.sms.receivers.SMSBroadcastReceiver"
             android:exported="true">
             <intent-filter
                 android:priority="1000">
@@ -51,8 +50,9 @@
         </receiver>
 
         <receiver
-            android:name=".receivers.SMSStatusReceiver"
-            android:exported="true">
+            android:name="com.vernu.sms.receivers.SMSStatusReceiver"
+            android:exported="true"
+            android:permission="TODO">
             <intent-filter>
                 <action android:name="SMS_SENT" />
                 <action android:name="SMS_DELIVERED" />
@@ -60,7 +60,7 @@
         </receiver>
 
         <receiver android:enabled="true"
-            android:name=".receivers.BootCompletedReceiver"
+            android:name="com.vernu.sms.receivers.BootCompletedReceiver"
             android:exported="true"
             android:permission="android.permission.RECEIVE_BOOT_COMPLETED">
             <intent-filter>
@@ -69,7 +69,7 @@
         </receiver>
 
         <activity
-            android:name=".activities.MainActivity"
+            android:name="com.vernu.sms.activities.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.SMSGateway.NoActionBar">
             <intent-filter>
@@ -79,7 +79,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".activities.SMSFilterActivity"
+            android:name="com.vernu.sms.activities.SMSFilterActivity"
             android:exported="false"
             android:theme="@style/Theme.SMSGateway.NoActionBar"
             android:parentActivityName=".activities.MainActivity" />
