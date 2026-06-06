@@ -792,6 +792,18 @@
                                 android:textAllCaps="false"
                                 android:paddingHorizontal="0dp"
                                 style="@style/Widget.AppCompat.Button.Borderless" />
+
+                            <Button
+                                android:id="@+id/tryNewUIBtn"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="✨ Try New UI"
+                                android:textColor="?attr/colorPrimary"
+                                android:background="@android:color/transparent"
+                                android:textAllCaps="false"
+                                android:paddingHorizontal="0dp"
+                                style="@style/Widget.AppCompat.Button.Borderless" />
                         </LinearLayout>
                     </LinearLayout>
                 </LinearLayout>

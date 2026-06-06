@@ -172,6 +172,11 @@ public class HeartbeatHelper {
                     Log.d(TAG, "Synced device name from heartbeat: " + responseBody.name);
                 }
                 
+                SharedPreferenceHelper.setSharedPreferenceString(
+                    context,
+                    AppConstants.SHARED_PREFS_LAST_HEARTBEAT_MS_KEY,
+                    String.valueOf(System.currentTimeMillis())
+                );
                 Log.d(TAG, "Heartbeat sent successfully");
                 return true;
             } else {

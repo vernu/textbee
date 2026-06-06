@@ -1,14 +1,16 @@
 plugins {
     id 'com.android.application'
+    id 'com.google.gms.google-services'
     id 'com.google.firebase.crashlytics'
+    id 'org.jetbrains.kotlin.android'
 }
 
 android {
-    compileSdk 32
+    compileSdk 34
 
     defaultConfig {
         minSdk 24
-        targetSdk 32
+        targetSdk 34
         versionCode 17
         versionName "2.7.1"
 
@@ -68,6 +70,18 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
+
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+
+    buildFeatures {
+        compose true
+    }
+
+    composeOptions {
+        kotlinCompilerExtensionVersion '1.4.8'
+    }
 }
 
 dependencies {
@@ -88,13 +102,29 @@ dependencies {
     implementation 'com.google.code.gson:gson:2.9.0'
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'
     implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
-    implementation 'com.journeyapps:zxing-android-embedded:4.1.0'
+    implementation 'com.journeyapps:zxing-android-embedded:4.3.0'
     
     implementation 'androidx.work:work-runtime:2.7.1'
+
+    // Jetpack Compose
+    implementation platform('androidx.compose:compose-bom:2023.08.00')
+    implementation 'androidx.compose.ui:ui'
+    implementation 'androidx.compose.material3:material3'
+    implementation 'androidx.compose.ui:ui-tooling-preview'
+    implementation 'androidx.compose.material:material-icons-extended'
+    debugImplementation 'androidx.compose.ui:ui-tooling'
+
+    // Compose integration
+    implementation 'androidx.activity:activity-compose:1.7.2'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1'
+    implementation 'androidx.navigation:navigation-compose:2.7.2'
+
+    // Coroutines + Lifecycle
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.1'
 
 //    def room_version = "2.4.2"
 //    implementation "androidx.room:room-runtime:$room_version"
 //    annotationProcessor "androidx.room:room-compiler:$room_version"
 }
 
-apply plugin: 'com.google.gms.google-services'

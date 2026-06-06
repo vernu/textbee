@@ -1,0 +1,178 @@
+package com.vernu.sms.ui.messages
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Send
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+fun ComposeScreen(
+    viewModel: ComposeViewModel = viewModel(),
+    onNavigateBack: () -> Unit
+) {
+    val state by viewModel.state.collectAsState()
+    var recipientInput by remember { mutableStateOf("") }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(state.sendSuccess) {
+        if (state.sendSuccess) {
+            snackbarHostState.showSnackbar("Message sent successfully!")
+            viewModel.clearSuccess()
+        }
+    }
+
+    LaunchedEffect(state.sendError) {
+        state.sendError?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearError()
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text("New Message", fontWeight = FontWeight.SemiBold)
+                },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            )
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = "Recipients",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedTextField(
+                    value = recipientInput,
+                    onValueChange = { recipientInput = it },
+                    modifier = Modifier.weight(1f),
+                    label = { Text("Phone number") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                    singleLine = true
+                )
+                Button(
+                    onClick = {
+                        val trimmed = recipientInput.trim()
+                        if (trimmed.isNotEmpty() && !state.recipients.contains(trimmed)) {
+                            viewModel.addRecipient(trimmed)
+                            recipientInput = ""
+                        }
+                    },
+                    enabled = recipientInput.trim().isNotEmpty()
+                ) {
+                    Text("Add")
+                }
+            }
+
+            if (state.recipients.isNotEmpty()) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    state.recipients.forEach { number ->
+                        InputChip(
+                            selected = false,
+                            onClick = {},
+                            label = { Text(number) },
+                            trailingIcon = {
+                                IconButton(
+                                    onClick = { viewModel.removeRecipient(number) },
+                                    modifier = Modifier.size(18.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Close,
+                                        contentDescription = "Remove",
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+
+            Divider()
+
+            Text(
+                text = "Message",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold
+            )
+
+            OutlinedTextField(
+                value = state.message,
+                onValueChange = { viewModel.setMessage(it) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 120.dp),
+                label = { Text("Type your message") },
+                maxLines = 8,
+                supportingText = {
+                    Text("${state.message.length} characters")
+                }
+            )
+
+            Button(
+                onClick = { viewModel.sendSms() },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !state.isSending &&
+                          state.recipients.isNotEmpty() &&
+                          state.message.isNotEmpty()
+            ) {
+                if (state.isSending) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Sending...")
+                } else {
+                    Icon(
+                        Icons.Default.Send,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Send Message")
+                }
+            }
+        }
+    }
+}

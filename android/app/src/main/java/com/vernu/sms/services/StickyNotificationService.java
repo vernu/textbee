@@ -44,7 +44,11 @@ public class StickyNotificationService extends Service {
         if (stickyNotificationEnabled) {
             Notification notification = createNotification();
             try {
-                startForeground(1, notification);
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                    startForeground(1, notification, android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_REMOTE_MESSAGING);
+                } else {
+                    startForeground(1, notification);
+                }
                 Log.i(TAG, "Started foreground service with sticky notification");
             } catch (ForegroundServiceStartNotAllowedException e) {
                 Log.w(TAG, "Cannot start foreground from background, stopping service: " + e.getMessage());
