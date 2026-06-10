@@ -9,6 +9,7 @@ export enum BillingNotificationType {
   DAILY_LIMIT_REACHED = 'daily_limit_reached',
   MONTHLY_LIMIT_REACHED = 'monthly_limit_reached',
   BULK_SMS_LIMIT_REACHED = 'bulk_sms_limit_reached',
+  DEVICE_LIMIT_REACHED = 'device_limit_reached',
   DAILY_LIMIT_APPROACHING = 'daily_limit_approaching',
   MONTHLY_LIMIT_APPROACHING = 'monthly_limit_approaching',
 }

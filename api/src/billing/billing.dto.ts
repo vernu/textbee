@@ -32,8 +32,8 @@ export class CheckoutInputDTO {
   @ApiProperty({ type: String })
   discountId?: string
 
-  @ApiProperty({ type: Boolean })
-  isYearly?: boolean
+  @ApiProperty({ enum: ['monthly', 'yearly'], required: false })
+  billingInterval?: 'monthly' | 'yearly'
 }
 
 export class CheckoutResponseDTO {

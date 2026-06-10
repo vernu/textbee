@@ -39,6 +39,54 @@ export class GatewayService {
     private smsQueueService: SmsQueueService,
   ) {}
 
+  // Blocks creating or re-enabling a device when the user's plan device limit
+  // is reached. Effective limit comes from the subscription override or the
+  // plan (deviceLimit of -1 or missing means unlimited). Only enabled devices
+  // count toward the limit. Fails open if the limit lookup itself errors.
+  private async assertDeviceLimitNotReached(
+    userId: Types.ObjectId | string,
+    { excludeDeviceId }: { excludeDeviceId?: Types.ObjectId | string } = {},
+  ): Promise<void> {
+    let deviceLimit: number
+    try {
+      const limits = await this.billingService.getUserLimits(
+        userId?.toString(),
+      )
+      deviceLimit = limits?.deviceLimit ?? -1
+    } catch (error) {
+      console.error('assertDeviceLimitNotReached: failed to load limits', error)
+      return
+    }
+
+    if (deviceLimit == null || deviceLimit === -1) {
+      return
+    }
+
+    const filter: any = { user: userId, enabled: true }
+    if (excludeDeviceId) {
+      filter._id = { $ne: excludeDeviceId }
+    }
+    const activeDeviceCount = await this.deviceModel.countDocuments(filter)
+
+    if (activeDeviceCount >= deviceLimit) {
+      this.billingService
+        .notifyDeviceLimitReached(userId, deviceLimit, activeDeviceCount)
+        .catch((error) => {
+          console.error('failed to send device limit notification', error)
+        })
+
+      throw new HttpException(
+        {
+          message: `Active device limit reached — your plan allows up to ${deviceLimit} active device(s) and you have ${activeDeviceCount}. Disable or delete another device, or upgrade your plan at https://textbee.dev/pricing`,
+          hasReachedLimit: true,
+          deviceLimit,
+          activeDeviceCount,
+        },
+        HttpStatus.TOO_MANY_REQUESTS,
+      )
+    }
+  }
+
   async registerDevice(
     input: RegisterDeviceInputDTO,
     user: User,
@@ -77,11 +125,14 @@ export class GatewayService {
     }
 
     if (device && device.appVersionCode <= 11) {
+      // re-enable path: updateDevice enforces the device limit on the
+      // disabled -> enabled transition
       return await this.updateDevice(device._id.toString(), {
         ...deviceData,
         enabled: true,
       })
     } else {
+      await this.assertDeviceLimitNotReached(user._id)
       return await this.deviceModel.create(deviceData)
     }
   }
@@ -111,6 +162,14 @@ export class GatewayService {
 
     if (input.enabled !== false) {
       input.enabled = true;
+    }
+
+    // enforce the device limit only on the disabled -> enabled transition so
+    // routine updates of already-enabled devices are never blocked
+    if (!device.enabled && input.enabled) {
+      await this.assertDeviceLimitNotReached(device.user as Types.ObjectId, {
+        excludeDeviceId: device._id,
+      })
     }
 
     const now = new Date()

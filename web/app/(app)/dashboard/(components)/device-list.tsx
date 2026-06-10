@@ -12,7 +12,9 @@ import {
   ExternalLink,
   Loader2,
   MoreVertical,
+  TriangleAlert,
 } from 'lucide-react'
+import Link from 'next/link'
 import { useToast } from '@/hooks/use-toast'
 import httpBrowserClient from '@/lib/httpBrowserClient'
 import { ApiEndpoints } from '@/config/api'
@@ -72,6 +74,23 @@ export default function DeviceList() {
     // select: (res) => res.data,
   })
 
+  const { data: currentSubscription } = useQuery({
+    queryKey: ['currentSubscription'],
+    queryFn: () =>
+      httpBrowserClient
+        .get(ApiEndpoints.billing.currentSubscription())
+        .then((res) => res.data),
+  })
+
+  // -1 (or missing) means unlimited; only enabled devices count toward the limit
+  const deviceLimit = currentSubscription?.usage?.deviceLimit ?? -1
+  const activeDeviceCount =
+    devices?.data?.filter((device) => device.enabled).length ?? 0
+  const isDeviceLimitReached =
+    deviceLimit !== -1 && !isPending && activeDeviceCount >= deviceLimit
+  const isApproachingDeviceLimit =
+    deviceLimit >= 2 && !isPending && activeDeviceCount === deviceLimit - 1
+
   const {
     mutate: deleteDevice,
     isPending: isDeletingDevice,
@@ -124,6 +143,47 @@ export default function DeviceList() {
           </Button>
         </CardHeader>
       <CardContent>
+          {(isDeviceLimitReached || isApproachingDeviceLimit) && (
+            <div
+              className={`mb-4 flex flex-col gap-2 rounded-lg border px-3 py-2 sm:flex-row sm:items-center sm:justify-between ${
+                isDeviceLimitReached
+                  ? 'border-red-200 bg-red-50 dark:border-red-900/50 dark:bg-red-950/20'
+                  : 'border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40'
+              }`}
+            >
+              <div className='flex items-start gap-2'>
+                <TriangleAlert
+                  className={`mt-0.5 h-4 w-4 shrink-0 ${
+                    isDeviceLimitReached
+                      ? 'text-red-600 dark:text-red-400'
+                      : 'text-amber-600 dark:text-amber-400'
+                  }`}
+                />
+                <p className='text-xs text-muted-foreground'>
+                  {isDeviceLimitReached ? (
+                    <>
+                      You've reached your plan's limit of{' '}
+                      <span className='font-medium text-foreground'>
+                        {deviceLimit} active device{deviceLimit === 1 ? '' : 's'}
+                      </span>
+                      . New devices can't be registered or re-enabled.
+                    </>
+                  ) : (
+                    <>
+                      You're using{' '}
+                      <span className='font-medium text-foreground'>
+                        {activeDeviceCount} of {deviceLimit}
+                      </span>{' '}
+                      active devices included in your plan.
+                    </>
+                  )}
+                </p>
+              </div>
+              <Button variant='outline' size='sm' asChild className='shrink-0'>
+                <Link href='/pricing'>Upgrade plan</Link>
+              </Button>
+            </div>
+          )}
           <div className='space-y-2'>
             {isPending && (
               <>

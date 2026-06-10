@@ -17,6 +17,12 @@ export class CheckoutSession {
   @Prop({ type: String, required: true })
   checkoutUrl: string
 
+  @Prop({ type: String })
+  planName?: string
+
+  @Prop({ type: String, enum: ['monthly', 'yearly'] })
+  billingInterval?: string
+
   @Prop({ type: Date, required: true })
   expiresAt: Date
 

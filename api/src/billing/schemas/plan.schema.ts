@@ -17,6 +17,10 @@ export class Plan {
   @Prop({ required: true })
   bulkSendLimit: number
 
+  // max number of enabled devices; -1 means unlimited
+  @Prop({ type: Number, default: -1 })
+  deviceLimit?: number
+
   @Prop({ required: true })
   monthlyPrice: number // in cents
 
