@@ -26,4 +26,6 @@ public class AppConstants {
     public static final String SHARED_PREFS_SMS_SEND_DELAY_SECONDS_KEY = "SMS_SEND_DELAY_SECONDS";
     /** Default delay between SMS sends (seconds). 5s helps avoid carrier/device throttling. */
     public static final int DEFAULT_SMS_SEND_DELAY_SECONDS = 5;
+    public static final String SHARED_PREFS_USE_NEW_UI_KEY = "USE_NEW_UI";
+    public static final String SHARED_PREFS_LAST_HEARTBEAT_MS_KEY = "LAST_HEARTBEAT_MS";
 }
