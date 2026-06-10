@@ -246,14 +246,23 @@ export class BillingService {
     payload: any
     req: any
   }): Promise<CheckoutResponseDTO> {
-    const isYearly = payload.isYearly
+    const isYearly = !!payload.isYearly
+    const billingInterval = isYearly ? 'yearly' : 'monthly'
 
     const existingCheckoutSession = await this.checkoutSessionModel.findOne({
       user: user._id,
       expiresAt: { $gt: new Date() },
+      isCompleted: { $ne: true },
+      isAbandoned: { $ne: true },
     })
 
-    if (existingCheckoutSession) {
+    // Only reuse a cached checkout created for the same plan and billing
+    // interval, otherwise Polar would preselect the wrong product
+    if (
+      existingCheckoutSession &&
+      existingCheckoutSession.planName === payload.planName &&
+      existingCheckoutSession.billingInterval === billingInterval
+    ) {
       return { redirectUrl: existingCheckoutSession.checkoutUrl }
     }
 
@@ -282,12 +291,17 @@ export class BillingService {
       payload.discountId ?? process.env.POLAR_DEFAULT_DISCOUNT_ID
 
     try {
+      // Polar preselects the first product in the list, so order it by the
+      // billing interval the user chose
+      const orderedProductIds = (
+        isYearly
+          ? [selectedPlan.polarYearlyProductId, selectedPlan.polarMonthlyProductId]
+          : [selectedPlan.polarMonthlyProductId, selectedPlan.polarYearlyProductId]
+      ).filter(Boolean)
+
       const checkoutOptions: any = {
         // productId: selectedPlan.polarProductId, // deprecated
-        products: [
-          selectedPlan.polarMonthlyProductId,
-          selectedPlan.polarYearlyProductId,
-        ],
+        products: orderedProductIds,
         successUrl: `${process.env.FRONTEND_URL}/dashboard/account?checkout-success=1&checkout_id={CHECKOUT_ID}`,
         cancelUrl: `${process.env.FRONTEND_URL}/dashboard/account?checkout-cancel=1&checkout_id={CHECKOUT_ID}`,
         customerEmail: user.email,
@@ -324,6 +338,8 @@ export class BillingService {
             user: user._id,
             checkoutSessionId: checkout.id,
             checkoutUrl: checkout.url,
+            planName: payload.planName,
+            billingInterval,
             expiresAt: new Date(checkout.expiresAt),
             payload: checkout,
           },

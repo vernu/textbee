@@ -16,8 +16,14 @@ export default function CheckoutPage({ params }) {
   const initiateCheckout = useCallback(
     async (retries = 2) => {
       try {
+        // marketing site and pricing pages link here with ?billing=monthly|yearly
+        const billing = new URLSearchParams(window.location.search).get(
+          'billing',
+        )
+
         const response = await httpBrowserClient.post('/billing/checkout', {
           planName,
+          isYearly: billing === 'yearly',
         })
 
         if (response.data?.redirectUrl) {
