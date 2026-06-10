@@ -363,6 +363,7 @@ export class BillingService {
     const plans = await this.planModel.find()
 
     const customPlans = plans.filter((plan) => plan.name?.startsWith('custom'))
+    const scalePlan = plans.find((plan) => plan.name === 'scale')
     const proPlan = plans.find((plan) => plan.name === 'pro')
     const freePlan = plans.find((plan) => plan.name === 'free')
 
@@ -374,6 +375,18 @@ export class BillingService {
 
     if (customPlanSubscription) {
       return customPlanSubscription.populate('plan')
+    }
+
+    if (scalePlan) {
+      const scalePlanSubscription = await this.subscriptionModel.findOne({
+        user: user._id,
+        plan: scalePlan._id,
+        isActive: true,
+      })
+
+      if (scalePlanSubscription) {
+        return scalePlanSubscription.populate('plan')
+      }
     }
 
     const proPlanSubscription = await this.subscriptionModel.findOne({
