@@ -1,5 +1,7 @@
 package com.vernu.sms.ui.onboarding.screens
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -14,6 +16,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -29,6 +32,7 @@ fun CredentialsScreen(
     onBack: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
+    val context = LocalContext.current
     var selectedTab by remember { mutableStateOf(0) }
     var showApiKey by remember { mutableStateOf(false) }
     val tabs = listOf("Scan QR Code", "Enter Manually")
@@ -64,12 +68,25 @@ fun CredentialsScreen(
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Enter your API key from textbee.dev/dashboard",
+                text = "Enter your API key from your textbee.dev dashboard",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            TextButton(
+                onClick = {
+                    context.startActivity(
+                        Intent(Intent.ACTION_VIEW, Uri.parse("https://app.textbee.dev/register"))
+                    )
+                },
+                contentPadding = PaddingValues(0.dp)
+            ) {
+                Text(
+                    text = "Don't have an account? Sign up free",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             TabRow(selectedTabIndex = selectedTab) {
                 tabs.forEachIndexed { index, title ->
@@ -122,12 +139,48 @@ private fun QrTab(
     onScanQr: () -> Unit,
     onSwitchToManual: () -> Unit
 ) {
+    val context = LocalContext.current
+
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = "Open textbee.dev/dashboard → Settings → Register Device → Show QR Code",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "1. Go to your textbee.dev dashboard",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f)
+                )
+                TextButton(
+                    onClick = {
+                        context.startActivity(
+                            Intent(Intent.ACTION_VIEW, Uri.parse("https://app.textbee.dev/dashboard"))
+                        )
+                    },
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                ) {
+                    Text("Open", style = MaterialTheme.typography.bodySmall)
+                }
+            }
+            Text(
+                text = "2. Click \"Register Device\" or \"Generate API Key\"",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Text(
+                text = "3. Scan the QR code shown on screen",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
 
         Spacer(modifier = Modifier.height(24.dp))
 
@@ -196,6 +249,8 @@ private fun ManualTab(
     onApiKeyChange: (String) -> Unit,
     onToggleVisibility: () -> Unit
 ) {
+    val context = LocalContext.current
+
     OutlinedTextField(
         value = apiKey,
         onValueChange = onApiKeyChange,
@@ -212,9 +267,19 @@ private fun ManualTab(
         },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
         modifier = Modifier.fillMaxWidth(),
-        supportingText = {
-            Text("Find your API key at textbee.dev/dashboard")
-        },
         singleLine = true
     )
+    TextButton(
+        onClick = {
+            context.startActivity(
+                Intent(Intent.ACTION_VIEW, Uri.parse("https://app.textbee.dev/dashboard"))
+            )
+        },
+        contentPadding = PaddingValues(0.dp)
+    ) {
+        Text(
+            text = "Get your API key at app.textbee.dev/dashboard",
+            style = MaterialTheme.typography.bodySmall
+        )
+    }
 }

@@ -92,21 +92,21 @@ class OnboardingViewModel : ViewModel() {
             _state.update { it.copy(isLoading = true, errorMessage = null) }
             try {
                 val fcmToken = getFcmToken()
-                val simInfo = SimInfoCollectionDTO().apply {
-                    setLastUpdated(System.currentTimeMillis())
-                    setSims(TextBeeUtils.collectSimInfo(context))
+                val collectedSimInfo = SimInfoCollectionDTO().apply {
+                    lastUpdated = System.currentTimeMillis()
+                    sims = TextBeeUtils.collectSimInfo(context)
                 }
                 val input = RegisterDeviceInputDTO().apply {
-                    setFcmToken(fcmToken)
-                    setBrand(Build.BRAND)
-                    setManufacturer(Build.MANUFACTURER)
-                    setModel(Build.MODEL)
-                    setBuildId(Build.ID)
-                    setOs(Build.VERSION.BASE_OS)
-                    setAppVersionCode(BuildConfig.VERSION_CODE)
-                    setAppVersionName(BuildConfig.VERSION_NAME)
-                    setName(current.deviceName.ifEmpty { "${Build.BRAND} ${Build.MODEL}" })
-                    setSimInfo(simInfo)
+                    this.fcmToken = fcmToken
+                    brand = Build.BRAND
+                    manufacturer = Build.MANUFACTURER
+                    model = Build.MODEL
+                    buildId = Build.ID
+                    os = Build.VERSION.BASE_OS
+                    appVersionCode = BuildConfig.VERSION_CODE
+                    appVersionName = BuildConfig.VERSION_NAME
+                    name = current.deviceName.ifEmpty { "${Build.BRAND} ${Build.MODEL}" }
+                    simInfo = collectedSimInfo
                 }
 
                 val response = if (shouldUpdate) {
@@ -135,6 +135,9 @@ class OnboardingViewModel : ViewModel() {
                     val resolvedName = name.ifEmpty { current.deviceName }
                     SharedPreferenceHelper.setSharedPreferenceString(
                         context, AppConstants.SHARED_PREFS_DEVICE_NAME_KEY, resolvedName
+                    )
+                    SharedPreferenceHelper.setSharedPreferenceBoolean(
+                        context, AppConstants.SHARED_PREFS_GATEWAY_ENABLED_KEY, true
                     )
                     HeartbeatManager.scheduleHeartbeat(context)
 

@@ -41,7 +41,7 @@ TextBee Android is mid-migration from a Java/XML legacy codebase to Kotlin + Jet
 | File | Notes |
 |---|---|
 | `ui/splash/SplashActivity.kt` | Routes to legacy/onboarding/main based on SharedPrefs |
-| `ui/main/NewMainActivity.kt` | Bottom nav (Dashboard / Messages / Settings) + compose route |
+| `ui/main/NewMainActivity.kt` | Bottom nav (Dashboard / Messages / Settings) + compose + filters routes |
 | `ui/dashboard/DashboardScreen.kt` | Device card, stats, subscription, quick actions |
 | `ui/dashboard/DashboardViewModel.kt` | Stats, subscription, user profile, gateway toggle |
 | `ui/messages/MessagesScreen.kt` | Filter chips, message list, detail dialog, FAB |
@@ -50,6 +50,50 @@ TextBee Android is mid-migration from a Java/XML legacy codebase to Kotlin + Jet
 | `ui/messages/ComposeViewModel.kt` | Send SMS, error body parsing, success/error state |
 | `ui/settings/SettingsScreen.kt` | Account, Gateway, SMS, Legal, System, UI sections |
 | `ui/settings/SettingsViewModel.kt` | Device name save, gateway toggle, SIM picker |
+
+### UI — Settings (Phase 3) ✅
+| File | Notes |
+|---|---|
+| `ui/settings/SMSFilterScreen.kt` | Full Compose SMS filter screen: enable switch, allow/block mode chips, rule list with FAB, add/edit dialog |
+| `ui/settings/SMSFilterViewModel.kt` | `AndroidViewModel` — loads/saves `FilterConfig` via StateFlow; deep-copies config on each mutation |
+
+`SMSFilterActivity.java` is still present for the legacy UI. The new UI navigates to the `"filters"` composable route inside `NewMainActivity`; bottom bar is hidden on both `"compose"` and `"filters"` routes.
+
+### Data Layer — Kotlin Stubs (Phase 4) ✅
+
+**Room DB (block-commented — feature not yet enabled):**
+| File | Notes |
+|---|---|
+| `database/local/Sms.kt` | Replaces `SMS.java`; `@Entity` data class inside `/* */` block comment |
+| `database/local/SmsDao.kt` | Replaces `SMSDao.java`; `@Dao` interface with suspend funs, block-commented |
+| `database/local/AppDatabase.kt` | Replaces `AppDatabase.java`; singleton with companion object, block-commented |
+| `database/local/DateConverter.kt` | Replaces `DateConverter.java`; `object` with `@TypeConverter`, block-commented |
+
+**DTOs (all Java originals deleted):**
+| File | Notes |
+|---|---|
+| `dtos/RegisterDeviceInputDTO.kt` | `class` with `var`; `@get:JvmName("isEnabled")` so Java/Kotlin callers get `isEnabled()` not `getEnabled()` |
+| `dtos/RegisterDeviceResponseDTO.kt` | Regular `class` with `@JvmField var` — `MainActivity.java` accesses `.data`/`.error` as direct fields |
+| `dtos/SMSDTO.kt` | Regular `class`; `message: String = ""` to avoid null default |
+| `dtos/HeartbeatInputDTO.kt` | `var isCharging: Boolean?` (nullable) — generates `getIsCharging()`/`setIsCharging()` matching Java non-standard getter name |
+| `dtos/HeartbeatResponseDTO.kt` | `@JvmField var` on all properties — `HeartbeatHelper` accesses fields directly (`.fcmTokenUpdated`) |
+| `dtos/SimInfoDTO.kt` | `subscriptionId: Int = 0` (was primitive in Java) |
+| `dtos/SimInfoCollectionDTO.kt` | `sims: MutableList<SimInfoDTO>? = null` |
+| `dtos/SMSForwardResponseDTO.kt` | Empty class body |
+
+### Helpers & Models (Phase 5) ✅
+
+All helpers are Kotlin `object` with `@JvmStatic` on every public method — at the time of porting, Java workers/receivers called them; those callers were ported in Phase 6.
+
+| File | Notes |
+|---|---|
+| `helpers/SharedPreferenceHelper.kt` | Replaces `SharedPreferenceHelper.java`; `PREF_FILE = "PREF"`, 7 methods |
+| `helpers/SMSFilterHelper.kt` | Replaces `SMSFilterHelper.java`; nested `FilterMode` enum + `FilterConfig` class; Gson-compatible field names |
+| `helpers/SMSHelper.kt` | Replaces `SMSHelper.java`; `FLAG_MUTABLE` on API >= S; private PendingIntent helpers |
+| `helpers/HeartbeatHelper.kt` | Replaces `HeartbeatHelper.java`; `CountDownLatch` FCM token wait, `@Suppress("DEPRECATION")` for legacy network API |
+| `helpers/HeartbeatManager.kt` | Replaces `HeartbeatManager.java`; `PeriodicWorkRequest.Builder(HeartbeatWorker::class.java, ...)` |
+| `models/SMSFilterRule.kt` | Replaces `SMSFilterRule.java`; `@JvmOverloads constructor` for Java callers; nested `MatchType` + `FilterTarget` enums |
+| `models/SMSPayload.kt` | Replaces `SMSPayload.java`; keeps legacy `receivers` + `smsBody` fields |
 
 ---
 
@@ -67,119 +111,53 @@ TextBee Android is mid-migration from a Java/XML legacy codebase to Kotlin + Jet
 | File | Priority | Notes |
 |---|---|---|
 | `activities/MainActivity.java` | High | Legacy main UI — remove after full Compose rollout |
-| `activities/SMSFilterActivity.java` | High | Only user-facing Java screen still reachable from new UI |
-
-### Database (Room)
-| File | Priority | Notes |
-|---|---|---|
-| `database/local/AppDatabase.java` | Medium | Room DB; convert to Kotlin for coroutine-friendly DAOs |
-| `database/local/SMS.java` | Medium | Room entity |
-| `database/local/SMSDao.java` | Medium | DAO — high value: Kotlin suspend queries |
-| `database/local/DateConverter.java` | Low | Trivial type converter |
-
-### DTOs (Java)
-| File | Priority | Notes |
-|---|---|---|
-| `dtos/RegisterDeviceInputDTO.java` | Medium | Setter-based Java — awkward from Kotlin |
-| `dtos/RegisterDeviceResponseDTO.java` | Medium | Uses `Map<String, Object>` for `data` field |
-| `dtos/HeartbeatInputDTO.java` | Low | Simple DTO |
-| `dtos/HeartbeatResponseDTO.java` | Low | Simple DTO |
-| `dtos/SMSDTO.java` | Medium | Core SMS payload |
-| `dtos/SMSForwardResponseDTO.java` | Low | Simple DTO |
-| `dtos/SimInfoDTO.java` / `SimInfoCollectionDTO.java` | Low | SIM info |
+| `activities/SMSFilterActivity.java` | Medium | Legacy filter screen — still reachable from legacy UI only |
 
 ### Helpers
 | File | Priority | Notes |
 |---|---|---|
-| `helpers/SharedPreferenceHelper.java` | High | Called from every ViewModel — Kotlin extension would be cleaner |
-| `helpers/HeartbeatHelper.java` | Medium | Heartbeat HTTP logic |
-| `helpers/HeartbeatManager.java` | Medium | WorkManager scheduling |
-| `helpers/SMSFilterHelper.java` | Medium | Filter rule evaluation |
-| `helpers/SMSHelper.java` | Medium | SMS send/receive logic |
-| `helpers/VersionTracker.java` | Low | Update check logic |
-
-### Models
-| File | Priority | Notes |
-|---|---|---|
-| `models/SMSFilterRule.java` | Medium | Convert to Kotlin data class |
-| `models/SMSPayload.java` | Medium | Convert to Kotlin data class |
-
-### Receivers
-| File | Priority | Notes |
-|---|---|---|
-| `receivers/SMSBroadcastReceiver.java` | Medium | Receives incoming SMS, enqueues worker |
-| `receivers/SMSStatusReceiver.java` | Medium | Tracks sent/delivered status |
-| `receivers/BootCompletedReceiver.java` | Low | Reschedules heartbeat on boot |
+| `helpers/VersionTracker.java` | Low | Update check logic — left for later |
 
 ### Services
 | File | Priority | Notes |
 |---|---|---|
 | `services/GatewayApiService.java` | High | Java Retrofit interface — delete after legacy UI removed |
-| `services/StickyNotificationService.java` | Medium | Foreground service for persistent notification |
-| `services/FCMService.java` | Medium | Firebase push — triggers SMS send |
-
-### Workers
-| File | Priority | Notes |
-|---|---|---|
-| `workers/HeartbeatWorker.java` | Medium | Kotlin coroutines-based rewrite would simplify |
-| `workers/SMSReceivedWorker.java` | Medium | Forwards received SMS to API |
-| `workers/SMSStatusUpdateWorker.java` | Medium | Polls/updates SMS status |
-| `workers/SmsSendWorker.java` | High | Core send logic — most complex worker |
 
 ---
 
 ## Migration Roadmap
 
-### Phase 3 — SMS Filter Screen *(next up)*
-Port `SMSFilterActivity.java` to Compose and integrate it as a nested route inside the Settings tab instead of a separate Activity. This is the only remaining Java screen reachable from the new UI.
-
-**Files:**
-- Create `ui/settings/SMSFilterScreen.kt` + `SMSFilterViewModel.kt`
-- Reuse filter logic from `SMSFilterHelper.java` (call it from Kotlin until Phase 5)
-- Add `"filters"` composable route to `NewMainActivity.kt` NavHost
-- Update Settings "Configure Filters" row to navigate to route instead of `startActivity`
+### Phase 3 — SMS Filter Screen ✅ Complete
+Ported `SMSFilterActivity.java` to `SMSFilterScreen.kt` (Compose). Integrated as a nested `"filters"` route inside `NewMainActivity`. Legacy `SMSFilterActivity.java` unchanged — still reachable from legacy UI.
 
 ---
 
-### Phase 4 — Data Layer
-Convert the Room database and DTOs to idiomatic Kotlin. This unlocks suspend-based DAOs and removes the awkward Java setter pattern in DTOs.
-
-**Files:**
-- `SMS.java` → `Sms.kt` (data class + `@Entity`)
-- `SMSDao.java` → `SmsDao.kt` (suspend functions)
-- `AppDatabase.java` → `AppDatabase.kt`
-- `RegisterDeviceInputDTO.java` → Kotlin data class (remove setter-based pattern)
-- `RegisterDeviceResponseDTO.java` → Kotlin (replace `Map<String, Object>` with proper fields)
-- Remaining Java DTOs → Kotlin data classes
+### Phase 4 — Data Layer ✅ Complete
+All DTOs ported to Kotlin; Java originals deleted. Room DB ported to Kotlin stubs with all logic still inside `/* */` block comments (feature remains disabled).
 
 ---
 
-### Phase 5 — Helpers & Utilities
-Convert the shared infrastructure that every component depends on. Do `SharedPreferenceHelper` first since it's the most impactful.
-
-**Order:**
-1. `SharedPreferenceHelper.java` → Kotlin object with inline extension helpers
-2. `SMSFilterHelper.java` + `SMSHelper.java` → Kotlin (unblocks Phase 3 cleanup)
-3. `TextBeeUtils.java` → Kotlin (split into focused util files)
-4. `HeartbeatHelper.java` + `HeartbeatManager.java` → Kotlin
-5. `models/SMSFilterRule.kt` + `models/SMSPayload.kt` → Kotlin data classes
-6. `VersionTracker.java` → Kotlin
+### Phase 5 — Helpers & Utilities ✅ Complete
+All helpers and models ported to Kotlin `object`s with `@JvmStatic`. Java originals deleted. Java callers (workers, receivers — Phase 6) continue to work unchanged via `@JvmStatic` interop.
 
 ---
 
-### Phase 6 — Background Services & Receivers
-Rewrite workers and receivers in Kotlin. Workers benefit most from coroutines — the current Java workers use callbacks and `CountDownLatch` workarounds.
+### Phase 6 — Background Services & Receivers ✅ Complete
+All workers, receivers, and services ported to Kotlin; Java originals deleted.
 
-**Order:**
-1. `BootCompletedReceiver.java` → Kotlin (trivial, good warmup)
-2. `SMSBroadcastReceiver.java` → Kotlin
-3. `SMSStatusReceiver.java` → Kotlin
-4. `HeartbeatWorker.java` → Kotlin coroutine worker
-5. `SmsSendWorker.java` → Kotlin coroutine worker (most complex)
-6. `SMSReceivedWorker.java` → Kotlin
-7. `SMSStatusUpdateWorker.java` → Kotlin
-8. `StickyNotificationService.java` → Kotlin
-9. `FCMService.java` → Kotlin
+| File | Notes |
+|---|---|
+| `receivers/BootCompletedReceiver.kt` | Restarts sticky notification + schedules heartbeat on boot |
+| `receivers/SMSBroadcastReceiver.kt` | Deduplication fingerprint cache; Kotlin property access on `SMSDTO` |
+| `receivers/SMSStatusReceiver.kt` | `setFailed()` private helper avoids `errorMessage` property shadowing |
+| `workers/HeartbeatWorker.kt` | Simple `Worker` subclass; delegates to `HeartbeatHelper` |
+| `workers/SmsSendWorker.kt` | SIM resolution priority chain; `Thread.sleep` rate limiting |
+| `workers/SMSReceivedWorker.kt` | Fingerprint-based unique work name for deduplication |
+| `workers/SMSStatusUpdateWorker.kt` | Exponential backoff, max 5 retries |
+| `services/StickyNotificationService.kt` | Broad `Exception` catch replaces API-31-only `ForegroundServiceStartNotAllowedException` |
+| `services/FCMService.kt` | Handles `heartbeat_check` type + SMS payload dispatch |
+
+**Sticky notification fix**: Added service restart to `DashboardViewModel.loadLocalState()` — on every app launch, if gateway + sticky notification are enabled, the service is restarted. This matches legacy `MainActivity` behaviour and fixes the notification disappearing after Android kills the service on newer OS versions.
 
 ---
 
@@ -190,11 +168,12 @@ Once Compose UI is stable and rolled out to all users, remove the legacy UI enti
 1. Remove the "Switch to Legacy UI" row from `SettingsScreen.kt`
 2. Remove `USE_NEW_UI_KEY` logic from `SplashActivity.kt` (always route to new UI)
 3. Delete `activities/MainActivity.java` and its XML layouts
-4. Delete `services/GatewayApiService.java` (Java Retrofit interface)
-5. Delete `ApiManager.java`
-6. Remove "Try New UI" button from any remaining legacy layout XML
-7. Clean up `AppConstants.java` — remove `SHARED_PREFS_USE_NEW_UI_KEY`
-8. Convert `SMSGatewayApplication.java` → Kotlin
+4. Delete `activities/SMSFilterActivity.java`
+5. Delete `services/GatewayApiService.java` (Java Retrofit interface)
+6. Delete `ApiManager.java`
+7. Remove "Try New UI" button from any remaining legacy layout XML
+8. Clean up `AppConstants.java` — remove `SHARED_PREFS_USE_NEW_UI_KEY`
+9. Convert `SMSGatewayApplication.java` → Kotlin
 
 ---
 
@@ -202,6 +181,11 @@ Once Compose UI is stable and rolled out to all users, remove the legacy UI enti
 
 - **`dynamicColor = false`** in `Theme.kt` — Material You overrides the brand orange on Android 12+; must stay false
 - **`primaryContainer` avoided** in TopAppBar/nav — causes orange-on-orange in dark mode; use `surface` for bars, `surfaceVariant` for nav indicator
-- **Java/Kotlin interop** — Java files call Kotlin objects fine; be careful with `companion object` vs `object` when called from Java
-- **WorkManager workers** — must remain `ListenableWorker` subclass; Kotlin workers use `CoroutineWorker` which is the idiomatic replacement for `Worker`
-- **`RegisterDeviceInputDTO`** — currently setter-based Java; Kotlin callers use `.apply { setEnabled(true) }` until Phase 4 replaces it with a proper data class
+- **Java/Kotlin interop** — Only `ApiManager.java`, `TextBeeUtils.java`, legacy activities, and `GatewayApiService.java` remain Java; all others are Kotlin
+- **WorkManager workers** — kept as `Worker` subclass (not `CoroutineWorker`) to avoid adding `work-runtime-ktx`; straightforward conversion candidate in a future cleanup
+- **Sticky notification on Android 12+** — `ForegroundServiceStartNotAllowedException` is caught broadly; `DashboardViewModel` restarts service on every launch to compensate for OS killing it in the background
+- **Room DB** — all DB logic remains commented out; do not uncomment until the feature is explicitly re-enabled
+- **`@JvmField`** on `HeartbeatResponseDTO` — `HeartbeatHelper.kt` accesses `.fcmTokenUpdated`/`.name` as fields; `@JvmField` keeps direct field access instead of generating getters
+- **`@JvmField`** on `RegisterDeviceResponseDTO` — `MainActivity.java` (legacy, still Java) accesses `.data`/`.error` as direct fields; remove once Phase 7 deletes the legacy activity
+- **`@JvmOverloads`** on `SMSFilterRule` — generates no-arg and partial constructors needed by Gson deserialization of persisted filter config JSON
+- **`@get:JvmName("isEnabled")`** on `RegisterDeviceInputDTO.enabled` and `@get:JvmName("isCaseSensitive")`on `SMSFilterRule.caseSensitive` — renames generated getter to match Java boolean convention; `MainActivity.java` and `SMSFilterActivity.java` use `isEnabled()`/`isCaseSensitive()`

@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 
@@ -144,7 +145,26 @@ fun PermissionsScreen(
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "These permissions are only used to send and receive SMS on your behalf. textbee never accesses your existing message history.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            TextButton(
+                onClick = {
+                    context.startActivity(
+                        Intent(Intent.ACTION_VIEW, Uri.parse("https://textbee.dev/privacy-policy"))
+                    )
+                },
+                contentPadding = PaddingValues(0.dp)
+            ) {
+                Text("Privacy Policy", style = MaterialTheme.typography.bodySmall)
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             Button(
                 onClick = onContinue,

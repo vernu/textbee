@@ -7,6 +7,7 @@ import com.vernu.sms.ApiManagerKt
 import com.vernu.sms.AppConstants
 import com.vernu.sms.TextBeeUtils
 import com.vernu.sms.dtos.RegisterDeviceInputDTO
+import com.vernu.sms.dtos.SimInfoDTO
 import com.vernu.sms.dtos.SubscriptionResponse
 import com.vernu.sms.dtos.UserProfile
 import com.vernu.sms.helpers.HeartbeatManager
@@ -17,26 +18,18 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-data class GatewayStats(
-    val totalSentSMS: Int?,
-    val totalReceivedSMS: Int?,
-    val totalDevices: Int?,
-    val totalApiKeys: Int?
-)
-
 data class DashboardState(
     val deviceName: String = "",
     val deviceId: String = "",
     val isGatewayEnabled: Boolean = false,
     val lastHeartbeatMs: Long? = null,
-    val stats: GatewayStats? = null,
-    val isStatsLoading: Boolean = true,
-    val statsUnavailable: Boolean = false,
     val isTogglingGateway: Boolean = false,
     val subscription: SubscriptionResponse? = null,
     val isSubscriptionLoading: Boolean = true,
     val subscriptionUnavailable: Boolean = false,
-    val userProfile: UserProfile? = null
+    val userProfile: UserProfile? = null,
+    val availableSims: List<SimInfoDTO> = emptyList(),
+    val isReceiveSmsEnabled: Boolean = false
 )
 
 class DashboardViewModel(app: Application) : AndroidViewModel(app) {
@@ -48,14 +41,12 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
 
     init {
         loadLocalState()
-        fetchStats()
         fetchSubscription()
         fetchUserProfile()
     }
 
     fun refresh() {
         loadLocalState()
-        fetchStats()
         fetchSubscription()
         fetchUserProfile()
     }
@@ -75,52 +66,31 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
         )
         val lastHeartbeatMs = lastHeartbeatStr?.toLongOrNull()
 
+        val sims = try {
+            TextBeeUtils.collectSimInfo(context)
+        } catch (e: Exception) {
+            emptyList<SimInfoDTO>()
+        }
+        val isReceiveSms = SharedPreferenceHelper.getSharedPreferenceBoolean(
+            context, AppConstants.SHARED_PREFS_RECEIVE_SMS_ENABLED_KEY, false
+        )
+
         _state.update {
             it.copy(
                 deviceName = deviceName,
                 deviceId = deviceId,
                 isGatewayEnabled = isEnabled,
-                lastHeartbeatMs = lastHeartbeatMs
+                lastHeartbeatMs = lastHeartbeatMs,
+                availableSims = sims,
+                isReceiveSmsEnabled = isReceiveSms
             )
         }
-    }
 
-    private fun fetchStats() {
-        val apiKey = SharedPreferenceHelper.getSharedPreferenceString(
-            context, AppConstants.SHARED_PREFS_API_KEY_KEY, ""
-        ) ?: ""
-        if (apiKey.isEmpty()) {
-            _state.update { it.copy(isStatsLoading = false, statsUnavailable = true) }
-            return
-        }
-
-        viewModelScope.launch {
-            _state.update { it.copy(isStatsLoading = true, statsUnavailable = false) }
-            try {
-                val response = ApiManagerKt.getApiService().getStats(apiKey)
-                if (response.isSuccessful) {
-                    val data = response.body()?.data
-                    _state.update {
-                        it.copy(
-                            isStatsLoading = false,
-                            statsUnavailable = data == null,
-                            stats = data?.let { d ->
-                                GatewayStats(
-                                    totalSentSMS = d.totalSentSMSCount,
-                                    totalReceivedSMS = d.totalReceivedSMSCount,
-                                    totalDevices = d.totalDeviceCount,
-                                    totalApiKeys = d.totalApiKeyCount
-                                )
-                            }
-                        )
-                    }
-                } else {
-                    _state.update { it.copy(isStatsLoading = false, statsUnavailable = true) }
-                }
-            } catch (e: Exception) {
-                _state.update { it.copy(isStatsLoading = false, statsUnavailable = true) }
-                TextBeeUtils.logException(e, "Dashboard stats fetch failed")
-            }
+        // Restart sticky notification service on every launch if it should be running,
+        // matching legacy MainActivity behaviour (service is killed by OS on modern Android).
+        if (isEnabled) {
+            TextBeeUtils.startStickyNotificationService(context)
+            if (deviceId.isNotEmpty()) HeartbeatManager.scheduleHeartbeat(context)
         }
     }
 
@@ -165,6 +135,13 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun setReceiveSms(enabled: Boolean) {
+        SharedPreferenceHelper.setSharedPreferenceBoolean(
+            context, AppConstants.SHARED_PREFS_RECEIVE_SMS_ENABLED_KEY, enabled
+        )
+        _state.update { it.copy(isReceiveSmsEnabled = enabled) }
+    }
+
     fun toggleGateway(enabled: Boolean) {
         val deviceId = _state.value.deviceId
         val apiKey = SharedPreferenceHelper.getSharedPreferenceString(
@@ -175,7 +152,7 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             _state.update { it.copy(isTogglingGateway = true) }
             try {
-                val input = RegisterDeviceInputDTO().apply { setEnabled(enabled) }
+                val input = RegisterDeviceInputDTO().apply { this.enabled = enabled }
                 val response = ApiManagerKt.getApiService().updateDevice(deviceId, apiKey, input)
                 if (response.isSuccessful) {
                     SharedPreferenceHelper.setSharedPreferenceBoolean(

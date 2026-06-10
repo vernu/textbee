@@ -23,13 +23,13 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.vernu.sms.AppConstants
 import com.vernu.sms.activities.MainActivity
-import com.vernu.sms.activities.SMSFilterActivity
 import com.vernu.sms.helpers.HeartbeatManager
 import com.vernu.sms.helpers.SharedPreferenceHelper
 import com.vernu.sms.ui.dashboard.DashboardScreen
 import com.vernu.sms.ui.messages.ComposeScreen
 import com.vernu.sms.ui.messages.MessagesScreen
 import com.vernu.sms.ui.onboarding.OnboardingActivity
+import com.vernu.sms.ui.settings.SMSFilterScreen
 import com.vernu.sms.ui.settings.SettingsScreen
 import com.vernu.sms.ui.theme.TextBeeTheme
 
@@ -58,9 +58,6 @@ class NewMainActivity : ComponentActivity() {
                             }
                         )
                     },
-                    onNavigateToFilters = {
-                        startActivity(Intent(this, SMSFilterActivity::class.java))
-                    },
                     onDisconnect = {
                         listOf(
                             AppConstants.SHARED_PREFS_DEVICE_ID_KEY,
@@ -88,12 +85,11 @@ class NewMainActivity : ComponentActivity() {
 private fun MainScaffold(
     navController: NavHostController,
     onSwitchToLegacy: () -> Unit,
-    onNavigateToFilters: () -> Unit,
     onDisconnect: () -> Unit
 ) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
-    val showBottomBar = currentRoute != "compose"
+    val showBottomBar = currentRoute != "compose" && currentRoute != "filters"
 
     Scaffold(
         bottomBar = {
@@ -158,7 +154,7 @@ private fun MainScaffold(
             composable(MainDestination.SETTINGS.name) {
                 SettingsScreen(
                     onSwitchToLegacy = onSwitchToLegacy,
-                    onNavigateToFilters = onNavigateToFilters,
+                    onNavigateToFilters = { navController.navigate("filters") },
                     onDisconnect = onDisconnect
                 )
             }
@@ -166,6 +162,9 @@ private fun MainScaffold(
                 ComposeScreen(
                     onNavigateBack = { navController.popBackStack() }
                 )
+            }
+            composable("filters") {
+                SMSFilterScreen(onNavigateBack = { navController.popBackStack() })
             }
         }
     }

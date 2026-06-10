@@ -63,7 +63,7 @@ fun DeviceSetupScreen(
                     text = if (state.isReturningUser)
                         "Enter your Device ID to reconnect this device to your account"
                     else
-                        "Register this device as an SMS gateway",
+                        "Give this device a name and register it to start sending SMS",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -97,10 +97,16 @@ fun DeviceSetupScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "I want to reuse an existing Device ID",
+                            text = "This device was previously registered",
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
+                    Text(
+                        text = "Use this if you reinstalled the app and want to reconnect your existing device rather than create a new one in your dashboard",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 48.dp)
+                    )
 
                     if (expandDeviceId) {
                         Spacer(modifier = Modifier.height(8.dp))

@@ -108,7 +108,7 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
 
         viewModelScope.launch {
             try {
-                val input = RegisterDeviceInputDTO().apply { setEnabled(enabled) }
+                val input = RegisterDeviceInputDTO().apply { this.enabled = enabled }
                 val response = ApiManagerKt.getApiService().updateDevice(deviceId, apiKey, input)
                 if (response.isSuccessful) {
                     SharedPreferenceHelper.setSharedPreferenceBoolean(
@@ -176,7 +176,7 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             _state.update { it.copy(isSavingDeviceName = true) }
             try {
-                val input = RegisterDeviceInputDTO().apply { setName(name.trim()) }
+                val input = RegisterDeviceInputDTO().apply { this.name = name.trim() }
                 val response = ApiManagerKt.getApiService().updateDevice(deviceId, apiKey, input)
                 if (response.isSuccessful) {
                     SharedPreferenceHelper.setSharedPreferenceString(

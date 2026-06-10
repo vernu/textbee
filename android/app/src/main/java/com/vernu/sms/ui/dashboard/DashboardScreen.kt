@@ -1,33 +1,54 @@
 package com.vernu.sms.ui.dashboard
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.provider.Settings
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.SupportAgent
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.vernu.sms.R
+import com.vernu.sms.dtos.SimInfoDTO
 import com.vernu.sms.dtos.SubscriptionResponse
 import com.vernu.sms.dtos.UserProfile
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
+
+private val REQUIRED_PERMISSIONS = listOf(
+    Manifest.permission.SEND_SMS,
+    Manifest.permission.RECEIVE_SMS,
+    Manifest.permission.READ_PHONE_STATE
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,6 +56,34 @@ fun DashboardScreen(
     viewModel: DashboardViewModel = viewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    val context = LocalContext.current
+
+    fun checkMissingPermissions() = REQUIRED_PERMISSIONS.filter {
+        ContextCompat.checkSelfPermission(context, it) != PackageManager.PERMISSION_GRANTED
+    }
+
+    var missingPermissions by remember { mutableStateOf(checkMissingPermissions()) }
+    var permissionsDenied by remember { mutableStateOf(false) }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) {
+        val stillMissing = checkMissingPermissions()
+        missingPermissions = stillMissing
+        if (stillMissing.isNotEmpty()) permissionsDenied = true
+    }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                missingPermissions = checkMissingPermissions()
+                if (missingPermissions.isEmpty()) permissionsDenied = false
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     Scaffold(
         topBar = {
@@ -47,12 +96,23 @@ fun DashboardScreen(
                             modifier = Modifier.size(28.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "textbee.dev",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                        Column {
+                            Text(
+                                text = "textbee.dev",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            val greeting = state.userProfile?.name?.takeIf { it.isNotBlank() }
+                                ?: state.userProfile?.email?.takeIf { it.isNotBlank() }
+                            if (greeting != null) {
+                                Text(
+                                    text = "Hello, $greeting",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
                     }
                 },
                 actions = {
@@ -75,9 +135,25 @@ fun DashboardScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Spacer(modifier = Modifier.height(4.dp))
-            UserGreetingHeader(userProfile = state.userProfile)
-            DeviceStatusCard(state = state, onToggle = { viewModel.toggleGateway(it) })
-            StatsSection(state = state)
+            if (missingPermissions.isNotEmpty()) {
+                PermissionWarningCard(
+                    missingPermissions = missingPermissions,
+                    showOpenSettings = permissionsDenied,
+                    onGrant = { permissionLauncher.launch(missingPermissions.toTypedArray()) },
+                    onOpenSettings = {
+                        context.startActivity(
+                            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                data = Uri.fromParts("package", context.packageName, null)
+                            }
+                        )
+                    }
+                )
+            }
+            DeviceStatusCard(
+                state = state,
+                onToggle = { viewModel.toggleGateway(it) },
+                onReceiveSmsToggle = { viewModel.setReceiveSms(it) }
+            )
             SubscriptionCard(
                 subscription = state.subscription,
                 isLoading = state.isSubscriptionLoading,
@@ -90,23 +166,12 @@ fun DashboardScreen(
 }
 
 @Composable
-private fun UserGreetingHeader(userProfile: UserProfile?) {
-    val displayName = userProfile?.name?.takeIf { it.isNotBlank() }
-        ?: userProfile?.email?.takeIf { it.isNotBlank() }
-        ?: return
-
-    Text(
-        text = "Hello, $displayName",
-        style = MaterialTheme.typography.headlineSmall,
-        fontWeight = FontWeight.Bold
-    )
-}
-
-@Composable
 private fun DeviceStatusCard(
     state: DashboardState,
-    onToggle: (Boolean) -> Unit
+    onToggle: (Boolean) -> Unit,
+    onReceiveSmsToggle: (Boolean) -> Unit
 ) {
+    val clipboard = LocalClipboardManager.current
     val statusColor = if (state.isGatewayEnabled) MaterialTheme.colorScheme.primary
                      else MaterialTheme.colorScheme.onSurfaceVariant
     val statusText = if (state.isGatewayEnabled) "Enabled" else "Disabled"
@@ -142,31 +207,197 @@ private fun DeviceStatusCard(
                         )
                     }
                     if (state.deviceId.isNotEmpty()) {
-                        Text(
-                            text = state.deviceId,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = state.deviceId,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                            )
+                            IconButton(
+                                onClick = { clipboard.setText(AnnotatedString(state.deviceId)) },
+                                modifier = Modifier.size(20.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.ContentCopy,
+                                    contentDescription = "Copy Device ID",
+                                    modifier = Modifier.size(12.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                                )
+                            }
+                        }
                     }
                 }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Switch(
+                        checked = state.isGatewayEnabled,
+                        onCheckedChange = onToggle,
+                        enabled = !state.isTogglingGateway
+                    )
+                    Text(
+                        text = "Gateway",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            if (!state.isGatewayEnabled) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Surface(
+                    color = statusColor.copy(alpha = 0.15f),
+                    shape = MaterialTheme.shapes.small
+                ) {
+                    Text(
+                        text = statusText,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = statusColor,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
+                    Text(
+                        text = "Receive SMS",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "Received messages appear in your dashboard and API",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    )
+                }
                 Switch(
-                    checked = state.isGatewayEnabled,
-                    onCheckedChange = onToggle,
-                    enabled = !state.isTogglingGateway
+                    checked = state.isReceiveSmsEnabled,
+                    onCheckedChange = onReceiveSmsToggle,
+                    modifier = Modifier.scale(0.75f)
                 )
             }
-            Spacer(modifier = Modifier.height(12.dp))
-            Surface(
-                color = statusColor.copy(alpha = 0.15f),
-                shape = MaterialTheme.shapes.small
-            ) {
-                Text(
-                    text = statusText,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = statusColor,
-                    fontWeight = FontWeight.SemiBold
+            if (state.availableSims.isNotEmpty()) {
+                SimCardsSection(sims = state.availableSims)
+            }
+        }
+    }
+}
+
+@Composable
+private fun PermissionWarningCard(
+    missingPermissions: List<String>,
+    showOpenSettings: Boolean,
+    onGrant: () -> Unit,
+    onOpenSettings: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Default.Warning,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(18.dp)
                 )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Permissions Required",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onErrorContainer
+                )
+            }
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = "The gateway won't work without: ${missingPermissions.joinToString { friendlyPermissionName(it) }}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onErrorContainer
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Button(
+                onClick = if (showOpenSettings) onOpenSettings else onGrant,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error,
+                    contentColor = MaterialTheme.colorScheme.onError
+                )
+            ) {
+                Text(if (showOpenSettings) "Open App Settings" else "Grant Permissions")
+            }
+        }
+    }
+}
+
+private fun friendlyPermissionName(permission: String) = when (permission) {
+    Manifest.permission.SEND_SMS -> "Send SMS"
+    Manifest.permission.RECEIVE_SMS -> "Receive SMS"
+    Manifest.permission.READ_PHONE_STATE -> "Phone State"
+    else -> permission.substringAfterLast(".")
+}
+
+@Composable
+private fun SimCardsSection(sims: List<SimInfoDTO>) {
+    val context = LocalContext.current
+    val clipboard = LocalClipboardManager.current
+
+    Divider(modifier = Modifier.padding(top = 10.dp, bottom = 2.dp))
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "SIM Cards",
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = "simSubscriptionId",
+            style = MaterialTheme.typography.labelSmall,
+            fontFamily = FontFamily.Monospace,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+        )
+    }
+    sims.forEach { sim ->
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "SIM ${(sim.simSlotIndex ?: 0) + 1} · ${sim.carrierName ?: sim.displayName ?: "Unknown"}",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f)
+            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = sim.subscriptionId.toString(),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontFamily = FontFamily.Monospace,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                IconButton(
+                    onClick = {
+                        clipboard.setText(AnnotatedString(sim.subscriptionId.toString()))
+                        Toast.makeText(context, "Subscription ID copied", Toast.LENGTH_SHORT).show()
+                    },
+                    modifier = Modifier.size(28.dp)
+                ) {
+                    Icon(
+                        Icons.Default.ContentCopy,
+                        contentDescription = "Copy subscription ID",
+                        modifier = Modifier.size(13.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }
@@ -311,7 +542,7 @@ private fun UsageRow(label: String, used: Int?, limit: Int?, pct: Int?) {
             Text(text = label, style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(
-                text = if (isUnlimited) "${used ?: 0} / ∞"
+                text = if (isUnlimited) "${used ?: 0} / Unlimited"
                        else "${used ?: 0} / ${limit ?: "—"}",
                 style = MaterialTheme.typography.bodySmall,
                 fontWeight = FontWeight.Medium
@@ -333,156 +564,43 @@ private fun UsageRow(label: String, used: Int?, limit: Int?, pct: Int?) {
 }
 
 @Composable
-private fun StatsSection(state: DashboardState) {
-    Text(
-        text = "All-Time Stats",
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.SemiBold
-    )
-
-    when {
-        state.isStatsLoading -> {
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(32.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                }
-            }
-        }
-        state.statsUnavailable -> {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                )
-            ) {
-                Text(
-                    text = "Stats unavailable",
-                    modifier = Modifier.padding(16.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-        else -> {
-            val stats = state.stats
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                StatCard(label = "Total Sent", value = stats?.totalSentSMS?.toString() ?: "—", modifier = Modifier.weight(1f))
-                StatCard(label = "Total Received", value = stats?.totalReceivedSMS?.toString() ?: "—", modifier = Modifier.weight(1f))
-            }
-        }
-    }
-}
-
-@Composable
-private fun StatCard(label: String, value: String, modifier: Modifier = Modifier) {
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = value,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
-@Composable
 private fun QuickActionsSection() {
     val context = LocalContext.current
 
-    Text(
-        text = "Quick Actions",
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.SemiBold
-    )
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        OutlinedButton(
-            onClick = {
-                context.startActivity(
-                    Intent(Intent.ACTION_VIEW, Uri.parse("https://app.textbee.dev/dashboard"))
-                )
-            },
-            modifier = Modifier.weight(1f)
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = "Quick Actions",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Icon(Icons.Default.OpenInBrowser, contentDescription = null, modifier = Modifier.size(16.dp))
-            Spacer(modifier = Modifier.width(6.dp))
-            Text("Dashboard")
-        }
-        OutlinedButton(
-            onClick = {
-                context.startActivity(
-                    Intent(Intent.ACTION_VIEW, Uri.parse("https://textbee.dev/docs"))
-                )
-            },
-            modifier = Modifier.weight(1f)
-        ) {
-            Icon(Icons.Default.MenuBook, contentDescription = null, modifier = Modifier.size(16.dp))
-            Spacer(modifier = Modifier.width(6.dp))
-            Text("Explore Docs")
-        }
-    }
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        OutlinedButton(
-            onClick = {
-                context.startActivity(
-                    Intent(Intent.ACTION_VIEW, Uri.parse("https://app.textbee.dev/dashboard/account/get-support"))
-                )
-            },
-            modifier = Modifier.weight(1f)
-        ) {
-            Icon(Icons.Default.SupportAgent, contentDescription = null, modifier = Modifier.size(16.dp))
-            Spacer(modifier = Modifier.width(6.dp))
-            Text("Get Support")
-        }
-        OutlinedButton(
-            onClick = {
-                val shareText = "i've been using textbee.dev to send SMS via API from my own phone, " +
-                    "no Twilio or paid services needed. works great for automations, alerts, " +
-                    "notifications, or anything that needs programmatic SMS. open source and free to start\n\n" +
-                    "https://textbee.dev"
-                context.startActivity(
-                    Intent.createChooser(
-                        Intent(Intent.ACTION_SEND).apply {
-                            type = "text/plain"
-                            putExtra(Intent.EXTRA_TEXT, shareText)
-                        },
-                        "Share TextBee"
+            OutlinedButton(
+                onClick = {
+                    context.startActivity(
+                        Intent(Intent.ACTION_VIEW, Uri.parse("https://app.textbee.dev/dashboard"))
                     )
-                )
-            },
-            modifier = Modifier.weight(1f)
-        ) {
-            Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
-            Spacer(modifier = Modifier.width(6.dp))
-            Text("Share")
+                },
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(Icons.Default.OpenInBrowser, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Dashboard")
+            }
+            OutlinedButton(
+                onClick = {
+                    context.startActivity(
+                        Intent(Intent.ACTION_VIEW, Uri.parse("https://textbee.dev/docs"))
+                    )
+                },
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(Icons.Default.MenuBook, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Explore Docs")
+            }
         }
     }
 }

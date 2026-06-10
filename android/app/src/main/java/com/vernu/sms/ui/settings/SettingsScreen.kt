@@ -142,6 +142,12 @@ fun SettingsScreen(
                     selectedId = state.preferredSimSubscriptionId,
                     onSelect = { viewModel.setPreferredSim(it) }
                 )
+                Text(
+                    text = "Use the simSubscriptionId field in your API requests to override this setting",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 56.dp, end = 16.dp, bottom = 8.dp)
+                )
             }
 
             SettingsSectionHeader("SMS")
@@ -217,6 +223,41 @@ fun SettingsScreen(
                 trailing = {
                     Icon(Icons.Default.OpenInBrowser, contentDescription = null,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+                }
+            )
+
+            SettingsSectionHeader("Community")
+
+            SettingsRow(
+                icon = Icons.Default.SupportAgent,
+                title = "Get Support",
+                onClick = {
+                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://app.textbee.dev/dashboard/account/get-support")))
+                },
+                trailing = {
+                    Icon(Icons.Default.OpenInBrowser, contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+                }
+            )
+
+            SettingsRow(
+                icon = Icons.Default.Share,
+                title = "Share textbee",
+                subtitle = "Help spread the word",
+                onClick = {
+                    val shareText = "i've been using textbee.dev to send SMS via API from my own phone, " +
+                        "no Twilio or paid services needed. works great for automations, alerts, " +
+                        "notifications, or anything that needs programmatic SMS. open source and free to start\n\n" +
+                        "https://textbee.dev"
+                    context.startActivity(
+                        Intent.createChooser(
+                            Intent(Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(Intent.EXTRA_TEXT, shareText)
+                            },
+                            "Share TextBee"
+                        )
+                    )
                 }
             )
 
@@ -506,7 +547,8 @@ private fun SimSelectionRow(
                 onExpandedChange = { expanded = !expanded }
             ) {
                 OutlinedTextField(
-                    value = selectedSim?.displayName ?: "Device Default",
+                    value = selectedSim?.let { "${it.displayName} · ID: ${it.subscriptionId}" }
+                        ?: "Device Default",
                     onValueChange = {},
                     readOnly = true,
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
@@ -528,7 +570,7 @@ private fun SimSelectionRow(
                     )
                     sims.forEach { sim ->
                         DropdownMenuItem(
-                            text = { Text(sim.displayName) },
+                            text = { Text("${sim.displayName} · ID: ${sim.subscriptionId}") },
                             onClick = {
                                 onSelect(sim.subscriptionId)
                                 expanded = false

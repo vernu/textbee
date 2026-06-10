@@ -1,24 +1,29 @@
 package com.vernu.sms.ui.onboarding.screens
 
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ChatBubble
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.vernu.sms.R
 
 @Composable
 fun WelcomeScreen(
     onGetStarted: () -> Unit,
     onHaveDeviceId: () -> Unit
 ) {
+    val context = LocalContext.current
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -33,11 +38,10 @@ fun WelcomeScreen(
                 .background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = Icons.Default.ChatBubble,
+            Image(
+                painter = painterResource(id = R.drawable.ic_app_logo),
                 contentDescription = null,
-                modifier = Modifier.size(48.dp),
-                tint = MaterialTheme.colorScheme.primary
+                modifier = Modifier.size(60.dp)
             )
         }
 
@@ -59,7 +63,38 @@ fun WelcomeScreen(
             textAlign = TextAlign.Center
         )
 
-        Spacer(modifier = Modifier.height(64.dp))
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            listOf(
+                "Create a free account at textbee.dev",
+                "Connect this phone as your SMS gateway",
+                "Send SMS via API from any app or automation"
+            ).forEachIndexed { i, step ->
+                Row(
+                    verticalAlignment = Alignment.Top,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "${i + 1}.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.width(20.dp)
+                    )
+                    Text(
+                        text = step,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(32.dp))
 
         Button(
             onClick = onGetStarted,
@@ -78,15 +113,38 @@ fun WelcomeScreen(
                 .fillMaxWidth()
                 .height(52.dp)
         ) {
-            Text("I have a Device ID", style = MaterialTheme.typography.labelLarge)
+            Text("Reconnect a device", style = MaterialTheme.typography.labelLarge)
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-        Text(
-            text = "textbee.dev",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        TextButton(
+            onClick = {
+                context.startActivity(
+                    Intent(Intent.ACTION_VIEW, Uri.parse("https://app.textbee.dev/register"))
+                )
+            }
+        ) {
+            Text(
+                text = "Don't have an account? Sign up free",
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        TextButton(
+            onClick = {
+                context.startActivity(
+                    Intent(Intent.ACTION_VIEW, Uri.parse("https://textbee.dev"))
+                )
+            }
+        ) {
+            Text(
+                text = "textbee.dev",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
