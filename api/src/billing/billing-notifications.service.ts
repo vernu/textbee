@@ -84,6 +84,7 @@ export class BillingNotificationsService {
       [BillingNotificationType.DAILY_LIMIT_REACHED]: 12,
       [BillingNotificationType.MONTHLY_LIMIT_REACHED]: 48,
       [BillingNotificationType.BULK_SMS_LIMIT_REACHED]: 12,
+      [BillingNotificationType.DEVICE_LIMIT_REACHED]: 48,
       [BillingNotificationType.DAILY_LIMIT_APPROACHING]: 24,
       [BillingNotificationType.MONTHLY_LIMIT_APPROACHING]: 48,
     }[type]

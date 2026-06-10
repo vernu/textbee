@@ -62,6 +62,10 @@ export class Subscription {
 
   @Prop({ type: Number })
   customBulkSendLimit?: number
+
+  // no default on purpose: absent means "no override", fall back to plan.deviceLimit
+  @Prop({ type: Number })
+  customDeviceLimit?: number
 }
 
 export const SubscriptionSchema = SchemaFactory.createForClass(Subscription)

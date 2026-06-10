@@ -135,6 +135,7 @@ export class BillingService {
           processedSmsLastMonth,
           dailyLimit: effectiveLimits.dailyLimit,
           monthlyLimit: effectiveLimits.monthlyLimit,
+          deviceLimit: effectiveLimits.deviceLimit,
           dailyRemaining:
             effectiveLimits.dailyLimit === -1
               ? -1
@@ -213,6 +214,7 @@ export class BillingService {
         processedSmsLastMonth,
         dailyLimit: effectiveLimits.dailyLimit,
         monthlyLimit: effectiveLimits.monthlyLimit,
+        deviceLimit: effectiveLimits.deviceLimit,
         dailyRemaining:
           effectiveLimits.dailyLimit === -1
             ? -1
@@ -246,8 +248,8 @@ export class BillingService {
     payload: any
     req: any
   }): Promise<CheckoutResponseDTO> {
-    const isYearly = !!payload.isYearly
-    const billingInterval = isYearly ? 'yearly' : 'monthly'
+    const billingInterval =
+      payload.billingInterval === 'yearly' ? 'yearly' : 'monthly'
 
     const existingCheckoutSession = await this.checkoutSessionModel.findOne({
       user: user._id,
@@ -294,7 +296,7 @@ export class BillingService {
       // Polar preselects the first product in the list, so order it by the
       // billing interval the user chose
       const orderedProductIds = (
-        isYearly
+        billingInterval === 'yearly'
           ? [selectedPlan.polarYearlyProductId, selectedPlan.polarMonthlyProductId]
           : [selectedPlan.polarMonthlyProductId, selectedPlan.polarYearlyProductId]
       ).filter(Boolean)
@@ -418,6 +420,7 @@ export class BillingService {
         dailyLimit: plan.dailyLimit,
         monthlyLimit: plan.monthlyLimit,
         bulkSendLimit: plan.bulkSendLimit,
+        deviceLimit: plan.deviceLimit ?? -1,
       }
     }
 
@@ -425,6 +428,8 @@ export class BillingService {
       dailyLimit: subscription.customDailyLimit ?? plan.dailyLimit,
       monthlyLimit: subscription.customMonthlyLimit ?? plan.monthlyLimit,
       bulkSendLimit: subscription.customBulkSendLimit ?? plan.bulkSendLimit,
+      deviceLimit:
+        subscription.customDeviceLimit ?? plan.deviceLimit ?? -1,
     }
   }
 
@@ -441,6 +446,24 @@ export class BillingService {
 
     // Use custom limits if set, otherwise fall back to plan limits
     return this.getEffectiveLimits(subscription, subscription.plan)
+  }
+
+  async notifyDeviceLimitReached(
+    userId: Types.ObjectId | string,
+    deviceLimit: number,
+    activeDeviceCount: number,
+  ) {
+    await this.billingNotifications.notifyOnce({
+      userId,
+      type: BillingNotificationType.DEVICE_LIMIT_REACHED,
+      title: 'Active device limit reached',
+      message: `Your plan allows up to ${deviceLimit} active device(s) and you have ${activeDeviceCount}. Disable or delete another device, or upgrade your plan to connect more devices.`,
+      meta: {
+        deviceLimit,
+        activeDeviceCount,
+      },
+      sendEmail: true,
+    })
   }
 
   async switchPlan({
@@ -748,6 +771,7 @@ export class BillingService {
       dailyLimit: effectiveLimits.dailyLimit,
       monthlyLimit: effectiveLimits.monthlyLimit,
       bulkSendLimit: effectiveLimits.bulkSendLimit,
+      deviceLimit: effectiveLimits.deviceLimit,
       dailyRemaining:
         effectiveLimits.dailyLimit === -1
           ? -1
