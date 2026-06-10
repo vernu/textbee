@@ -110,12 +110,68 @@ export default function UpgradeToProAlert() {
     }
   }, [monthlyUsagePercentage, monthlyLimit, processedSmsLastMonth])
 
+  const planName = currentSubscription?.plan?.name
+
   if (isLoadingSubscription || !currentSubscription || subscriptionError) {
     return null
   }
 
-  if (currentSubscription?.plan?.name !== 'free') {
+  if (planName === 'scale' || planName?.startsWith('custom')) {
     return null
+  }
+
+  if (planName === 'pro') {
+    if (monthlyUsagePercentage < 80) return null
+
+    const scaleAlertConfig =
+      monthlyUsagePercentage >= 100
+        ? {
+            bgColor: 'bg-gradient-to-r from-red-600 to-red-800',
+            message: '⚠️ Monthly limit exceeded! Upgrade to Scale for 25,000 SMS/mo.',
+            subMessage: `You've used ${processedSmsLastMonth} of ${monthlyLimit} SMS this month.`,
+            buttonText: 'Upgrade to Scale!',
+            buttonColor: 'bg-white text-red-600 hover:bg-red-50 hover:text-red-700 border-red-600',
+          }
+        : {
+            bgColor: 'bg-gradient-to-r from-orange-500 to-red-500',
+            message: '⚠️ Approaching Pro limit! Scale up to 25,000 SMS/mo.',
+            subMessage: `You've used ${monthlyUsagePercentage}% of your monthly SMS limit (${processedSmsLastMonth}/${monthlyLimit}).`,
+            buttonText: 'Upgrade to Scale',
+            buttonColor: 'bg-white text-orange-600 hover:bg-orange-50 hover:text-orange-700 border-orange-600',
+          }
+
+    return (
+      <Alert className={`${scaleAlertConfig.bgColor} text-white`}>
+        <AlertDescription className='flex flex-col sm:flex-row flex-wrap items-center gap-2 md:gap-4'>
+          <span className='w-full sm:flex-1 text-center sm:text-left text-sm md:text-base font-medium'>
+            {scaleAlertConfig.message}
+          </span>
+          <span className='w-full sm:flex-1 text-center sm:text-left text-xs md:text-sm'>
+            {scaleAlertConfig.subMessage}
+          </span>
+          <div className='w-full sm:w-auto mt-2 sm:mt-0 flex justify-center sm:justify-end flex-wrap gap-1 md:gap-2'>
+            <Button
+              variant='outline'
+              size='sm'
+              asChild
+              className={`${scaleAlertConfig.buttonColor} text-xs md:text-sm`}
+            >
+              <Link href={'/checkout/scale'}>
+                {scaleAlertConfig.buttonText}
+              </Link>
+            </Button>
+            <Button
+              variant='outline'
+              size='sm'
+              asChild
+              className='bg-orange-500 text-white hover:bg-orange-600 text-xs md:text-sm'
+            >
+              <Link href={'/#pricing'}>Learn More</Link>
+            </Button>
+          </div>
+        </AlertDescription>
+      </Alert>
+    )
   }
 
   return (
