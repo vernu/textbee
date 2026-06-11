@@ -7,12 +7,16 @@ import {
   CheckoutResponseDTO,
   PlansResponseDTO,
 } from './billing.dto'
+import { BillingNotificationsService } from './billing-notifications.service'
 
 @ApiTags('billing')
 @ApiBearerAuth()
 @Controller('billing')
 export class BillingController {
-  constructor(private billingService: BillingService) {}
+  constructor(
+    private billingService: BillingService,
+    private billingNotifications: BillingNotificationsService,
+  ) {}
 
   @Get('plans')
   async getPlans(): Promise<PlansResponseDTO> {
@@ -23,6 +27,12 @@ export class BillingController {
   @UseGuards(AuthGuard)
   async getCurrentSubscription(@Request() req: any) {
     return this.billingService.getCurrentSubscription(req.user)
+  }
+
+  @Get('notifications')
+  @UseGuards(AuthGuard)
+  async listNotifications(@Request() req: any) {
+    return this.billingNotifications.listForUser(req.user._id)
   }
 
   @Post('checkout')
@@ -57,8 +67,6 @@ export class BillingController {
         console.log(payload)
         await this.billingService.switchPlan({
           userId: payload.data?.metadata?.userId as string,
-          // TODO: remove this after more plans are added
-          newPlanName: 'pro',
           newPlanPolarProductId: payload.data?.product?.id,
           currentPeriodStart: payload.data?.currentPeriodStart,
           currentPeriodEnd: payload.data?.currentPeriodEnd,
@@ -73,12 +81,14 @@ export class BillingController {
 
       // @ts-ignore
       case 'subscription.cancelled':
-        console.log('polar subscription.cancelled')
+      // @ts-ignore
+      case 'subscription.canceled':
+      // case 'subscription.revoked':
+        console.log('polar webhook event', payload.type)
         console.log(payload)
-        await this.billingService.switchPlan({
-          // @ts-ignore
-          userId: payload?.data?.userId,
-          newPlanName: 'free',
+        await this.billingService.cancelSubscription({
+          userId: payload.data?.metadata?.userId as string,
+          polarProductId: payload.data?.product?.id,
         })
         break
       default:

@@ -514,7 +514,6 @@ export class BillingService {
     if (newPlanPolarProductId) {
       plan = await this.planModel.findOne({
         $or: [
-          // { polarProductId: newPlanPolarProductId }, // deprecated
           { polarMonthlyProductId: newPlanPolarProductId },
           { polarYearlyProductId: newPlanPolarProductId },
         ],
@@ -556,6 +555,35 @@ export class BillingService {
       `Updated or created subscription: ${updateResult.upsertedCount > 0 ? 'Created' : 'Updated'}`,
     )
 
+    return { success: true, plan: plan.name }
+  }
+
+  async cancelSubscription({
+    userId,
+    polarProductId,
+  }: {
+    userId: string
+    polarProductId?: string
+  }) {
+    const userObjectId = new Types.ObjectId(userId)
+
+    const plan = await this.planModel.findOne({
+      $or: [
+        { polarMonthlyProductId: polarProductId },
+        { polarYearlyProductId: polarProductId },
+      ],
+    })
+
+    if (!plan) {
+      throw new Error(`No plan found for product ID: ${polarProductId}`)
+    }
+
+    await this.subscriptionModel.updateOne(
+      { user: userObjectId, plan: plan._id, isActive: true },
+      { isActive: false, subscriptionEndDate: new Date() },
+    )
+
+    console.log(`Cancelled subscription for user ${userId} on plan ${plan.name}`)
     return { success: true, plan: plan.name }
   }
 
