@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import { Calendar, Check, Info } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Spinner } from '@/components/ui/spinner'
@@ -14,8 +15,28 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { useToast } from '@/hooks/use-toast'
 
 export default function SubscriptionInfo() {
+  const { toast } = useToast()
+
+  // the checkout page redirects here after an in-place plan change
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search)
+    if (searchParams.get('plan-change-success')) {
+      toast({
+        title: 'Plan updated',
+        description: 'Your subscription has been updated to the new plan.',
+      })
+      searchParams.delete('plan-change-success')
+      const query = searchParams.toString()
+      window.history.replaceState(
+        null,
+        '',
+        `${window.location.pathname}${query ? `?${query}` : ''}`,
+      )
+    }
+  }, [toast])
   const {
     data: currentSubscription,
     isLoading: isLoadingSubscription,

@@ -23,8 +23,14 @@ export class Subscription {
   @Prop({ type: Types.ObjectId, ref: Plan.name, required: true })
   plan: Plan | Types.ObjectId
 
-  // @Prop()
-  // polarSubscriptionId?: string
+  @Prop({ type: String, index: true })
+  polarSubscriptionId?: string
+
+  @Prop({ type: String })
+  polarCustomerId?: string
+
+  @Prop({ type: Boolean })
+  cancelAtPeriodEnd?: boolean
 
   @Prop({ type: String })
   recurringInterval?: string
