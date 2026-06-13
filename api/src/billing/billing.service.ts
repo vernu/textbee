@@ -251,6 +251,37 @@ export class BillingService {
     const billingInterval =
       payload.billingInterval === 'yearly' ? 'yearly' : 'monthly'
 
+    // A user with an active paid Polar subscription must not get a new
+    // checkout (it would create a second subscription and double-bill them);
+    // their existing Polar subscription gets updated instead, after the
+    // frontend shows a confirmation screen
+    const planChange = await this.resolvePlanChange({
+      user,
+      planName: payload.planName,
+      billingInterval,
+    })
+
+    if (planChange.isPlanChange) {
+      const currentPlan = planChange.currentSubscription.plan as Plan
+      return {
+        planChange: {
+          currentPlan: currentPlan.name,
+          currentInterval:
+            this.normalizeBillingInterval(
+              planChange.currentSubscription.recurringInterval,
+            ) ?? 'monthly',
+          newPlan: planChange.selectedPlan.name,
+          newInterval: billingInterval,
+          isUpgrade:
+            (planChange.selectedPlan.monthlyPrice ?? 0) >
+            (currentPlan.monthlyPrice ?? 0),
+          cancelAtPeriodEnd: !!planChange.polarSubscription.cancelAtPeriodEnd,
+        },
+      }
+    }
+
+    const selectedPlan = planChange.selectedPlan
+
     const existingCheckoutSession = await this.checkoutSessionModel.findOne({
       user: user._id,
       expiresAt: { $gt: new Date() },
@@ -266,25 +297,6 @@ export class BillingService {
       existingCheckoutSession.billingInterval === billingInterval
     ) {
       return { redirectUrl: existingCheckoutSession.checkoutUrl }
-    }
-
-    const selectedPlan = await this.planModel.findOne({
-      name: payload.planName,
-    })
-
-    const currentSubscription = await this.getCurrentSubscription(user)
-    if ((currentSubscription?.plan as Plan)?.name ===  payload.planName) {
-      throw new BadRequestException({
-        message: `You are already on ${payload.planName} plan, please contact billing@textbee.dev to get a custom plan`,
-        code: 'ALREADY_ON_PLAN',
-      })
-    }
-
-    if (
-      !selectedPlan?.polarMonthlyProductId &&
-      !selectedPlan?.polarYearlyProductId
-    ) {
-      throw new BadRequestException('Plan cannot be purchased')
     }
 
     // const product = await this.polarApi.products.get(selectedPlan.polarProductId)
@@ -355,6 +367,261 @@ export class BillingService {
     } catch (error) {
       console.error(error)
       throw new Error('Failed to create checkout')
+    }
+  }
+
+  // Polar reports recurringInterval as 'month'/'year', checkout requests use
+  // 'monthly'/'yearly'
+  private normalizeBillingInterval(
+    interval?: string,
+  ): 'monthly' | 'yearly' | undefined {
+    if (interval === 'month' || interval === 'monthly') return 'monthly'
+    if (interval === 'year' || interval === 'yearly') return 'yearly'
+    return undefined
+  }
+
+  // Decides whether a checkout request is actually a plan change on an
+  // existing paid Polar subscription. Throws for requests that are valid in
+  // neither path (same plan+interval, custom plans, payment issues).
+  private async resolvePlanChange({
+    user,
+    planName,
+    billingInterval,
+  }: {
+    user: any
+    planName: string
+    billingInterval: 'monthly' | 'yearly'
+  }): Promise<{
+    selectedPlan: PlanDocument
+    isPlanChange: boolean
+    currentSubscription?: SubscriptionDocument
+    polarSubscription?: any
+    targetProductId?: string
+  }> {
+    const selectedPlan = await this.planModel.findOne({ name: planName })
+
+    if (
+      !selectedPlan?.polarMonthlyProductId &&
+      !selectedPlan?.polarYearlyProductId
+    ) {
+      throw new BadRequestException('Plan cannot be purchased')
+    }
+
+    const currentSubscription = await this.subscriptionModel
+      .findOne({ user: user._id, isActive: true })
+      .populate('plan')
+
+    const currentPlan = currentSubscription?.plan as Plan | undefined
+    const currentInterval = this.normalizeBillingInterval(
+      currentSubscription?.recurringInterval,
+    )
+
+    if (currentPlan?.name?.startsWith('custom')) {
+      throw new BadRequestException({
+        message:
+          'You are on a custom plan, please contact billing@textbee.dev to change your plan',
+        code: 'CONTACT_BILLING',
+      })
+    }
+
+    // Same plan with a different billing interval is a valid change
+    // (e.g. pro monthly -> pro yearly), each interval is a separate product
+    if (
+      currentPlan?.name === planName &&
+      (!currentInterval || currentInterval === billingInterval)
+    ) {
+      throw new BadRequestException({
+        message: `You are already on ${planName} plan, please contact billing@textbee.dev to get a custom plan`,
+        code: 'ALREADY_ON_PLAN',
+      })
+    }
+
+    if (!currentPlan || currentPlan.name === 'free') {
+      return { selectedPlan, isPlanChange: false, currentSubscription }
+    }
+
+    let polarSubscription = null
+    if (currentSubscription.polarSubscriptionId) {
+      try {
+        polarSubscription = await this.polarApi.subscriptions.get({
+          id: currentSubscription.polarSubscriptionId,
+        })
+      } catch (error) {
+        console.error('failed to fetch polar subscription by stored id', error)
+      }
+    }
+
+    // Older subscriptions predate storing polarSubscriptionId; checkouts have
+    // always set externalCustomerId to the user id, so recover it from there
+    if (!polarSubscription || polarSubscription.status === 'canceled') {
+      try {
+        const page = await this.polarApi.subscriptions.list({
+          externalCustomerId: user._id.toString(),
+          active: true,
+          limit: 1,
+        })
+        polarSubscription = page?.result?.items?.[0] ?? null
+
+        if (polarSubscription) {
+          this.subscriptionModel
+            .updateOne(
+              { _id: currentSubscription._id },
+              {
+                polarSubscriptionId: polarSubscription.id,
+                polarCustomerId: polarSubscription.customerId,
+              },
+            )
+            .catch((error) => {
+              console.error(error)
+            })
+        }
+      } catch (error) {
+        console.error('failed to list polar subscriptions', error)
+      }
+    }
+
+    if (!polarSubscription) {
+      // Paid subscription with no Polar record (e.g. manually granted):
+      // a regular checkout is the correct path for these users
+      console.warn(
+        `No active polar subscription found for user ${user._id} on paid plan ${currentPlan.name}, falling back to checkout`,
+      )
+      return { selectedPlan, isPlanChange: false, currentSubscription }
+    }
+
+    const targetProductId =
+      billingInterval === 'yearly'
+        ? selectedPlan.polarYearlyProductId
+        : selectedPlan.polarMonthlyProductId
+
+    if (!targetProductId) {
+      throw new BadRequestException(
+        `Plan ${planName} cannot be purchased with ${billingInterval} billing`,
+      )
+    }
+
+    // Catches drift between our DB and Polar
+    if (polarSubscription.productId === targetProductId) {
+      throw new BadRequestException({
+        message: `You are already on ${planName} plan, please contact billing@textbee.dev to get a custom plan`,
+        code: 'ALREADY_ON_PLAN',
+      })
+    }
+
+    if (['past_due', 'incomplete', 'unpaid'].includes(polarSubscription.status)) {
+      throw new BadRequestException({
+        message:
+          'Your subscription has a payment issue. Please update your payment method in the customer portal before changing plans.',
+        code: 'PAYMENT_ISSUE',
+      })
+    }
+
+    return {
+      selectedPlan,
+      isPlanChange: true,
+      currentSubscription,
+      polarSubscription,
+      targetProductId,
+    }
+  }
+
+  async changePlan({ user, payload }: { user: any; payload: any }) {
+    const billingInterval =
+      payload.billingInterval === 'yearly' ? 'yearly' : 'monthly'
+
+    const { isPlanChange, selectedPlan, polarSubscription, targetProductId } =
+      await this.resolvePlanChange({
+        user,
+        planName: payload.planName,
+        billingInterval,
+      })
+
+    if (!isPlanChange) {
+      throw new BadRequestException({
+        message:
+          'No active paid subscription found to change, please use the checkout instead',
+        code: 'NO_ACTIVE_SUBSCRIPTION',
+      })
+    }
+
+    try {
+      // A product update on a subscription scheduled for cancellation is
+      // rejected by Polar; changing plans clearly signals intent to stay
+      if (polarSubscription.cancelAtPeriodEnd) {
+        await this.polarApi.subscriptions.update({
+          id: polarSubscription.id,
+          subscriptionUpdate: { cancelAtPeriodEnd: false },
+        })
+      }
+
+      // prorationBehavior omitted on purpose: use the Polar org default
+      const updated = await this.polarApi.subscriptions.update({
+        id: polarSubscription.id,
+        subscriptionUpdate: { productId: targetProductId },
+      })
+
+      // Update local state right away so the dashboard reflects the change;
+      // the subscription.updated webhook that follows is an idempotent no-op
+      await this.switchPlan({
+        userId: user._id.toString(),
+        newPlanPolarProductId: updated.productId ?? targetProductId,
+        currentPeriodStart: updated.currentPeriodStart,
+        currentPeriodEnd: updated.currentPeriodEnd,
+        subscriptionStartDate: updated.startedAt ?? updated.createdAt,
+        subscriptionEndDate: updated.canceledAt,
+        status: updated.status,
+        amount: updated.amount,
+        currency: updated.currency,
+        recurringInterval: updated.recurringInterval,
+        polarSubscriptionId: updated.id,
+        polarCustomerId: updated.customerId,
+        cancelAtPeriodEnd: updated.cancelAtPeriodEnd,
+      })
+
+      // An open cached checkout for the old plan must not be reusable anymore
+      this.checkoutSessionModel
+        .updateOne(
+          { user: user._id, isCompleted: { $ne: true } },
+          { isAbandoned: true },
+        )
+        .catch((error) => {
+          console.error(error)
+        })
+
+      return { success: true, plan: selectedPlan.name }
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error
+      }
+      console.error('failed to change plan', error)
+
+      const statusCode = error?.statusCode
+      if (statusCode === 402) {
+        throw new BadRequestException({
+          message:
+            'The prorated charge failed. Please update your payment method in the customer portal and try again.',
+          code: 'PAYMENT_ISSUE',
+        })
+      }
+      if (statusCode === 403) {
+        throw new BadRequestException({
+          message:
+            'Your subscription is canceled or ending and cannot be changed. Please resume it in the customer portal or contact billing@textbee.dev.',
+          code: 'SUBSCRIPTION_ENDING',
+        })
+      }
+      if (statusCode === 409) {
+        throw new BadRequestException({
+          message:
+            'A plan change is already in progress for your subscription. Please try again later or contact billing@textbee.dev.',
+          code: 'PENDING_UPDATE',
+        })
+      }
+      throw new BadRequestException({
+        message:
+          'Failed to change plan, please try again or contact billing@textbee.dev',
+        code: 'PLAN_CHANGE_FAILED',
+      })
     }
   }
 
@@ -491,6 +758,9 @@ export class BillingService {
     amount,
     currency,
     recurringInterval,
+    polarSubscriptionId,
+    polarCustomerId,
+    cancelAtPeriodEnd,
   }: {
     userId: string
     newPlanName?: string
@@ -504,6 +774,9 @@ export class BillingService {
     amount?: number
     currency?: string
     recurringInterval?: string
+    polarSubscriptionId?: string
+    polarCustomerId?: string
+    cancelAtPeriodEnd?: boolean
   }) {
     console.log(`Switching plan for user: ${userId}`)
 
@@ -548,6 +821,9 @@ export class BillingService {
         amount,
         currency,
         recurringInterval,
+        polarSubscriptionId,
+        polarCustomerId,
+        cancelAtPeriodEnd,
       },
       { upsert: true },
     )

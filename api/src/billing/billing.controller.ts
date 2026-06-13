@@ -3,6 +3,8 @@ import { BillingService } from './billing.service'
 import { AuthGuard } from 'src/auth/guards/auth.guard'
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger'
 import {
+  ChangePlanInputDTO,
+  ChangePlanResponseDTO,
   CheckoutInputDTO,
   CheckoutResponseDTO,
   PlansResponseDTO,
@@ -48,6 +50,18 @@ export class BillingController {
     })
   }
 
+  @Post('change-plan')
+  @UseGuards(AuthGuard)
+  async changePlan(
+    @Body() payload: ChangePlanInputDTO,
+    @Request() req: any,
+  ): Promise<ChangePlanResponseDTO> {
+    return this.billingService.changePlan({
+      user: req.user,
+      payload,
+    })
+  }
+
   @Post('webhook/polar')
   async handlePolarWebhook(@Body() data: any, @Request() req: any) {
     const payload = await this.billingService.validatePolarWebhookPayload(
@@ -66,7 +80,8 @@ export class BillingController {
         console.log('polar webhook event', payload.type)
         console.log(payload)
         await this.billingService.switchPlan({
-          userId: payload.data?.metadata?.userId as string,
+          userId: (payload.data?.metadata?.userId ||
+            payload.data?.customer?.externalId) as string,
           newPlanPolarProductId: payload.data?.product?.id,
           currentPeriodStart: payload.data?.currentPeriodStart,
           currentPeriodEnd: payload.data?.currentPeriodEnd,
@@ -76,6 +91,9 @@ export class BillingController {
           amount: payload.data?.amount,
           currency: payload.data?.currency,
           recurringInterval: payload.data?.recurringInterval,
+          polarSubscriptionId: payload.data?.id,
+          polarCustomerId: payload.data?.customerId,
+          cancelAtPeriodEnd: payload.data?.cancelAtPeriodEnd,
         })
         break
 
@@ -87,7 +105,8 @@ export class BillingController {
         console.log('polar webhook event', payload.type)
         console.log(payload)
         await this.billingService.cancelSubscription({
-          userId: payload.data?.metadata?.userId as string,
+          userId: (payload.data?.metadata?.userId ||
+            payload.data?.customer?.externalId) as string,
           polarProductId: payload.data?.product?.id,
         })
         break

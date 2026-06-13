@@ -42,6 +42,7 @@ export const ApiEndpoints = {
   billing: {
     currentSubscription: () => '/billing/current-subscription',
     checkout: () => '/billing/checkout',
+    changePlan: () => '/billing/change-plan',
     plans: () => '/billing/plans',
   },
   support: {
