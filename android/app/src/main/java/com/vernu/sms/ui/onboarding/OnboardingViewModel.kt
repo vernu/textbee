@@ -13,6 +13,7 @@ import com.vernu.sms.dtos.RegisterDeviceInputDTO
 import com.vernu.sms.dtos.SimInfoCollectionDTO
 import com.vernu.sms.helpers.HeartbeatManager
 import com.vernu.sms.helpers.SharedPreferenceHelper
+import com.vernu.sms.helpers.serverErrorMessage
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -98,6 +99,7 @@ class OnboardingViewModel : ViewModel() {
                 }
                 val input = RegisterDeviceInputDTO().apply {
                     this.fcmToken = fcmToken
+                    enabled = true
                     brand = Build.BRAND
                     manufacturer = Build.MANUFACTURER
                     model = Build.MODEL
@@ -156,6 +158,8 @@ class OnboardingViewModel : ViewModel() {
                             errorMessage = when (response.code()) {
                                 401 -> "Invalid API key. Go back and check your key."
                                 404 -> "Device ID not found. Verify it in your dashboard."
+                                429 -> response.serverErrorMessage()
+                                    ?: "You've reached your plan's device limit. Disable or remove another device, or upgrade your plan."
                                 in 500..599 -> "Server error. Please try again in a moment."
                                 else -> "Request failed (${response.code()}). Please try again."
                             }

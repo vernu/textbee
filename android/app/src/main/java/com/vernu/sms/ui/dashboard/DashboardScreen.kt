@@ -58,6 +58,13 @@ fun DashboardScreen(
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
 
+    LaunchedEffect(state.userMessage) {
+        state.userMessage?.let { message ->
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+            viewModel.consumeUserMessage()
+        }
+    }
+
     fun checkMissingPermissions() = REQUIRED_PERMISSIONS.filter {
         ContextCompat.checkSelfPermission(context, it) != PackageManager.PERMISSION_GRANTED
     }
