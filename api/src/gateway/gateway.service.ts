@@ -133,6 +133,7 @@ export class GatewayService {
       })
     } else {
       await this.assertDeviceLimitNotReached(user._id)
+      deviceData.enabled = input.enabled ?? true
       return await this.deviceModel.create(deviceData)
     }
   }

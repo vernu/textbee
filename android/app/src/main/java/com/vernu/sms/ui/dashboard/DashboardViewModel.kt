@@ -12,6 +12,7 @@ import com.vernu.sms.dtos.SubscriptionResponse
 import com.vernu.sms.dtos.UserProfile
 import com.vernu.sms.helpers.HeartbeatManager
 import com.vernu.sms.helpers.SharedPreferenceHelper
+import com.vernu.sms.helpers.serverErrorMessage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,7 +30,8 @@ data class DashboardState(
     val subscriptionUnavailable: Boolean = false,
     val userProfile: UserProfile? = null,
     val availableSims: List<SimInfoDTO> = emptyList(),
-    val isReceiveSmsEnabled: Boolean = false
+    val isReceiveSmsEnabled: Boolean = false,
+    val userMessage: String? = null
 )
 
 class DashboardViewModel(app: Application) : AndroidViewModel(app) {
@@ -135,6 +137,10 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun consumeUserMessage() {
+        _state.update { it.copy(userMessage = null) }
+    }
+
     fun setReceiveSms(enabled: Boolean) {
         SharedPreferenceHelper.setSharedPreferenceBoolean(
             context, AppConstants.SHARED_PREFS_RECEIVE_SMS_ENABLED_KEY, enabled
@@ -175,9 +181,25 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
                     } catch (e: Exception) {
                         TextBeeUtils.logException(e, "Gateway service toggle failed")
                     }
+                    _state.update {
+                        it.copy(
+                            userMessage = if (enabled) "Gateway enabled" else "Gateway disabled"
+                        )
+                    }
+                } else {
+                    // Surface the server's reason (e.g. device-limit 429) so the
+                    // toggle doesn't silently snap back with no explanation.
+                    val message = response.serverErrorMessage()
+                        ?: if (response.code() == 429) {
+                            "You've reached your plan's device limit. Disable or remove another device, or upgrade your plan."
+                        } else {
+                            "Couldn't update the gateway. Please try again."
+                        }
+                    _state.update { it.copy(userMessage = message) }
                 }
             } catch (e: Exception) {
                 TextBeeUtils.logException(e, "Gateway toggle failed")
+                _state.update { it.copy(userMessage = "Couldn't update the gateway. Please check your connection.") }
             } finally {
                 _state.update { it.copy(isTogglingGateway = false) }
             }

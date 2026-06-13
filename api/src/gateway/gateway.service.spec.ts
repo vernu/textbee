@@ -76,6 +76,8 @@ describe('GatewayService', () => {
 
   const mockBillingService = {
     canPerformAction: jest.fn(),
+    getUserLimits: jest.fn(),
+    notifyDeviceLimitReached: jest.fn(),
   }
 
   const mockSmsQueueService = {
@@ -227,6 +229,37 @@ describe('GatewayService', () => {
         fcmTokenInvalidReason: undefined,
       })
       expect(result).toBeDefined()
+    })
+
+    it('should default a new device to enabled when the client omits enabled', async () => {
+      // 2.8+ clients register without an `enabled` field; the server must
+      // still create the device enabled so it works without a manual toggle.
+      const inputWithoutEnabled: RegisterDeviceInputDTO = {
+        model: 'Pixel 6',
+        buildId: 'build123',
+        fcmToken: 'token123',
+      }
+      mockDeviceModel.findOne.mockResolvedValue(null)
+      mockBillingService.getUserLimits.mockResolvedValue({ deviceLimit: -1 })
+      mockDeviceModel.create.mockResolvedValue({ _id: 'device123' })
+
+      await service.registerDevice(inputWithoutEnabled, mockUser)
+
+      expect(mockDeviceModel.create).toHaveBeenCalledWith(
+        expect.objectContaining({ enabled: true }),
+      )
+    })
+
+    it('should block registration when the device limit is already reached', async () => {
+      mockDeviceModel.findOne.mockResolvedValue(null)
+      mockBillingService.getUserLimits.mockResolvedValue({ deviceLimit: 1 })
+      mockBillingService.notifyDeviceLimitReached.mockResolvedValue(undefined)
+      mockDeviceModel.countDocuments.mockResolvedValue(1)
+
+      await expect(
+        service.registerDevice(mockDeviceInput, mockUser),
+      ).rejects.toMatchObject({ status: HttpStatus.TOO_MANY_REQUESTS })
+      expect(mockDeviceModel.create).not.toHaveBeenCalled()
     })
   })
 
