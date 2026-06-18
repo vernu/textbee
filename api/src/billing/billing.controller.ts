@@ -101,10 +101,27 @@ export class BillingController {
       case 'subscription.cancelled':
       // @ts-ignore
       case 'subscription.canceled':
-      // case 'subscription.revoked':
         console.log('polar webhook event', payload.type)
         console.log(payload)
+        // Cancellation is SCHEDULED here — access continues until period end.
+        // Record the intent without downgrading; the actual downgrade happens
+        // on "subscription.revoked".
         await this.billingService.cancelSubscription({
+          userId: (payload.data?.metadata?.userId ||
+            payload.data?.customer?.externalId) as string,
+          polarProductId: payload.data?.product?.id,
+          cancelAtPeriodEnd: payload.data?.cancelAtPeriodEnd,
+          currentPeriodEnd: payload.data?.currentPeriodEnd,
+          status: payload.data?.status,
+        })
+        break
+
+      // @ts-ignore
+      case 'subscription.revoked':
+        console.log('polar webhook event', payload.type)
+        console.log(payload)
+        // Access should actually end now — perform the real downgrade.
+        await this.billingService.revokeSubscription({
           userId: (payload.data?.metadata?.userId ||
             payload.data?.customer?.externalId) as string,
           polarProductId: payload.data?.product?.id,

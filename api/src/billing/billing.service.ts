@@ -837,6 +837,53 @@ export class BillingService {
   async cancelSubscription({
     userId,
     polarProductId,
+    cancelAtPeriodEnd,
+    currentPeriodEnd,
+    status,
+  }: {
+    userId: string
+    polarProductId?: string
+    cancelAtPeriodEnd?: boolean
+    currentPeriodEnd?: Date
+    status?: string
+  }) {
+    const userObjectId = new Types.ObjectId(userId)
+
+    const plan = await this.planModel.findOne({
+      $or: [
+        { polarMonthlyProductId: polarProductId },
+        { polarYearlyProductId: polarProductId },
+      ],
+    })
+
+    if (!plan) {
+      throw new Error(`No plan found for product ID: ${polarProductId}`)
+    }
+
+    // Polar "subscription.canceled" = cancellation SCHEDULED. The subscription
+    // stays active until period end. Record the intent; do NOT downgrade here.
+    // The actual downgrade happens on the "subscription.revoked" event.
+    await this.subscriptionModel.updateOne(
+      { user: userObjectId, plan: plan._id, isActive: true },
+      {
+        cancelAtPeriodEnd: cancelAtPeriodEnd ?? true,
+        ...(currentPeriodEnd && {
+          currentPeriodEnd,
+          subscriptionEndDate: currentPeriodEnd,
+        }),
+        ...(status && { status }),
+      },
+    )
+
+    console.log(
+      `Recorded scheduled cancellation for user ${userId} on plan ${plan.name} (ends ${currentPeriodEnd ?? 'unknown'})`,
+    )
+    return { success: true, plan: plan.name }
+  }
+
+  async revokeSubscription({
+    userId,
+    polarProductId,
   }: {
     userId: string
     polarProductId?: string
@@ -859,7 +906,7 @@ export class BillingService {
       { isActive: false, subscriptionEndDate: new Date() },
     )
 
-    console.log(`Cancelled subscription for user ${userId} on plan ${plan.name}`)
+    console.log(`Revoked subscription for user ${userId} on plan ${plan.name}`)
     return { success: true, plan: plan.name }
   }
 
