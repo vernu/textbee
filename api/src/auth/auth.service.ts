@@ -194,6 +194,11 @@ export class AuthService {
     return { message: 'Password reset email sent' }
   }
 
+  // Reject after this many failed OTP submissions against the same record.
+  // A 6-digit OTP has ~1e6 possibilities and lives for 20 minutes, so we
+  // cap online guessing well below what an attacker would need to succeed.
+  private static readonly MAX_PASSWORD_RESET_ATTEMPTS = 5
+
   async resetPassword({ email, otp, newPassword }: ResetPasswordInputDTO) {
     const user = await this.usersService.findOne({ email })
     if (!user) {
@@ -208,7 +213,34 @@ export class AuthService {
       { sort: { createdAt: -1 } },
     )
 
-    if (!passwordReset || !(await bcrypt.compare(otp, passwordReset.otp))) {
+    if (!passwordReset) {
+      throw new HttpException({ error: 'Invalid OTP' }, HttpStatus.BAD_REQUEST)
+    }
+
+    // Consume the record if the attempt limit has already been hit. This
+    // prevents an attacker from brute-forcing a 6-digit OTP within the
+    // 20-minute window: after MAX_PASSWORD_RESET_ATTEMPTS wrong guesses the
+    // record is invalidated and a fresh reset request is required.
+    if (
+      (passwordReset.attempts ?? 0) >= AuthService.MAX_PASSWORD_RESET_ATTEMPTS
+    ) {
+      passwordReset.expiresAt = new Date(Date.now())
+      await passwordReset.save()
+      throw new HttpException({ error: 'Invalid OTP' }, HttpStatus.BAD_REQUEST)
+    }
+
+    if (!(await bcrypt.compare(otp, passwordReset.otp))) {
+      // Track the failed attempt durably so retries across requests count
+      // against the same lockout budget.
+      passwordReset.attempts = (passwordReset.attempts ?? 0) + 1
+      if (
+        passwordReset.attempts >= AuthService.MAX_PASSWORD_RESET_ATTEMPTS
+      ) {
+        // Invalidate the record on the last failed attempt so a subsequent
+        // correct-guess submission cannot succeed.
+        passwordReset.expiresAt = new Date(Date.now())
+      }
+      await passwordReset.save()
       throw new HttpException({ error: 'Invalid OTP' }, HttpStatus.BAD_REQUEST)
     }
 
