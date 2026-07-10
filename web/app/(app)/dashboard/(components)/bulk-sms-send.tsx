@@ -55,11 +55,15 @@ export default function BulkSMSSend() {
   })
 
   const maxRows = useMemo(() => {
-    if (currentSubscription?.plan?.bulkSendLimit == -1) {
+    const effectiveBulkSendLimit =
+      currentSubscription?.usage?.bulkSendLimit ??
+      currentSubscription?.plan?.bulkSendLimit
+
+    if (effectiveBulkSendLimit == -1) {
       return 9999
     }
 
-    return currentSubscription?.plan?.bulkSendLimit || DEFAULT_MAX_ROWS
+    return effectiveBulkSendLimit || DEFAULT_MAX_ROWS
   }, [currentSubscription])
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
