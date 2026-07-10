@@ -62,11 +62,11 @@ function LimitTile({
         'p-2 rounded-md',
         isOverridden
           ? 'bg-amber-500/5 ring-1 ring-amber-500/30'
-          : 'bg-gray-50 dark:bg-gray-700/50'
+          : 'bg-muted'
       )}
     >
       <div className='flex items-center justify-between gap-1'>
-        <p className='text-xs text-gray-500 dark:text-gray-400'>{label}</p>
+        <p className='text-xs text-muted-foreground'>{label}</p>
         {isOverridden && (
           <TooltipProvider>
             <Tooltip>
@@ -92,11 +92,11 @@ function LimitTile({
       </div>
 
       <div className='mt-0.5 flex items-baseline gap-1.5'>
-        <p className='text-sm font-semibold text-gray-900 dark:text-white'>
+        <p className='text-sm font-semibold text-foreground'>
           {formatLimit(effectiveValue)}
         </p>
         {isOverridden && (
-          <span className='text-xs text-gray-400 dark:text-gray-500 line-through'>
+          <span className='text-xs text-muted-foreground line-through'>
             {formatLimit(planValue)}
           </span>
         )}
@@ -105,7 +105,7 @@ function LimitTile({
             <Tooltip>
               <TooltipTrigger asChild>
                 <span className='inline-flex items-center'>
-                  <Info className='h-3.5 w-3.5 text-gray-400 cursor-pointer' />
+                  <Info className='h-3.5 w-3.5 text-muted-foreground cursor-pointer' />
                 </span>
               </TooltipTrigger>
               <TooltipContent>
@@ -118,13 +118,13 @@ function LimitTile({
 
       {meter && !meter.unlimited && (
         <div className='mt-1.5'>
-          <div className='h-1.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700'>
+          <div className='h-1.5 w-full overflow-hidden rounded-full bg-muted'>
             <div
               className={cn('h-full rounded-full transition-all', meterColor)}
               style={{ width: `${Math.min(Math.max(meter.percentage, 0), 100)}%` }}
             />
           </div>
-          <div className='mt-1 flex items-center justify-between text-[10px] text-gray-500 dark:text-gray-400'>
+          <div className='mt-1 flex items-center justify-between text-[10px] text-muted-foreground'>
             <span>
               {meter.used.toLocaleString()} {meter.usedLabel}
             </span>
@@ -133,7 +133,7 @@ function LimitTile({
         </div>
       )}
       {meter && meter.unlimited && (
-        <p className='mt-1.5 text-[10px] text-gray-500 dark:text-gray-400'>
+        <p className='mt-1.5 text-[10px] text-muted-foreground'>
           {meter.used.toLocaleString()} {meter.usedLabel}
         </p>
       )}
@@ -260,11 +260,11 @@ export default function SubscriptionInfo() {
   const hasCustomLimits = limitTiles.some((tile) => tile.isOverridden)
 
   return (
-    <div className='bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border rounded-lg shadow p-4'>
+    <div className='bg-card border rounded-lg shadow p-4'>
       <div className='flex items-center justify-between mb-4'>
         <div>
           <div className='flex items-center gap-2 flex-wrap'>
-            <h3 className='text-lg font-bold text-gray-900 dark:text-white'>
+            <h3 className='text-lg font-bold text-foreground'>
               {plan?.name || 'Free Plan'}
             </h3>
             {hasCustomLimits && (
@@ -278,7 +278,7 @@ export default function SubscriptionInfo() {
             )}
           </div>
           <div className='flex items-center gap-2'>
-            <p className='text-xs text-gray-500 dark:text-gray-400'>
+            <p className='text-xs text-muted-foreground'>
               Current subscription
             </p>
             {currentSubscription?.amount > 0 && (
@@ -321,42 +321,42 @@ export default function SubscriptionInfo() {
       </div>
 
       <div className='grid grid-cols-2 gap-2.5 mb-4'>
-        <div className='flex items-center space-x-2 bg-white dark:bg-gray-800 p-2.5 rounded-md shadow-sm'>
-          <Calendar className='h-3.5 w-3.5 text-brand-600 dark:text-brand-400 flex-none' />
+        <div className='flex items-center space-x-2 bg-card p-2.5 rounded-md shadow-sm'>
+          <Calendar className='h-3.5 w-3.5 text-primary flex-none' />
           <div>
-            <p className='text-[11px] text-gray-500 dark:text-gray-400'>
+            <p className='text-[11px] text-muted-foreground'>
               Start Date
             </p>
-            <p className='text-xs font-medium text-gray-900 dark:text-white'>
+            <p className='text-xs font-medium text-foreground'>
               {formatDate(currentSubscription?.subscriptionStartDate)}
             </p>
           </div>
         </div>
 
-        <div className='flex items-center space-x-2 bg-white dark:bg-gray-800 p-2.5 rounded-md shadow-sm'>
-          <Calendar className='h-3.5 w-3.5 text-brand-600 dark:text-brand-400 flex-none' />
+        <div className='flex items-center space-x-2 bg-card p-2.5 rounded-md shadow-sm'>
+          <Calendar className='h-3.5 w-3.5 text-primary flex-none' />
           <div>
-            <p className='text-[11px] text-gray-500 dark:text-gray-400'>
+            <p className='text-[11px] text-muted-foreground'>
               Next Payment
             </p>
-            <p className='text-xs font-medium text-gray-900 dark:text-white'>
+            <p className='text-xs font-medium text-foreground'>
               {formatDate(currentSubscription?.currentPeriodEnd)}
             </p>
           </div>
         </div>
       </div>
 
-      <div className='bg-white dark:bg-gray-800 p-3 rounded-md shadow-sm mb-4'>
+      <div className='bg-card p-3 rounded-md shadow-sm mb-4'>
         <div className='flex items-center justify-between mb-2.5'>
           <div className='flex items-center gap-1'>
-            <p className='text-xs text-gray-500 dark:text-gray-400 font-medium'>
+            <p className='text-xs text-muted-foreground font-medium'>
               Usage Limits
             </p>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span className='inline-flex items-center'>
-                    <Info className='h-3.5 w-3.5 text-gray-400 cursor-pointer' />
+                    <Info className='h-3.5 w-3.5 text-muted-foreground cursor-pointer' />
                   </span>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -389,7 +389,7 @@ export default function SubscriptionInfo() {
           currentSubscription?.plan?.name?.toLowerCase() === 'free') ? (
           <Link
             href='/checkout/pro'
-            className='text-xs font-medium text-white bg-brand-600 hover:bg-brand-700 px-3 py-1.5 rounded-md transition-colors'
+            className='text-xs font-medium text-white bg-primary hover:bg-primary/90 px-3 py-1.5 rounded-md transition-colors'
           >
             Upgrade to Pro →
           </Link>
@@ -397,13 +397,13 @@ export default function SubscriptionInfo() {
           <>
             <Link
               href='/checkout/scale'
-              className='text-xs font-medium text-white bg-teal-600 hover:bg-teal-700 px-3 py-1.5 rounded-md transition-colors'
+              className='text-xs font-medium text-white bg-brand-700 hover:bg-brand-800 px-3 py-1.5 rounded-md transition-colors'
             >
               Upgrade to Scale →
             </Link>
             <Link
               href={polarCustomerPortalRequestUrl(currentUser?.email)}
-              className='text-xs font-medium text-white bg-brand-600 hover:bg-brand-700 px-3 py-1.5 rounded-md transition-colors'
+              className='text-xs font-medium text-white bg-primary hover:bg-primary/90 px-3 py-1.5 rounded-md transition-colors'
             >
               Manage Subscription →
             </Link>
@@ -411,7 +411,7 @@ export default function SubscriptionInfo() {
         ) : (
           <Link
             href={polarCustomerPortalRequestUrl(currentUser?.email)}
-            className='text-xs font-medium text-white bg-brand-600 hover:bg-brand-700 px-3 py-1.5 rounded-md transition-colors'
+            className='text-xs font-medium text-white bg-primary hover:bg-primary/90 px-3 py-1.5 rounded-md transition-colors'
           >
             Manage Subscription →
           </Link>

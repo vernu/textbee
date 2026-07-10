@@ -1,8 +1,6 @@
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { ApiEndpoints } from '@/config/api'
-import httpBrowserClient from '@/lib/httpBrowserClient'
-import { useQuery } from '@tanstack/react-query'
+import { useSubscription } from '@/lib/api'
 import Link from 'next/link'
 import { useMemo } from 'react'
 
@@ -25,13 +23,7 @@ export default function UpgradeToProAlert() {
     data: currentSubscription,
     isLoading: isLoadingSubscription,
     error: subscriptionError,
-  } = useQuery({
-    queryKey: ['currentSubscription'],
-    queryFn: () =>
-      httpBrowserClient
-        .get(ApiEndpoints.billing.currentSubscription())
-        .then((res) => res.data),
-  })
+  } = useSubscription()
 
   const monthlyUsagePercentage = currentSubscription?.usage?.monthlyUsagePercentage || 0
   const monthlyLimit = currentSubscription?.usage?.monthlyLimit || 0
@@ -100,11 +92,12 @@ export default function UpgradeToProAlert() {
         : "Unlock premium features, priority support, and advanced capabilities with Pro!"
       
       return {
-        bgColor: 'bg-gradient-to-r from-purple-500 to-pink-500',
+        bgColor: 'bg-linear-to-r from-brand-500 to-brand-600',
         message: ctaMessages[randomIndex],
         subMessage,
         buttonText: buttonTexts[randomIndex],
-        buttonColor: 'bg-red-500 text-white hover:bg-red-600 border-red-500',
+        buttonColor:
+          'bg-white text-brand-700 hover:bg-brand-50 border-transparent',
         urgency: 'normal'
       }
     }
@@ -164,7 +157,7 @@ export default function UpgradeToProAlert() {
               variant='outline'
               size='sm'
               asChild
-              className='bg-orange-500 text-white hover:bg-orange-600 text-xs md:text-sm'
+              className='bg-brand-600 text-white hover:bg-brand-700 text-xs md:text-sm'
             >
               <Link href={'/#pricing'}>Learn More</Link>
             </Button>
@@ -201,7 +194,7 @@ export default function UpgradeToProAlert() {
               variant='outline'
               size='sm'
               asChild
-              className='bg-orange-500 text-white hover:bg-orange-600 text-xs md:text-sm'
+              className='bg-brand-600 text-white hover:bg-brand-700 text-xs md:text-sm'
             >
               <Link href={'/#pricing'}>Learn More</Link>
             </Button>

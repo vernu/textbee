@@ -39,7 +39,6 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { Calendar } from 'lucide-react'
-import { truncate } from 'fs'
 import { formatDeviceName } from '@/lib/utils'
 
 const WebhooksHistory = () => {
