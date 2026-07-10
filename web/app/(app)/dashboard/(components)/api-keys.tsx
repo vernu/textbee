@@ -21,9 +21,12 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import httpBrowserClient from '@/lib/httpBrowserClient'
-import { ApiEndpoints } from '@/config/api'
+import {
+  useApiKeys,
+  useDeleteApiKey,
+  useRenameApiKey,
+  useRevokeApiKey,
+} from '@/lib/api'
 import { Skeleton } from '@/components/ui/skeleton'
 import GenerateApiKey, {
   type GenerateApiKeyHandle,
@@ -42,7 +45,6 @@ type ApiKeyRow = {
 
 export default function ApiKeys() {
   const addApiKeyRef = useRef<GenerateApiKeyHandle>(null)
-  const queryClient = useQueryClient()
 
   const [selectedKey, setSelectedKey] = useState<ApiKeyRow | null>(null)
   const [isRevokeDialogOpen, setIsRevokeDialogOpen] = useState(false)
@@ -56,100 +58,69 @@ export default function ApiKeys() {
 
   const { toast } = useToast()
 
-  const {
-    isPending,
-    error,
-    data: apiKeys,
-  } = useQuery({
-    queryKey: ['apiKeys', 'active'],
-    queryFn: () =>
-      httpBrowserClient
-        .get(ApiEndpoints.auth.listApiKeys('active'))
-        .then((res) => res.data),
-  })
+  const { isPending, error, data: apiKeys } = useApiKeys('active')
 
-  const {
-    data: revokedKeysData,
-    isPending: isRevokedPending,
-  } = useQuery({
-    queryKey: ['apiKeys', 'revoked'],
-    queryFn: () =>
-      httpBrowserClient
-        .get(ApiEndpoints.auth.listApiKeys('revoked'))
-        .then((res) => res.data),
-    enabled: isRevokedModalOpen,
-  })
+  const { data: revokedKeysData, isPending: isRevokedPending } = useApiKeys(
+    'revoked',
+    { enabled: isRevokedModalOpen }
+  )
 
-  const {
-    mutate: revokeApiKey,
-    isPending: isRevokingApiKey,
-    error: revokeApiKeyError,
-  } = useMutation({
-    mutationFn: (id: string) =>
-      httpBrowserClient.post(ApiEndpoints.auth.revokeApiKey(id)),
-    onSuccess: () => {
-      setIsRevokeDialogOpen(false)
-      toast({
-        title: `API key "${selectedKey?.apiKey}" has been revoked`,
-      })
-      void queryClient.invalidateQueries({ queryKey: ['apiKeys'] })
-    },
-    onError: () => {
-      toast({
-        variant: 'destructive',
-        title: 'Error revoking API key',
-        description: revokeApiKeyError?.message,
-      })
-    },
-  })
+  const { mutate: revokeApiKey, isPending: isRevokingApiKey } = useRevokeApiKey()
+  const { mutate: deleteRevokedApiKey, isPending: isDeletingRevokedApiKey } =
+    useDeleteApiKey()
+  const { mutate: renameApiKey, isPending: isRenamingApiKey } =
+    useRenameApiKey()
 
-  const {
-    mutate: deleteRevokedApiKey,
-    isPending: isDeletingRevokedApiKey,
-    error: deleteApiKeyError,
-  } = useMutation({
-    mutationFn: (id: string) =>
-      httpBrowserClient.delete(ApiEndpoints.auth.deleteApiKey(id)),
-    onSuccess: () => {
-      setIsConfirmDeleteRevokedOpen(false)
-      setRevokedKeyToDelete(null)
-      toast({
-        title: 'API key removed',
-      })
-      void queryClient.invalidateQueries({ queryKey: ['apiKeys'] })
-    },
-    onError: () => {
-      toast({
-        variant: 'destructive',
-        title: 'Error deleting API key',
-        description: deleteApiKeyError?.message,
-      })
-    },
-  })
-  const {
-    mutate: renameApiKey,
-    isPending: isRenamingApiKey,
-    error: renameApiKeyError,
-  } = useMutation({
-    mutationFn: ({ id, name }: { id: string; name: string }) =>
-      httpBrowserClient.patch(ApiEndpoints.auth.renameApiKey(id), { name }),
-    onSuccess: () => {
-      setIsRenameDialogOpen(false)
-      toast({
-        title: `API key renamed to "${newKeyName}"`,
-      })
-      void queryClient.invalidateQueries({ queryKey: ['apiKeys', 'active'] })
-    },
-    onError: () => {
-      toast({
-        variant: 'destructive',
-        title: 'Error renaming API key',
-        description: renameApiKeyError?.message,
-      })
-    },
-  })
+  const handleRevokeApiKey = (id: string) =>
+    revokeApiKey(id, {
+      onSuccess: () => {
+        setIsRevokeDialogOpen(false)
+        toast({ title: `API key "${selectedKey?.apiKey}" has been revoked` })
+      },
+      onError: (err) => {
+        toast({
+          variant: 'destructive',
+          title: 'Error revoking API key',
+          description: err?.message,
+        })
+      },
+    })
 
-  const revokedList = revokedKeysData?.data as ApiKeyRow[] | undefined
+  const handleDeleteRevokedApiKey = (id: string) =>
+    deleteRevokedApiKey(id, {
+      onSuccess: () => {
+        setIsConfirmDeleteRevokedOpen(false)
+        setRevokedKeyToDelete(null)
+        toast({ title: 'API key removed' })
+      },
+      onError: (err) => {
+        toast({
+          variant: 'destructive',
+          title: 'Error deleting API key',
+          description: err?.message,
+        })
+      },
+    })
+
+  const handleRenameApiKey = (id: string, name: string) =>
+    renameApiKey(
+      { id, name },
+      {
+        onSuccess: () => {
+          setIsRenameDialogOpen(false)
+          toast({ title: `API key renamed to "${newKeyName}"` })
+        },
+        onError: (err) => {
+          toast({
+            variant: 'destructive',
+            title: 'Error renaming API key',
+            description: err?.message,
+          })
+        },
+      }
+    )
+
+  const revokedList = revokedKeysData as ApiKeyRow[] | undefined
 
   return (
     <>
@@ -210,13 +181,13 @@ export default function ApiKeys() {
               </div>
             )}
 
-            {!isPending && !error && apiKeys?.data?.length === 0 && (
+            {!isPending && !error && apiKeys?.length === 0 && (
               <div className='flex justify-center items-center h-full'>
                 <div>No API keys found</div>
               </div>
             )}
 
-            {apiKeys?.data?.map((apiKey: ApiKeyRow) => (
+            {apiKeys?.map((apiKey: ApiKeyRow) => (
               <Card key={apiKey._id} className='border-0 shadow-none'>
                 <CardContent className='flex items-center p-3'>
                   <Key className='h-6 w-6 mr-3' />
@@ -319,7 +290,7 @@ export default function ApiKeys() {
               </Button>
               <Button
                 variant='destructive'
-                onClick={() => revokeApiKey(selectedKey?._id)}
+                onClick={() => selectedKey?._id && handleRevokeApiKey(selectedKey._id)}
                 disabled={isRevokingApiKey}
               >
                 {isRevokingApiKey ? (
@@ -425,7 +396,7 @@ export default function ApiKeys() {
                 variant='destructive'
                 onClick={() =>
                   revokedKeyToDelete &&
-                  deleteRevokedApiKey(revokedKeyToDelete._id)
+                  handleDeleteRevokedApiKey(revokedKeyToDelete._id)
                 }
                 disabled={isDeletingRevokedApiKey}
               >
@@ -462,10 +433,7 @@ export default function ApiKeys() {
               </Button>
               <Button
                 onClick={() =>
-                  renameApiKey({
-                    id: selectedKey?._id,
-                    name: newKeyName?.trim(),
-                  })
+                  handleRenameApiKey(selectedKey?._id, newKeyName?.trim())
                 }
                 disabled={isRenamingApiKey || !newKeyName?.trim()}
               >

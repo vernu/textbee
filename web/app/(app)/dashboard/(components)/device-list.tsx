@@ -16,10 +16,8 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { useToast } from '@/hooks/use-toast'
-import httpBrowserClient from '@/lib/httpBrowserClient'
-import { ApiEndpoints } from '@/config/api'
 import { Routes } from '@/config/routes'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useDeleteDevice, useDevices, useSubscription } from '@/lib/api'
 import { useRef, useState } from 'react'
 import {
   Dialog,
@@ -60,65 +58,42 @@ export default function DeviceList() {
   const [devicePendingDelete, setDevicePendingDelete] =
     useState<DeviceRow | null>(null)
   const { toast } = useToast()
-  const queryClient = useQueryClient()
-  const {
-    isPending,
-    error,
-    data: devices,
-  } = useQuery({
-    queryKey: ['devices'],
-    queryFn: () =>
-      httpBrowserClient
-        .get(ApiEndpoints.gateway.listDevices())
-        .then((res) => res.data),
-    // select: (res) => res.data,
-  })
+  const { isPending, error, data: devices } = useDevices()
 
-  const { data: currentSubscription } = useQuery({
-    queryKey: ['currentSubscription'],
-    queryFn: () =>
-      httpBrowserClient
-        .get(ApiEndpoints.billing.currentSubscription())
-        .then((res) => res.data),
-  })
+  const { data: currentSubscription } = useSubscription()
 
   // -1 (or missing) means unlimited; only enabled devices count toward the limit
   const deviceLimit = currentSubscription?.usage?.deviceLimit ?? -1
   const activeDeviceCount =
-    devices?.data?.filter((device) => device.enabled).length ?? 0
+    devices?.filter((device) => device.enabled).length ?? 0
   const isDeviceLimitReached =
     deviceLimit !== -1 && !isPending && activeDeviceCount >= deviceLimit
   const isApproachingDeviceLimit =
     deviceLimit >= 2 && !isPending && activeDeviceCount === deviceLimit - 1
 
-  const {
-    mutate: deleteDevice,
-    isPending: isDeletingDevice,
-  } = useMutation({
-    mutationFn: (id: string) =>
-      httpBrowserClient.delete(ApiEndpoints.gateway.deleteDevice(id)),
-    onSuccess: () => {
-      setDevicePendingDelete(null)
-      toast({
-        title: 'Device removed',
-      })
-      void queryClient.invalidateQueries({ queryKey: ['devices'] })
-    },
-    onError: (err: unknown) => {
-      const message =
-        err &&
-        typeof err === 'object' &&
-        'message' in err &&
-        typeof (err as { message: unknown }).message === 'string'
-          ? (err as { message: string }).message
-          : 'Something went wrong'
-      toast({
-        variant: 'destructive',
-        title: 'Error removing device',
-        description: message,
-      })
-    },
-  })
+  const { mutate: deleteDevice, isPending: isDeletingDevice } = useDeleteDevice()
+
+  const handleDeleteDevice = (id: string) =>
+    deleteDevice(id, {
+      onSuccess: () => {
+        setDevicePendingDelete(null)
+        toast({ title: 'Device removed' })
+      },
+      onError: (err: unknown) => {
+        const message =
+          err &&
+          typeof err === 'object' &&
+          'message' in err &&
+          typeof (err as { message: unknown }).message === 'string'
+            ? (err as { message: string }).message
+            : 'Something went wrong'
+        toast({
+          variant: 'destructive',
+          title: 'Error removing device',
+          description: message,
+        })
+      },
+    })
 
   const handleCopyId = (id: string) => {
     navigator.clipboard.writeText(id)
@@ -216,13 +191,13 @@ export default function DeviceList() {
               </div>
             )}
 
-            {!isPending && !error && devices?.data?.length === 0 && (
+            {!isPending && !error && devices?.length === 0 && (
               <div className='flex justify-center items-center h-full'>
                 <div>No devices found</div>
               </div>
             )}
 
-            {devices?.data?.map((device) => (
+            {devices?.map((device) => (
               <Card key={device._id} className='border-0 shadow-none'>
                 <CardContent className='flex items-center gap-1 p-3'>
                   <Smartphone className='h-6 w-6 mr-2 shrink-0' />
@@ -430,7 +405,7 @@ export default function DeviceList() {
               variant='destructive'
               onClick={() =>
                 devicePendingDelete &&
-                deleteDevice(devicePendingDelete._id)
+                handleDeleteDevice(devicePendingDelete._id)
               }
               disabled={isDeletingDevice}
             >

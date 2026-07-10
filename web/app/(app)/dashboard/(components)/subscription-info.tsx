@@ -4,9 +4,15 @@ import { useEffect } from 'react'
 import { Calendar, Check, Info, Sparkles } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Spinner } from '@/components/ui/spinner'
-import { useQuery } from '@tanstack/react-query'
-import httpBrowserClient from '@/lib/httpBrowserClient'
-import { ApiEndpoints } from '@/config/api'
+import { useCurrentUser, useSubscription } from '@/lib/api'
+import {
+  formatLimit,
+  formatPrice,
+  formatDate,
+  getBillingInterval,
+  titleCaseStatus,
+} from '@/lib/format'
+import { subscriptionStatusTone, usageMeterColor } from '@/lib/status'
 import { polarCustomerPortalRequestUrl } from '@/config/external-links'
 import Link from 'next/link'
 import {
@@ -17,12 +23,6 @@ import {
 } from '@/components/ui/tooltip'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
-
-const formatLimit = (value: number | null | undefined) => {
-  if (value === -1) return 'Unlimited'
-  if (value == null) return '0'
-  return value.toLocaleString()
-}
 
 type Meter = {
   used: number
@@ -54,12 +54,7 @@ function LimitTile({
   meter,
 }: LimitTileProps) {
   const isUnlimited = effectiveValue === -1
-  const meterColor =
-    meter && meter.percentage >= 100
-      ? 'bg-red-500'
-      : meter && meter.percentage >= 80
-      ? 'bg-amber-500'
-      : 'bg-green-500'
+  const meterColor = meter ? usageMeterColor(meter.percentage) : 'bg-green-500'
 
   return (
     <div
@@ -170,42 +165,9 @@ export default function SubscriptionInfo() {
     data: currentSubscription,
     isLoading: isLoadingSubscription,
     error: subscriptionError,
-  } = useQuery({
-    queryKey: ['currentSubscription'],
-    queryFn: () =>
-      httpBrowserClient
-        .get(ApiEndpoints.billing.currentSubscription())
-        .then((res) => res.data),
-  })
+  } = useSubscription()
 
-  const { data: currentUser } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () =>
-      httpBrowserClient
-        .get(ApiEndpoints.auth.whoAmI())
-        .then((res) => res.data?.data),
-  })
-
-  // Format price with currency symbol
-  const formatPrice = (
-    amount: number | null | undefined,
-    currency: string | null | undefined
-  ) => {
-    if (amount == null || currency == null) return 'Free'
-
-    const formatter = new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency.toUpperCase() || 'USD',
-      minimumFractionDigits: 2,
-    })
-
-    return formatter.format(amount / 100)
-  }
-
-  const getBillingInterval = (interval: string | null | undefined) => {
-    if (!interval) return ''
-    return interval.toLowerCase() === 'month' ? 'monthly' : 'yearly'
-  }
+  const { data: currentUser } = useCurrentUser()
 
   if (isLoadingSubscription)
     return (
@@ -336,38 +298,24 @@ export default function SubscriptionInfo() {
           </div>
         </div>
         <div
-          className={`flex items-center px-2 py-0.5 rounded-full ${
-            currentSubscription?.status === 'active'
-              ? 'bg-green-50 dark:bg-green-900/30'
-              : currentSubscription?.status === 'past_due'
-              ? 'bg-amber-50 dark:bg-amber-900/30'
-              : 'bg-gray-50 dark:bg-gray-800/50'
-          }`}
+          className={cn(
+            'flex items-center px-2 py-0.5 rounded-full',
+            subscriptionStatusTone(currentSubscription?.status).bg
+          )}
         >
           <Check
-            className={`h-3 w-3 mr-1 ${
-              currentSubscription?.status === 'active'
-                ? 'text-green-600 dark:text-green-400'
-                : currentSubscription?.status === 'past_due'
-                ? 'text-amber-600 dark:text-amber-400'
-                : 'text-gray-600 dark:text-gray-400'
-            }`}
+            className={cn(
+              'h-3 w-3 mr-1',
+              subscriptionStatusTone(currentSubscription?.status).text
+            )}
           />
           <span
-            className={`text-xs font-medium ${
-              currentSubscription?.status === 'active'
-                ? 'text-green-600 dark:text-green-400'
-                : currentSubscription?.status === 'past_due'
-                ? 'text-amber-600 dark:text-amber-400'
-                : 'text-gray-600 dark:text-gray-400'
-            }`}
+            className={cn(
+              'text-xs font-medium',
+              subscriptionStatusTone(currentSubscription?.status).text
+            )}
           >
-            {currentSubscription?.status
-              ? currentSubscription.status
-                  .split('_')
-                  .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                  .join(' ')
-              : 'Active'}
+            {titleCaseStatus(currentSubscription?.status) || 'Active'}
           </span>
         </div>
       </div>
@@ -380,15 +328,7 @@ export default function SubscriptionInfo() {
               Start Date
             </p>
             <p className='text-xs font-medium text-gray-900 dark:text-white'>
-              {currentSubscription?.subscriptionStartDate
-                ? new Date(
-                    currentSubscription?.subscriptionStartDate
-                  ).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
-                  })
-                : 'N/A'}
+              {formatDate(currentSubscription?.subscriptionStartDate)}
             </p>
           </div>
         </div>
@@ -400,15 +340,7 @@ export default function SubscriptionInfo() {
               Next Payment
             </p>
             <p className='text-xs font-medium text-gray-900 dark:text-white'>
-              {currentSubscription?.currentPeriodEnd
-                ? new Date(
-                    currentSubscription?.currentPeriodEnd
-                  ).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
-                  })
-                : 'N/A'}
+              {formatDate(currentSubscription?.currentPeriodEnd)}
             </p>
           </div>
         </div>

@@ -3,9 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { BarChart3, Smartphone, Key, MessageSquare, TrendingUp } from 'lucide-react'
 import GetStartedCard from './get-started'
-import { ApiEndpoints } from '@/config/api'
-import httpBrowserClient from '@/lib/httpBrowserClient'
-import { useQuery } from '@tanstack/react-query'
+import { useGatewayStats } from '@/lib/api'
 import { Skeleton } from '@/components/ui/skeleton'
 // import GetStartedCard from "@/components/get-started-card";
 
@@ -32,13 +30,7 @@ export const StatCard = ({ title, value, icon: Icon, description }) => {
 }
 
 export default function Overview() {
-  const { data: stats } = useQuery({
-    queryKey: ['stats'],
-    queryFn: () =>
-      httpBrowserClient
-        .get(ApiEndpoints.gateway.getStats())
-        .then((res) => res.data?.data),
-  })
+  const { data: stats } = useGatewayStats()
 
   return (
     <div className='space-y-6'>
