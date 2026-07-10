@@ -3,7 +3,9 @@ import type { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 import { Routes } from './config/routes'
 
-export async function middleware(request: NextRequest) {
+// Next 16 renamed the "middleware" convention to "proxy". This guards the
+// dashboard: authenticated routing based on the NextAuth session token.
+export async function proxy(request: NextRequest) {
   // Extract token using the secret for session-based authentication
   const token = await getToken({
     req: request,

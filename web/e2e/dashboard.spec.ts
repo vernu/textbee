@@ -9,6 +9,16 @@ test.describe('dashboard (mocked API, no real backend)', () => {
     await expect(page).toHaveURL(/\/login/)
   })
 
+  test('redirects authenticated users away from login', async ({
+    page,
+    context,
+  }) => {
+    await authenticate(context)
+    await mockApi(page)
+    await page.goto('/login')
+    await expect(page).toHaveURL(/\/dashboard/)
+  })
+
   test('renders the dashboard with mocked data for an authenticated user', async ({
     page,
     context,
