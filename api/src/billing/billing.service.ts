@@ -135,6 +135,7 @@ export class BillingService {
           processedSmsLastMonth,
           dailyLimit: effectiveLimits.dailyLimit,
           monthlyLimit: effectiveLimits.monthlyLimit,
+          bulkSendLimit: effectiveLimits.bulkSendLimit,
           deviceLimit: effectiveLimits.deviceLimit,
           dailyRemaining:
             effectiveLimits.dailyLimit === -1
@@ -214,6 +215,7 @@ export class BillingService {
         processedSmsLastMonth,
         dailyLimit: effectiveLimits.dailyLimit,
         monthlyLimit: effectiveLimits.monthlyLimit,
+        bulkSendLimit: effectiveLimits.bulkSendLimit,
         deviceLimit: effectiveLimits.deviceLimit,
         dailyRemaining:
           effectiveLimits.dailyLimit === -1

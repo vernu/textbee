@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { Calendar, Check, Info } from 'lucide-react'
+import { Calendar, Check, Info, Sparkles } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Spinner } from '@/components/ui/spinner'
 import { useQuery } from '@tanstack/react-query'
@@ -16,6 +16,135 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { useToast } from '@/hooks/use-toast'
+import { cn } from '@/lib/utils'
+
+const formatLimit = (value: number | null | undefined) => {
+  if (value === -1) return 'Unlimited'
+  if (value == null) return '0'
+  return value.toLocaleString()
+}
+
+type Meter = {
+  used: number
+  remaining: number
+  percentage: number
+  usedLabel: string
+  unlimited: boolean
+}
+
+type LimitTileProps = {
+  label: string
+  effectiveValue: number | null | undefined
+  planValue: number | null | undefined
+  isOverridden: boolean
+  planName?: string
+  tooltipUnit: string
+  unlimitedNote?: string
+  meter?: Meter
+}
+
+function LimitTile({
+  label,
+  effectiveValue,
+  planValue,
+  isOverridden,
+  planName,
+  tooltipUnit,
+  unlimitedNote,
+  meter,
+}: LimitTileProps) {
+  const isUnlimited = effectiveValue === -1
+  const meterColor =
+    meter && meter.percentage >= 100
+      ? 'bg-red-500'
+      : meter && meter.percentage >= 80
+      ? 'bg-amber-500'
+      : 'bg-green-500'
+
+  return (
+    <div
+      className={cn(
+        'p-2 rounded-md',
+        isOverridden
+          ? 'bg-amber-500/5 ring-1 ring-amber-500/30'
+          : 'bg-gray-50 dark:bg-gray-700/50'
+      )}
+    >
+      <div className='flex items-center justify-between gap-1'>
+        <p className='text-xs text-gray-500 dark:text-gray-400'>{label}</p>
+        {isOverridden && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className='inline-flex items-center gap-0.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400 cursor-default'>
+                  <Sparkles className='h-2.5 w-2.5' />
+                  Custom
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className='max-w-[220px]'>
+                  Custom limit set for your account by the textbee team.
+                  {planName
+                    ? ` Standard ${planName} plan limit: ${formatLimit(
+                        planValue
+                      )} ${tooltipUnit}.`
+                    : ''}
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+      </div>
+
+      <div className='mt-0.5 flex items-baseline gap-1.5'>
+        <p className='text-sm font-semibold text-gray-900 dark:text-white'>
+          {formatLimit(effectiveValue)}
+        </p>
+        {isOverridden && (
+          <span className='text-xs text-gray-400 dark:text-gray-500 line-through'>
+            {formatLimit(planValue)}
+          </span>
+        )}
+        {isUnlimited && unlimitedNote && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className='inline-flex items-center'>
+                  <Info className='h-3.5 w-3.5 text-gray-400 cursor-pointer' />
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{unlimitedNote}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+      </div>
+
+      {meter && !meter.unlimited && (
+        <div className='mt-1.5'>
+          <div className='h-1.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700'>
+            <div
+              className={cn('h-full rounded-full transition-all', meterColor)}
+              style={{ width: `${Math.min(Math.max(meter.percentage, 0), 100)}%` }}
+            />
+          </div>
+          <div className='mt-1 flex items-center justify-between text-[10px] text-gray-500 dark:text-gray-400'>
+            <span>
+              {meter.used.toLocaleString()} {meter.usedLabel}
+            </span>
+            <span>{Math.max(meter.remaining, 0).toLocaleString()} left</span>
+          </div>
+        </div>
+      )}
+      {meter && meter.unlimited && (
+        <p className='mt-1.5 text-[10px] text-gray-500 dark:text-gray-400'>
+          {meter.used.toLocaleString()} {meter.usedLabel}
+        </p>
+      )}
+    </div>
+  )
+}
 
 export default function SubscriptionInfo() {
   const { toast } = useToast()
@@ -92,15 +221,102 @@ export default function SubscriptionInfo() {
       </p>
     )
 
+  const plan = currentSubscription?.plan
+  const usage = currentSubscription?.usage
+  const planName = plan?.name || 'Free'
+
+  const isOverridden = (
+    custom: number | null | undefined,
+    planValue: number | null | undefined
+  ) => custom != null && custom !== planValue
+
+  const limitTiles: LimitTileProps[] = [
+    {
+      label: 'Daily',
+      effectiveValue: usage?.dailyLimit ?? plan?.dailyLimit,
+      planValue: plan?.dailyLimit,
+      isOverridden: isOverridden(
+        currentSubscription?.customDailyLimit,
+        plan?.dailyLimit
+      ),
+      planName,
+      tooltipUnit: 'per day',
+      unlimitedNote: 'Unlimited (within monthly limit)',
+      meter: {
+        used: usage?.processedSmsToday ?? 0,
+        remaining: usage?.dailyRemaining ?? 0,
+        percentage: usage?.dailyUsagePercentage ?? 0,
+        usedLabel: 'used today',
+        unlimited: (usage?.dailyLimit ?? plan?.dailyLimit) === -1,
+      },
+    },
+    {
+      label: 'Monthly',
+      effectiveValue: usage?.monthlyLimit ?? plan?.monthlyLimit,
+      planValue: plan?.monthlyLimit,
+      isOverridden: isOverridden(
+        currentSubscription?.customMonthlyLimit,
+        plan?.monthlyLimit
+      ),
+      planName,
+      tooltipUnit: 'per month',
+      unlimitedNote: 'Unlimited (within fair usage)',
+      meter: {
+        used: usage?.processedSmsLastMonth ?? 0,
+        remaining: usage?.monthlyRemaining ?? 0,
+        percentage: usage?.monthlyUsagePercentage ?? 0,
+        usedLabel: 'used this month',
+        unlimited: (usage?.monthlyLimit ?? plan?.monthlyLimit) === -1,
+      },
+    },
+    {
+      label: 'Bulk send',
+      effectiveValue: usage?.bulkSendLimit ?? plan?.bulkSendLimit,
+      planValue: plan?.bulkSendLimit,
+      isOverridden: isOverridden(
+        currentSubscription?.customBulkSendLimit,
+        plan?.bulkSendLimit
+      ),
+      planName,
+      tooltipUnit: 'per bulk send',
+      unlimitedNote: 'Unlimited (within monthly limit)',
+    },
+    {
+      label: 'Devices',
+      effectiveValue: usage?.deviceLimit ?? plan?.deviceLimit,
+      planValue: plan?.deviceLimit,
+      isOverridden: isOverridden(
+        currentSubscription?.customDeviceLimit,
+        plan?.deviceLimit
+      ),
+      planName,
+      tooltipUnit: 'devices',
+      unlimitedNote: 'Unlimited devices',
+    },
+  ]
+
+  const hasCustomLimits = limitTiles.some((tile) => tile.isOverridden)
+
   return (
-    <div className='bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border rounded-lg shadow p-5'>
-      <div className='flex items-center justify-between mb-5'>
+    <div className='bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border rounded-lg shadow p-4'>
+      <div className='flex items-center justify-between mb-4'>
         <div>
-          <h3 className='text-xl font-bold text-gray-900 dark:text-white'>
-            {currentSubscription?.plan?.name || 'Free Plan'}
-          </h3>
+          <div className='flex items-center gap-2 flex-wrap'>
+            <h3 className='text-lg font-bold text-gray-900 dark:text-white'>
+              {plan?.name || 'Free Plan'}
+            </h3>
+            {hasCustomLimits && (
+              <Badge
+                variant='outline'
+                className='gap-1 border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-medium'
+              >
+                <Sparkles className='h-3 w-3' />
+                Custom limits
+              </Badge>
+            )}
+          </div>
           <div className='flex items-center gap-2'>
-            <p className='text-sm text-gray-500 dark:text-gray-400'>
+            <p className='text-xs text-gray-500 dark:text-gray-400'>
               Current subscription
             </p>
             {currentSubscription?.amount > 0 && (
@@ -156,19 +372,19 @@ export default function SubscriptionInfo() {
         </div>
       </div>
 
-      <div className='grid grid-cols-2 gap-3 mb-5'>
-        <div className='flex items-center space-x-2 bg-white dark:bg-gray-800 p-3 rounded-md shadow-sm'>
-          <Calendar className='h-4 w-4 text-brand-600 dark:text-brand-400' />
+      <div className='grid grid-cols-2 gap-2.5 mb-4'>
+        <div className='flex items-center space-x-2 bg-white dark:bg-gray-800 p-2.5 rounded-md shadow-sm'>
+          <Calendar className='h-3.5 w-3.5 text-brand-600 dark:text-brand-400 flex-none' />
           <div>
-            <p className='text-xs text-gray-500 dark:text-gray-400'>
+            <p className='text-[11px] text-gray-500 dark:text-gray-400'>
               Start Date
             </p>
-            <p className='text-sm font-medium text-gray-900 dark:text-white'>
+            <p className='text-xs font-medium text-gray-900 dark:text-white'>
               {currentSubscription?.subscriptionStartDate
                 ? new Date(
                     currentSubscription?.subscriptionStartDate
                   ).toLocaleDateString('en-US', {
-                    month: 'long',
+                    month: 'short',
                     day: 'numeric',
                     year: 'numeric',
                   })
@@ -177,18 +393,18 @@ export default function SubscriptionInfo() {
           </div>
         </div>
 
-        <div className='flex items-center space-x-2 bg-white dark:bg-gray-800 p-3 rounded-md shadow-sm'>
-          <Calendar className='h-4 w-4 text-brand-600 dark:text-brand-400' />
+        <div className='flex items-center space-x-2 bg-white dark:bg-gray-800 p-2.5 rounded-md shadow-sm'>
+          <Calendar className='h-3.5 w-3.5 text-brand-600 dark:text-brand-400 flex-none' />
           <div>
-            <p className='text-xs text-gray-500 dark:text-gray-400'>
+            <p className='text-[11px] text-gray-500 dark:text-gray-400'>
               Next Payment
             </p>
-            <p className='text-sm font-medium text-gray-900 dark:text-white'>
+            <p className='text-xs font-medium text-gray-900 dark:text-white'>
               {currentSubscription?.currentPeriodEnd
                 ? new Date(
                     currentSubscription?.currentPeriodEnd
                   ).toLocaleDateString('en-US', {
-                    month: 'long',
+                    month: 'short',
                     day: 'numeric',
                     year: 'numeric',
                   })
@@ -198,78 +414,41 @@ export default function SubscriptionInfo() {
         </div>
       </div>
 
-      <div className='bg-white dark:bg-gray-800 p-4 rounded-md shadow-sm mb-5'>
-        <p className='text-xs text-gray-500 dark:text-gray-400 mb-3 font-medium'>
-          Usage Limits
-        </p>
-        <div className='grid grid-cols-3 gap-3'>
-          <div className='bg-gray-50 dark:bg-gray-700/50 p-2 rounded-md'>
-            <p className='text-xs text-gray-500 dark:text-gray-400'>Daily</p>
-            <p className='text-sm font-medium text-gray-900 dark:text-white'>
-              {currentSubscription?.plan?.dailyLimit === -1
-                ? 'Unlimited'
-                : currentSubscription?.plan?.dailyLimit || '0'}
-              {currentSubscription?.plan?.dailyLimit === -1 && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className='inline-flex items-center'>
-                        <Info className='h-4 w-4 text-gray-500 ml-1 cursor-pointer' />
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Unlimited (within monthly limit)</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
+      <div className='bg-white dark:bg-gray-800 p-3 rounded-md shadow-sm mb-4'>
+        <div className='flex items-center justify-between mb-2.5'>
+          <div className='flex items-center gap-1'>
+            <p className='text-xs text-gray-500 dark:text-gray-400 font-medium'>
+              Usage Limits
             </p>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className='inline-flex items-center'>
+                    <Info className='h-3.5 w-3.5 text-gray-400 cursor-pointer' />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className='max-w-[240px]'>
+                    SMS usage is measured on a rolling window, not your billing
+                    cycle. Daily usage resets at 00:00 UTC and monthly usage
+                    covers a rolling 30-day window. The Start Date and Next
+                    Payment above are just your subscription start and renewal
+                    dates.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
-          <div className='bg-gray-50 dark:bg-gray-700/50 p-2 rounded-md'>
-            <p className='text-xs text-gray-500 dark:text-gray-400'>Monthly</p>
-            <p className='text-sm font-medium text-gray-900 dark:text-white'>
-              {currentSubscription?.plan?.monthlyLimit === -1
-                ? 'Unlimited'
-                : currentSubscription?.plan?.monthlyLimit?.toLocaleString() ||
-                  '0'}
-              {currentSubscription?.plan?.monthlyLimit === -1 && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className='inline-flex items-center'>
-                        <Info className='h-4 w-4 text-gray-500 ml-1 cursor-pointer' />
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Unlimited (within fair usage)</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
+          {hasCustomLimits && (
+            <p className='text-[10px] text-amber-600 dark:text-amber-400'>
+              Custom values set for your account
             </p>
-          </div>
-          <div className='bg-gray-50 dark:bg-gray-700/50 p-2 rounded-md'>
-            <p className='text-xs text-gray-500 dark:text-gray-400'>Bulk</p>
-            <p className='text-sm font-medium text-gray-900 dark:text-white'>
-              {currentSubscription?.plan?.bulkSendLimit === -1
-                ? 'Unlimited'
-                : currentSubscription?.plan?.bulkSendLimit || '0'}
-              {currentSubscription?.plan?.bulkSendLimit === -1 && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className='inline-flex items-center'>
-                        <Info className='h-4 w-4 text-gray-500 ml-1 cursor-pointer' />
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Unlimited (within monthly limit)</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-            </p>
-          </div>
+          )}
+        </div>
+        <div className='grid grid-cols-2 gap-2.5'>
+          {limitTiles.map((tile) => (
+            <LimitTile key={tile.label} {...tile} />
+          ))}
         </div>
       </div>
 
@@ -278,7 +457,7 @@ export default function SubscriptionInfo() {
           currentSubscription?.plan?.name?.toLowerCase() === 'free') ? (
           <Link
             href='/checkout/pro'
-            className='text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 px-4 py-2 rounded-md transition-colors'
+            className='text-xs font-medium text-white bg-brand-600 hover:bg-brand-700 px-3 py-1.5 rounded-md transition-colors'
           >
             Upgrade to Pro →
           </Link>
@@ -286,13 +465,13 @@ export default function SubscriptionInfo() {
           <>
             <Link
               href='/checkout/scale'
-              className='text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 px-4 py-2 rounded-md transition-colors'
+              className='text-xs font-medium text-white bg-teal-600 hover:bg-teal-700 px-3 py-1.5 rounded-md transition-colors'
             >
               Upgrade to Scale →
             </Link>
             <Link
               href={polarCustomerPortalRequestUrl(currentUser?.email)}
-              className='text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 px-4 py-2 rounded-md transition-colors'
+              className='text-xs font-medium text-white bg-brand-600 hover:bg-brand-700 px-3 py-1.5 rounded-md transition-colors'
             >
               Manage Subscription →
             </Link>
@@ -300,7 +479,7 @@ export default function SubscriptionInfo() {
         ) : (
           <Link
             href={polarCustomerPortalRequestUrl(currentUser?.email)}
-            className='text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 px-4 py-2 rounded-md transition-colors'
+            className='text-xs font-medium text-white bg-brand-600 hover:bg-brand-700 px-3 py-1.5 rounded-md transition-colors'
           >
             Manage Subscription →
           </Link>
