@@ -313,7 +313,7 @@ export default function VerifyEmailPage() {
 
   return (
     <div className='flex min-h-screen items-center justify-center bg-gray-100 dark:bg-gray-900 p-4'>
-      <Card className='w-full max-w-md shadow-lg border-gray-200 dark:border-gray-800'>
+      <Card className='w-full max-w-md shadow-lg border-border'>
         {renderContent()}
       </Card>
     </div>

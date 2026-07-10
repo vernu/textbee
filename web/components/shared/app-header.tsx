@@ -161,7 +161,7 @@ export default function AppHeader({ session }: { session: Session }) {
             />
             <span className='font-bold'>
               text<span className='text-primary'>bee</span>
-              <span className='text-xs align-center text-gray-500 dark:text-gray-400'>
+              <span className='text-xs align-center text-muted-foreground'>
                 .dev
               </span>
             </span>

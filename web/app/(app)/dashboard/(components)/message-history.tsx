@@ -608,7 +608,7 @@ function MessageCard({ message, type, device, onSelectMessage }) {
           <div className='flex justify-between items-start'>
             <div className='flex items-center gap-2'>
               {isSent ? (
-                <div className='flex items-center text-brand-600 dark:text-brand-400 font-medium'>
+                <div className='flex items-center text-primary font-medium'>
                   <ArrowUpRight className='h-4 w-4 mr-1' />
                   <span>
                     To:{' '}
