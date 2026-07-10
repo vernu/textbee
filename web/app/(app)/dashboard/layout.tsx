@@ -1,6 +1,5 @@
 'use client'
 
-import { Home, MessageSquareText, UserCircle, Users } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import AccountDeletionAlert from './(components)/account-deletion-alert'
@@ -10,6 +9,9 @@ import UpdateAppNotificationBar from './(components)/update-app-notification-bar
 import VerifyEmailAlert from './(components)/verify-email-alert'
 import PastDueBillingAlert from './(components)/past-due-billing-alert'
 import { SurveyModal } from '@/components/shared/survey-modal'
+import CommandMenu from './(components)/command-menu'
+import { isNavItemActive, navItems, type NavItem } from './(components)/nav-items'
+import { cn } from '@/lib/utils'
 
 export default function DashboardLayout({
   children,
@@ -19,82 +21,62 @@ export default function DashboardLayout({
   const pathname = usePathname()
 
   return (
-    <div className='flex min-h-screen flex-col md:flex-row'>
-      {/* Sidebar for desktop */}
-      <aside className='hidden md:flex flex-col fixed top-[20%] left-0 w-24 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-lg z-10 rounded-r-lg'>
-        <nav className='flex flex-col justify-center items-center h-full py-3 space-y-4'>
-          <NavItem
-            href='/dashboard'
-            icon={<Home className='h-6 w-6 stroke-[1.5]' />}
-            label='Dashboard'
-            isActive={pathname === '/dashboard'}
-          />
-          <NavItem
-            href='/dashboard/messaging'
-            icon={<MessageSquareText className='h-6 w-6 stroke-[1.5]' />}
-            label='Messaging'
-            isActive={pathname === '/dashboard/messaging'}
-          />
-          <NavItem
-            href='/dashboard/community'
-            icon={<Users className='h-6 w-6 stroke-[1.5]' />}
-            label='Community'
-            isActive={pathname === '/dashboard/community'}
-          />
-          <NavItem
-            href='/dashboard/account'
-            icon={<UserCircle className='h-6 w-6 stroke-[1.5]' />}
-            label='Account'
-            isActive={pathname === '/dashboard/account'}
-          />
-        </nav>
+    <div className='min-h-[calc(100vh-3.5rem)]'>
+      {/* Desktop sidebar, sits below the sticky app header (h-14). */}
+      <aside className='fixed inset-y-0 left-0 top-14 z-30 hidden w-60 flex-col border-r border-border bg-card md:flex'>
+        <div className='flex-1 overflow-y-auto px-3 py-4'>
+          <div className='mb-4'>
+            <CommandMenu />
+          </div>
+          <nav className='flex flex-col gap-1'>
+            {navItems.map((item) => (
+              <SidebarLink
+                key={item.href}
+                item={item}
+                isActive={isNavItemActive(item.href, pathname)}
+              />
+            ))}
+          </nav>
+        </div>
+        <div className='border-t border-border px-4 py-3'>
+          <p className='text-xs text-muted-foreground'>
+            Need help?{' '}
+            <a
+              href='https://textbee.dev/quickstart'
+              target='_blank'
+              rel='noreferrer'
+              className='font-medium text-primary hover:underline'
+            >
+              Quick start
+            </a>
+          </p>
+        </div>
       </aside>
 
-      {/* Main content with left padding to account for fixed sidebar */}
-      <main className='flex-1 min-w-0 overflow-auto md:ml-24'>
-        <div className='space-y-2 p-4'>
+      {/* Main content, offset for the fixed sidebar on desktop. */}
+      <div className='md:pl-60'>
+        <div className='space-y-2 p-4 pb-0'>
           <UpdateAppNotificationBar />
           <VerifyEmailAlert />
           <PastDueBillingAlert />
           <AccountDeletionAlert />
           <UpgradeToProAlert />
-          {/* <BlackFridayModal /> */}
         </div>
-        {children}
-      </main>
+        <main className='pb-20 md:pb-8'>{children}</main>
+      </div>
 
-      {/* Bottom navigation for mobile */}
-      <nav className='md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg z-10'>
-        <div className='flex items-center justify-around h-16'>
-          <MobileNavItem
-            href='/dashboard'
-            icon={<Home className='h-5 w-5 stroke-[1.5]' />}
-            label='Dashboard'
-            isActive={pathname === '/dashboard'}
-          />
-          <MobileNavItem
-            href='/dashboard/messaging'
-            icon={<MessageSquareText className='h-5 w-5 stroke-[1.5]' />}
-            label='Messaging'
-            isActive={pathname === '/dashboard/messaging'}
-          />
-          <MobileNavItem
-            href='/dashboard/community'
-            icon={<Users className='h-5 w-5 stroke-[1.5]' />}
-            label='Community'
-            isActive={pathname === '/dashboard/community'}
-          />
-          <MobileNavItem
-            href='/dashboard/account'
-            icon={<UserCircle className='h-5 w-5 stroke-[1.5]' />}
-            label='Account'
-            isActive={pathname === '/dashboard/account'}
-          />
+      {/* Mobile bottom tab bar. */}
+      <nav className='fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 md:hidden'>
+        <div className='flex h-16 items-center justify-around'>
+          {navItems.map((item) => (
+            <MobileNavLink
+              key={item.href}
+              item={item}
+              isActive={isNavItemActive(item.href, pathname)}
+            />
+          ))}
         </div>
       </nav>
-
-      {/* Bottom padding for mobile to account for the fixed navigation */}
-      <div className='h-16 md:hidden'></div>
 
       <SurveyModal />
       <UpdateAppModal />
@@ -102,72 +84,46 @@ export default function DashboardLayout({
   )
 }
 
-// Desktop navigation item
-function NavItem({
-  href,
-  icon,
-  label,
-  isActive,
-}: {
-  href: string
-  icon: React.ReactNode
-  label: string
-  isActive: boolean
-}) {
+function SidebarLink({ item, isActive }: { item: NavItem; isActive: boolean }) {
+  const Icon = item.icon
   return (
     <Link
-      href={href}
-      prefetch={true}
-      className={`flex flex-col items-center p-2 rounded-md transition-colors w-20 ${isActive
-        ? 'border border-brand-500 dark:border-brand-400 bg-brand-100/20 dark:bg-brand-900/10 text-brand-600 dark:text-brand-400'
-        : 'text-gray-700 dark:text-gray-200 hover:bg-brand-100/20 dark:hover:bg-brand-900/10 hover:text-brand-600 dark:hover:text-brand-400'
-        }`}
+      href={item.href}
+      prefetch
+      aria-current={isActive ? 'page' : undefined}
+      className={cn(
+        'group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+        isActive
+          ? 'bg-primary/10 text-primary'
+          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+      )}
     >
-      <span
-        className={
-          isActive
-            ? 'text-brand-600 dark:text-brand-400 mb-1'
-            : 'text-gray-600 dark:text-gray-300 mb-1'
-        }
-      >
-        {icon}
-      </span>
-      <span className='font-medium text-xs'>{label}</span>
+      <Icon className='h-[18px] w-[18px] shrink-0 stroke-[1.75]' />
+      <span>{item.label}</span>
     </Link>
   )
 }
 
-// Mobile navigation item
-function MobileNavItem({
-  href,
-  icon,
-  label,
+function MobileNavLink({
+  item,
   isActive,
 }: {
-  href: string
-  icon: React.ReactNode
-  label: string
+  item: NavItem
   isActive: boolean
 }) {
+  const Icon = item.icon
   return (
     <Link
-      href={href}
-      prefetch={true}
-      className={`flex flex-col items-center justify-center p-2 rounded-md w-[23%] ${isActive
-        ? 'border border-brand-500 dark:border-brand-400 bg-brand-100/20 dark:bg-brand-900/10 text-brand-600 dark:text-brand-400'
-        : 'text-gray-700 dark:text-gray-300 hover:text-brand-600 dark:hover:text-brand-400'
-        }`}
+      href={item.href}
+      prefetch
+      aria-current={isActive ? 'page' : undefined}
+      className={cn(
+        'flex flex-1 flex-col items-center justify-center gap-1 py-2 text-[11px] font-medium transition-colors',
+        isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+      )}
     >
-      <span
-        className={
-          isActive
-            ? 'text-brand-600 dark:text-brand-400'
-            : 'text-gray-600 dark:text-gray-300'
-        }
-      >
-        {icon}
-      </span>
-      <span className='text-xs mt-1'>{label}</span>
+      <Icon className='h-5 w-5 stroke-[1.75]' />
+      <span>{item.label}</span>
     </Link>
   )
 }
