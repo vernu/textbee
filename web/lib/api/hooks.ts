@@ -15,6 +15,7 @@ import type {
   Plan,
   Subscription,
   User,
+  WebhookSubscription,
 } from './types'
 
 // Most endpoints wrap their payload as { data: ... }; a few (subscription)
@@ -154,6 +155,69 @@ export function useRenameApiKey() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.apiKeys('active') })
     },
+  })
+}
+
+// ---------- webhooks ----------
+
+export function useWebhooks(options?: ListQueryOpts<WebhookSubscription>) {
+  return useQuery({
+    queryKey: queryKeys.webhooks,
+    queryFn: () =>
+      httpBrowserClient
+        .get(ApiEndpoints.gateway.getWebhooks())
+        .then((r) => r.data as ListEnvelope<WebhookSubscription>),
+    select: selectList<WebhookSubscription>,
+    ...options,
+  })
+}
+
+export type WebhookNotificationFilters = {
+  eventType?: string
+  status?: string
+  deviceId?: string
+  webhookSubscriptionId?: string
+  start?: string
+  end?: string
+  page?: number
+  limit?: number
+}
+
+// Raw body: { data: { data: rows[], meta: { totalPages, ... } } }
+export type WebhookNotificationsEnvelope = {
+  data?: {
+    data?: unknown[]
+    meta?: { totalPages?: number; total?: number }
+  }
+}
+
+export function useWebhookNotifications(filters: WebhookNotificationFilters) {
+  const {
+    eventType = '',
+    status = '',
+    deviceId = '',
+    webhookSubscriptionId = '',
+    start = '',
+    end = '',
+    page = 1,
+    limit = 10,
+  } = filters
+  return useQuery({
+    queryKey: [
+      'webhook-notification',
+      eventType,
+      page,
+      limit,
+      deviceId,
+      webhookSubscriptionId,
+      status,
+    ],
+    queryFn: () =>
+      httpBrowserClient
+        .get(
+          `${ApiEndpoints.gateway.getWebhookNotifications()}?eventType=${eventType}&page=${page}&limit=${limit}&status=${status}&start=${start}&end=${end}&deviceId=${deviceId}&webhookSubscriptionId=${webhookSubscriptionId}`
+        )
+        .then(unwrapBody<WebhookNotificationsEnvelope>),
   })
 }
 

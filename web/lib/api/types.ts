@@ -83,3 +83,12 @@ export interface Subscription {
 }
 
 export type ApiKeyStatusFilter = 'active' | 'revoked' | 'all'
+
+export interface WebhookSubscription {
+  _id: string
+  name?: string
+  deliveryUrl?: string
+  events?: string[]
+  isActive?: boolean
+  createdAt?: string
+}
