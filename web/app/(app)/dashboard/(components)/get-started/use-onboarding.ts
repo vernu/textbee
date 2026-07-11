@@ -12,6 +12,17 @@ import {
   type UserShape,
 } from './steps'
 
+// The card must never mislead: it renders the checklist only when all three
+// queries have succeeded ('ready'). Backend down -> 'error' (quiet retry row),
+// never a checklist computed from missing data that would show a verified
+// user stuck on "Verify your email".
+export type OnboardingStatus =
+  | 'loading'
+  | 'error'
+  | 'ready'
+  | 'hidden'
+  | 'celebrate'
+
 // Data + derived state for the onboarding card. Query keys intentionally match
 // the app-wide keys (['whoAmI'], ['stats'], ['currentSubscription']) so this
 // hook shares caches and invalidations with the other dashboard components.
@@ -20,8 +31,13 @@ export function useOnboarding() {
   const autoCompletedRef = useRef(false)
   const legacyAutoCompletedRef = useRef(false)
   const [selectedStepId, setSelectedStepId] = useState<string | null>(null)
+  // Set when completedAt flips during this session: show the success state
+  // once instead of unmounting the card mid-glance.
+  const [justCompleted, setJustCompleted] = useState(false)
+  const [celebrationDismissed, setCelebrationDismissed] = useState(false)
+  const prevCompletedAtRef = useRef<string | Date | null | undefined>(undefined)
 
-  const { data: userData, isLoading: userLoading } = useQuery({
+  const userQuery = useQuery({
     queryKey: ['whoAmI'],
     queryFn: () =>
       httpBrowserClient
@@ -32,8 +48,9 @@ export function useOnboarding() {
       return u?.onboarding?.completedAt ? false : 10_000
     },
   })
+  const userData = userQuery.data
 
-  const { data: stats } = useQuery({
+  const statsQuery = useQuery({
     queryKey: ['stats'],
     queryFn: () =>
       httpBrowserClient
@@ -41,8 +58,9 @@ export function useOnboarding() {
         .then((res) => res.data?.data as StatsShape),
     refetchInterval: () => (userData?.onboarding?.completedAt ? false : 10_000),
   })
+  const stats = statsQuery.data
 
-  const { data: currentSubscription, isLoading: subLoading } = useQuery({
+  const subQuery = useQuery({
     queryKey: ['currentSubscription'],
     queryFn: () =>
       httpBrowserClient
@@ -50,6 +68,8 @@ export function useOnboarding() {
         .then((res) => res.data as SubShape),
     refetchInterval: () => (userData?.onboarding?.completedAt ? false : 10_000),
   })
+  const currentSubscription = subQuery.data
+  const subLoading = subQuery.isLoading
 
   const { mutate: updateOnboarding, isPending: savingOnboarding } = useMutation({
     mutationFn: (body: {
@@ -67,6 +87,18 @@ export function useOnboarding() {
     },
   })
 
+  // Detect the incomplete -> complete transition for the celebration state.
+  useEffect(() => {
+    const completedAt = userData?.onboarding?.completedAt ?? null
+    const prev = prevCompletedAtRef.current
+    if (prev !== undefined && !prev && completedAt) {
+      setJustCompleted(true)
+    }
+    if (userData !== undefined) {
+      prevCompletedAtRef.current = completedAt
+    }
+  }, [userData])
+
   const skippedIds = useMemo(
     () => userData?.onboarding?.skippedStepIds ?? [],
     [userData?.onboarding?.skippedStepIds]
@@ -79,6 +111,7 @@ export function useOnboarding() {
   )
 
   const doneCount = stepStates.filter((s) => s.isDone).length
+  const progressPercent = Math.round((doneCount / STEPS.length) * 100)
 
   const isFreePlan =
     !currentSubscription?.plan?.name ||
@@ -120,6 +153,16 @@ export function useOnboarding() {
     return firstIncomplete ?? STEPS[STEPS.length - 1].id
   }, [stepStates, userData?.onboarding?.currentStepId, selectedStepId, canNavigateToStep])
 
+  // When the previously selected step gets completed (e.g. the poll detected a
+  // registered device), advance the selection to the next incomplete step.
+  useEffect(() => {
+    if (!selectedStepId) return
+    const selected = stepStates.find((s) => s.id === selectedStepId)
+    if (selected?.isDone) {
+      setSelectedStepId(null)
+    }
+  }, [selectedStepId, stepStates])
+
   // Auto-complete once every step reports done.
   useEffect(() => {
     if (!userData || stats === undefined || subLoading || autoCompletedRef.current) {
@@ -159,16 +202,59 @@ export function useOnboarding() {
     updateOnboarding({ complete: true })
   }, [userData, stats, subLoading, updateOnboarding])
 
-  return {
+  const retry = useCallback(() => {
+    void userQuery.refetch()
+    void statsQuery.refetch()
+    void subQuery.refetch()
+  }, [userQuery, statsQuery, subQuery])
+
+  // Fail-closed status machine. Note: react-query keeps last-good data on
+  // background refetch failures, so an established card never flips to the
+  // error state from a flaky poll (data stays defined).
+  const status: OnboardingStatus = useMemo(() => {
+    const completedAt = userData?.onboarding?.completedAt
+    if (justCompleted && !celebrationDismissed) return 'celebrate'
+    if (completedAt) return 'hidden'
+    if (
+      (userQuery.isError && userData === undefined) ||
+      (statsQuery.isError && stats === undefined) ||
+      (subQuery.isError && currentSubscription === undefined)
+    ) {
+      return 'error'
+    }
+    if (
+      userData === undefined ||
+      stats === undefined ||
+      currentSubscription === undefined
+    ) {
+      return 'loading'
+    }
+    return 'ready'
+  }, [
+    justCompleted,
+    celebrationDismissed,
     userData,
-    userLoading,
+    stats,
+    currentSubscription,
+    userQuery.isError,
+    statsQuery.isError,
+    subQuery.isError,
+  ])
+
+  return {
+    status,
+    userData,
     subLoading,
     stepStates,
     doneCount,
+    totalSteps: STEPS.length,
+    progressPercent,
     activeStepId,
     canNavigateToStep,
     selectStep: setSelectedStepId,
     updateOnboarding,
     savingOnboarding,
+    retry,
+    dismissCelebration: () => setCelebrationDismissed(true),
   }
 }

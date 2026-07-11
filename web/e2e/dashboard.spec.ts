@@ -35,6 +35,9 @@ test.describe('dashboard (mocked API, no real backend)', () => {
     await expect(page.getByRole('link', { name: 'Send SMS' })).toBeVisible()
     // Total SMS Sent stat from the mocked gateway stats fixture (12,840).
     await expect(page.getByText('12,840')).toBeVisible()
+    // Onboarding card shows its progress bar (all 6 steps done in fixtures).
+    await expect(page.getByRole('progressbar')).toBeVisible()
+    await expect(page.getByText('6 of 6')).toBeVisible()
     // Webhooks summary row keeps a mobile path to /dashboard/webhooks
     // (fixtures have 1 active webhook).
     await expect(

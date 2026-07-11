@@ -40,6 +40,12 @@ export const handlers = [
   http.post(url('/auth/api-keys'), () =>
     dataEnvelope({ ...mockApiKeys[0], apiKey: 'tb_live_new0000' })
   ),
+  http.patch(url(ApiEndpoints.auth.updateOnboarding()), () =>
+    dataEnvelope({})
+  ),
+  http.post(url(ApiEndpoints.auth.sendEmailVerificationEmail()), () =>
+    dataEnvelope({})
+  ),
 
   // --- gateway ---
   http.get(url(ApiEndpoints.gateway.listDevices()), () =>
