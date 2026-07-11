@@ -1,7 +1,7 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { Bell, PlusCircle, Webhook } from 'lucide-react'
+import { PlusCircle } from 'lucide-react'
 import { useState } from 'react'
 import { WebhookData } from '@/lib/types'
 import { WebhookCard } from './webhook-card'
@@ -12,7 +12,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import httpBrowserClient from '@/lib/httpBrowserClient'
 import { ApiEndpoints } from '@/config/api'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useRouter } from 'next/navigation'
 
 function WebhookRowSkeleton() {
   return (
@@ -35,7 +34,6 @@ const MAX_WEBHOOKS_PER_USER = 5
 export default function WebhooksSection() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
-  const navigator = useRouter()
   const [selectedWebhook, setSelectedWebhook] = useState<WebhookData | null>(
     null,
   )
@@ -66,47 +64,32 @@ export default function WebhooksSection() {
   const reachedLimit = webhookCount >= MAX_WEBHOOKS_PER_USER
 
   return (
-    <div className='container mx-auto py-4 sm:py-6 px-4 sm:px-6'>
-      <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 sm:mb-6'>
-        <div>
-          <h1 className='text-xl sm:text-2xl font-bold flex flex-wrap items-center gap-2'>
-            <Webhook className='h-5 w-5 sm:h-6 sm:w-6' />
-            Webhooks
-            {!isLoading && webhookCount > 0 && (
-              <span className='text-sm font-normal text-muted-foreground'>
-                ({webhookCount}/{MAX_WEBHOOKS_PER_USER})
-              </span>
-            )}
-          </h1>
-          <p className='text-sm text-muted-foreground mt-1.5'>
-            Manage webhook notifications for your SMS events. You can configure
-            up to {MAX_WEBHOOKS_PER_USER} webhooks.
-          </p>
-        </div>
-        <div className='flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:gap-x-4'>
-          <Button
-            onClick={handleCreateClick}
-            disabled={reachedLimit || isLoading}
-            variant='default'
-            className='w-full sm:w-auto'
-            title={
-              reachedLimit
-                ? `You have reached the maximum of ${MAX_WEBHOOKS_PER_USER} webhooks. Delete one to add a new one.`
-                : undefined
-            }
-          >
-            <PlusCircle className='mr-2 h-4 w-4' />
-            Create Webhook
-          </Button>
-          <Button
-            onClick={() => navigator.push('/dashboard/webhooks')}
-            variant='default'
-            className='w-full sm:w-auto'
-          >
-            <Bell className='mr-2 h-4 w-4' />
-            Notification Deliveries
-          </Button>
-        </div>
+    <div>
+      {/* Section title and the Deliveries view are owned by the webhooks
+          layout (route tabs); this header only carries count + actions. */}
+      <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 sm:mb-6'>
+        <p className='text-sm text-muted-foreground'>
+          Receive real-time notifications for SMS events.{' '}
+          {!isLoading && (
+            <span className='font-medium text-foreground'>
+              {webhookCount}/{MAX_WEBHOOKS_PER_USER} configured
+            </span>
+          )}
+        </p>
+        <Button
+          onClick={handleCreateClick}
+          disabled={reachedLimit || isLoading}
+          variant='default'
+          className='w-full sm:w-auto'
+          title={
+            reachedLimit
+              ? `You have reached the maximum of ${MAX_WEBHOOKS_PER_USER} webhooks. Delete one to add a new one.`
+              : undefined
+          }
+        >
+          <PlusCircle className='mr-2 h-4 w-4' />
+          Create Webhook
+        </Button>
       </div>
 
       <div className='grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8'>

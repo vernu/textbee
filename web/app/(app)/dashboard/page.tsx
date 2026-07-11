@@ -1,7 +1,6 @@
 'use client'
 
 import DeviceList from './(components)/device-list'
-import WebhooksSection from './(components)/webhooks/webhooks-section'
 import Overview from './(components)/overview'
 import ApiKeys from './(components)/api-keys'
 import { useSession } from 'next-auth/react'
@@ -36,8 +35,6 @@ export default function DashboardPage() {
           <DeviceList />
           <ApiKeys />
         </div>
-
-        <WebhooksSection />
       </div>
     </div>
   )
