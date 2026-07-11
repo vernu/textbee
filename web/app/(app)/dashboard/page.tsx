@@ -1,31 +1,104 @@
 'use client'
 
+import { useRef } from 'react'
+import Link from 'next/link'
+import { useSession } from 'next-auth/react'
+import {
+  ArrowRight,
+  ArrowUpRightIcon,
+  KeyRound,
+  Plus,
+  Send,
+  Webhook,
+} from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import DeviceList from './(components)/device-list'
 import Overview from './(components)/overview'
 import ApiKeys from './(components)/api-keys'
-import { useSession } from 'next-auth/react'
-import { HomeIcon, ArrowUpRightIcon } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import GenerateApiKey, {
+  type GenerateApiKeyHandle,
+} from './(components)/generate-api-key'
+import { useWebhooks } from '@/lib/api'
+
+// Compact path to webhooks: it left the mobile tab bar and its management
+// section moved to /dashboard/webhooks, so Home keeps a discoverable link.
+function WebhooksSummaryRow() {
+  const { data: webhooks } = useWebhooks()
+  const activeCount = webhooks?.filter((w) => w.isActive).length ?? 0
+
+  return (
+    <Link
+      href='/dashboard/webhooks'
+      className='group flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 shadow-sm transition-colors hover:bg-muted/50'
+    >
+      <div className='rounded-full bg-primary/10 p-2'>
+        <Webhook className='h-4 w-4 text-primary' />
+      </div>
+      <div className='min-w-0 flex-1'>
+        <p className='text-sm font-medium'>Webhooks</p>
+        <p className='truncate text-xs text-muted-foreground'>
+          {activeCount > 0
+            ? `${activeCount} active webhook${activeCount === 1 ? '' : 's'}`
+            : 'Get notified at your endpoints when SMS events happen'}
+        </p>
+      </div>
+      <ArrowRight className='h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5' />
+    </Link>
+  )
+}
 
 export default function DashboardPage() {
   const { data: session } = useSession()
+  const apiKeyFlowRef = useRef<GenerateApiKeyHandle>(null)
 
   return (
-    <div className='flex-1 space-y-6 p-6 md:p-8'>
-      <div className='space-y-1'>
-        <div className='flex items-center justify-between'>
-          <div className='flex items-center space-x-2'>
-            <HomeIcon className='h-6 w-6 text-primary' />
-            <h2 className='text-3xl font-bold tracking-tight'>Dashboard</h2>
-          </div>
-          <Button variant="outline" size="sm" onClick={() => window.open('https://textbee.dev/quickstart', '_blank')}>
-            <ArrowUpRightIcon className="mr-2 h-4 w-4" />
+    <div className='flex-1 space-y-6 p-4 sm:p-6 md:p-8'>
+      {/* Registering a device = generating a key + scanning its QR, so both
+          quick actions open the same flow with the user's mental-model label. */}
+      <GenerateApiKey ref={apiKeyFlowRef} showTrigger={false} />
+
+      <div className='flex flex-col gap-4 md:flex-row md:items-end md:justify-between'>
+        <div className='space-y-1'>
+          <h2 className='text-2xl sm:text-3xl font-bold tracking-tight'>
+            Welcome back, {session?.user?.name?.split(' ')[0] || 'there'}
+          </h2>
+          <p className='text-muted-foreground'>
+            Here's what's happening with your SMS gateway
+          </p>
+        </div>
+
+        <div className='flex flex-wrap items-center gap-2'>
+          <Button asChild size='sm'>
+            <Link href='/dashboard/messaging'>
+              <Send className='h-4 w-4' />
+              Send SMS
+            </Link>
+          </Button>
+          <Button
+            variant='outline'
+            size='sm'
+            onClick={() => apiKeyFlowRef.current?.open()}
+          >
+            <Plus className='h-4 w-4' />
+            Add device
+          </Button>
+          <Button
+            variant='outline'
+            size='sm'
+            onClick={() => apiKeyFlowRef.current?.open()}
+          >
+            <KeyRound className='h-4 w-4' />
+            New API key
+          </Button>
+          <Button
+            variant='ghost'
+            size='sm'
+            onClick={() => window.open('https://textbee.dev/quickstart', '_blank')}
+          >
+            <ArrowUpRightIcon className='h-4 w-4' />
             Quick Start
           </Button>
         </div>
-        <p className='text-muted-foreground'>
-          Welcome back, {session?.user?.name || 'User'}
-        </p>
       </div>
 
       <div className='space-y-6'>
@@ -35,6 +108,8 @@ export default function DashboardPage() {
           <DeviceList />
           <ApiKeys />
         </div>
+
+        <WebhooksSummaryRow />
       </div>
     </div>
   )

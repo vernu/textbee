@@ -128,7 +128,14 @@ export default function ApiKeys() {
       <GenerateApiKey ref={addApiKeyRef} showTrigger={false} />
       <Card className='min-w-0 max-w-full'>
         <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-          <CardTitle className='text-lg'>API Keys</CardTitle>
+          <CardTitle className='text-lg'>
+            API Keys
+            {!isPending && !error && (
+              <span className='ml-2 text-sm font-normal text-muted-foreground'>
+                {apiKeys?.length ?? 0}
+              </span>
+            )}
+          </CardTitle>
           <div className='flex items-center gap-1'>
             <Button
               variant='ghost'

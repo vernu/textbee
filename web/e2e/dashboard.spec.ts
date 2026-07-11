@@ -29,10 +29,16 @@ test.describe('dashboard (mocked API, no real backend)', () => {
     await page.goto('/dashboard')
 
     await expect(
-      page.getByRole('heading', { name: 'Dashboard', level: 2 })
+      page.getByRole('heading', { name: 'Welcome back, Test', level: 2 })
     ).toBeVisible()
-    await expect(page.getByText('Welcome back, Test User')).toBeVisible()
+    // Quick actions row.
+    await expect(page.getByRole('link', { name: 'Send SMS' })).toBeVisible()
     // Total SMS Sent stat from the mocked gateway stats fixture (12,840).
     await expect(page.getByText('12,840')).toBeVisible()
+    // Webhooks summary row keeps a mobile path to /dashboard/webhooks
+    // (fixtures have 1 active webhook).
+    await expect(
+      page.getByRole('link', { name: /active webhook/ })
+    ).toBeVisible()
   })
 })
