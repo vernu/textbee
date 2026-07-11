@@ -18,6 +18,7 @@ import Link from 'next/link'
 import { useToast } from '@/hooks/use-toast'
 import { Routes } from '@/config/routes'
 import { useDeleteDevice, useDevices, useSubscription } from '@/lib/api'
+import EmptyState from '@/components/shared/empty-state'
 import { useRef, useState } from 'react'
 import {
   Dialog,
@@ -192,9 +193,11 @@ export default function DeviceList() {
             )}
 
             {!isPending && !error && devices?.length === 0 && (
-              <div className='flex justify-center items-center h-full'>
-                <div>No devices found</div>
-              </div>
+              <EmptyState
+                icon={Smartphone}
+                title='No devices found'
+                hint='Install the app on your phone and add it as a device to get started.'
+              />
             )}
 
             {devices?.map((device) => (

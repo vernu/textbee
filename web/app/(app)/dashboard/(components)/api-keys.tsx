@@ -28,6 +28,7 @@ import {
   useRevokeApiKey,
 } from '@/lib/api'
 import { Skeleton } from '@/components/ui/skeleton'
+import EmptyState from '@/components/shared/empty-state'
 import GenerateApiKey, {
   type GenerateApiKeyHandle,
 } from './generate-api-key'
@@ -182,9 +183,11 @@ export default function ApiKeys() {
             )}
 
             {!isPending && !error && apiKeys?.length === 0 && (
-              <div className='flex justify-center items-center h-full'>
-                <div>No API keys found</div>
-              </div>
+              <EmptyState
+                icon={Key}
+                title='No API keys found'
+                hint='Generate an API key to connect a device or call the API.'
+              />
             )}
 
             {apiKeys?.map((apiKey: ApiKeyRow) => (

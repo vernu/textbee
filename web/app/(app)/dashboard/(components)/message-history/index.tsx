@@ -6,29 +6,10 @@ import { MessageSquare, Smartphone } from 'lucide-react'
 import { useDeviceMessages, useDevices } from '@/lib/api'
 import FiltersBar from './filters-bar'
 import Pagination from '@/components/shared/numbered-pagination'
+import EmptyState from '@/components/shared/empty-state'
 import SmsDetailsDialog from './sms-details-dialog'
 import { MessageCard, MessageCardSkeleton } from './message-card'
 import type { MessagesPagination, SmsMessage } from './types'
-
-function EmptyState({
-  icon: Icon,
-  title,
-  hint,
-}: {
-  icon: typeof MessageSquare
-  title: string
-  hint?: string
-}) {
-  return (
-    <div className='flex flex-col items-center justify-center gap-2 py-12 text-center animate-fade-in'>
-      <div className='rounded-full bg-muted p-3'>
-        <Icon className='h-6 w-6 text-muted-foreground' />
-      </div>
-      <p className='text-sm font-medium text-foreground'>{title}</p>
-      {hint && <p className='text-xs text-muted-foreground'>{hint}</p>}
-    </div>
-  )
-}
 
 // Container for the message-history screen: owns filter/pagination state and
 // data fetching; rendering is delegated to the focused subcomponents.

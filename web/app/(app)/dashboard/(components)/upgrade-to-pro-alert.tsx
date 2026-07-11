@@ -32,7 +32,7 @@ export default function UpgradeToProAlert() {
   const alertConfig = useMemo(() => {
     if (monthlyUsagePercentage >= 100 ) {
       return {
-        bgColor: 'bg-gradient-to-r from-red-600 to-red-800',
+        bgColor: 'bg-linear-to-r from-red-600 to-red-800',
         message: "⚠️ Monthly limit exceeded! Your requests will be rejected until you upgrade.",
         subMessage: `You've used ${processedSmsLastMonth} of ${monthlyLimit} SMS this month.`,
         buttonText: "Upgrade Now!",
@@ -41,7 +41,7 @@ export default function UpgradeToProAlert() {
       }
     } else if (monthlyUsagePercentage >= 80) {
       return {
-        bgColor: 'bg-gradient-to-r from-orange-500 to-red-500',
+        bgColor: 'bg-linear-to-r from-orange-500 to-red-500',
         message: "⚠️ Approaching limit! Upgrade to Pro to avoid service interruption.",
         subMessage: `You've used ${monthlyUsagePercentage}% of your monthly SMS limit (${processedSmsLastMonth}/${monthlyLimit}).`,
         buttonText: "Upgrade Before Limit!",
@@ -119,14 +119,14 @@ export default function UpgradeToProAlert() {
     const scaleAlertConfig =
       monthlyUsagePercentage >= 100
         ? {
-            bgColor: 'bg-gradient-to-r from-red-600 to-red-800',
+            bgColor: 'bg-linear-to-r from-red-600 to-red-800',
             message: '⚠️ Monthly limit exceeded! Upgrade to Scale for 25,000 SMS/mo.',
             subMessage: `You've used ${processedSmsLastMonth} of ${monthlyLimit} SMS this month.`,
             buttonText: 'Upgrade to Scale!',
             buttonColor: 'bg-white text-red-600 hover:bg-red-50 hover:text-red-700 border-red-600',
           }
         : {
-            bgColor: 'bg-gradient-to-r from-orange-500 to-red-500',
+            bgColor: 'bg-linear-to-r from-orange-500 to-red-500',
             message: '⚠️ Approaching Pro limit! Scale up to 25,000 SMS/mo.',
             subMessage: `You've used ${monthlyUsagePercentage}% of your monthly SMS limit (${processedSmsLastMonth}/${monthlyLimit}).`,
             buttonText: 'Upgrade to Scale',

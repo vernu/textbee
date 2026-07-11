@@ -61,7 +61,7 @@ export default function VerifyEmailAlert() {
   }
 
   return (
-    <Alert className='bg-gradient-to-r from-red-600 to-red-700 text-white'>
+    <Alert className='bg-linear-to-r from-red-600 to-red-700 text-white'>
       <AlertDescription className='flex flex-col sm:flex-row flex-wrap items-center gap-2 md:gap-4'>
         <span className='w-full sm:flex-1 text-center sm:text-left text-sm md:text-base font-medium flex items-center justify-center sm:justify-start gap-2'>
           <ShieldAlert className='h-5 w-5' />

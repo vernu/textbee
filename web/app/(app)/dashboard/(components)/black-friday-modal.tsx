@@ -74,7 +74,7 @@ export default function BlackFridayModal() {
         <Dialog open={isOpen} onOpenChange={(open) => !open && handleRemindLater()}>
             <DialogContent className="sm:max-w-xl border-2 border-purple-500/20 shadow-2xl shadow-purple-500/10">
                 <DialogHeader>
-                    <div className="mx-auto bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold px-3 py-1 rounded-full mb-2 animate-pulse">
+                    <div className="mx-auto bg-linear-to-r from-purple-600 to-pink-600 text-white text-xs font-bold px-3 py-1 rounded-full mb-2 animate-pulse">
                         LIMITED TIME OFFER
                     </div>
                     <DialogTitle className="text-2xl font-bold text-center flex items-center justify-center gap-2">
@@ -123,8 +123,8 @@ export default function BlackFridayModal() {
                             </div>
                         </div>
 
-                        <div className="relative bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 p-4 rounded-lg space-y-3 border border-purple-200 dark:border-purple-800 flex flex-col justify-between">
-                            <div className="absolute -top-3 right-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+                        <div className="relative bg-linear-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 p-4 rounded-lg space-y-3 border border-purple-200 dark:border-purple-800 flex flex-col justify-between">
+                            <div className="absolute -top-3 right-4 bg-linear-to-r from-amber-500 to-orange-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
                                 BEST VALUE
                             </div>
                             <div className="flex items-start justify-between">
@@ -152,7 +152,7 @@ export default function BlackFridayModal() {
                 </div>
 
                 <DialogFooter className="flex-col sm:flex-col gap-2">
-                    <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold h-11 shadow-lg shadow-purple-500/20" asChild>
+                    <Button className="w-full bg-linear-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold h-11 shadow-lg shadow-purple-500/20" asChild>
                         <Link href="/checkout/pro">
                             Claim Offer Now
                         </Link>
