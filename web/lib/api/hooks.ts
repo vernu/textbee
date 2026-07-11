@@ -156,3 +156,55 @@ export function useRenameApiKey() {
     },
   })
 }
+
+// ---------- messaging ----------
+
+// Matches the zod-inferred SendSmsFormData shape (fields optional because the
+// project runs without strict mode; validation happens via the schema).
+export type SendSmsPayload = {
+  deviceId?: string
+  recipients?: string[]
+  message?: string
+  simSubscriptionId?: number
+}
+
+export function useSendSms() {
+  return useMutation({
+    mutationKey: ['send-sms'],
+    mutationFn: (data: SendSmsPayload) =>
+      httpBrowserClient.post(ApiEndpoints.gateway.sendSMS(data.deviceId), data),
+  })
+}
+
+export type DeviceMessagesParams = {
+  type?: string
+  page?: number
+  limit?: number
+}
+
+export type DeviceMessagesEnvelope = {
+  data: unknown[]
+  meta?: { page?: number; limit?: number; total?: number; totalPages?: number }
+}
+
+// Returns the raw { data, meta } message-history envelope for a device.
+export function useDeviceMessages(
+  deviceId: string,
+  params: DeviceMessagesParams = {},
+  options?: QueryOpts<DeviceMessagesEnvelope>
+) {
+  const { type = 'all', page = 1, limit = 20 } = params
+  return useQuery({
+    queryKey: queryKeys.deviceMessages(deviceId, { type, page, limit }),
+    enabled: !!deviceId,
+    queryFn: () =>
+      httpBrowserClient
+        .get(
+          `${ApiEndpoints.gateway.getMessages(
+            deviceId
+          )}?type=${type}&page=${page}&limit=${limit}`
+        )
+        .then(unwrapBody<DeviceMessagesEnvelope>),
+    ...options,
+  })
+}
