@@ -10,7 +10,12 @@ import VerifyEmailAlert from './(components)/verify-email-alert'
 import PastDueBillingAlert from './(components)/past-due-billing-alert'
 import { SurveyModal } from '@/components/shared/survey-modal'
 import CommandMenu from './(components)/command-menu'
-import { isNavItemActive, navItems, type NavItem } from './(components)/nav-items'
+import {
+  isNavItemActive,
+  mobileNavItems,
+  navItems,
+  type NavItem,
+} from './(components)/nav-items'
 import { cn } from '@/lib/utils'
 
 export default function DashboardLayout({
@@ -65,10 +70,10 @@ export default function DashboardLayout({
         <main className='pb-20 md:pb-8'>{children}</main>
       </div>
 
-      {/* Mobile bottom tab bar. */}
+      {/* Mobile bottom tab bar (max 4 items; the rest are desktop/palette only). */}
       <nav className='fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 md:hidden'>
         <div className='flex h-16 items-center justify-around'>
-          {navItems.map((item) => (
+          {mobileNavItems.map((item) => (
             <MobileNavLink
               key={item.href}
               item={item}
