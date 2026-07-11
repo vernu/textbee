@@ -126,7 +126,7 @@ export default function ApiKeys() {
   return (
     <>
       <GenerateApiKey ref={addApiKeyRef} showTrigger={false} />
-      <Card>
+      <Card className='min-w-0 max-w-full'>
         <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
           <CardTitle className='text-lg'>API Keys</CardTitle>
           <div className='flex items-center gap-1'>

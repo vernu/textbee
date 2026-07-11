@@ -83,7 +83,7 @@ export default function WebhooksSection() {
             up to {MAX_WEBHOOKS_PER_USER} webhooks.
           </p>
         </div>
-        <div className='flex gap-x-4'>
+        <div className='flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:gap-x-4'>
           <Button
             onClick={handleCreateClick}
             disabled={reachedLimit || isLoading}

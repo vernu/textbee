@@ -353,6 +353,8 @@ print(response.json())`
                                   fontSize: '0.875rem',
                                   lineHeight: '1.5',
                                   backgroundColor: '#1e293b', // slate-800
+                                  overflowX: 'auto',
+                                  maxWidth: '100%',
                                 }}
                               >
                                 {data.code}
@@ -391,6 +393,8 @@ print(response.json())`
                             fontSize: '0.875rem',
                             lineHeight: '1.5',
                             backgroundColor: '#1e293b', // slate-800
+                            overflowX: 'auto',
+                            maxWidth: '100%',
                           }}
                         >
                           {endpoint.response.code}

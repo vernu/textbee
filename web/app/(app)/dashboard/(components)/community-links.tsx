@@ -203,7 +203,7 @@ export default function CommunityLinks() {
         </Card>
       </div>
       <Dialog open={socialOpen} onOpenChange={setSocialOpen}>
-        <DialogContent className='sm:max-w-[600px] min-w-[500px] text-base'>
+        <DialogContent className='sm:max-w-[600px] text-base'>
           <DialogHeader>
             <DialogTitle className='text-primary mb-2 text-2xl font-bold'>
               Share textbee.dev with Others

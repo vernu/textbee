@@ -184,6 +184,8 @@
     color: hsl(var(--foreground));
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+    /* Safety net: an oversized element must never widen the page sideways. */
+    overflow-x: clip;
   }
 }
 
