@@ -18,6 +18,9 @@ import ApiKeys from './(components)/api-keys'
 import GenerateApiKey, {
   type GenerateApiKeyHandle,
 } from './(components)/generate-api-key'
+import AddDeviceDialog, {
+  type AddDeviceHandle,
+} from './(components)/add-device-dialog'
 import { useWebhooks } from '@/lib/api'
 
 // Compact path to webhooks: it left the mobile tab bar and its management
@@ -50,11 +53,17 @@ function WebhooksSummaryRow() {
 export default function DashboardPage() {
   const { data: session } = useSession()
   const apiKeyFlowRef = useRef<GenerateApiKeyHandle>(null)
+  const addDeviceRef = useRef<AddDeviceHandle>(null)
 
   return (
     <div className='flex-1 space-y-6 p-4 sm:p-6 md:p-8'>
-      {/* Registering a device = generating a key + scanning its QR, so both
-          quick actions open the same flow with the user's mental-model label. */}
+      {/* Two separate flows on purpose. "Add device" walks through installing
+          the app and granting permissions before it ever mentions an API key,
+          matching the button in the Registered Devices card. "New API key"
+          goes straight to key generation, which is what that phrasing asks
+          for. Previously both opened the key modal, so a new user who clicked
+          Add device was handed an API key with no explanation. */}
+      <AddDeviceDialog ref={addDeviceRef} />
       <GenerateApiKey ref={apiKeyFlowRef} showTrigger={false} />
 
       <div className='flex flex-col gap-4 md:flex-row md:items-end md:justify-between'>
@@ -77,7 +86,7 @@ export default function DashboardPage() {
           <Button
             variant='outline'
             size='sm'
-            onClick={() => apiKeyFlowRef.current?.open()}
+            onClick={() => addDeviceRef.current?.open()}
           >
             <Plus className='h-4 w-4' />
             Add device
