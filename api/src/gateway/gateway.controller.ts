@@ -160,8 +160,9 @@ export class GatewayController {
     const page = req.query.page ? parseInt(req.query.page, 10) : 1;
     const limit = req.query.limit ? Math.min(parseInt(req.query.limit, 10), 100) : 50;
     const type = req.query.type || '';
-    
-    const result = await this.gatewayService.getMessages(deviceId, type, page, limit);
+    const search = req.query.search || '';
+
+    const result = await this.gatewayService.getMessages(deviceId, type, page, limit, search);
     return result;
   }
 

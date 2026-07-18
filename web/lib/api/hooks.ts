@@ -244,6 +244,7 @@ export type DeviceMessagesParams = {
   type?: string
   page?: number
   limit?: number
+  search?: string
 }
 
 export type DeviceMessagesEnvelope = {
@@ -252,23 +253,31 @@ export type DeviceMessagesEnvelope = {
 }
 
 // Returns the raw { data, meta } message-history envelope for a device.
+// `search` is handled server-side (gateway getMessages matches it against the
+// message body, recipient and sender), so it searches all of a device's
+// history rather than only the page already loaded.
 export function useDeviceMessages(
   deviceId: string,
   params: DeviceMessagesParams = {},
   options?: QueryOpts<DeviceMessagesEnvelope>
 ) {
-  const { type = 'all', page = 1, limit = 20 } = params
+  const { type = 'all', page = 1, limit = 20, search = '' } = params
   return useQuery({
-    queryKey: queryKeys.deviceMessages(deviceId, { type, page, limit }),
+    // search joins the key so each term caches separately.
+    queryKey: queryKeys.deviceMessages(deviceId, { type, page, limit, search }),
     enabled: !!deviceId,
-    queryFn: () =>
-      httpBrowserClient
-        .get(
-          `${ApiEndpoints.gateway.getMessages(
-            deviceId
-          )}?type=${type}&page=${page}&limit=${limit}`
-        )
-        .then(unwrapBody<DeviceMessagesEnvelope>),
+    queryFn: () => {
+      const query = new URLSearchParams({
+        type,
+        page: String(page),
+        limit: String(limit),
+      })
+      if (search) query.set('search', search)
+
+      return httpBrowserClient
+        .get(`${ApiEndpoints.gateway.getMessages(deviceId)}?${query}`)
+        .then(unwrapBody<DeviceMessagesEnvelope>)
+    },
     ...options,
   })
 }
