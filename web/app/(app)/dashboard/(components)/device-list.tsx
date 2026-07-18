@@ -238,6 +238,8 @@ export default function DeviceList() {
                         variant='ghost'
                         size='icon'
                         className='h-6 w-6'
+                        aria-label='Copy device ID'
+                        title='Copy device ID'
                         onClick={() => handleCopyId(device._id)}
                       >
                         <Copy className='h-3 w-3' />

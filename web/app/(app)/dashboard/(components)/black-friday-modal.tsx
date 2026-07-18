@@ -117,7 +117,7 @@ export default function BlackFridayModal() {
                             </div>
                             <div className="flex items-center gap-2 bg-background p-2 rounded border border-dashed border-primary/50">
                                 <code className="flex-1 font-mono font-bold text-center text-primary text-sm">BLACKFRIDAY40</code>
-                                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => copyCode('BLACKFRIDAY40')}>
+                                <Button size="icon" variant="ghost" className="h-8 w-8" aria-label="Copy code BLACKFRIDAY40" title="Copy code BLACKFRIDAY40" onClick={() => copyCode('BLACKFRIDAY40')}>
                                     {copiedCode === 'BLACKFRIDAY40' ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
                                 </Button>
                             </div>
@@ -139,7 +139,7 @@ export default function BlackFridayModal() {
                             </div>
                             <div className="flex items-center gap-2 bg-background p-2 rounded border border-dashed border-primary/50">
                                 <code className="flex-1 font-mono font-bold text-center text-primary text-sm">BLACKFRIDAY50</code>
-                                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => copyCode('BLACKFRIDAY50')}>
+                                <Button size="icon" variant="ghost" className="h-8 w-8" aria-label="Copy code BLACKFRIDAY50" title="Copy code BLACKFRIDAY50" onClick={() => copyCode('BLACKFRIDAY50')}>
                                     {copiedCode === 'BLACKFRIDAY50' ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
                                 </Button>
                             </div>

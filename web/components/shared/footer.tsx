@@ -40,7 +40,10 @@ export default function Footer() {
 
         {/* Stacked on mobile: wrapped inline links produced a ragged two-line
             block that was hard to scan and gave small tap targets. */}
-        <nav className='flex w-full flex-col items-start gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-center sm:gap-x-5 sm:gap-y-2'>
+        <nav
+          aria-label='Footer'
+          className='flex w-full flex-col items-start gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-center sm:gap-x-5 sm:gap-y-2'
+        >
           {links.map((link) => (
             <Link
               key={link.label}

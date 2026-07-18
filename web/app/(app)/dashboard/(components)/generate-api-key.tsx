@@ -132,7 +132,13 @@ const GenerateApiKey = forwardRef<GenerateApiKeyHandle, GenerateApiKeyProps>(
                   <code className='relative rounded bg-muted px-[0.5rem] py-[0.3rem] font-mono text-sm flex-1'>
                     {generatedApiKey?.data}
                   </code>
-                  <Button variant='outline' size='icon' onClick={handleCopyKey}>
+                  <Button
+                    variant='outline'
+                    size='icon'
+                    aria-label='Copy API key'
+                    title='Copy API key'
+                    onClick={handleCopyKey}
+                  >
                     <Copy className='h-4 w-4' />
                   </Button>
                 </div>

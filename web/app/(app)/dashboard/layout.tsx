@@ -34,6 +34,14 @@ export default function DashboardLayout({
 
   return (
     <div className='min-h-[calc(100vh-3.5rem)]'>
+      {/* Visible only on focus. Without it, keyboard users tab through the
+          whole sidebar on every page before reaching the content. */}
+      <a
+        href='#main-content'
+        className='sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2'
+      >
+        Skip to content
+      </a>
       <CommandMenu open={searchOpen} onOpenChange={setSearchOpen} />
 
       {/* Desktop sidebar, sits below the sticky app header (h-14). */}
@@ -42,7 +50,9 @@ export default function DashboardLayout({
           <div className='mb-4'>
             <SearchTrigger onOpen={() => setSearchOpen(true)} />
           </div>
-          <nav className='flex flex-col gap-1'>
+          {/* Distinct labels: several nav landmarks on one page are otherwise
+              indistinguishable in a screen reader's landmark list. */}
+          <nav className='flex flex-col gap-1' aria-label='Main'>
             {navItems.map((item) => (
               <SidebarLink
                 key={item.href}
@@ -84,7 +94,9 @@ export default function DashboardLayout({
           <AccountDeletionAlert />
           <UpgradeToProAlert />
         </div>
-        <main>{children}</main>
+        <main id='main-content' tabIndex={-1}>
+          {children}
+        </main>
         {/* Inside the sidebar-offset column so the fixed sidebar cannot paint
             over it, and padded clear of the fixed mobile tab bar. */}
         <div className='pb-20 pt-8 md:pb-0'>
@@ -93,7 +105,10 @@ export default function DashboardLayout({
       </div>
 
       {/* Mobile bottom tab bar (max 4 items; the rest are desktop/palette only). */}
-      <nav className='fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 md:hidden'>
+      <nav
+        aria-label='Primary (mobile)'
+        className='fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 md:hidden'
+      >
         <div className='flex h-16 items-center justify-around'>
           {mobileNavItems.map((item) => (
             <MobileNavLink

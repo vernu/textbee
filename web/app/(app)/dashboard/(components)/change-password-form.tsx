@@ -20,9 +20,11 @@ const changePasswordSchema = z
     newPassword: z
       .string()
       .min(8, { message: 'Password must be at least 8 characters long' }),
+    // Matches newPassword's floor. At 4 a five-character confirmation failed
+    // with "Passwords must match" instead of the real length problem.
     confirmPassword: z
       .string()
-      .min(4, { message: 'Please confirm your password' }),
+      .min(1, { message: 'Please confirm your password' }),
   })
   .superRefine((data, ctx) => {
     if (data.newPassword !== data.confirmPassword) {
@@ -84,14 +86,30 @@ export default function ChangePasswordForm() {
       >
         <div className='space-y-2'>
           <Label htmlFor='oldPassword'>Old Password</Label>
+          {/* Without autoComplete, password managers cannot tell these three
+              boxes apart and fill the saved password into the wrong one. */}
           <Input
             id='oldPassword'
             type='password'
+            autoComplete='current-password'
+            aria-invalid={
+              Boolean(changePasswordForm.formState.errors.oldPassword) ||
+              undefined
+            }
+            aria-describedby={
+              changePasswordForm.formState.errors.oldPassword
+                ? 'oldPassword-error'
+                : undefined
+            }
             {...changePasswordForm.register('oldPassword')}
             placeholder='Enter your old password'
           />
           {changePasswordForm.formState.errors.oldPassword && (
-            <p className='text-sm text-destructive'>
+            <p
+              id='oldPassword-error'
+              role='alert'
+              className='text-sm text-destructive'
+            >
               {changePasswordForm.formState.errors.oldPassword.message}
             </p>
           )}
@@ -102,11 +120,25 @@ export default function ChangePasswordForm() {
           <Input
             id='newPassword'
             type='password'
+            autoComplete='new-password'
+            aria-invalid={
+              Boolean(changePasswordForm.formState.errors.newPassword) ||
+              undefined
+            }
+            aria-describedby={
+              changePasswordForm.formState.errors.newPassword
+                ? 'newPassword-error'
+                : undefined
+            }
             {...changePasswordForm.register('newPassword')}
             placeholder='Enter your new password'
           />
           {changePasswordForm.formState.errors.newPassword && (
-            <p className='text-sm text-destructive'>
+            <p
+              id='newPassword-error'
+              role='alert'
+              className='text-sm text-destructive'
+            >
               {changePasswordForm.formState.errors.newPassword.message}
             </p>
           )}
@@ -117,11 +149,25 @@ export default function ChangePasswordForm() {
           <Input
             id='confirmPassword'
             type='password'
+            autoComplete='new-password'
+            aria-invalid={
+              Boolean(changePasswordForm.formState.errors.confirmPassword) ||
+              undefined
+            }
+            aria-describedby={
+              changePasswordForm.formState.errors.confirmPassword
+                ? 'confirmPassword-error'
+                : undefined
+            }
             {...changePasswordForm.register('confirmPassword')}
-            placeholder='Enter your confirm password'
+            placeholder='Re-enter your new password'
           />
           {changePasswordForm.formState.errors.confirmPassword && (
-            <p className='text-sm text-destructive'>
+            <p
+              id='confirmPassword-error'
+              role='alert'
+              className='text-sm text-destructive'
+            >
               {changePasswordForm.formState.errors.confirmPassword.message}
             </p>
           )}

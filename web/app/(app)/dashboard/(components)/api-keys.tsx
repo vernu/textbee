@@ -236,7 +236,12 @@ export default function ApiKeys() {
                   <div className=''>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant='ghost' size='icon' className='h-6 w-6'>
+                        <Button
+                          variant='ghost'
+                          size='icon'
+                          className='h-6 w-6'
+                          aria-label='API key actions'
+                        >
                           <MoreVertical className='h-3 w-3' />
                         </Button>
                       </DropdownMenuTrigger>

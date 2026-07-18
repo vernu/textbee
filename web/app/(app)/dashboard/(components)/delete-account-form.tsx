@@ -120,60 +120,77 @@ export default function DeleteAccountForm() {
               <AlertTriangle className='h-5 w-5 text-destructive' />
               Delete Account
             </DialogTitle>
+            {/* Description holds prose only. The form controls used to live
+                inside it, and Radix points the dialog's aria-describedby here,
+                so opening the dialog read the labels, placeholders and all
+                back as one long description string. */}
             <DialogDescription className='pt-4'>
               <p className='mb-4'>
                 Are you sure you want to delete your account? This action:
               </p>
-              <ul className='list-disc list-inside space-y-2 mb-4'>
+              <ul className='list-disc list-inside space-y-2'>
                 <li>Cannot be undone</li>
                 <li>Will permanently delete all your data</li>
                 <li>Will cancel all active subscriptions</li>
                 <li>Will remove access to all services</li>
               </ul>
+            </DialogDescription>
+          </DialogHeader>
 
+          <div className='space-y-4'>
+            <div className='space-y-2'>
               <Label htmlFor='deleteReason'>Reason for deletion</Label>
+              {/* htmlFor pointed at an id this field never had, so the label
+                  was decorative and the textarea was announced unlabelled. */}
               <Textarea
-                className='my-2'
+                id='deleteReason'
                 placeholder='Enter your reason for deletion'
                 value={deleteReason}
                 onChange={(e) => setDeleteReason(e.target.value)}
               />
+            </div>
 
-              <p>Please type your email address to confirm:</p>
-
+            <div className='space-y-2'>
+              <Label htmlFor='deleteConfirmEmail'>
+                Type your email address to confirm
+              </Label>
               <Input
-                className='mt-2'
+                id='deleteConfirmEmail'
+                type='email'
+                autoComplete='off'
                 placeholder='Enter your email address'
                 value={deleteConfirmEmail}
                 onChange={(e) => setDeleteConfirmEmail(e.target.value)}
               />
+            </div>
 
-              <div className='mt-4 space-y-2'>
-                <div
-                  ref={turnstileRef}
-                  className='min-h-[65px] w-full flex justify-center'
-                />
-                {turnstileError && (
-                  <p className='text-sm text-destructive'>{turnstileError}</p>
-                )}
-              </div>
-
-              {requestAccountDeletionError && (
-                <p className='text-sm text-destructive'>
-                  {(requestAccountDeletionError as any).response?.data
-                    ?.message ||
-                    requestAccountDeletionError.message ||
-                    'Failed to submit account deletion request'}
+            <div className='space-y-2'>
+              <div
+                ref={turnstileRef}
+                className='min-h-[65px] w-full flex justify-center'
+              />
+              {turnstileError && (
+                <p role='alert' className='text-sm text-destructive'>
+                  {turnstileError}
                 </p>
               )}
+            </div>
 
-              {isRequestAccountDeletionSuccess && (
-                <p className='text-sm text-green-500'>
-                  Account deletion request submitted
-                </p>
-              )}
-            </DialogDescription>
-          </DialogHeader>
+            {requestAccountDeletionError && (
+              <p role='alert' className='text-sm text-destructive'>
+                {(requestAccountDeletionError as any).response?.data?.message ||
+                  requestAccountDeletionError.message ||
+                  'Failed to submit account deletion request'}
+              </p>
+            )}
+
+            {isRequestAccountDeletionSuccess && (
+              <p role='status' className='text-sm text-green-500'>
+                Account deletion request submitted
+              </p>
+            )}
+          </div>
+
           <DialogFooter className='gap-2 sm:gap-0'>
             <Button
               variant='outline'
