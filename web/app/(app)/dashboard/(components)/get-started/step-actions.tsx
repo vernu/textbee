@@ -96,7 +96,7 @@ export default function StepActions({
           <Button
             variant='outline'
             size='sm'
-            onClick={() => window.open(Routes.downloadAndroidApp, '_blank')}
+            onClick={() => window.open(Routes.downloadAndroidApp, '_blank', 'noopener,noreferrer')}
           >
             <Download className='h-4 w-4' />
             Download APK

@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
   Github,
-  Heart,
   MessageSquare,
   Linkedin,
   Twitter,
@@ -18,6 +17,7 @@ import { toast } from '@/hooks/use-toast'
 import {
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   Dialog,
   DialogContent,
 } from '@/components/ui/dialog'
@@ -77,41 +77,7 @@ export default function CommunityLinks() {
 
   return (
     <>
-      <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-2'>
-        {/* <Card>
-        <CardHeader>
-          <CardTitle>One-time Donation</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className='text-sm text-muted-foreground mb-4'>
-            Support us with a one-time donation of your desired amount.
-          </p>
-          <Link href={ExternalLinks.polar} prefetch={false} target='_blank'>
-            <Button className='w-full' variant='destructive'>
-              <Heart className='mr-2 h-4 w-4' />
-              Donate Once
-            </Button>
-          </Link>
-        </CardContent>
-      </Card> */}
-
-        {/* <Card>
-        <CardHeader>
-          <CardTitle>Support on Patreon</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className='text-sm text-muted-foreground mb-4'>
-            Support the development by becoming a patron.
-          </p>
-          <Link href={ExternalLinks.patreon} prefetch={false} target='_blank'>
-            <Button className='w-full' variant='secondary'>
-              <Heart className='mr-2 h-4 w-4' />
-              Become a Patron
-            </Button>
-          </Link>
-        </CardContent>
-      </Card> */}
-
+      <div className='grid gap-4 md:grid-cols-2'>
         <Card>
           <CardHeader>
             <CardTitle>GitHub</CardTitle>
@@ -120,12 +86,12 @@ export default function CommunityLinks() {
             <p className='text-sm text-muted-foreground mb-4'>
               Check out our source code and contribute to the project.
             </p>
-            <Link href={ExternalLinks.github} prefetch={false} target='_blank'>
-              <Button className='w-full'>
+            <Button asChild className='w-full'>
+              <Link href={ExternalLinks.github} prefetch={false} target='_blank'>
                 <Github className='mr-2 h-4 w-4' />
                 View Source
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </CardContent>
         </Card>
 
@@ -137,12 +103,12 @@ export default function CommunityLinks() {
             <p className='text-sm text-muted-foreground mb-4'>
               Join our community for support and updates.
             </p>
-            <Link href={ExternalLinks.discord} prefetch={false} target='_blank'>
-              <Button className='w-full' variant='outline'>
+            <Button asChild className='w-full' variant='outline'>
+              <Link href={ExternalLinks.discord} prefetch={false} target='_blank'>
                 <MessageSquare className='mr-2 h-4 w-4' />
                 Join Discord
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </CardContent>
         </Card>
 
@@ -154,12 +120,12 @@ export default function CommunityLinks() {
             <p className='text-sm text-muted-foreground mb-4'>
               Follow us on X for the latest updates and announcements.
             </p>
-            <Link href={ExternalLinks.twitter} prefetch={false} target='_blank'>
-              <Button className='w-full' variant='outline'>
+            <Button asChild className='w-full' variant='outline'>
+              <Link href={ExternalLinks.twitter} prefetch={false} target='_blank'>
                 <Twitter className='mr-2 h-4 w-4' />
                 Follow on X
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </CardContent>
         </Card>
 
@@ -171,16 +137,12 @@ export default function CommunityLinks() {
             <p className='text-sm text-muted-foreground mb-4'>
               Connect with us on LinkedIn for updates and news.
             </p>
-            <Link
-              href={ExternalLinks.linkedin}
-              prefetch={false}
-              target='_blank'
-            >
-              <Button className='w-full' variant='outline'>
+            <Button asChild className='w-full' variant='outline'>
+              <Link href={ExternalLinks.linkedin} prefetch={false} target='_blank'>
                 <Linkedin className='mr-2 h-4 w-4' />
                 Connect on LinkedIn
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </CardContent>
         </Card>
         <Card>
@@ -205,36 +167,50 @@ export default function CommunityLinks() {
       <Dialog open={socialOpen} onOpenChange={setSocialOpen}>
         <DialogContent className='sm:max-w-[600px] text-base'>
           <DialogHeader>
-            <DialogTitle className='text-primary mb-2 text-2xl font-bold'>
+            <DialogTitle className='text-primary mb-2 text-xl font-bold sm:text-2xl'>
               Share textbee.dev with Others
             </DialogTitle>
-            <p className='text-muted-foreground'>
+            {/* A bare <p> here left the dialog with no aria-describedby. */}
+            <DialogDescription>
               Help us grow by sharing textbee.dev with your friends and
-              colleagues!
-            </p>
+              colleagues.
+            </DialogDescription>
           </DialogHeader>
 
           <div className='flex flex-col gap-6 mt-4'>
             <div className='space-y-3'>
               <h3 className='text-lg font-semibold'>Choose your platform</h3>
-               <div className='grid grid-cols-4 gap-3 p-4 bg-muted/30 rounded-lg'>
-                 {socials.map(({ icon, name, url }) => (
-                   <button
-                     key={name}
-                     type='button'
-                     title={name}
-                     onClick={() => setCurrentUrl(url)}
-                     className={`${
-                       currentUrl === url
-                         ? 'ring-2 ring-primary bg-primary/10 shadow-lg'
-                         : 'hover:bg-card hover:border-primary/40 hover:shadow-md'
-                     } p-3 rounded-xl border bg-card/80 backdrop-blur-sm transition-colors duration-150 group`}
-                   >
-                     <div className='w-10 h-10 mx-auto bg-white dark:bg-white rounded-lg p-1 shadow-sm group-hover:shadow-md transition-shadow'>
-                       <Image src={icon} alt={name} width={20} height={20} className='w-full h-full object-contain' />
-                     </div>
-                   </button>
-                 ))}
+              {/* Not an overflow fix: 7 platforms at grid-cols-4 did fit at
+                  375px, verified against the overflow guard. It just read
+                  badly, a 4 + 3 split with a stranded last row. Three columns
+                  on the smallest screens, then one clean row of seven. */}
+              <div className='grid grid-cols-3 gap-2 rounded-lg bg-muted/30 p-3 sm:grid-cols-7 sm:gap-3 sm:p-4'>
+                {socials.map(({ icon, name, url }) => (
+                  <button
+                    key={name}
+                    type='button'
+                    title={`Share on ${name}`}
+                    // Selection was signalled by a ring alone, which is colour
+                    // only. aria-pressed states it outright.
+                    aria-pressed={currentUrl === url}
+                    onClick={() => setCurrentUrl(url)}
+                    className={`${
+                      currentUrl === url
+                        ? 'ring-2 ring-primary bg-primary/10 shadow-lg'
+                        : 'hover:bg-card hover:border-primary/40 hover:shadow-md'
+                    } group rounded-xl border bg-card/80 p-2 backdrop-blur-sm transition-colors duration-150 sm:p-3`}
+                  >
+                    <div className='mx-auto h-9 w-9 rounded-lg bg-white p-1 shadow-sm transition-shadow group-hover:shadow-md dark:bg-white sm:h-10 sm:w-10'>
+                      <Image
+                        src={icon}
+                        alt={name}
+                        width={20}
+                        height={20}
+                        className='h-full w-full object-contain'
+                      />
+                    </div>
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -259,7 +235,7 @@ export default function CommunityLinks() {
                   {copiedUrl === currentUrl ? 'Copied!' : 'Copy Link'}
                 </Button>
                 <Button
-                  onClick={() => window.open(currentUrl, '_blank')}
+                  onClick={() => window.open(currentUrl, '_blank', 'noopener,noreferrer')}
                   variant='outline'
                   className='flex-1'
                 >

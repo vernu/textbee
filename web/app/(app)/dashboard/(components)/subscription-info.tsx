@@ -341,7 +341,7 @@ export default function SubscriptionInfo() {
         />
       </div>
 
-      <div className='grid grid-cols-2 gap-2.5 mb-4'>
+      <div className='grid grid-cols-1 gap-2.5 mb-4 sm:grid-cols-2'>
         <div className='flex items-center space-x-2 bg-card p-2.5 rounded-md shadow-sm'>
           <Calendar className='h-3.5 w-3.5 text-primary flex-none' />
           <div>
@@ -398,7 +398,7 @@ export default function SubscriptionInfo() {
             </p>
           )}
         </div>
-        <div className='grid grid-cols-2 gap-2.5'>
+        <div className='grid grid-cols-1 gap-2.5 sm:grid-cols-2'>
           {limitTiles.map((tile) => (
             <LimitTile key={tile.label} {...tile} />
           ))}

@@ -102,7 +102,11 @@ export default function DashboardPage() {
           <Button
             variant='ghost'
             size='sm'
-            onClick={() => window.open('https://textbee.dev/quickstart', '_blank')}
+            onClick={() => window.open(
+                'https://textbee.dev/quickstart',
+                '_blank',
+                'noopener,noreferrer'
+              )}
           >
             <ArrowUpRightIcon className='h-4 w-4' />
             Quick Start

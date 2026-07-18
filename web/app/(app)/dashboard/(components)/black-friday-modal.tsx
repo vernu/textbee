@@ -87,7 +87,7 @@ export default function BlackFridayModal() {
 
                 <div className="space-y-4 py-2">
                     {/* Benefits List */}
-                    <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
                         {[
                             "Increased SMS limits",
                             "No daily limits",
