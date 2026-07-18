@@ -17,6 +17,7 @@ import { useToast } from '@/hooks/use-toast'
 import { Routes } from '@/config/routes'
 import { useDeleteDevice, useDevices, useSubscription } from '@/lib/api'
 import EmptyState from '@/components/shared/empty-state'
+import RelativeTime from '@/components/shared/relative-time'
 import { useRef, useState } from 'react'
 import {
   Dialog,
@@ -256,11 +257,7 @@ export default function DeviceList() {
                           'unknown'}
                       </div>
                       <div>
-                        Registered at:{' '}
-                        {new Date(device.createdAt).toLocaleString('en-US', {
-                          dateStyle: 'medium',
-                          timeStyle: 'short',
-                        })}
+                        Registered <RelativeTime value={device.createdAt} />
                       </div>
                     </div>
                     {isDeviceOutdated(device as DeviceVersionCandidate) && (

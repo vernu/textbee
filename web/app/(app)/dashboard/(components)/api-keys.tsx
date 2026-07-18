@@ -29,6 +29,7 @@ import {
 } from '@/lib/api'
 import { Skeleton } from '@/components/ui/skeleton'
 import EmptyState from '@/components/shared/empty-state'
+import RelativeTime from '@/components/shared/relative-time'
 import GenerateApiKey, {
   type GenerateApiKeyHandle,
 } from './generate-api-key'
@@ -217,23 +218,18 @@ export default function ApiKeys() {
                     </div>
                     <div className='flex items-center mt-1 space-x-3 text-xs text-muted-foreground'>
                       <div>
-                        Created at:{' '}
-                        {new Date(apiKey.createdAt).toLocaleString('en-US', {
-                          dateStyle: 'medium',
-                          timeStyle: 'short',
-                        })}
+                        Created <RelativeTime value={apiKey.createdAt} />
                       </div>
                       <div>
-                        Last used:{' '}
-                        {apiKey?.lastUsedAt && apiKey.usageCount
-                          ? new Date(apiKey.lastUsedAt).toLocaleString(
-                              'en-US',
-                              {
-                                dateStyle: 'medium',
-                                timeStyle: 'short',
-                              }
-                            )
-                          : 'Never'}
+                        Last used{' '}
+                        <RelativeTime
+                          value={
+                            apiKey?.lastUsedAt && apiKey.usageCount
+                              ? apiKey.lastUsedAt
+                              : null
+                          }
+                          fallback='never'
+                        />
                       </div>
                     </div>
                   </div>
@@ -351,13 +347,7 @@ export default function ApiKeys() {
                       {k.apiKey}
                     </code>
                     <div className='text-xs text-muted-foreground mt-1'>
-                      Revoked{' '}
-                      {k.revokedAt
-                        ? new Date(k.revokedAt).toLocaleString('en-US', {
-                            dateStyle: 'medium',
-                            timeStyle: 'short',
-                          })
-                        : ''}
+                      Revoked <RelativeTime value={k.revokedAt} fallback='' />
                     </div>
                   </div>
                   <Button
