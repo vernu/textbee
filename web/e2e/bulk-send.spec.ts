@@ -154,4 +154,50 @@ test.describe('bulk send (mocked API, no real backend)', () => {
     await expect(page.getByText(/Unknown column reference/)).toBeVisible()
     await expect(page.getByText(/no column named "nickname"/)).toBeVisible()
   })
+
+  // The columns used to be read off the first parsed row rather than the
+  // header. papaparse only assigns keys for values actually present, so a
+  // short first row made every column after it vanish: the phone column could
+  // not be selected and the whole file was unusable.
+  test('keeps every column when the first data row is short', async ({
+    page,
+    context,
+  }) => {
+    await authenticate(context)
+    await mockApi(page)
+    await page.goto('/dashboard/messaging/bulk')
+
+    await uploadCsv(
+      page,
+      [
+        'name,phone,order_id',
+        'Missing Everything Else',
+        'Bob Martinez,+16475550187,ORD-1044',
+      ].join('\n')
+    )
+
+    await expect(page.getByText('2 rows, 3 columns')).toBeVisible()
+
+    // The real proof: the phone column was still detected and mapped, which is
+    // impossible if the column list came from that first row.
+    await expect(page.getByLabel('Phone number column')).toContainText('phone')
+    await expect(page.getByText('1 will receive a message')).toBeVisible()
+  })
+
+  test('explains why a non-CSV file was rejected', async ({ page, context }) => {
+    await authenticate(context)
+    await mockApi(page)
+    await page.goto('/dashboard/messaging/bulk')
+
+    // Rejected drops used to return silently, so nothing happened and nothing
+    // said why.
+    await page.locator('input[type="file"]').setInputFiles({
+      name: 'contacts.xlsx',
+      mimeType:
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      buffer: Buffer.from('not a csv'),
+    })
+
+    await expect(page.getByText(/is not a CSV/)).toBeVisible()
+  })
 })

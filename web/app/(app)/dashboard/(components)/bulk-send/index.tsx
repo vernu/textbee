@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useMemo, useRef, useState } from 'react'
-import { useDropzone } from 'react-dropzone'
+import { useDropzone, type FileRejection } from 'react-dropzone'
 import Papa from 'papaparse'
 import {
   AlertCircle,
@@ -66,6 +66,7 @@ export default function BulkSend() {
   const [simSubscriptionId, setSimSubscriptionId] = useState<number>()
   const [previewIndex, setPreviewIndex] = useState(0)
   const [fileError, setFileError] = useState<string | null>(null)
+  const [fileWarning, setFileWarning] = useState<string | null>(null)
   const templateRef = useRef<HTMLTextAreaElement>(null)
 
   const { data: devices } = useDevices()
@@ -89,53 +90,94 @@ export default function BulkSend() {
     setFileName(null)
     setRecipientColumn('')
     setPreviewIndex(0)
+    setFileWarning(null)
   }
 
-  const onDrop = useCallback(
-    (accepted: File[]) => {
-      const file = accepted[0]
-      if (!file) return
+  // Derived rather than checked once at drop time. The subscription can still
+  // be loading when a file lands, in which case maxRows is undefined and the
+  // old imperative check was skipped entirely and never revisited, so an
+  // over-cap file sailed through on a limited plan.
+  const rowCapExceeded = maxRows !== undefined && rows.length > maxRows
+  const rowCapUnknown = rows.length > 0 && maxRows === undefined
 
-      if (file.size > MAX_FILE_SIZE) {
+  const handleRecipientColumnChange = (value: string) => {
+    setRecipientColumn(value)
+    // plan.valid is rebuilt from the new column, so an index into the old
+    // list can point past the end of the new one.
+    setPreviewIndex(0)
+  }
+
+  const onDrop = useCallback((accepted: File[], rejections: FileRejection[]) => {
+    const file = accepted[0]
+
+    // react-dropzone still calls onDrop when every file was filtered out by
+    // `accept`, so returning silently here left a rejected drop with no
+    // feedback at all: nothing happened and nothing said why.
+    if (!file) {
+      const rejected = rejections[0]
+      if (rejected) {
         setFileError(
-          `That file is ${formatFileSize(file.size)}. The limit is ${formatFileSize(MAX_FILE_SIZE)}.`
+          rejections.length > 1
+            ? 'Please drop a single CSV file.'
+            : `"${rejected.file.name}" is not a CSV. Export your spreadsheet as CSV and try again.`
         )
-        return
       }
+      return
+    }
 
-      Papa.parse<CsvRow>(file, {
-        header: true,
-        skipEmptyLines: true,
-        complete: (results) => {
-          const parsed = (results.data ?? []).filter(Boolean)
+    if (file.size > MAX_FILE_SIZE) {
+      setFileError(
+        `That file is ${formatFileSize(file.size)}. The limit is ${formatFileSize(MAX_FILE_SIZE)}.`
+      )
+      return
+    }
 
-          if (parsed.length === 0) {
-            setFileError('That file has no rows. Check it has a header row.')
-            resetFile()
-            return
-          }
+    Papa.parse<CsvRow>(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        const parsed = (results.data ?? []).filter(Boolean)
 
-          if (maxRows !== undefined && parsed.length > maxRows) {
-            setFileError(
-              `That file has ${parsed.length.toLocaleString()} rows. Your plan allows ${maxRows.toLocaleString()} per bulk send.`
-            )
-            resetFile()
-            return
-          }
+        if (parsed.length === 0) {
+          setFileError('That file has no rows. Check it has a header row.')
+          resetFile()
+          return
+        }
 
-          const headers = Object.keys(parsed[0]).filter(Boolean)
-          setRows(parsed)
-          setColumns(headers)
-          setFileName(file.name)
-          setRecipientColumn(detectRecipientColumn(headers) ?? '')
-          setPreviewIndex(0)
-          setFileError(null)
-        },
-        error: () => setFileError('That file could not be read as CSV.'),
-      })
-    },
-    [maxRows]
-  )
+        // Take the header papaparse actually parsed. Reading keys off the
+        // first data row instead loses every column that row happened to
+        // leave blank, because papaparse only assigns keys for values that
+        // are present.
+        const headers = (results.meta?.fields ?? []).filter(Boolean)
+
+        if (headers.length === 0) {
+          setFileError('That file has no header row, so columns cannot be mapped.')
+          resetFile()
+          return
+        }
+
+        setRows(parsed)
+        setColumns(headers)
+        setFileName(file.name)
+        setRecipientColumn(detectRecipientColumn(headers) ?? '')
+        setPreviewIndex(0)
+        setFileError(null)
+
+        // Row-level problems are reported here, not through `error`, which
+        // only fires on a fatal stream failure. A mis-delimited file parses
+        // "successfully" into one mangled column, so this is worth saying.
+        const problems = results.errors ?? []
+        setFileWarning(
+          problems.length > 0
+            ? `${problems.length} row${problems.length === 1 ? '' : 's'} did not parse cleanly (first problem on row ${
+                (problems[0].row ?? 0) + 1
+              }: ${problems[0].message}). Check the delimiter and quoting if the columns below look wrong.`
+            : null
+        )
+      },
+      error: () => setFileError('That file could not be read as CSV.'),
+    })
+  }, [])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -161,14 +203,30 @@ export default function BulkSend() {
     ? (selectedDevice as any).simInfo.sims
     : []
 
-  const previewRow = plan.valid[previewIndex]
+  // Clamped, so the preview can never be stranded past the end of a shorter
+  // list. Anything that shrinks plan.valid (changing the phone column, most
+  // obviously) would otherwise hide the preview and disable its own Next
+  // button, leaving Previous as the only way back.
+  const safePreviewIndex = Math.min(
+    previewIndex,
+    Math.max(0, plan.valid.length - 1)
+  )
+  const previewRow = plan.valid[safePreviewIndex]
   const previewMessage = previewRow
     ? renderTemplate(template, previewRow.data)
     : ''
-  const segments = getSegmentInfo(previewMessage || template)
+  // Counted from the rendered message, never the raw template: falling back to
+  // the template counts the literal "{{ name }}" placeholders and misstates
+  // the segment cost.
+  const segments = getSegmentInfo(previewMessage)
 
   const hasFile = rows.length > 0
-  const mapped = hasFile && Boolean(recipientColumn) && plan.valid.length > 0
+  const mapped =
+    hasFile &&
+    !rowCapExceeded &&
+    !rowCapUnknown &&
+    Boolean(recipientColumn) &&
+    plan.valid.length > 0
   const composed = mapped && template.trim().length > 0 && Boolean(deviceId)
 
   const {
@@ -351,6 +409,26 @@ export default function BulkSend() {
             <AlertDescription>{fileError}</AlertDescription>
           </Alert>
         )}
+
+        {rowCapExceeded && (
+          <Alert variant='destructive'>
+            <AlertCircle className='h-4 w-4' />
+            <AlertTitle>That file is over your plan limit</AlertTitle>
+            <AlertDescription>
+              It has {rows.length.toLocaleString()} rows and your plan allows{' '}
+              {maxRows!.toLocaleString()} per bulk send. Remove the extra rows
+              or upgrade your plan.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {fileWarning && !fileError && (
+          <Alert>
+            <AlertCircle className='h-4 w-4' />
+            <AlertTitle>Some rows did not parse cleanly</AlertTitle>
+            <AlertDescription>{fileWarning}</AlertDescription>
+          </Alert>
+        )}
       </StepShell>
 
       {/* 2. Map */}
@@ -364,7 +442,10 @@ export default function BulkSend() {
         <div className='grid gap-4 sm:grid-cols-2'>
           <div className='space-y-1.5'>
             <Label htmlFor='recipient-column'>Phone number column</Label>
-            <Select value={recipientColumn} onValueChange={setRecipientColumn}>
+            <Select
+              value={recipientColumn}
+              onValueChange={handleRecipientColumnChange}
+            >
               <SelectTrigger id='recipient-column'>
                 <SelectValue placeholder='Select a column' />
               </SelectTrigger>
@@ -538,23 +619,25 @@ export default function BulkSend() {
                   size='icon'
                   className='h-6 w-6'
                   aria-label='Previous recipient'
-                  disabled={previewIndex === 0}
-                  onClick={() => setPreviewIndex((i) => Math.max(0, i - 1))}
+                  disabled={safePreviewIndex === 0}
+                  onClick={() =>
+                    setPreviewIndex(Math.max(0, safePreviewIndex - 1))
+                  }
                 >
                   <ChevronLeft className='h-3.5 w-3.5' />
                 </Button>
                 <span className='text-xs tabular-nums text-muted-foreground'>
-                  {previewIndex + 1} / {plan.valid.length}
+                  {safePreviewIndex + 1} / {plan.valid.length}
                 </span>
                 <Button
                   variant='ghost'
                   size='icon'
                   className='h-6 w-6'
                   aria-label='Next recipient'
-                  disabled={previewIndex >= plan.valid.length - 1}
+                  disabled={safePreviewIndex >= plan.valid.length - 1}
                   onClick={() =>
-                    setPreviewIndex((i) =>
-                      Math.min(plan.valid.length - 1, i + 1)
+                    setPreviewIndex(
+                      Math.min(plan.valid.length - 1, safePreviewIndex + 1)
                     )
                   }
                 >

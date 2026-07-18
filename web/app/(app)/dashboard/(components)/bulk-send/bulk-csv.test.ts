@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import Papa from 'papaparse'
 import {
   buildRecipientPlan,
   detectRecipientColumn,
@@ -152,5 +153,45 @@ describe('formatFileSize', () => {
     expect(formatFileSize(1024 * 1024)).toBe('1 MB')
     expect(formatFileSize(512 * 1024)).toBe('512 KB')
     expect(formatFileSize(900)).toBe('900 B')
+  })
+})
+
+// The upload step reads its column list straight from papaparse. These pin the
+// specific parser behaviour that made reading keys off the first data row
+// wrong, so a future refactor back to Object.keys(data[0]) fails here.
+describe('csv column extraction', () => {
+  const csv = 'name,phone,city\nAlice\nBob,+14155550101,Denver'
+
+  it('meta.fields keeps every header even when the first row is short', () => {
+    const parsed = Papa.parse<Record<string, string>>(csv, {
+      header: true,
+      skipEmptyLines: true,
+    })
+
+    expect(parsed.meta.fields).toEqual(['name', 'phone', 'city'])
+  })
+
+  it('the first data row does not list every header', () => {
+    const parsed = Papa.parse<Record<string, string>>(csv, {
+      header: true,
+      skipEmptyLines: true,
+    })
+
+    // This is the bug: papaparse only assigns keys for values present in the
+    // row, so a short first row silently hides real columns from the mapping
+    // dropdown and the phone column becomes unselectable.
+    expect(Object.keys(parsed.data[0])).toEqual(['name'])
+    expect(Object.keys(parsed.data[0])).not.toContain('phone')
+  })
+
+  it('still detects the phone column from the full header list', () => {
+    const parsed = Papa.parse<Record<string, string>>(csv, {
+      header: true,
+      skipEmptyLines: true,
+    })
+
+    expect(detectRecipientColumn(parsed.meta.fields ?? [])).toBe('phone')
+    // Whereas the short first row offers nothing to detect.
+    expect(detectRecipientColumn(Object.keys(parsed.data[0]))).toBeUndefined()
   })
 })
