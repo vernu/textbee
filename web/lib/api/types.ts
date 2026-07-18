@@ -27,7 +27,8 @@ export interface Device {
   model?: string
   enabled?: boolean
   status?: string
-  batteryLevel?: number
+  // No batteryLevel or signal here: neither the device schema nor the Android
+  // app reports them, so the UI can only ever invent those values.
   appVersionCode?: number
   createdAt?: string
 }

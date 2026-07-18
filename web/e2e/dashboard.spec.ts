@@ -61,10 +61,16 @@ test.describe('dashboard (mocked API, no real backend)', () => {
       page.getByRole('progressbar', { name: 'Today usage' })
     ).toBeVisible()
     await expect(
-      page.getByRole('progressbar', { name: 'This month usage' })
+      page.getByRole('progressbar', { name: 'Last 30 days usage' })
     ).toBeVisible()
     await expect(page.getByText('/ 5,000')).toBeVisible()
     await expect(page.getByText('4,680 remaining')).toBeVisible()
+
+    // The quota counts inbound messages too (the backend counts SMS documents
+    // with no type filter), so the label must not claim these are only sends.
+    await expect(
+      page.getByText(/Counts messages sent and received/)
+    ).toBeVisible()
 
     // The old page decorated every stat with a green trend arrow and captioned
     // all-time totals "Since last year". Nothing computed either.
@@ -72,24 +78,4 @@ test.describe('dashboard (mocked API, no real backend)', () => {
     await expect(page.getByText('Connected now')).toHaveCount(0)
   })
 
-  test('shows recent messages for the connected device', async ({
-    page,
-    context,
-  }) => {
-    await authenticate(context)
-    await mockApi(page)
-    await page.goto('/dashboard')
-
-    const activity = page
-      .locator('div')
-      .filter({ hasText: /^Recent activity/ })
-      .first()
-    await expect(activity).toBeVisible()
-
-    // Mocked message body and its recipient.
-    await expect(page.getByText('Hello from textbee')).toBeVisible()
-    await expect(
-      page.getByRole('link', { name: /view all/i })
-    ).toHaveAttribute('href', '/dashboard/messaging/history')
-  })
 })

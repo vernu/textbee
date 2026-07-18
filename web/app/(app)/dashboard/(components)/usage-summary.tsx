@@ -51,7 +51,9 @@ function UsageCard({
               <span className='text-2xl font-bold'>
                 {used.toLocaleString()}
               </span>
-              <span className='text-sm text-muted-foreground'>sent</span>
+              <span className='text-sm text-muted-foreground'>
+                message{used === 1 ? '' : 's'}
+              </span>
             </div>
             <p className='flex items-center gap-1.5 text-xs text-muted-foreground'>
               <InfinityIcon className='h-3.5 w-3.5' />
@@ -127,19 +129,29 @@ export default function UsageSummary() {
   const { daily, monthly } = deriveUsage(subscription)
 
   return (
-    <div className='grid gap-4 sm:grid-cols-2'>
-      <UsageCard
-        title='Today'
-        window={daily}
-        icon={Clock}
-        isLoading={isPending}
-      />
-      <UsageCard
-        title='This month'
-        window={monthly}
-        icon={CalendarDays}
-        isLoading={isPending}
-      />
+    <div className='space-y-2'>
+      <div className='grid gap-4 sm:grid-cols-2'>
+        <UsageCard
+          title='Today'
+          window={daily}
+          icon={Clock}
+          isLoading={isPending}
+        />
+        {/* "Last 30 days", not "This month": the backend counts from
+            setMonth(-1), a rolling window, not the calendar month. */}
+        <UsageCard
+          title='Last 30 days'
+          window={monthly}
+          icon={CalendarDays}
+          isLoading={isPending}
+        />
+      </div>
+      {/* The quota counts every message on the account, inbound and outbound:
+          the backend counts SMS documents with no type filter. Saying "sent"
+          would understate what actually consumes the limit. */}
+      <p className='text-xs text-muted-foreground'>
+        Counts messages sent and received against your plan limit.
+      </p>
     </div>
   )
 }

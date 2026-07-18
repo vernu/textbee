@@ -5,8 +5,6 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Smartphone,
-  Battery,
-  Signal,
   Copy,
   Plus,
   ExternalLink,
@@ -248,14 +246,10 @@ export default function DeviceList() {
                         <Copy className='h-3 w-3' />
                       </Button>
                     </div>
+                    {/* No battery or signal indicators: the app does not
+                        report either, so they only ever rendered "unknown"
+                        and "-" next to a meaningful-looking icon. */}
                     <div className='flex items-center mt-1 space-x-3 text-xs text-muted-foreground'>
-                      <div className='flex items-center'>
-                        <Battery className='h-3 w-3 mr-1' />
-                        unknown
-                      </div>
-                      <div className='flex items-center'>
-                        <Signal className='h-3 w-3 mr-1' />-
-                      </div>
                       <div>
                         App version:{' '}
                         {getDeviceVersionCode(device as DeviceVersionCandidate) ??
