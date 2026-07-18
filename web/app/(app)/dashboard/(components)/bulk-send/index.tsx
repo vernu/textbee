@@ -33,6 +33,7 @@ import { formatError } from '@/lib/utils/errorHandler'
 import { RateLimitError } from '@/components/shared/rate-limit-error'
 import { formatDeviceName, cn } from '@/lib/utils'
 import { useDevices, useSubscription } from '@/lib/api'
+import { getSegmentInfo } from '@/lib/sms'
 import StepShell from './step-shell'
 import {
   buildRecipientPlan,
@@ -40,7 +41,6 @@ import {
   extractTemplateVariables,
   findUnknownVariables,
   formatFileSize,
-  getSegmentInfo,
   renderTemplate,
   type CsvRow,
 } from './bulk-csv'

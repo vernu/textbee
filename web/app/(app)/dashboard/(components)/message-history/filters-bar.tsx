@@ -7,17 +7,32 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Badge } from '@/components/ui/badge'
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
-import { MessageSquare, RefreshCw, Smartphone, Timer } from 'lucide-react'
-import { formatDeviceName } from '@/lib/utils'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { RefreshCw, Search, Timer, X } from 'lucide-react'
+import { formatDeviceName, cn } from '@/lib/utils'
 import type { Device } from '@/lib/api'
 
 const AUTO_REFRESH_INTERVALS = [
   { value: 0, label: 'Off' },
-  { value: 15, label: '15s' },
-  { value: 30, label: '30s' },
-  { value: 60, label: '60s' },
+  { value: 15, label: 'Every 15s' },
+  { value: 30, label: 'Every 30s' },
+  { value: 60, label: 'Every 60s' },
+]
+
+const TYPES = [
+  { value: 'all', label: 'All' },
+  { value: 'sent', label: 'Sent' },
+  { value: 'received', label: 'Received' },
 ]
 
 type FiltersBarProps = {
@@ -26,130 +41,155 @@ type FiltersBarProps = {
   onDeviceChange: (deviceId: string) => void
   messageType: string
   onMessageTypeChange: (type: string) => void
+  search: string
+  onSearchChange: (value: string) => void
   onRefresh: () => void
   isRefreshing: boolean
   autoRefreshInterval: number
   onAutoRefreshIntervalChange: (seconds: number) => void
 }
 
-// Device / message-type selectors plus refresh controls for the history list.
+// Collapsed from a tall labelled card into one compact bar, so messages are
+// visible without scrolling past the controls.
 export default function FiltersBar({
   devices,
   currentDevice,
   onDeviceChange,
   messageType,
   onMessageTypeChange,
+  search,
+  onSearchChange,
   onRefresh,
   isRefreshing,
   autoRefreshInterval,
   onAutoRefreshIntervalChange,
 }: FiltersBarProps) {
-  return (
-    <div className='bg-card rounded-lg shadow-sm border border-border p-4 mb-4'>
-      <div className='flex flex-col gap-4'>
-        <div className='flex flex-col sm:flex-row sm:items-center gap-3'>
-          <div className='flex-1'>
-            <div className='flex items-center gap-2 mb-1.5'>
-              <Smartphone className='h-3.5 w-3.5 text-primary' />
-              <h3 className='text-sm font-medium text-foreground'>Device</h3>
-            </div>
-            <Select value={currentDevice} onValueChange={onDeviceChange}>
-              <SelectTrigger className='w-full h-9 text-sm'>
-                <SelectValue placeholder='Select a device' />
-              </SelectTrigger>
-              <SelectContent>
-                {devices.map((device) => (
-                  <SelectItem key={device._id} value={device._id}>
-                    <div className='flex items-center gap-2'>
-                      <span className='font-medium'>
-                        {formatDeviceName(device)}
-                      </span>
-                      {!device.enabled && (
-                        <Badge variant='outline' className='ml-1 text-xs py-0 h-5'>
-                          Disabled
-                        </Badge>
-                      )}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+  const autoRefreshOn = autoRefreshInterval > 0
 
-          <div className='w-full sm:w-44'>
-            <div className='flex items-center gap-2 mb-1.5'>
-              <MessageSquare className='h-3.5 w-3.5 text-primary' />
-              <h3 className='text-sm font-medium text-foreground'>
-                Message Type
-              </h3>
-            </div>
-            <Select value={messageType} onValueChange={onMessageTypeChange}>
-              <SelectTrigger className='w-full h-9 text-sm'>
-                <SelectValue placeholder='Message type' />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value='all'>
-                  <div className='flex items-center gap-1.5'>
-                    <div className='h-1.5 w-1.5 rounded-full bg-muted-foreground'></div>
-                    All Messages
-                  </div>
-                </SelectItem>
-                <SelectItem value='received'>
-                  <div className='flex items-center gap-1.5'>
-                    <div className='h-1.5 w-1.5 rounded-full bg-green-500'></div>
-                    Received
-                  </div>
-                </SelectItem>
-                <SelectItem value='sent'>
-                  <div className='flex items-center gap-1.5'>
-                    <div className='h-1.5 w-1.5 rounded-full bg-brand-500'></div>
-                    Sent
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+  return (
+    <div className='space-y-3'>
+      <div className='flex flex-col gap-2 sm:flex-row sm:items-center'>
+        <div className='relative flex-1'>
+          <Search className='pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground' />
+          <Label htmlFor='message-search' className='sr-only'>
+            Search messages
+          </Label>
+          <Input
+            id='message-search'
+            type='search'
+            value={search}
+            onChange={(e) => onSearchChange(e.target.value)}
+            placeholder='Search messages or numbers'
+            className='h-9 pl-9 pr-9'
+          />
+          {search && (
+            <Button
+              type='button'
+              variant='ghost'
+              size='icon'
+              aria-label='Clear search'
+              onClick={() => onSearchChange('')}
+              className='absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2'
+            >
+              <X className='h-3.5 w-3.5' />
+            </Button>
+          )}
         </div>
 
-        <div className='flex items-center justify-between gap-2 pt-2 mt-2 border-t border-border'>
-          <div className='flex items-center gap-1.5'>
-            <Button
-              onClick={onRefresh}
-              variant='ghost'
-              size='sm'
-              disabled={!currentDevice}
-              className='h-7 px-2 text-xs text-primary hover:bg-accent'
-            >
-              <RefreshCw
-                className={`h-3.5 w-3.5 mr-1 ${isRefreshing ? 'animate-spin' : ''}`}
-              />
-              Refresh Now
-            </Button>
-          </div>
+        <div className='flex items-center gap-2'>
+          <Label htmlFor='history-device' className='sr-only'>
+            Device
+          </Label>
+          <Select value={currentDevice} onValueChange={onDeviceChange}>
+            <SelectTrigger id='history-device' className='h-9 w-full sm:w-52'>
+              <SelectValue placeholder='Select a device' />
+            </SelectTrigger>
+            <SelectContent>
+              {devices.map((device) => (
+                <SelectItem key={device._id} value={device._id}>
+                  {formatDeviceName(device)}
+                  {device.enabled ? '' : ' (disabled)'}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-          <div className='flex items-center gap-1.5'>
-            <Timer className='h-3 w-3 text-primary' />
-            <span className='text-xs font-medium mr-1'>Auto Refresh:</span>
-            <div className='flex'>
+          <Button
+            type='button'
+            variant='outline'
+            size='icon'
+            className='h-9 w-9 shrink-0'
+            onClick={onRefresh}
+            disabled={!currentDevice}
+            aria-label='Refresh messages'
+          >
+            <RefreshCw
+              className={cn('h-4 w-4', isRefreshing && 'animate-spin')}
+            />
+          </Button>
+
+          {/* Four inline interval buttons took a whole row for a setting that
+              is changed rarely. */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type='button'
+                variant='outline'
+                size='icon'
+                className={cn(
+                  'h-9 w-9 shrink-0',
+                  autoRefreshOn && 'text-primary'
+                )}
+                aria-label={
+                  autoRefreshOn
+                    ? `Auto refresh every ${autoRefreshInterval} seconds`
+                    : 'Auto refresh off'
+                }
+              >
+                <Timer className='h-4 w-4' />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align='end'>
+              <DropdownMenuLabel>Auto refresh</DropdownMenuLabel>
+              <DropdownMenuSeparator />
               {AUTO_REFRESH_INTERVALS.map((interval) => (
-                <Button
+                <DropdownMenuCheckboxItem
                   key={interval.value}
-                  size='sm'
-                  variant='ghost'
-                  disabled={!currentDevice && interval.value > 0}
-                  className={`h-6 px-1.5 text-xs ${
-                    autoRefreshInterval === interval.value
-                      ? 'bg-accent text-accent-foreground font-medium'
-                      : 'text-muted-foreground hover:bg-accent/60'
-                  }`}
-                  onClick={() => onAutoRefreshIntervalChange(interval.value)}
+                  checked={autoRefreshInterval === interval.value}
+                  onCheckedChange={() =>
+                    onAutoRefreshIntervalChange(interval.value)
+                  }
                 >
                   {interval.label}
-                </Button>
+                </DropdownMenuCheckboxItem>
               ))}
-            </div>
-          </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
+      </div>
+
+      <div
+        className='flex w-full gap-1 overflow-x-auto rounded-lg bg-muted p-1 sm:w-fit'
+        role='tablist'
+        aria-label='Message direction'
+      >
+        {TYPES.map((type) => (
+          <button
+            key={type.value}
+            type='button'
+            role='tab'
+            aria-selected={messageType === type.value}
+            onClick={() => onMessageTypeChange(type.value)}
+            className={cn(
+              'shrink-0 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+              messageType === type.value
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            {type.label}
+          </button>
+        ))}
       </div>
     </div>
   )

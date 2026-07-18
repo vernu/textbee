@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, type ComponentType } from 'react'
-import { useForm, Controller } from 'react-hook-form'
+import { useForm, Controller, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { sendSmsSchema, type SendSmsFormData } from '@/lib/schemas'
 import {
@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
@@ -27,6 +28,7 @@ import { formatError } from '@/lib/utils/errorHandler'
 import { formatRateLimitMessageForToast } from '@/components/shared/rate-limit-error'
 import { formatDeviceName } from '@/lib/utils'
 import { useDevices, useSendSms } from '@/lib/api'
+import { getSegmentInfo } from '@/lib/sms'
 
 type SmsComposerDialogProps = {
   open: boolean
@@ -81,6 +83,9 @@ export default function SmsComposerDialog({
     }
   }, [open, deviceId, recipient, reset])
 
+  const messageValue = useWatch({ control, name: 'message' }) ?? ''
+  const segments = getSegmentInfo(messageValue)
+
   const onSubmit = (data: SendSmsFormData) =>
     sendSms(data, {
       onSuccess: () => {
@@ -111,7 +116,8 @@ export default function SmsComposerDialog({
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className='space-y-4 mt-4'>
           <div className='space-y-4'>
-            <div>
+            <div className='space-y-1.5'>
+              <Label htmlFor='composer-device'>Send from</Label>
               <Controller
                 name='deviceId'
                 control={control}
@@ -121,7 +127,7 @@ export default function SmsComposerDialog({
                     value={field.value}
                     defaultValue={deviceId}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger id='composer-device'>
                       <SelectValue placeholder='Select a device' />
                     </SelectTrigger>
                     <SelectContent>
@@ -141,10 +147,14 @@ export default function SmsComposerDialog({
                 </p>
               )}
             </div>
-            <div>
+            <div className='space-y-1.5'>
+              {/* Real labels, not placeholder-as-label: a placeholder
+                  disappears on focus and is not reliably announced. */}
+              <Label htmlFor='composer-recipient'>To</Label>
               <Input
+                id='composer-recipient'
                 type='tel'
-                placeholder='Phone Number'
+                placeholder='+14155550101'
                 {...register('recipients.0')}
               />
               {errors.recipients?.[0] && (
@@ -153,8 +163,18 @@ export default function SmsComposerDialog({
                 </p>
               )}
             </div>
-            <div>
-              <Textarea placeholder='Message' {...register('message')} rows={4} />
+            <div className='space-y-1.5'>
+              <Label htmlFor='composer-message'>Message</Label>
+              <Textarea
+                id='composer-message'
+                placeholder='Type your message'
+                {...register('message')}
+                rows={4}
+              />
+              <p className='text-xs text-muted-foreground'>
+                {segments.length} characters, {segments.segments} segment
+                {segments.segments === 1 ? '' : 's'} ({segments.encoding})
+              </p>
               {errors.message && (
                 <p className='text-sm text-destructive mt-1'>
                   {errors.message.message}

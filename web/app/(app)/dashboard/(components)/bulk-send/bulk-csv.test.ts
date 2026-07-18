@@ -5,7 +5,6 @@ import {
   extractTemplateVariables,
   findUnknownVariables,
   formatFileSize,
-  getSegmentInfo,
   isPlausiblePhone,
   normalizePhone,
   renderTemplate,
@@ -145,34 +144,6 @@ describe('templates', () => {
 
   it('renders unknown or missing placeholders as empty', () => {
     expect(renderTemplate('Hi {{ nickname }}!', { name: 'Alice' })).toBe('Hi !')
-  })
-})
-
-describe('getSegmentInfo', () => {
-  it('counts a short GSM-7 message as one segment', () => {
-    const info = getSegmentInfo('Hello there')
-    expect(info).toMatchObject({ segments: 1, encoding: 'GSM-7', perSegment: 160 })
-  })
-
-  it('treats an empty message as zero segments', () => {
-    expect(getSegmentInfo('').segments).toBe(0)
-  })
-
-  it('splits past 160 GSM-7 characters', () => {
-    expect(getSegmentInfo('a'.repeat(160)).segments).toBe(1)
-    expect(getSegmentInfo('a'.repeat(161)).segments).toBe(2)
-    expect(getSegmentInfo('a'.repeat(306)).segments).toBe(2)
-    expect(getSegmentInfo('a'.repeat(307)).segments).toBe(3)
-  })
-
-  it('drops to UCS-2 limits when a character needs it', () => {
-    const info = getSegmentInfo('Hello 😀')
-    expect(info.encoding).toBe('UCS-2')
-    expect(info.perSegment).toBe(70)
-  })
-
-  it('splits UCS-2 past 70 characters', () => {
-    expect(getSegmentInfo(`😀${'a'.repeat(70)}`).segments).toBe(2)
   })
 })
 

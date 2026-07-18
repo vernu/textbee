@@ -104,6 +104,13 @@ export const mockWebhooks = [
 
 export const mockWebhookNotifications = { data: [], total: 0 }
 
+// The real endpoint populates `device` (select: _id brand model buildId
+// enabled), so the fixtures carry it too: replying reads message.device._id,
+// and without it the mocked path would not exercise what production does.
+// Dates are relative so the day-grouped list always has a "Today" section.
+const hoursAgo = (hours: number) =>
+  new Date(Date.now() - hours * 60 * 60 * 1000).toISOString()
+
 export const mockMessages = {
   data: [
     {
@@ -112,10 +119,22 @@ export const mockMessages = {
       message: 'Hello from textbee',
       status: 'sent',
       type: 'sent',
-      createdAt: new Date('2026-07-09T12:00:00.000Z').toISOString(),
+      device: { _id: 'device_1', brand: 'Google', model: 'Pixel 8' },
+      requestedAt: hoursAgo(2),
+      createdAt: hoursAgo(2),
+    },
+    {
+      _id: 'msg_2',
+      sender: '+15551234567',
+      message: 'Reply from a customer',
+      status: 'received',
+      type: 'received',
+      device: { _id: 'device_1', brand: 'Google', model: 'Pixel 8' },
+      receivedAt: hoursAgo(30),
+      createdAt: hoursAgo(30),
     },
   ],
-  meta: { total: 1, page: 1, limit: 20 },
+  meta: { total: 2, page: 1, limit: 20, totalPages: 1 },
 }
 
 export const mockBillingPlans = [

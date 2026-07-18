@@ -1,15 +1,19 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { MessageSquare, SearchX, Smartphone } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { MessageSquare, Smartphone } from 'lucide-react'
 import { useDeviceMessages, useDevices } from '@/lib/api'
 import FiltersBar from './filters-bar'
 import Pagination from '@/components/shared/numbered-pagination'
 import EmptyState from '@/components/shared/empty-state'
 import SmsDetailsDialog from './sms-details-dialog'
-import { MessageCard, MessageCardSkeleton } from './message-card'
+import { MessageRow, MessageRowSkeleton } from './message-row'
+import { groupMessagesByDay } from './group'
 import type { MessagesPagination, SmsMessage } from './types'
+
+const SEARCH_DEBOUNCE_MS = 300
 
 // Container for the message-history screen: owns filter/pagination state and
 // data fetching; rendering is delegated to the focused subcomponents.
@@ -17,7 +21,10 @@ export default function MessageHistory() {
   const [selectedMessage, setSelectedMessage] = useState<SmsMessage | null>(null)
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false)
 
-  const [currentDevice, setCurrentDevice] = useState('')
+  // Derived, not synced through an effect: the selected device is whatever the
+  // user picked, otherwise the first one. An effect would render once with no
+  // device before correcting itself.
+  const [pickedDevice, setPickedDevice] = useState('')
   const [messageType, setMessageType] = useState('all')
   const [page, setPage] = useState(1)
   const [limit] = useState(20)
@@ -25,24 +32,38 @@ export default function MessageHistory() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const refreshTimerRef = useRef<NodeJS.Timeout | null>(null)
 
+  // Two values: what is typed, and what has been committed to the query.
+  // Search is server-side, so it is debounced to avoid a request per keystroke.
+  const [searchInput, setSearchInput] = useState('')
+  const [search, setSearch] = useState('')
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearch(searchInput.trim())
+      setPage(1)
+    }, SEARCH_DEBOUNCE_MS)
+    return () => clearTimeout(timer)
+  }, [searchInput])
+
   const {
     data: devices,
     isLoading: isLoadingDevices,
     error: devicesError,
   } = useDevices()
 
-  useEffect(() => {
-    if (devices?.length && !currentDevice) {
-      setCurrentDevice(devices[0]._id)
-    }
-  }, [devices, currentDevice])
+  const currentDevice = pickedDevice || devices?.[0]?._id || ''
 
   const {
     data: messagesResponse,
     isLoading: isLoadingMessages,
     error: messagesError,
     refetch,
-  } = useDeviceMessages(currentDevice, { type: messageType, page, limit })
+  } = useDeviceMessages(currentDevice, {
+    type: messageType,
+    page,
+    limit,
+    search,
+  })
 
   const handleRefresh = async () => {
     if (!currentDevice) return
@@ -80,13 +101,16 @@ export default function MessageHistory() {
     totalPages: messagesResponse?.meta?.totalPages ?? 1,
   }
 
+  const days = useMemo(() => groupMessagesByDay(messages), [messages])
+  const activeDevice = devices?.find((device) => device._id === currentDevice)
+
   const handleSelectMessage = (message: SmsMessage) => {
     setSelectedMessage(message)
     setIsDetailsDialogOpen(true)
   }
 
   const handleDeviceChange = (deviceId: string) => {
-    setCurrentDevice(deviceId)
+    setPickedDevice(deviceId)
     setPage(1)
   }
 
@@ -95,13 +119,15 @@ export default function MessageHistory() {
     setPage(1)
   }
 
+  const clearSearch = () => setSearchInput('')
+
   if (isLoadingDevices)
     return (
       <div className='space-y-4'>
-        <Skeleton className='h-10 w-full' />
-        <div className='space-y-4'>
-          {[1, 2, 3].map((i) => (
-            <MessageCardSkeleton key={i} />
+        <Skeleton className='h-9 w-full' />
+        <div className='rounded-xl border border-border'>
+          {[1, 2, 3, 4].map((i) => (
+            <MessageRowSkeleton key={i} />
           ))}
         </div>
       </div>
@@ -109,7 +135,7 @@ export default function MessageHistory() {
 
   if (devicesError)
     return (
-      <div className='flex justify-center items-center h-full'>
+      <div className='flex h-full items-center justify-center'>
         Error: {devicesError.message}
       </div>
     )
@@ -131,55 +157,88 @@ export default function MessageHistory() {
         onDeviceChange={handleDeviceChange}
         messageType={messageType}
         onMessageTypeChange={handleMessageTypeChange}
+        search={searchInput}
+        onSearchChange={setSearchInput}
         onRefresh={handleRefresh}
         isRefreshing={isRefreshing}
         autoRefreshInterval={autoRefreshInterval}
         onAutoRefreshIntervalChange={setAutoRefreshInterval}
       />
 
-      {isLoadingMessages && (
-        <div className='space-y-4'>
-          {[1, 2, 3].map((i) => (
-            <MessageCardSkeleton key={i} />
-          ))}
-        </div>
-      )}
-
       {messagesError && (
-        <div className='flex justify-center items-center h-full'>
+        <div className='flex h-full items-center justify-center'>
           Error: {messagesError.message}
         </div>
       )}
 
-      {!isLoadingMessages && !messagesError && messages.length === 0 && (
-        <EmptyState
-          icon={MessageSquare}
-          title='No messages found'
-          hint='Messages sent or received by this device will appear here.'
-        />
+      {isLoadingMessages ? (
+        <div className='rounded-xl border border-border'>
+          {[1, 2, 3, 4].map((i) => (
+            <MessageRowSkeleton key={i} />
+          ))}
+        </div>
+      ) : !messagesError && messages.length === 0 ? (
+        // A search that found nothing is a different situation from a device
+        // that has never sent a message, and needs a different way out.
+        search ? (
+          <div className='rounded-xl border border-border'>
+            <EmptyState
+              icon={SearchX}
+              title={`No messages match "${search}"`}
+              hint='Try a different number or wording.'
+            />
+            <div className='flex justify-center pb-6'>
+              {/* Says what happens rather than repeating the label on the
+                  input's clear icon. */}
+              <Button variant='outline' size='sm' onClick={clearSearch}>
+                Show all messages
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className='rounded-xl border border-border'>
+            <EmptyState
+              icon={MessageSquare}
+              title='No messages yet'
+              hint='Messages sent or received by this device will appear here.'
+            />
+          </div>
+        )
+      ) : (
+        <div className='overflow-hidden rounded-xl border border-border'>
+          {days.map((day) => (
+            <section key={day.key}>
+              <h3 className='sticky top-14 z-10 border-b border-border bg-muted/70 px-3 py-1.5 text-xs font-medium text-muted-foreground backdrop-blur md:top-0'>
+                {day.label}
+              </h3>
+              <div className='divide-y divide-border'>
+                {day.messages.map((message) => (
+                  <MessageRow
+                    key={message._id}
+                    message={message}
+                    device={activeDevice}
+                    onSelect={handleSelectMessage}
+                  />
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
       )}
 
-      <div className='space-y-4'>
-        {messages.map((message) => (
-          <MessageCard
-            key={message._id}
-            message={message}
-            type={message.sender ? 'received' : 'sent'}
-            device={devices.find((device) => device._id === currentDevice)}
-            onSelectMessage={handleSelectMessage}
-          />
-        ))}
-      </div>
-
-      <Pagination
-        page={page}
-        totalPages={pagination.totalPages}
-        onPageChange={setPage}
-      />
+      {/* A single page needs no pager. */}
+      {pagination.totalPages > 1 && (
+        <Pagination
+          page={page}
+          totalPages={pagination.totalPages}
+          onPageChange={setPage}
+        />
+      )}
 
       {selectedMessage && (
         <SmsDetailsDialog
           message={selectedMessage}
+          fallbackDeviceId={currentDevice}
           open={isDetailsDialogOpen}
           onOpenChange={setIsDetailsDialogOpen}
         />
