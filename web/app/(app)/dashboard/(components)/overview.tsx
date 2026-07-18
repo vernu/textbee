@@ -1,66 +1,94 @@
 'use client'
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { BarChart3, Smartphone, Key, MessageSquare, TrendingUp } from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/card'
+import { BarChart3, Smartphone, Key, MessageSquare } from 'lucide-react'
 import GetStartedCard from './get-started'
-import { useGatewayStats } from '@/lib/api'
+import UsageSummary from './usage-summary'
+import { useApiKeys, useDevices, useGatewayStats } from '@/lib/api'
 import { Skeleton } from '@/components/ui/skeleton'
-// import GetStartedCard from "@/components/get-started-card";
 
-export const StatCard = ({ title, value, icon: Icon, description }) => {
+// Compact all-time totals. Deliberately no trend indicators: the stats
+// endpoint returns running totals with no time window, so there is nothing to
+// compare against and any arrow would be invented.
+function Stat({
+  label,
+  value,
+  caption,
+  icon: Icon,
+}: {
+  label: string
+  value: string | number | undefined
+  caption: string
+  icon: typeof MessageSquare
+}) {
   return (
-    <Card className="overflow-hidden transition-all hover:shadow-md">
-      <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-        <CardTitle className='text-sm font-medium'>{title}</CardTitle>
-        <div className="rounded-full bg-primary/10 p-2">
-          <Icon className='h-4 w-4 text-primary' />
+    <div className='flex items-center gap-3 px-4 py-3'>
+      <div className='rounded-full bg-primary/10 p-2'>
+        <Icon className='h-4 w-4 text-primary' />
+      </div>
+      <div className='min-w-0'>
+        <div className='text-lg font-bold leading-tight'>
+          {value !== undefined ? value : <Skeleton className='h-5 w-12' />}
         </div>
-      </CardHeader>
-      <CardContent>
-        <div className='text-2xl font-bold'>
-          {value !== undefined ? value : <Skeleton className='h-6 w-16' />}
-        </div>
-        <p className='text-xs text-muted-foreground mt-1 flex items-center'>
-          {description}
-          {value !== undefined && <TrendingUp className="ml-1 h-3 w-3 text-green-500" />}
+        <p className='truncate text-xs text-muted-foreground'>
+          {label}
+          {caption && <span className='ml-1 opacity-70'>{caption}</span>}
         </p>
+      </div>
+    </div>
+  )
+}
+
+export function Totals() {
+  const { data: stats } = useGatewayStats()
+  const { data: devices } = useDevices()
+  const { data: apiKeys } = useApiKeys('active')
+
+  // The stats endpoint counts every device, enabled or not, so "enabled" has
+  // to be derived from the device list we already fetch.
+  const enabledDevices = devices?.filter((d) => d.enabled).length
+  const totalDevices = devices?.length ?? stats?.totalDeviceCount
+
+  return (
+    <Card className='overflow-hidden'>
+      <CardContent className='grid grid-cols-1 divide-y divide-border p-0 sm:grid-cols-2 lg:grid-cols-4'>
+        <Stat
+          label='SMS sent'
+          caption='all time'
+          value={stats?.totalSentSMSCount?.toLocaleString()}
+          icon={MessageSquare}
+        />
+        <Stat
+          label='SMS received'
+          caption='all time'
+          value={stats?.totalReceivedSMSCount?.toLocaleString()}
+          icon={BarChart3}
+        />
+        <Stat
+          label='Devices'
+          caption={
+            enabledDevices !== undefined ? `${enabledDevices} enabled` : ''
+          }
+          value={totalDevices}
+          icon={Smartphone}
+        />
+        <Stat
+          label='API keys'
+          caption='active'
+          value={apiKeys?.length ?? stats?.totalApiKeyCount}
+          icon={Key}
+        />
       </CardContent>
     </Card>
   )
 }
 
 export default function Overview() {
-  const { data: stats } = useGatewayStats()
-
   return (
     <div className='space-y-6'>
       <GetStartedCard />
-      <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-4'>
-        <StatCard
-          title='Total SMS Sent'
-          value={stats?.totalSentSMSCount?.toLocaleString()}
-          icon={MessageSquare}
-          description='Since last year'
-        />
-        <StatCard
-          title='Active Devices'
-          value={stats?.totalDeviceCount}
-          icon={Smartphone}
-          description='Connected now'
-        />
-        <StatCard
-          title='API Keys'
-          value={stats?.totalApiKeyCount}
-          icon={Key}
-          description='Active keys'
-        />
-        <StatCard
-          title='SMS Received'
-          value={stats?.totalReceivedSMSCount?.toLocaleString()}
-          icon={BarChart3}
-          description='Since last year'
-        />
-      </div>
+      <UsageSummary />
+      <Totals />
     </div>
   )
 }

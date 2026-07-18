@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button'
 import DeviceList from './(components)/device-list'
 import Overview from './(components)/overview'
 import ApiKeys from './(components)/api-keys'
+import RecentActivity from './(components)/recent-activity'
 import GenerateApiKey, {
   type GenerateApiKeyHandle,
 } from './(components)/generate-api-key'
@@ -102,7 +103,10 @@ export default function DashboardPage() {
       </div>
 
       <div className='space-y-6'>
+        {/* Onboarding, quota usage, then all-time totals. */}
         <Overview />
+
+        <RecentActivity />
 
         <div className='grid gap-6 md:grid-cols-2'>
           <DeviceList />
