@@ -85,13 +85,9 @@ const GenerateApiKey = forwardRef<GenerateApiKeyHandle, GenerateApiKeyProps>(
             <DialogHeader>
               <DialogTitle>Create new API Key</DialogTitle>
               <DialogDescription>
-                <div className='space-y-2 text-sm text-muted-foreground'>
-                  <p>
-                    By clicking generate, you will be able to view your API key.
-                    Make sure to save it before closing the modal as you will not
-                    be able to view it again.
-                  </p>
-                </div>
+                By clicking generate, you will be able to view your API key.
+                Make sure to save it before closing the modal as you will not be
+                able to view it again.
               </DialogDescription>
             </DialogHeader>
             <div className='flex flex-col space-y-4'>

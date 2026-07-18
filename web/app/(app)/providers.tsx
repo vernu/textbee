@@ -3,7 +3,6 @@
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import { SessionProvider } from 'next-auth/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ThemeProvider } from 'next-themes'
 import { useState, type PropsWithChildren } from 'react'
 import type { Session } from 'next-auth'
 
@@ -18,17 +17,17 @@ export default function Providers({
 }: PropsWithChildren<{ session: Session | null }>) {
   const [queryClient] = useState(() => new QueryClient())
 
+  // ThemeProvider lives in the root layout (app/theme-provider.tsx) so its
+  // pre-paint script is not re-rendered on client navigation.
   return (
-    <ThemeProvider attribute='class' defaultTheme='system' enableSystem>
-      <SessionProvider session={session}>
-        <QueryClientProvider client={queryClient}>
-          <GoogleOAuthProvider
-            clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? ''}
-          >
-            {children}
-          </GoogleOAuthProvider>
-        </QueryClientProvider>
-      </SessionProvider>
-    </ThemeProvider>
+    <SessionProvider session={session}>
+      <QueryClientProvider client={queryClient}>
+        <GoogleOAuthProvider
+          clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? ''}
+        >
+          {children}
+        </GoogleOAuthProvider>
+      </QueryClientProvider>
+    </SessionProvider>
   )
 }
