@@ -1,5 +1,5 @@
 import {
-  Home,
+  LayoutDashboard,
   MessageSquareText,
   Webhook,
   Users,
@@ -19,7 +19,7 @@ export type NavItem = {
 // Primary dashboard navigation, shared by the desktop sidebar, the mobile tab
 // bar, and the command palette so they never drift out of sync.
 export const navItems: NavItem[] = [
-  { href: '/dashboard', label: 'Dashboard', icon: Home },
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/dashboard/messaging', label: 'Messaging', icon: MessageSquareText },
   { href: '/dashboard/webhooks', label: 'Webhooks', icon: Webhook, mobileHidden: true },
   { href: '/dashboard/community', label: 'Community', icon: Users },

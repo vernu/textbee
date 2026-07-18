@@ -9,6 +9,8 @@ import UpdateAppNotificationBar from './(components)/update-app-notification-bar
 import VerifyEmailAlert from './(components)/verify-email-alert'
 import PastDueBillingAlert from './(components)/past-due-billing-alert'
 import { SurveyModal } from '@/components/shared/survey-modal'
+import Footer from '@/components/shared/footer'
+import ThemeToggle from '@/components/shared/theme-toggle'
 import CommandMenu from './(components)/command-menu'
 import {
   isNavItemActive,
@@ -43,7 +45,7 @@ export default function DashboardLayout({
             ))}
           </nav>
         </div>
-        <div className='border-t border-border px-4 py-3'>
+        <div className='space-y-3 border-t border-border px-4 py-3'>
           <p className='text-xs text-muted-foreground'>
             Need help?{' '}
             <a
@@ -55,6 +57,7 @@ export default function DashboardLayout({
               Quick start
             </a>
           </p>
+          <ThemeToggle />
         </div>
       </aside>
 
@@ -67,7 +70,12 @@ export default function DashboardLayout({
           <AccountDeletionAlert />
           <UpgradeToProAlert />
         </div>
-        <main className='pb-20 md:pb-8'>{children}</main>
+        <main>{children}</main>
+        {/* Inside the sidebar-offset column so the fixed sidebar cannot paint
+            over it, and padded clear of the fixed mobile tab bar. */}
+        <div className='pb-20 pt-8 md:pb-0'>
+          <Footer />
+        </div>
       </div>
 
       {/* Mobile bottom tab bar (max 4 items; the rest are desktop/palette only). */}

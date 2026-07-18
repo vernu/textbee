@@ -14,12 +14,14 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
-import { Menu, LogOut, LayoutDashboard, MessageSquarePlus } from 'lucide-react'
+import { Menu, LogOut, LayoutDashboard } from 'lucide-react'
 import { signOut } from 'next-auth/react'
 import { Routes } from '@/config/routes'
-import ThemeToggle from './theme-toggle'
 import { Session } from 'next-auth'
 
+// Deliberately minimal: identity and brand only. Navigation lives in the
+// sidebar (desktop) and the bottom tab bar (mobile), search in the command
+// palette, and the theme control in the sidebar footer.
 export default function AppHeader({ session }: { session: Session }) {
   const router = useRouter()
 
@@ -28,27 +30,19 @@ export default function AppHeader({ session }: { session: Session }) {
     router.push(Routes.login)
   }
 
-  const isAuthenticated = useMemo(
-    () => session?.user,
-    [session?.user]
-  )
+  const isAuthenticated = useMemo(() => session?.user, [session?.user])
 
   const AuthenticatedMenu = () => (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant='ghost' className='relative h-8 w-8 rounded-full'>
+        <Button variant='ghost' className='relative h-8 gap-2 px-1.5'>
           <Avatar className='h-8 w-8'>
-            <AvatarImage
-              src={session.user?.avatar}
-              alt={session.user?.name}
-            />
-            <AvatarFallback>
-              {session.user?.name?.charAt(0)}
-            </AvatarFallback>
+            <AvatarImage src={session.user?.avatar} alt={session.user?.name} />
+            <AvatarFallback>{session.user?.name?.charAt(0)}</AvatarFallback>
           </Avatar>
-          <div className='hidden md:block'>
+          <span className='hidden text-sm font-medium md:block'>
             {session.user?.name?.split(' ')[0]}
-          </div>
+          </span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className='w-56' align='end' forceMount>
@@ -60,7 +54,7 @@ export default function AppHeader({ session }: { session: Session }) {
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href={Routes.dashboard} className='w-full flex items-center'>
+          <Link href={Routes.dashboard} className='flex w-full items-center'>
             <LayoutDashboard className='mr-2 h-4 w-4' />
             <span>Dashboard</span>
           </Link>
@@ -73,7 +67,9 @@ export default function AppHeader({ session }: { session: Session }) {
     </DropdownMenu>
   )
 
-  const MobileMenu = () => (
+  // Only unauthenticated visitors need a sheet: signed-in users already have
+  // the bottom tab bar for navigation and the avatar menu for identity.
+  const SignedOutMobileMenu = () => (
     <Sheet>
       <SheetTrigger asChild>
         <Button variant='ghost' className='md:hidden' size='icon'>
@@ -83,62 +79,15 @@ export default function AppHeader({ session }: { session: Session }) {
       </SheetTrigger>
       <SheetContent side='right' className='w-[300px] sm:w-[400px]'>
         <nav className='flex flex-col gap-4'>
-          {isAuthenticated ? (
-            <>
-              <div className='flex items-center gap-2 py-2'>
-                <Avatar className='h-8 w-8'>
-                  <AvatarImage
-                    src={session.user?.avatar}
-                    alt={session.user?.name}
-                  />
-                  <AvatarFallback>
-                    {session.user?.name?.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <div className='font-medium'>{session.user?.name}</div>
-                  <div className='text-xs text-muted-foreground'>
-                    {session.user?.email}
-                  </div>
-                </div>
-              </div>
-              <Link
-                href={Routes.dashboard}
-                className='flex items-center gap-2 py-2'
-              >
-                <LayoutDashboard className='h-4 w-4' />
-                Dashboard
-              </Link>
-              <Link
-                href={Routes.contribute}
-                className='flex items-center gap-2 py-2'
-              >
-                <MessageSquarePlus className='h-4 w-4' />
-                Contribute
-              </Link>
-              <Button
-                onClick={handleLogout}
-                variant='ghost'
-                className='justify-start text-red-600'
-              >
-                <LogOut className='mr-2 h-4 w-4' />
-                Log out
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button asChild variant='ghost' className='justify-start'>
-                <Link href={Routes.login}>Log in</Link>
-              </Button>
-              <Button
-                asChild
-                color='primary'
-                className='bg-primary hover:bg-primary/90 text-white rounded-full'
-              >
-                <Link href={Routes.register}>Get started</Link>
-              </Button>
-            </>
-          )}
+          <Button asChild variant='ghost' className='justify-start'>
+            <Link href={Routes.login}>Log in</Link>
+          </Button>
+          <Button
+            asChild
+            className='rounded-full bg-primary text-white hover:bg-primary/90'
+          >
+            <Link href={Routes.register}>Get started</Link>
+          </Button>
         </nav>
       </SheetContent>
     </Sheet>
@@ -146,56 +95,42 @@ export default function AppHeader({ session }: { session: Session }) {
 
   return (
     <header className='sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60'>
-      <div className='container flex h-14 items-center'>
-        <div className='mr-4 flex'>
-          <Link
-            className='flex items-center space-x-2'
-            href={Routes.landingPage}
-          >
-            <Image
-              src='/images/logo.png'
-              alt='textbee Logo'
-              width={24}
-              height={24}
-              className='h-6 w-6 bg-white rounded-full'
-            />
-            <span className='font-bold'>
-              text<span className='text-primary'>bee</span>
-              <span className='text-xs align-center text-muted-foreground'>
-                .dev
-              </span>
+      <div className='flex h-14 items-center gap-2 px-4'>
+        <Link className='flex items-center space-x-2' href={Routes.landingPage}>
+          <Image
+            src='/images/logo.png'
+            alt='textbee Logo'
+            width={24}
+            height={24}
+            className='h-6 w-6 rounded-full bg-white'
+          />
+          <span className='font-bold'>
+            text<span className='text-primary'>bee</span>
+            <span className='align-center text-xs text-muted-foreground'>
+              .dev
             </span>
-          </Link>
-        </div>
-        <div className='flex flex-1 items-center justify-end space-x-2'>
-          <nav className='flex items-center space-x-6'>
-            <ThemeToggle />
-            <Link
-              href={Routes.contribute}
-              className='items-center gap-2 pr-8 hidden md:block'
-            >
-              <Button variant='outline' className='px-4 py-2 text-sm'>
-                Contribute
-              </Button>
-            </Link>
+          </span>
+        </Link>
 
-            {isAuthenticated ? (
-              <AuthenticatedMenu />
-            ) : (
+        <div className='flex flex-1 items-center justify-end gap-2'>
+          {isAuthenticated ? (
+            <AuthenticatedMenu />
+          ) : (
+            <>
               <div className='hidden md:flex md:items-center md:gap-2'>
                 <Button asChild variant='ghost'>
                   <Link href={Routes.login}>Log in</Link>
                 </Button>
                 <Button
                   asChild
-                  className='bg-primary hover:bg-primary/90 text-white rounded-full'
+                  className='rounded-full bg-primary text-white hover:bg-primary/90'
                 >
                   <Link href={Routes.register}>Get started</Link>
                 </Button>
               </div>
-            )}
-            <MobileMenu />
-          </nav>
+              <SignedOutMobileMenu />
+            </>
+          )}
         </div>
       </div>
     </header>

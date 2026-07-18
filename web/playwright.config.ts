@@ -15,6 +15,9 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: process.env.CI ? 'github' : 'list',
+  // Headroom for pages that server-redirect, hydrate, then settle several
+  // intercepted API calls while workers share one server.
+  expect: { timeout: 10_000 },
   use: {
     baseURL: BASE_URL,
     trace: 'on-first-retry',
@@ -23,10 +26,15 @@ export default defineConfig({
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
   ],
   webServer: {
-    command: 'pnpm dev',
+    // Production build, not `next dev`. The dev server compiles routes on
+    // demand, so parallel workers hitting cold routes paid a multi-second
+    // first-compile cost and timed out at random. Which tests failed varied
+    // run to run. `next start` serves prebuilt routes, so the suite is
+    // deterministic.
+    command: 'pnpm build && pnpm start',
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
+    timeout: 240_000,
     env: {
       PORT: String(PORT),
       NEXTAUTH_URL: BASE_URL,

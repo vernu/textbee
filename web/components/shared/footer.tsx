@@ -1,77 +1,61 @@
-import { ExternalLinks } from '@/config/external-links'
 import { Routes } from '@/config/routes'
-import { MessageSquarePlus, Activity } from 'lucide-react'
+import { Activity } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 
+// A logged-in user is already converted, so the app footer stays a single slim
+// bar rather than the marketing site's multi-column link farm. It borrows that
+// footer's visual language (muted surface, muted-to-foreground link hovers,
+// green status pill) so the two still read as one product.
+const links = [
+  { label: 'Quick start', href: Routes.quickstart },
+  { label: 'Download app', href: Routes.downloadAndroidApp },
+  { label: 'Contribute', href: Routes.contribute },
+  { label: 'Privacy', href: Routes.privacyPolicy },
+  { label: 'Terms', href: Routes.termsOfService },
+  { label: 'Refund', href: Routes.refundPolicy },
+]
+
+const linkClass =
+  'text-sm text-muted-foreground transition-colors hover:text-foreground'
+
 export default function Footer() {
   return (
-    <footer className='border-t py-6  bg-gray-50 dark:bg-muted'>
-      <div className='container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row'>
-        <div className='flex flex-col items-center gap-4 px-8 md:flex-row md:gap-2 md:px-0'>
+    <footer className='border-t border-border bg-muted/30'>
+      <div className='mx-auto flex max-w-7xl flex-col items-center gap-4 px-4 py-6 sm:px-6 md:flex-row md:justify-between lg:px-8'>
+        <div className='flex items-center gap-2'>
           <Image
             src='/images/logo.png'
-            alt='textbee Logo'
-            width={24}
-            height={24}
-            className='h-6 w-6 bg-white rounded-full'
+            alt='textbee logo'
+            width={20}
+            height={20}
+            className='h-5 w-5 rounded-full bg-white'
           />
-          <p className='text-center text-sm leading-loose md:text-left'>
-            © {new Date().getFullYear()} All rights reserved
-          </p>
+          <span className='text-sm text-muted-foreground'>
+            © {new Date().getFullYear()} textbee.dev
+          </span>
         </div>
-        <nav className='flex gap-4 sm:gap-6 flex-col md:flex-row items-center'>
+
+        <nav className='flex flex-wrap items-center justify-center gap-x-5 gap-y-2'>
+          {links.map((link) => (
+            <Link
+              key={link.label}
+              href={link.href}
+              target='_blank'
+              rel='noopener noreferrer'
+              className={linkClass}
+            >
+              {link.label}
+            </Link>
+          ))}
           <Link
-            className='text-sm font-medium hover:text-brand-500'
-            href={Routes.landingPage}
-          >
-            Home
-          </Link>
-          <Link
-            className='text-sm font-medium hover:text-brand-500'
-            href={Routes.dashboard}
-          >
-            Dashboard
-          </Link>
-          <Link
-            className='text-sm font-medium hover:text-brand-500'
-            href={Routes.downloadAndroidApp}
-          >
-            Download App
-          </Link>
-          <Link
-            className='text-sm font-medium hover:text-brand-500'
-            href={Routes.contribute}
-            target='_blank'
-          >
-            Contribute
-          </Link>
-          <Link
-            className='text-sm font-medium group flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-50 hover:bg-green-100 dark:bg-green-900/20 dark:hover:bg-green-900/30 transition-colors'
             href={Routes.statusPage}
             target='_blank'
             rel='nofollow noopener noreferrer'
+            className='inline-flex items-center gap-1.5 rounded-full bg-green-50 px-2.5 py-1 text-sm font-medium text-green-700 transition-colors hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400 dark:hover:bg-green-900/30'
           >
-            <Activity className='h-3.5 w-3.5 text-green-500 group-hover:animate-pulse' />
-            <span className='text-green-700 dark:text-green-400'>Status</span>
-          </Link>
-          <Link
-            className='text-sm font-medium hover:text-brand-500'
-            href={Routes.privacyPolicy}
-          >
-            Privacy Policy
-          </Link>
-          <Link
-            className='text-sm font-medium hover:text-brand-500'
-            href={Routes.termsOfService}
-          >
-            Terms of Service
-          </Link>
-          <Link
-            className='text-sm font-medium hover:text-brand-500'
-            href={Routes.refundPolicy}
-          >
-            Refund Policy
+            <Activity className='h-3.5 w-3.5 text-green-500' />
+            Status
           </Link>
         </nav>
       </div>

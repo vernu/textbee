@@ -6,7 +6,6 @@ import AppHeader from '@/components/shared/app-header'
 import Providers from './providers'
 import Analytics from '@/components/shared/analytics'
 import { Toaster } from '@/components/ui/toaster'
-import Footer from '@/components/shared/footer'
 import SupportHQWidget from '@/components/shared/support-hq-widget'
 
 export default async function RootLayout({ children }: PropsWithChildren) {
@@ -15,9 +14,11 @@ export default async function RootLayout({ children }: PropsWithChildren) {
   return (
     <Providers session={session}>
       <AppHeader session={session} />
+      {/* No <Footer /> here: the dashboard's sidebar is fixed-position, so a
+          full-width footer at this level gets painted over on its left edge.
+          Each section renders the footer inside its own content column. */}
       <main className='min-h-[80vh]'>{children}</main>
       <Analytics user={session?.user} />
-      <Footer />
       <SupportHQWidget />
       <Toaster />
     </Providers>
