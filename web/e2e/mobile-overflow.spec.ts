@@ -10,6 +10,8 @@ import { mockApi } from './mock-api'
 const AUTHED_PAGES = [
   '/dashboard',
   '/dashboard/messaging',
+  '/dashboard/messaging/bulk',
+  '/dashboard/messaging/history',
   '/dashboard/webhooks',
   '/dashboard/account',
 ]
