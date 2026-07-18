@@ -13,10 +13,13 @@ export function formatPrice(
   amount: number | null | undefined,
   currency: string | null | undefined
 ): string {
-  if (amount == null || currency == null) return 'Free'
+  // Only a missing amount means free. A missing currency used to fall through
+  // to "Free" as well, so a paying customer whose payload omitted the currency
+  // was shown the badge "Free / monthly" on their own billing page.
+  if (amount == null) return 'Free'
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: currency.toUpperCase() || 'USD',
+    currency: currency?.toUpperCase() || 'USD',
     minimumFractionDigits: 2,
   }).format(amount / 100)
 }

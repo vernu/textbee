@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect } from 'react'
-import { Calendar, Check, Info, Sparkles } from 'lucide-react'
+import { Calendar, Info, Sparkles, type LucideIcon } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Spinner } from '@/components/ui/spinner'
 import { useCurrentUser, useSubscription } from '@/lib/api'
+import type { SubscriptionStatus } from '@/lib/api/types'
 import {
   formatLimit,
   formatPrice,
@@ -12,7 +13,12 @@ import {
   getBillingInterval,
   titleCaseStatus,
 } from '@/lib/format'
-import { subscriptionStatusTone, usageMeterColor } from '@/lib/status'
+import {
+  subscriptionStatusIcon,
+  subscriptionStatusTone,
+  usageMeterColor,
+} from '@/lib/status'
+import { deriveUsage } from '@/lib/usage'
 import { polarCustomerPortalRequestUrl } from '@/config/external-links'
 import Link from 'next/link'
 import {
@@ -30,6 +36,29 @@ type Meter = {
   percentage: number
   usedLabel: string
   unlimited: boolean
+}
+
+// Icon arrives as a prop rather than being selected into a local, matching how
+// EmptyState and the dashboard Stat take theirs. Both the icon and the tone
+// come from the status, so the pill can no longer show a reassuring tick next
+// to bad news the way the hardcoded check mark did.
+function StatusPill({
+  status,
+  icon: Icon,
+}: {
+  status: SubscriptionStatus | null | undefined
+  icon: LucideIcon
+}) {
+  const tone = subscriptionStatusTone(status)
+  return (
+    <div className={cn('flex items-center px-2 py-0.5 rounded-full', tone.bg)}>
+      <Icon className={cn('h-3 w-3 mr-1', tone.text)} />
+      <span className={cn('text-xs font-medium', tone.text)}>
+        {/* Never assert "Active" for a payload that carried no status. */}
+        {titleCaseStatus(status) || 'Unknown'}
+      </span>
+    </div>
+  )
 }
 
 type LimitTileProps = {
@@ -187,6 +216,12 @@ export default function SubscriptionInfo() {
   const usage = currentSubscription?.usage
   const planName = plan?.name || 'Free'
 
+  // Shared with the dashboard usage cards. This page used to derive the same
+  // numbers inline, which is exactly what deriveUsage exists to prevent: the
+  // helper clamps percentage to 0-100 and the inline copy did not, so the two
+  // screens could disagree about the same quota.
+  const { daily, monthly } = deriveUsage(currentSubscription)
+
   const isOverridden = (
     custom: number | null | undefined,
     planValue: number | null | undefined
@@ -205,15 +240,18 @@ export default function SubscriptionInfo() {
       tooltipUnit: 'per day',
       unlimitedNote: 'Unlimited (within monthly limit)',
       meter: {
-        used: usage?.processedSmsToday ?? 0,
-        remaining: usage?.dailyRemaining ?? 0,
-        percentage: usage?.dailyUsagePercentage ?? 0,
+        used: daily.used,
+        remaining: daily.remaining,
+        percentage: daily.percentage,
         usedLabel: 'used today',
-        unlimited: (usage?.dailyLimit ?? plan?.dailyLimit) === -1,
+        unlimited: daily.unlimited,
       },
     },
     {
-      label: 'Monthly',
+      // "Last 30 days", not "Monthly": the backend counts from setMonth(-1),
+      // a rolling window. Calling it monthly led users who capped out late in
+      // the month to wait for a reset on the 1st that never comes.
+      label: 'Last 30 days',
       effectiveValue: usage?.monthlyLimit ?? plan?.monthlyLimit,
       planValue: plan?.monthlyLimit,
       isOverridden: isOverridden(
@@ -221,14 +259,14 @@ export default function SubscriptionInfo() {
         plan?.monthlyLimit
       ),
       planName,
-      tooltipUnit: 'per month',
+      tooltipUnit: 'per rolling 30 days',
       unlimitedNote: 'Unlimited (within fair usage)',
       meter: {
-        used: usage?.processedSmsLastMonth ?? 0,
-        remaining: usage?.monthlyRemaining ?? 0,
-        percentage: usage?.monthlyUsagePercentage ?? 0,
-        usedLabel: 'used this month',
-        unlimited: (usage?.monthlyLimit ?? plan?.monthlyLimit) === -1,
+        used: monthly.used,
+        remaining: monthly.remaining,
+        percentage: monthly.percentage,
+        usedLabel: 'used in the last 30 days',
+        unlimited: monthly.unlimited,
       },
     },
     {
@@ -297,27 +335,10 @@ export default function SubscriptionInfo() {
             )}
           </div>
         </div>
-        <div
-          className={cn(
-            'flex items-center px-2 py-0.5 rounded-full',
-            subscriptionStatusTone(currentSubscription?.status).bg
-          )}
-        >
-          <Check
-            className={cn(
-              'h-3 w-3 mr-1',
-              subscriptionStatusTone(currentSubscription?.status).text
-            )}
-          />
-          <span
-            className={cn(
-              'text-xs font-medium',
-              subscriptionStatusTone(currentSubscription?.status).text
-            )}
-          >
-            {titleCaseStatus(currentSubscription?.status) || 'Active'}
-          </span>
-        </div>
+        <StatusPill
+          status={currentSubscription?.status}
+          icon={subscriptionStatusIcon(currentSubscription?.status)}
+        />
       </div>
 
       <div className='grid grid-cols-2 gap-2.5 mb-4'>

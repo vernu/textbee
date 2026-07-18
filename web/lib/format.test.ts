@@ -24,9 +24,15 @@ describe('formatPrice', () => {
   it('formats cents into a currency string', () => {
     expect(formatPrice(1900, 'usd')).toBe('$19.00')
   })
-  it('returns Free when amount or currency is missing', () => {
+  it('returns Free only when there is no amount', () => {
     expect(formatPrice(null, null)).toBe('Free')
-    expect(formatPrice(1900, null)).toBe('Free')
+  })
+
+  // A real amount with a missing currency used to render as "Free", which put
+  // the badge "Free / monthly" in front of paying customers.
+  it('falls back to USD rather than claiming a paid plan is free', () => {
+    expect(formatPrice(1900, null)).toBe('$19.00')
+    expect(formatPrice(1900, '')).toBe('$19.00')
   })
 })
 

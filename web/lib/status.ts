@@ -1,3 +1,10 @@
+import {
+  AlertTriangle,
+  Check,
+  CircleHelp,
+  XCircle,
+  type LucideIcon,
+} from 'lucide-react'
 import type { SubscriptionStatus } from '@/lib/api/types'
 
 // Subscription status colors, previously repeated across subscription-info's
@@ -26,6 +33,29 @@ export function subscriptionStatusTone(
         text: 'text-muted-foreground',
         bg: 'bg-muted',
       }
+  }
+}
+
+/**
+ * Icon for a subscription status.
+ *
+ * Picked from the status for the same reason the tone is: the billing card
+ * used to hardcode a check mark, so a past_due or canceled subscriber was
+ * shown a tick next to the bad news, at exactly the moment they needed a
+ * warning instead.
+ */
+export function subscriptionStatusIcon(
+  status: SubscriptionStatus | null | undefined
+): LucideIcon {
+  switch (status) {
+    case 'active':
+      return Check
+    case 'past_due':
+      return AlertTriangle
+    case 'canceled':
+      return XCircle
+    default:
+      return CircleHelp
   }
 }
 
