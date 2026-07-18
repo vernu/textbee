@@ -22,7 +22,9 @@ const linkClass =
 export default function Footer() {
   return (
     <footer className='border-t border-border bg-muted/30'>
-      <div className='mx-auto flex max-w-7xl flex-col items-center gap-4 px-4 py-6 sm:px-6 md:flex-row md:justify-between lg:px-8'>
+      {/* Left-aligned on mobile: centred links in a single column read as a
+          ragged stack with no common edge to scan down. */}
+      <div className='mx-auto flex max-w-7xl flex-col items-start gap-4 px-4 py-6 sm:items-center sm:px-6 md:flex-row md:justify-between lg:px-8'>
         <div className='flex items-center gap-2'>
           <Image
             src='/images/logo.png'
@@ -38,7 +40,7 @@ export default function Footer() {
 
         {/* Stacked on mobile: wrapped inline links produced a ragged two-line
             block that was hard to scan and gave small tap targets. */}
-        <nav className='flex w-full flex-col items-center gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-center sm:gap-x-5 sm:gap-y-2'>
+        <nav className='flex w-full flex-col items-start gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-center sm:gap-x-5 sm:gap-y-2'>
           {links.map((link) => (
             <Link
               key={link.label}

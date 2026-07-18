@@ -107,9 +107,18 @@ export const mockWebhookNotifications = { data: [], total: 0 }
 // The real endpoint populates `device` (select: _id brand model buildId
 // enabled), so the fixtures carry it too: replying reads message.device._id,
 // and without it the mocked path would not exercise what production does.
-// Dates are relative so the day-grouped list always has a "Today" section.
-const hoursAgo = (hours: number) =>
-  new Date(Date.now() - hours * 60 * 60 * 1000).toISOString()
+// Anchored to local midnight rather than "N hours ago": a message 2 hours old
+// falls on the previous day when the suite runs just after midnight, which
+// made the Today/Yesterday grouping assertions depend on the wall clock.
+const startOfToday = () => {
+  const d = new Date()
+  d.setHours(0, 0, 0, 0)
+  return d.getTime()
+}
+// Now is always today and never in the future.
+const todayIso = () => new Date().toISOString()
+// An hour before local midnight is always yesterday.
+const yesterdayIso = () => new Date(startOfToday() - 60 * 60 * 1000).toISOString()
 
 export const mockMessages = {
   data: [
@@ -120,8 +129,8 @@ export const mockMessages = {
       status: 'sent',
       type: 'sent',
       device: { _id: 'device_1', brand: 'Google', model: 'Pixel 8' },
-      requestedAt: hoursAgo(2),
-      createdAt: hoursAgo(2),
+      requestedAt: todayIso(),
+      createdAt: todayIso(),
     },
     {
       _id: 'msg_2',
@@ -130,8 +139,8 @@ export const mockMessages = {
       status: 'received',
       type: 'received',
       device: { _id: 'device_1', brand: 'Google', model: 'Pixel 8' },
-      receivedAt: hoursAgo(30),
-      createdAt: hoursAgo(30),
+      receivedAt: yesterdayIso(),
+      createdAt: yesterdayIso(),
     },
   ],
   meta: { total: 2, page: 1, limit: 20, totalPages: 1 },

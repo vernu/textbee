@@ -15,6 +15,75 @@ test.describe('message history (mocked API, no real backend)', () => {
     await expect(page.getByText('Reply from a customer')).toBeVisible()
   })
 
+  // Checked at both widths: the mobile break was a header pinned to the same
+  // offset as the search bar, and the desktop one was a header covering rows
+  // and swallowing their clicks.
+  for (const viewport of [
+    { name: 'mobile', width: 390, height: 700 },
+    { name: 'desktop', width: 1280, height: 800 },
+  ]) {
+    test(`day headers never overlap message rows on ${viewport.name}`, async ({
+      page,
+      context,
+    }) => {
+      await page.setViewportSize({
+        width: viewport.width,
+        height: viewport.height,
+      })
+      await authenticate(context)
+      await mockApi(page)
+
+      // Enough messages across several days to force scrolling.
+      const at = (days: number, hours: number) =>
+        new Date(Date.now() - days * 86400000 - hours * 3600000).toISOString()
+      await page.route('**/api/v1/gateway/devices/*/messages*', (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            data: Array.from({ length: 12 }).map((_, i) => ({
+              _id: `m${i}`,
+              sender: `+2519403617${40 + i}`,
+              message: 'A message long enough to wrap onto a second line here',
+              status: 'received',
+              type: 'received',
+              receivedAt: at(Math.floor(i / 3), i),
+              createdAt: at(Math.floor(i / 3), i),
+            })),
+            meta: { total: 12, page: 1, limit: 20, totalPages: 1 },
+          }),
+        })
+      )
+
+      await page.goto('/dashboard/messaging/history')
+      await expect(page.getByRole('heading', { name: 'Today' })).toBeVisible()
+      await page.evaluate(() => window.scrollTo(0, 420))
+
+      const headers = await page.locator('h3').all()
+      const rows = await page.getByRole('button', { name: /\+2519/ }).all()
+
+      for (const header of headers) {
+        const hb = await header.boundingBox()
+        if (!hb) continue
+        for (const row of rows) {
+          const rb = await row.boundingBox()
+          if (!rb) continue
+          const overlap =
+            Math.min(hb.y + hb.height, rb.y + rb.height) - Math.max(hb.y, rb.y)
+          expect(
+            overlap,
+            'a day header must not cover a message row'
+          ).toBeLessThanOrEqual(1)
+        }
+      }
+
+      // A covering header also swallowed the row's click, so the row must
+      // still be clickable after scrolling.
+      await page.getByRole('button', { name: /\+2519/ }).first().click()
+      await expect(page.getByRole('dialog')).toBeVisible()
+    })
+  }
+
   test('search is sent to the server, not applied to the loaded page', async ({
     page,
     context,

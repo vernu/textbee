@@ -208,7 +208,13 @@ export default function MessageHistory() {
         <div className='overflow-hidden rounded-xl border border-border'>
           {days.map((day) => (
             <section key={day.key}>
-              <h3 className='sticky top-14 z-10 border-b border-border bg-muted/70 px-3 py-1.5 text-xs font-medium text-muted-foreground backdrop-blur md:top-0'>
+              {/* Deliberately not sticky. On mobile it pinned to the same
+                  offset as the sticky search bar and landed on top of message
+                  rows, translucent, with text bleeding through. On desktop it
+                  covered rows scrolled beneath it and swallowed their clicks.
+                  A page holds 20 messages, so groups are short and a pinned
+                  header bought little in exchange for that. */}
+              <h3 className='border-b border-border bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground'>
                 {day.label}
               </h3>
               <div className='divide-y divide-border'>
