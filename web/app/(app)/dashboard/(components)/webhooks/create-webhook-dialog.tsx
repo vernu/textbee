@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -64,16 +65,30 @@ export function CreateWebhookDialog({
   const { toast } = useToast()
   const queryClient = useQueryClient()
 
+  // Built fresh on each call rather than inlined into defaultValues. The
+  // dialog is mounted for the whole session, so defaultValues was evaluated
+  // exactly once and a bare form.reset() restored that same object: every
+  // webhook created in one session ended up sharing a single signing secret,
+  // which defeats the point of per-endpoint verification.
+  const buildDefaults = (): z.infer<typeof formSchema> => ({
+    name: '',
+    deliveryUrl: '',
+    events: [WEBHOOK_EVENTS.MESSAGE_RECEIVED],
+    isActive: true,
+    signingSecret: uuidv4(),
+  })
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: '',
-      deliveryUrl: '',
-      events: [WEBHOOK_EVENTS.MESSAGE_RECEIVED],
-      isActive: true,
-      signingSecret: uuidv4(),
-    },
+    defaultValues: buildDefaults(),
   })
+
+  // Reopening the dialog must not reuse the previous secret either, including
+  // after a cancel.
+  useEffect(() => {
+    if (open) form.reset(buildDefaults())
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
 
   const createWebhookMutation = useMutation({
     mutationFn: (values: z.infer<typeof formSchema>) => {
@@ -93,7 +108,7 @@ export function CreateWebhookDialog({
       })
       queryClient.invalidateQueries({ queryKey: ['webhooks'] })
       onOpenChange(false)
-      form.reset()
+      form.reset(buildDefaults())
     },
     onError: (error: any) => {
       toast({
