@@ -3,7 +3,6 @@
 import { useState, useRef } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Key, MoreVertical, Loader2, Plus, AlertTriangle } from 'lucide-react'
 import {
   Dialog,
@@ -166,26 +165,18 @@ export default function ApiKeys() {
           <div className='space-y-2'>
             {isPending && (
               <>
+                {/* Mirrors the loaded row, so the list does not resize as it
+                    settles. */}
                 {[1, 2, 3].map((i) => (
-                  <Card key={i} className='border-0 shadow-none'>
-                    <CardContent className='flex items-center p-3'>
-                      <Skeleton className='h-6 w-6 mr-3' />
-                      <div className='flex-1'>
-                        <div className='flex items-center justify-between'>
-                          <Skeleton className='h-4 w-24' />
-                          <Skeleton className='h-4 w-16' />
-                        </div>
-                        <div className='flex items-center space-x-2 mt-1'>
-                          <Skeleton className='h-4 w-64' />
-                        </div>
-                        <div className='flex items-center mt-1 space-x-3'>
-                          <Skeleton className='h-3 w-32' />
-                          <Skeleton className='h-3 w-32' />
-                        </div>
-                      </div>
-                      <Skeleton className='h-6 w-6' />
-                    </CardContent>
-                  </Card>
+                  <div key={i} className='flex items-start gap-2.5 px-2 py-2'>
+                    <Skeleton className='mt-0.5 h-4 w-4 shrink-0 rounded' />
+                    <div className='min-w-0 flex-1 space-y-1'>
+                      <Skeleton className='h-4 w-28' />
+                      <Skeleton className='h-4 w-full max-w-[15rem]' />
+                      <Skeleton className='h-3 w-44' />
+                    </div>
+                    <Skeleton className='h-7 w-7 shrink-0 rounded-md' />
+                  </div>
                 ))}
               </>
             )}
@@ -207,77 +198,77 @@ export default function ApiKeys() {
               />
             )}
 
+            {/* A plain row, not a nested Card. Each key used to render a Card
+                stripped of its border and shadow inside the outer Card, which
+                bought markup and padding for no visual result.
+
+                The per-row "Active" badge is gone too: this list only ever
+                holds active keys, revoked ones live behind their own dialog,
+                so the badge was on every row and distinguished nothing. */}
             {apiKeys?.map((apiKey: ApiKeyRow) => (
-              <Card key={apiKey._id} className='border-0 shadow-none'>
-                <CardContent className='flex items-center p-3'>
-                  <Key className='h-6 w-6 mr-3' />
-                  <div className='flex-1'>
-                    <div className='flex items-center justify-between'>
-                      <h3 className='font-semibold text-sm'>
-                        {apiKey.name || 'API Key'}
-                      </h3>
-                      <Badge variant='default' className='text-xs'>
-                        Active
-                      </Badge>
-                    </div>
-                    <div className='flex items-center space-x-2 mt-1'>
-                      <code className='relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-xs'>
-                        {apiKey.apiKey}
-                      </code>
-                    </div>
-                    <div className='flex items-center mt-1 space-x-3 text-xs text-muted-foreground'>
-                      <div>
-                        Created <RelativeTime value={apiKey.createdAt} />
-                      </div>
-                      <div>
-                        Last used{' '}
-                        <RelativeTime
-                          value={
-                            apiKey?.lastUsedAt && apiKey.usageCount
-                              ? apiKey.lastUsedAt
-                              : null
-                          }
-                          fallback='never'
-                        />
-                      </div>
-                    </div>
+              <div
+                key={apiKey._id}
+                className='flex items-start gap-2.5 rounded-lg px-2 py-2 transition-colors hover:bg-muted/50'
+              >
+                <Key className='mt-0.5 h-4 w-4 shrink-0 text-muted-foreground' />
+                <div className='min-w-0 flex-1 space-y-1'>
+                  <div className='flex items-center gap-2'>
+                    <h3 className='truncate text-sm font-medium'>
+                      {apiKey.name || 'API Key'}
+                    </h3>
                   </div>
-                  <div className=''>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant='ghost'
-                          size='icon'
-                          className='h-6 w-6'
-                          aria-label='API key actions'
-                        >
-                          <MoreVertical className='h-3 w-3' />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align='end'>
-                        <DropdownMenuItem
-                          onClick={() => {
-                            setSelectedKey(apiKey)
-                            setNewKeyName(apiKey.name || 'API Key')
-                            setIsRenameDialogOpen(true)
-                          }}
-                        >
-                          Rename
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className='text-destructive'
-                          onClick={() => {
-                            setSelectedKey(apiKey)
-                            setIsRevokeDialogOpen(true)
-                          }}
-                        >
-                          Revoke
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </CardContent>
-              </Card>
+                  {/* inline-block so the tinted background hugs the key
+                      instead of stretching into a full-width bar. */}
+                  <code className='inline-block max-w-full truncate rounded bg-muted px-1.5 py-0.5 align-middle font-mono text-xs text-muted-foreground'>
+                    {apiKey.apiKey}
+                  </code>
+                  <p className='text-xs text-muted-foreground'>
+                    Created <RelativeTime value={apiKey.createdAt} />
+                    <span className='mx-1.5 opacity-50'>·</span>
+                    Last used{' '}
+                    <RelativeTime
+                      value={
+                        apiKey?.lastUsedAt && apiKey.usageCount
+                          ? apiKey.lastUsedAt
+                          : null
+                      }
+                      fallback='never'
+                    />
+                  </p>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant='ghost'
+                      size='icon'
+                      className='h-7 w-7 shrink-0'
+                      aria-label='API key actions'
+                    >
+                      <MoreVertical className='h-3.5 w-3.5' />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align='end'>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setSelectedKey(apiKey)
+                        setNewKeyName(apiKey.name || 'API Key')
+                        setIsRenameDialogOpen(true)
+                      }}
+                    >
+                      Rename
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className='text-destructive'
+                      onClick={() => {
+                        setSelectedKey(apiKey)
+                        setIsRevokeDialogOpen(true)
+                      }}
+                    >
+                      Revoke
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             ))}
           </div>
 
