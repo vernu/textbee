@@ -26,9 +26,14 @@ export interface Device {
   brand?: string
   model?: string
   enabled?: boolean
-  status?: string
-  // No batteryLevel or signal here: neither the device schema nor the Android
-  // app reports them, so the UI can only ever invent those values.
+  // No `status` field: the Device schema has none and the API never sends one,
+  // so `device.status === 'online'` was always false and every device rendered
+  // with the muted "inactive" badge even while enabled and working.
+  //
+  // The device does report real telemetry through its heartbeat (battery,
+  // network type, last heartbeat, SIM details) which the API stores and
+  // returns. It is deliberately not modelled here yet: surfacing it is a
+  // feature, not a fix, and belongs in its own change.
   appVersionCode?: number
   createdAt?: string
 }

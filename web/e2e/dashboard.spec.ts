@@ -100,6 +100,48 @@ test.describe('dashboard (mocked API, no real backend)', () => {
     ).toBeVisible()
   })
 
+  // These sections used to render a bare "Error: Request failed with status
+  // code 500" with no styling and no way to recover.
+  test('a failed devices request explains itself and offers a retry', async ({
+    page,
+    context,
+  }) => {
+    await authenticate(context)
+    await mockApi(page)
+
+    // Held failing rather than failing once: react-query retries a failed
+    // query several times before surfacing an error, so a single failure would
+    // recover on its own and the error state would never render.
+    let failDevices = true
+    await page.route('**/api/v1/gateway/devices', (route) => {
+      if (route.request().method() !== 'GET' || !failDevices)
+        return route.fallback()
+      return route.fulfill({
+        status: 500,
+        contentType: 'application/json',
+        body: JSON.stringify({ message: 'Devices are temporarily unavailable' }),
+      })
+    })
+
+    await page.goto('/dashboard')
+
+    // Generous: the retries back off before the error is shown.
+    await expect(page.getByText("Couldn't load your devices")).toBeVisible({
+      timeout: 30000,
+    })
+    // The server's message, not the axios transport string.
+    await expect(
+      page.getByText('Devices are temporarily unavailable')
+    ).toBeVisible()
+    await expect(page.getByText(/Request failed with status code/)).toHaveCount(
+      0
+    )
+
+    failDevices = false
+    await page.getByRole('button', { name: 'Try again' }).click()
+    await expect(page.getByText("Couldn't load your devices")).toHaveCount(0)
+  })
+
   test('leads with real quota usage, not invented trends', async ({
     page,
     context,

@@ -1,7 +1,8 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { PlusCircle } from 'lucide-react'
+import { PlusCircle, Webhook } from 'lucide-react'
+import ErrorState from '@/components/shared/error-state'
 import { useState } from 'react'
 import { WebhookData } from '@/lib/types'
 import { WebhookCard } from './webhook-card'
@@ -43,6 +44,7 @@ export default function WebhooksSection() {
     data: webhooks,
     isLoading,
     error,
+    refetch,
   } = useQuery({
     queryKey: ['webhooks'],
     queryFn: () =>
@@ -103,9 +105,12 @@ export default function WebhooksSection() {
               <WebhookRowSkeleton />
             </div>
           ) : error ? (
-            <div className='rounded-lg border border-destructive/50 p-4 text-destructive'>
-              Error: {error.message}
-            </div>
+            <ErrorState
+              error={error}
+              title="Couldn't load your webhooks"
+              icon={Webhook}
+              onRetry={() => refetch()}
+            />
           ) : webhooks?.data?.length > 0 ? (
             <div className='rounded-md border divide-y bg-card overflow-hidden'>
               {webhooks.data.map((webhook) => (

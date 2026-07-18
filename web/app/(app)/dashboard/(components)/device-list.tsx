@@ -17,6 +17,7 @@ import { useToast } from '@/hooks/use-toast'
 import { Routes } from '@/config/routes'
 import { useDeleteDevice, useDevices, useSubscription } from '@/lib/api'
 import EmptyState from '@/components/shared/empty-state'
+import ErrorState from '@/components/shared/error-state'
 import RelativeTime from '@/components/shared/relative-time'
 import { useRef, useState } from 'react'
 import {
@@ -45,7 +46,6 @@ import {
 
 type DeviceRow = DeviceVersionCandidate & {
   createdAt: string
-  status?: string
   enabled?: boolean
 }
 
@@ -54,7 +54,7 @@ export default function DeviceList() {
   const [devicePendingDelete, setDevicePendingDelete] =
     useState<DeviceRow | null>(null)
   const { toast } = useToast()
-  const { isPending, error, data: devices } = useDevices()
+  const { isPending, error, data: devices, refetch } = useDevices()
 
   const { data: currentSubscription } = useSubscription()
 
@@ -189,9 +189,12 @@ export default function DeviceList() {
             )}
 
             {error && (
-              <div className='flex justify-center items-center h-full'>
-                <div>Error: {error.message}</div>
-              </div>
+              <ErrorState
+                error={error}
+                title="Couldn't load your devices"
+                icon={Smartphone}
+                onRetry={() => refetch()}
+              />
             )}
 
             {!isPending && !error && devices?.length === 0 && (
@@ -220,10 +223,12 @@ export default function DeviceList() {
                             Update available
                           </Badge>
                         )}
+                        {/* Colour and text now come from the same field. The
+                            variant used to key off device.status, which the
+                            API never sends, so an enabled device was styled
+                            identically to a disabled one. */}
                         <Badge
-                          variant={
-                            device.status === 'online' ? 'default' : 'secondary'
-                          }
+                          variant={device.enabled ? 'default' : 'secondary'}
                           className='text-xs'
                         >
                           {device.enabled ? 'Enabled' : 'Disabled'}

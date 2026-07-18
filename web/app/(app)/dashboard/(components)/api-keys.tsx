@@ -29,6 +29,7 @@ import {
 } from '@/lib/api'
 import { Skeleton } from '@/components/ui/skeleton'
 import EmptyState from '@/components/shared/empty-state'
+import ErrorState from '@/components/shared/error-state'
 import RelativeTime from '@/components/shared/relative-time'
 import GenerateApiKey, {
   type GenerateApiKeyHandle,
@@ -60,7 +61,12 @@ export default function ApiKeys() {
 
   const { toast } = useToast()
 
-  const { isPending, error, data: apiKeys } = useApiKeys('active')
+  const {
+    isPending,
+    error,
+    data: apiKeys,
+    refetch,
+  } = useApiKeys('active')
 
   const { data: revokedKeysData, isPending: isRevokedPending } = useApiKeys(
     'revoked',
@@ -185,9 +191,12 @@ export default function ApiKeys() {
             )}
 
             {error && (
-              <div className='flex justify-center items-center h-full'>
-                <div>Error: {error.message}</div>
-              </div>
+              <ErrorState
+                error={error}
+                title="Couldn't load your API keys"
+                icon={Key}
+                onRetry={() => refetch()}
+              />
             )}
 
             {!isPending && !error && apiKeys?.length === 0 && (
