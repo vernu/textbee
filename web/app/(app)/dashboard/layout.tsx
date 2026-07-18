@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import AccountDeletionAlert from './(components)/account-deletion-alert'
@@ -12,6 +13,7 @@ import { SurveyModal } from '@/components/shared/survey-modal'
 import Footer from '@/components/shared/footer'
 import ThemeToggle from '@/components/shared/theme-toggle'
 import CommandMenu from './(components)/command-menu'
+import SearchTrigger from './(components)/search-trigger'
 import {
   isNavItemActive,
   mobileNavItems,
@@ -26,14 +28,19 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
+  // Owned here, not inside the palette, so both the sidebar trigger (desktop)
+  // and the floating trigger (mobile) open the same dialog.
+  const [searchOpen, setSearchOpen] = useState(false)
 
   return (
     <div className='min-h-[calc(100vh-3.5rem)]'>
+      <CommandMenu open={searchOpen} onOpenChange={setSearchOpen} />
+
       {/* Desktop sidebar, sits below the sticky app header (h-14). */}
       <aside className='fixed inset-y-0 left-0 top-14 z-30 hidden w-60 flex-col border-r border-border bg-card md:flex'>
         <div className='flex-1 overflow-y-auto px-3 py-4'>
           <div className='mb-4'>
-            <CommandMenu />
+            <SearchTrigger onOpen={() => setSearchOpen(true)} />
           </div>
           <nav className='flex flex-col gap-1'>
             {navItems.map((item) => (
@@ -63,6 +70,13 @@ export default function DashboardLayout({
 
       {/* Main content, offset for the fixed sidebar on desktop. */}
       <div className='md:pl-60'>
+        {/* The desktop search trigger lives in the sidebar, which is hidden on
+            mobile. A labelled bar beats an icon here: search is how mobile
+            reaches Webhooks and every subroute the 4-item tab bar omits. */}
+        <div className='sticky top-14 z-20 border-b border-border bg-background/95 px-4 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:hidden'>
+          <SearchTrigger onOpen={() => setSearchOpen(true)} />
+        </div>
+
         <div className='space-y-2 p-4 pb-0'>
           <UpdateAppNotificationBar />
           <VerifyEmailAlert />
