@@ -36,7 +36,9 @@ export default function Footer() {
           </span>
         </div>
 
-        <nav className='flex flex-wrap items-center justify-center gap-x-5 gap-y-2'>
+        {/* Stacked on mobile: wrapped inline links produced a ragged two-line
+            block that was hard to scan and gave small tap targets. */}
+        <nav className='flex w-full flex-col items-center gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-center sm:gap-x-5 sm:gap-y-2'>
           {links.map((link) => (
             <Link
               key={link.label}

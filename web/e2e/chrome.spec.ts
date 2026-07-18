@@ -61,6 +61,40 @@ test.describe('app chrome (mocked API, no real backend)', () => {
     ).toBeLessThanOrEqual(tabBarBox!.y + 1)
   })
 
+  test('mobile: footer links stack vertically', async ({ page, context }) => {
+    await page.setViewportSize({ width: 375, height: 800 })
+    await authenticate(context)
+    await mockApi(page)
+    await page.goto('/dashboard')
+
+    const links = page.locator('footer nav a')
+    const count = await links.count()
+    expect(count).toBeGreaterThan(2)
+
+    // Stacked means every link sits on its own row, so each y is distinct.
+    const ys: number[] = []
+    for (let i = 0; i < count; i += 1) {
+      const box = await links.nth(i).boundingBox()
+      expect(box).not.toBeNull()
+      ys.push(Math.round(box!.y))
+    }
+    expect(new Set(ys).size, 'each footer link should be on its own row').toBe(
+      count
+    )
+  })
+
+  test('desktop: footer links sit on one row', async ({ page, context }) => {
+    await page.setViewportSize({ width: 1280, height: 900 })
+    await authenticate(context)
+    await mockApi(page)
+    await page.goto('/dashboard')
+
+    const links = page.locator('footer nav a')
+    const first = await links.first().boundingBox()
+    const last = await links.last().boundingBox()
+    expect(Math.abs(first!.y - last!.y)).toBeLessThan(8)
+  })
+
   test('top bar is reduced to brand and account', async ({ page, context }) => {
     await authenticate(context)
     await mockApi(page)
