@@ -46,3 +46,29 @@ export function getSegmentInfo(text: string): SegmentInfo {
     encoding,
   }
 }
+
+/**
+ * Strip formatting so "+1 (415) 555-0101" and "+14155550101" are recognised as
+ * the same recipient for duplicate detection.
+ */
+export function normalizePhone(value: string): string {
+  const trimmed = value.trim()
+  const hasPlus = trimmed.startsWith('+')
+  const digits = trimmed.replace(/\D/g, '')
+  return hasPlus ? `+${digits}` : digits
+}
+
+/**
+ * Permissive validity check. The gateway is the real authority on whether a
+ * number can be reached, so this only rejects input that cannot possibly be a
+ * phone number, rather than enforcing a strict E.164 shape that would block
+ * legitimate local formats.
+ */
+export function isPlausiblePhone(value: string): boolean {
+  const normalized = normalizePhone(value)
+  const digits = normalized.replace(/\D/g, '')
+  if (digits.length < 7 || digits.length > 15) return false
+  // Reject anything carrying characters that are neither digits, separators,
+  // nor a leading plus.
+  return /^\+?[\d\s()./-]+$/.test(value.trim())
+}

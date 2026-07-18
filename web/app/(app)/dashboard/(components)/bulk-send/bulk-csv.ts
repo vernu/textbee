@@ -1,6 +1,8 @@
 // Pure CSV / template logic for bulk send. No React and no network, so the
 // rules that decide who actually receives a message are directly testable.
 
+import { isPlausiblePhone, normalizePhone } from '@/lib/sms'
+
 export type CsvRow = Record<string, string>
 
 export type RecipientRow = {
@@ -78,32 +80,6 @@ export function detectRecipientColumn(columns: string[]): string | undefined {
   }
 
   return undefined
-}
-
-/**
- * Strip formatting so "+1 (415) 555-0101" and "+14155550101" are recognised as
- * the same recipient for duplicate detection.
- */
-export function normalizePhone(value: string): string {
-  const trimmed = value.trim()
-  const hasPlus = trimmed.startsWith('+')
-  const digits = trimmed.replace(/\D/g, '')
-  return hasPlus ? `+${digits}` : digits
-}
-
-/**
- * Permissive validity check. The gateway is the real authority on whether a
- * number can be reached, so this only rejects input that cannot possibly be a
- * phone number, rather than enforcing a strict E.164 shape that would block
- * legitimate local formats.
- */
-export function isPlausiblePhone(value: string): boolean {
-  const normalized = normalizePhone(value)
-  const digits = normalized.replace(/\D/g, '')
-  if (digits.length < 7 || digits.length > 15) return false
-  // Reject anything carrying characters that are neither digits, separators,
-  // nor a leading plus.
-  return /^\+?[\d\s()./-]+$/.test(value.trim())
 }
 
 /**
@@ -202,3 +178,5 @@ export function formatFileSize(bytes: number): string {
   const mb = bytes / (1024 * 1024)
   return `${Number.isInteger(mb) ? mb : mb.toFixed(1)} MB`
 }
+
+export { isPlausiblePhone, normalizePhone }
