@@ -146,8 +146,37 @@ export const mockMessages = {
   meta: { total: 2, page: 1, limit: 20, totalPages: 1 },
 }
 
+// Shaped like the real /billing/plans response, which returns Plan documents:
+// monthlyPrice in cents plus the limits, and no currency or amount. The old
+// fixture used amount/currency, fields that endpoint has never sent, so a
+// component reading them looked correct in tests and rendered every paid plan
+// as free in production.
 export const mockBillingPlans = [
-  { name: 'Free', amount: 0, currency: 'usd', recurringInterval: 'month' },
-  { name: 'Pro', amount: 1900, currency: 'usd', recurringInterval: 'month' },
-  { name: 'Scale', amount: 4900, currency: 'usd', recurringInterval: 'month' },
+  {
+    name: 'Free',
+    monthlyPrice: 0,
+    dailyLimit: 50,
+    monthlyLimit: 500,
+    bulkSendLimit: 50,
+    deviceLimit: 1,
+    isActive: true,
+  },
+  {
+    name: 'Pro',
+    monthlyPrice: 1900,
+    dailyLimit: 5000,
+    monthlyLimit: 100000,
+    bulkSendLimit: 500,
+    deviceLimit: 5,
+    isActive: true,
+  },
+  {
+    name: 'Scale',
+    monthlyPrice: 4900,
+    dailyLimit: -1,
+    monthlyLimit: -1,
+    bulkSendLimit: 2000,
+    deviceLimit: -1,
+    isActive: true,
+  },
 ]

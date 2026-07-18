@@ -264,14 +264,22 @@ export default function GetStartedCard() {
                       </span>
                     )}
                   </div>
-                  {isActive && !step.isDone && (
+                  {/* Rendered whenever the step is selected, done or not. It
+                      used to require !isDone, so opening a completed step
+                      showed an empty row: someone who wanted to generate a
+                      replacement API key had no way back to that action. The
+                      tick stays; only the body comes back. */}
+                  {isActive && (
                     <div className='animate-fade-in'>
                       <p className='mt-1 text-sm text-muted-foreground'>
-                        {step.description}
+                        {step.isDone
+                          ? step.doneDescription ?? step.description
+                          : step.description}
                       </p>
                       <div className='mt-3 flex flex-wrap items-center gap-2'>
                         <StepActions
                           stepId={step.id}
+                          isDone={step.isDone}
                           isSaving={savingOnboarding}
                           subLoading={subLoading}
                           userEmail={userData?.email}

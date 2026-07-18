@@ -53,9 +53,14 @@ export interface Plan {
   monthlyLimit?: number
   bulkSendLimit?: number
   deviceLimit?: number
-  amount?: number
-  currency?: string
-  recurringInterval?: string
+  // Prices are in cents and live on the plan as monthlyPrice/yearlyPrice.
+  // This type previously declared amount/currency/recurringInterval, which the
+  // plans endpoint has never sent: those belong to Subscription, populated
+  // from the payment provider. Anything reading plan.amount silently saw
+  // undefined and rendered a paid plan as free.
+  monthlyPrice?: number
+  yearlyPrice?: number
+  isActive?: boolean
 }
 
 export interface SubscriptionUsage {

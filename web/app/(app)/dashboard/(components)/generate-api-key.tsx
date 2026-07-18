@@ -22,10 +22,20 @@ export type GenerateApiKeyHandle = {
 
 type GenerateApiKeyProps = {
   showTrigger?: boolean
+  // Lets a caller say "Generate another API key" where a key already exists.
+  triggerLabel?: string
+  triggerVariant?: 'default' | 'outline'
 }
 
 const GenerateApiKey = forwardRef<GenerateApiKeyHandle, GenerateApiKeyProps>(
-  function GenerateApiKey({ showTrigger = true }, ref) {
+  function GenerateApiKey(
+    {
+      showTrigger = true,
+      triggerLabel = 'Generate API Key',
+      triggerVariant = 'default',
+    },
+    ref
+  ) {
     const [isGenerateKeyModalOpen, setIsGenerateKeyModalOpen] = useState(false)
     const [isConfirmGenerateKeyModalOpen, setIsConfirmGenerateKeyModalOpen] =
       useState(false)
@@ -71,9 +81,9 @@ const GenerateApiKey = forwardRef<GenerateApiKeyHandle, GenerateApiKeyProps>(
     return (
       <>
         {showTrigger ? (
-          <Button onClick={handleConfirmGenerateKey}>
+          <Button variant={triggerVariant} onClick={handleConfirmGenerateKey}>
             <QrCode className='mr-2 h-4 w-4' />
-            Generate API Key
+            {triggerLabel}
           </Button>
         ) : null}
 

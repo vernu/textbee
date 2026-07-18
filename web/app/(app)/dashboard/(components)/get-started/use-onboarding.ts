@@ -153,12 +153,28 @@ export function useOnboarding() {
     return firstIncomplete ?? STEPS[STEPS.length - 1].id
   }, [stepStates, userData?.onboarding?.currentStepId, selectedStepId, canNavigateToStep])
 
-  // When the previously selected step gets completed (e.g. the poll detected a
-  // registered device), advance the selection to the next incomplete step.
+  // When the step you are sitting on gets completed (e.g. the poll detected a
+  // registered device), advance the selection to the next incomplete one.
+  //
+  // Only on that transition, though. This used to clear the selection whenever
+  // the selected step was done, which also meant deliberately opening an
+  // already-completed step deselected it on the very next render, so it looked
+  // like clicking it did nothing at all.
+  const selectionRef = useRef<{ id: string; isDone: boolean } | null>(null)
   useEffect(() => {
-    if (!selectedStepId) return
+    if (!selectedStepId) {
+      selectionRef.current = null
+      return
+    }
     const selected = stepStates.find((s) => s.id === selectedStepId)
-    if (selected?.isDone) {
+    if (!selected) return
+
+    const previous = selectionRef.current
+    selectionRef.current = { id: selectedStepId, isDone: selected.isDone }
+
+    const completedWhileSelected =
+      previous?.id === selectedStepId && !previous.isDone && selected.isDone
+    if (completedWhileSelected) {
       setSelectedStepId(null)
     }
   }, [selectedStepId, stepStates])

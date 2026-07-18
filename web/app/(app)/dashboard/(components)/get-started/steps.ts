@@ -24,6 +24,9 @@ export type StepDef = {
   id: string
   label: string
   description: string
+  // Shown instead of `description` when the step is already done and the user
+  // has reopened it, so the copy does not tell them to do what they have done.
+  doneDescription?: string
   optional: boolean
   // Shown as a small chip; sets expectations and reduces abandonment.
   timeEstimate: string
@@ -48,6 +51,7 @@ export const STEPS: StepDef[] = [
     id: 'download_app',
     label: 'Download the Android app',
     description: 'Install TextBee on the Android phone that will send your SMS.',
+    doneDescription: 'Installed. Download it again if you are setting up another phone.',
     optional: true,
     timeEstimate: '~1 min',
     checkDone: (_u, stats, _s, skipped) =>
@@ -57,6 +61,8 @@ export const STEPS: StepDef[] = [
     id: 'api_key',
     label: 'Generate an API key',
     description: 'Your key connects the app and authenticates API calls.',
+    doneDescription:
+      'You already have a key. Generate another if you need to replace it or set up a second device.',
     optional: false,
     timeEstimate: '~10 sec',
     checkDone: (_u, stats) => (stats?.totalApiKeyCount ?? 0) > 0,
@@ -65,6 +71,7 @@ export const STEPS: StepDef[] = [
     id: 'register_device',
     label: 'Register your device',
     description: 'Turn your phone into your SMS gateway: scan the QR code below with the TextBee app.',
+    doneDescription: 'Device registered. Register another the same way.',
     optional: false,
     timeEstimate: '~1 min',
     checkDone: (_u, stats) => (stats?.totalDeviceCount ?? 0) > 0,
@@ -73,6 +80,7 @@ export const STEPS: StepDef[] = [
     id: 'choose_plan',
     label: 'Choose your plan',
     description: 'Pick the plan that fits your usage.',
+    doneDescription: 'Your plan is set. Change it any time.',
     optional: true,
     timeEstimate: '~30 sec',
     checkDone: (_u, _stats, sub, skipped) =>
@@ -83,6 +91,7 @@ export const STEPS: StepDef[] = [
     id: 'first_message',
     label: 'Send your first message',
     description: 'The moment it all works: send an SMS from the dashboard.',
+    doneDescription: 'You have sent your first message. Send another any time.',
     optional: false,
     timeEstimate: '~30 sec',
     checkDone: (_u, stats) => (stats?.totalSentSMSCount ?? 0) > 0,
