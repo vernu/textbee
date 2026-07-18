@@ -227,8 +227,8 @@ export default function CommunityLinks() {
                      className={`${
                        currentUrl === url
                          ? 'ring-2 ring-primary bg-primary/10 shadow-lg'
-                         : 'hover:bg-card hover:shadow-md'
-                     } p-3 rounded-xl border bg-card/80 backdrop-blur-sm transition-all duration-200 hover:scale-105 group`}
+                         : 'hover:bg-card hover:border-primary/40 hover:shadow-md'
+                     } p-3 rounded-xl border bg-card/80 backdrop-blur-sm transition-colors duration-150 group`}
                    >
                      <div className='w-10 h-10 mx-auto bg-white dark:bg-white rounded-lg p-1 shadow-sm group-hover:shadow-md transition-shadow'>
                        <Image src={icon} alt={name} width={20} height={20} className='w-full h-full object-contain' />

@@ -126,7 +126,7 @@ export default function GetStartedCard() {
         </span>
         <span className='h-1.5 max-w-40 flex-1 overflow-hidden rounded-full bg-primary/15'>
           <span
-            className='block h-full rounded-full bg-primary transition-[width] duration-500'
+            className='block h-full rounded-full bg-primary transition-[width] duration-300'
             style={{ width: `${progressPercent}%` }}
           />
         </span>
@@ -172,7 +172,7 @@ export default function GetStartedCard() {
           aria-label='Setup progress'
         >
           <div
-            className='h-full rounded-full bg-primary transition-[width] duration-500'
+            className='h-full rounded-full bg-primary transition-[width] duration-300'
             style={{ width: `${progressPercent}%` }}
           />
         </div>
@@ -190,11 +190,9 @@ export default function GetStartedCard() {
             const canClickStep = canNavigateToStep(step.id)
 
             return (
-              <div
-                key={step.id}
-                className='flex gap-3 animate-fade-in-up'
-                style={{ animationDelay: `${index * 40}ms` }}
-              >
+              // No staggered entrance: this card polls every 10s, so a
+              // cascading per-row animation replays on any remount.
+              <div key={step.id} className='flex gap-3'>
                 <div className='flex w-9 shrink-0 flex-col items-center'>
                   <div
                     className={cn(

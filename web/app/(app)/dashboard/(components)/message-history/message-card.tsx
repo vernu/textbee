@@ -34,9 +34,12 @@ export function MessageCard({
     (device?.appVersionCode ?? 0) >= 14 &&
     new Date(message?.createdAt) > new Date('2025-06-05')
 
+  // No entrance animation here: this list refetches on filter change,
+  // pagination and auto-refresh, so an animated row replays its fade on every
+  // tick.
   return (
     <Card
-      className={`hover:bg-muted/50 transition-colors cursor-pointer max-w-sm md:max-w-none animate-fade-in ${
+      className={`hover:bg-muted/50 transition-colors cursor-pointer max-w-sm md:max-w-none ${
         isSent ? 'border-l-4 border-l-brand-500' : 'border-l-4 border-l-green-500'
       }`}
       onClick={() => onSelectMessage(message)}

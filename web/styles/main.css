@@ -71,18 +71,20 @@
 
   --animate-accordion-down: accordion-down 0.2s ease-out;
   --animate-accordion-up: accordion-up 0.2s ease-out;
-  --animate-fade-in: fade-in 0.3s ease-out both;
-  --animate-fade-in-up: fade-in-up 0.4s ease-out both;
-  --animate-check-pop: check-pop 0.35s ease-out both;
+  /* Entrance motion is deliberately barely perceptible: it should soften a
+     state change, never announce itself. */
+  --animate-fade-in: fade-in 0.15s ease-out both;
+  --animate-fade-in-up: fade-in-up 0.2s ease-out both;
+  --animate-check-pop: check-pop 0.2s ease-out both;
 }
 
 @keyframes check-pop {
   0% {
-    transform: scale(0.6);
-    opacity: 0.4;
+    transform: scale(0.92);
+    opacity: 0.6;
   }
   60% {
-    transform: scale(1.15);
+    transform: scale(1.02);
   }
   100% {
     transform: scale(1);
@@ -120,7 +122,7 @@
 @keyframes fade-in-up {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(3px);
   }
   to {
     opacity: 1;
