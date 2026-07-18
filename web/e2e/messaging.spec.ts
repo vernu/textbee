@@ -57,4 +57,68 @@ test.describe('messaging (mocked API, no real backend)', () => {
     // Never fell through to an error boundary.
     await expect(page.getByText('This page couldn')).toHaveCount(0)
   })
+
+  test('every tab renders in the same content column', async ({
+    page,
+    context,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await authenticate(context)
+    await mockApi(page)
+
+    // Each subroute used to set its own width (Send xl, Bulk 3xl, API 4xl,
+    // History none), so the layout jumped on every tab change.
+    const columns: Record<string, number> = {}
+    let available = 0
+    for (const path of [
+      '/dashboard/messaging',
+      '/dashboard/messaging/bulk',
+      '/dashboard/messaging/history',
+      '/dashboard/messaging/api-guide',
+    ]) {
+      await page.goto(path)
+      await expect(
+        page.getByRole('navigation', { name: 'Section navigation' })
+      ).toBeVisible()
+
+      // Measure the view rendered beneath the tabs, not the layout column.
+      // The column is identical on every tab by construction, so measuring it
+      // cannot detect a page that re-constrains its own content.
+      const measured = await page.evaluate(() => {
+        const nav = document.querySelector(
+          'nav[aria-label="Section navigation"]'
+        )
+        const content = nav!.nextElementSibling as HTMLElement
+        const parent = nav!.parentElement!.parentElement!
+        const style = getComputedStyle(parent)
+        return {
+          content: Math.round(content.getBoundingClientRect().width),
+          // Content width, with the parent's padding subtracted. Using the
+          // border box would include that padding, so an unconstrained
+          // full-width column would still measure as narrower than its parent.
+          available: Math.round(
+            parent.clientWidth -
+              parseFloat(style.paddingLeft) -
+              parseFloat(style.paddingRight)
+          ),
+        }
+      })
+      columns[path] = measured.content
+      available = measured.available
+    }
+
+    const widths = Object.values(columns)
+    expect(
+      new Set(widths).size,
+      `tabs should share one column width, got ${JSON.stringify(columns)}`
+    ).toBe(1)
+
+    // Compared against the space actually available, not the viewport:
+    // dropping the constraint makes every tab equally full-bleed, which would
+    // otherwise satisfy the equality check above.
+    expect(
+      widths[0],
+      'the column should be constrained, not stretched to fill'
+    ).toBeLessThan(available)
+  })
 })
