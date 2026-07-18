@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, type ReactNode } from 'react'
+import { useState } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -9,14 +9,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import {
-  ArrowDownLeft,
-  ArrowUpRight,
-  Copy,
-  MessageSquare,
-  Reply,
-} from 'lucide-react'
-import { toast } from '@/hooks/use-toast'
+import { ArrowDownLeft, ArrowUpRight, MessageSquare, Reply, Smartphone } from 'lucide-react'
+import { CopyButton } from '@/components/shared/copy-button'
 import { getStatusBadge } from './utils'
 import { messageDate, messageDirection } from './group'
 import { toExactLabel } from '@/components/shared/relative-time'
@@ -34,17 +28,9 @@ type SmsDetailsDialogProps = {
   fallbackDeviceId?: string
 }
 
-function Row({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className='grid grid-cols-[7rem_1fr] gap-x-4 py-1.5'>
-      <dt className='text-muted-foreground'>{label}</dt>
-      <dd className='min-w-0 break-words'>{children}</dd>
-    </div>
-  )
-}
-
 // Ordered by what people open this for: the message itself first, then the
-// metadata that explains it.
+// few facts that explain it. Copy actions sit next to the thing they copy,
+// rather than a single footer button whose target had to be inferred.
 export default function SmsDetailsDialog({
   message,
   open,
@@ -61,19 +47,17 @@ export default function SmsDetailsDialog({
     : message.sender || 'Unknown'
   const date = messageDate(message)
   const composerDeviceId = message.device?._id || fallbackDeviceId
-
-  const handleCopyMessage = () => {
-    if (message?.message) {
-      navigator.clipboard.writeText(message.message)
-      toast({ title: 'Message copied to clipboard!' })
-    }
-  }
+  const deviceName = [message.device?.brand, message.device?.model]
+    .filter(Boolean)
+    .join(' ')
 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className='sm:max-w-[550px]'>
-          <DialogHeader>
+        <DialogContent className='sm:max-w-[540px]'>
+          {/* text-left overrides the primitive's mobile centring, which left
+              the title on the left and the date centred under it. */}
+          <DialogHeader className='pr-8 text-left'>
             <DialogTitle className='flex items-center gap-2 text-base'>
               <span
                 className={cn(
@@ -93,6 +77,11 @@ export default function SmsDetailsDialog({
               <span className='min-w-0 truncate'>
                 {isSent ? 'To' : 'From'} {counterparty}
               </span>
+              <CopyButton
+                value={counterparty}
+                label='Number'
+                className='h-7 w-7'
+              />
             </DialogTitle>
             {/* Exact time as text: the hover tooltip in the list is not
                 reachable on touch. */}
@@ -102,40 +91,55 @@ export default function SmsDetailsDialog({
           </DialogHeader>
 
           {/* The message body leads: it is the reason this dialog is open. */}
-          <div className='max-h-56 overflow-y-auto whitespace-pre-wrap break-words rounded-lg bg-muted p-3 text-sm'>
-            {message.message}
+          <div className='relative'>
+            <div className='max-h-56 overflow-y-auto whitespace-pre-wrap break-words rounded-lg bg-muted p-3 pr-11 text-sm'>
+              {message.message}
+            </div>
+            <CopyButton
+              value={message.message ?? ''}
+              label='Message'
+              className='absolute right-1.5 top-1.5 h-7 w-7 bg-background/70 backdrop-blur hover:bg-background'
+            />
           </div>
 
-          <dl className='divide-y divide-border text-sm'>
-            <Row label='Status'>
-              <span
-                className={cn(
-                  'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
-                  statusBadge.color
-                )}
-              >
-                {statusBadge.icon}
-                {statusBadge.label}
+          {/* Facts as chips rather than a label/value table: direction and
+              number were already in the header, so the table mostly repeated
+              itself. */}
+          <div className='flex flex-wrap items-center gap-2 text-xs'>
+            <span
+              className={cn(
+                'inline-flex items-center gap-1 rounded-full px-2 py-1 font-medium',
+                statusBadge.color
+              )}
+            >
+              {statusBadge.icon}
+              {statusBadge.label}
+            </span>
+
+            {deviceName && (
+              <span className='inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-muted-foreground'>
+                <Smartphone className='h-3 w-3' />
+                {deviceName}
               </span>
-            </Row>
-            <Row label='Direction'>{isSent ? 'Sent' : 'Received'}</Row>
-            <Row label='Number'>{counterparty}</Row>
-            <Row label='Device'>
-              {message.device?.brand || message.device?.model
-                ? `${message.device?.brand ?? ''} ${message.device?.model ?? ''}`.trim()
-                : 'Not recorded'}
-            </Row>
+            )}
+
             {message.gatewayMessageId && (
-              <Row label='Gateway ID'>
-                <span className='font-mono text-xs'>
+              <span className='inline-flex min-w-0 items-center gap-1 rounded-full bg-muted py-0.5 pl-2.5 pr-0.5 text-muted-foreground'>
+                <span className='shrink-0'>ID</span>
+                <span className='truncate font-mono'>
                   {message.gatewayMessageId}
                 </span>
-              </Row>
+                <CopyButton
+                  value={message.gatewayMessageId}
+                  label='Gateway ID'
+                  className='h-6 w-6'
+                />
+              </span>
             )}
-          </dl>
+          </div>
 
           {(message.errorCode || message.errorMessage) && (
-            <div className='space-y-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3'>
+            <div className='space-y-1.5 rounded-lg border border-destructive/30 bg-destructive/5 p-3'>
               <p className='text-sm font-medium text-destructive'>
                 Delivery failed
               </p>
@@ -152,16 +156,7 @@ export default function SmsDetailsDialog({
             </div>
           )}
 
-          <div className='flex flex-col gap-2 sm:flex-row sm:justify-end'>
-            <Button
-              variant='outline'
-              size='sm'
-              className='w-full sm:w-auto'
-              onClick={handleCopyMessage}
-            >
-              <Copy className='h-4 w-4' />
-              Copy text
-            </Button>
+          <div className='flex justify-end'>
             {isSent ? (
               <Button
                 size='sm'

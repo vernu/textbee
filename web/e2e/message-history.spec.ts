@@ -187,6 +187,52 @@ test.describe('message history (mocked API, no real backend)', () => {
     await expect(dialog.getByText(/\d{4} at \d{1,2}:\d{2}/)).toBeVisible()
   })
 
+  test('each detail field copies its own value', async ({ page, context }) => {
+    await authenticate(context)
+    await mockApi(page)
+    await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+
+    await page.route('**/api/v1/gateway/devices/*/messages*', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          data: [
+            {
+              _id: 'copy_1',
+              recipient: '+15557654321',
+              message: 'Copy me exactly',
+              status: 'delivered',
+              type: 'sent',
+              gatewayMessageId: '665f1c2a9b1e4a0012ab34cd',
+              device: { _id: 'device_1', brand: 'Google', model: 'Pixel 8' },
+              requestedAt: new Date().toISOString(),
+              createdAt: new Date().toISOString(),
+            },
+          ],
+          meta: { total: 1, page: 1, limit: 20, totalPages: 1 },
+        }),
+      })
+    )
+
+    await page.goto('/dashboard/messaging/history')
+    await page.getByRole('button', { name: /Copy me exactly/ }).click()
+
+    const dialog = page.getByRole('dialog')
+    const read = () => page.evaluate(() => navigator.clipboard.readText())
+
+    // One button per field, each named for what it copies, replacing a single
+    // footer "Copy text" whose target had to be inferred.
+    await dialog.getByRole('button', { name: 'Copy number' }).click()
+    expect(await read()).toBe('+15557654321')
+
+    await dialog.getByRole('button', { name: 'Copy message' }).click()
+    expect(await read()).toBe('Copy me exactly')
+
+    await dialog.getByRole('button', { name: 'Copy gateway ID' }).click()
+    expect(await read()).toBe('665f1c2a9b1e4a0012ab34cd')
+  })
+
   test('replying from a received message keeps a device selected', async ({
     page,
     context,
