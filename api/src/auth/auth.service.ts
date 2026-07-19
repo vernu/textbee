@@ -126,8 +126,8 @@ export class AuthService {
       )
     }
 
-    this.validateEmail(userData.email)
-    this.validatePassword(userData.password)
+    await this.validateEmail(userData.email)
+    await this.validatePassword(userData.password)
 
     const hashedPassword = await bcrypt.hash(userData.password, 10)
     const { turnstileToken, ...sanitizedUserData } = userData
@@ -261,7 +261,7 @@ export class AuthService {
       )
     }
 
-    this.validatePassword(input.newPassword)
+    await this.validatePassword(input.newPassword)
 
     const hashedPassword = await bcrypt.hash(input.newPassword, 10)
     userToUpdate.password = hashedPassword

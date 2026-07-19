@@ -17,19 +17,22 @@ const build = () => {
   const usersService = {
     findOne: jest.fn(),
     findOneWithPassword: jest.fn(),
+    create: jest.fn(),
   }
   const passwordResetModel = { findOne: jest.fn() }
   const mailService = { sendEmailFromTemplate: jest.fn().mockResolvedValue(undefined) }
+  const jwtService = { sign: jest.fn().mockReturnValue('signed-jwt') }
+  const turnstileService = { verify: jest.fn().mockResolvedValue(undefined) }
 
   const service = new AuthService(
     usersService as any,
-    {} as any, // jwtService
+    jwtService as any,
     apiKeyModel,
     passwordResetModel as any,
     {} as any, // accessLogModel
     {} as any, // emailVerificationModel
     mailService as any,
-    {} as any, // turnstileService
+    turnstileService as any,
   )
 
   return {
@@ -38,6 +41,8 @@ const build = () => {
     usersService,
     passwordResetModel,
     mailService,
+    jwtService,
+    turnstileService,
     getLastApiKeyDoc: () => lastApiKeyDoc,
   }
 }
@@ -174,6 +179,83 @@ describe('AuthService', () => {
       expect(stored.save).toHaveBeenCalledTimes(1)
       expect(stored.password).not.toBe(before)
       expect(bcrypt.compareSync('a-brand-new-password', stored.password)).toBe(true)
+    })
+  })
+
+  describe('register input validation', () => {
+    const registerSetup = () => {
+      const ctx = build()
+      ctx.usersService.findOne.mockResolvedValue(null) // no existing user
+      // If validation is (incorrectly) skipped, register would reach create;
+      // return a usable doc so the pre-fix path resolves rather than erroring.
+      ctx.usersService.create.mockResolvedValue({
+        _id: 'user_1',
+        email: 'x',
+        lastLoginAt: null,
+        save: jest.fn().mockResolvedValue(undefined),
+        toObject: () => ({ _id: 'user_1' }),
+      })
+      return ctx
+    }
+
+    it('rejects a malformed email and does not create the user', async () => {
+      const { service, usersService } = registerSetup()
+
+      await expect(
+        service.register({
+          name: 'Ada',
+          email: 'not-an-email',
+          password: 'a-valid-password',
+          turnstileToken: 'token',
+        }),
+      ).rejects.toThrow(HttpException)
+      expect(usersService.create).not.toHaveBeenCalled()
+    })
+
+    it('rejects a too-short password and does not create the user', async () => {
+      const { service, usersService } = registerSetup()
+
+      await expect(
+        service.register({
+          name: 'Ada',
+          email: 'a@b.com',
+          password: '123',
+          turnstileToken: 'token',
+        }),
+      ).rejects.toThrow(HttpException)
+      expect(usersService.create).not.toHaveBeenCalled()
+    })
+
+    it('creates the user when email and password are valid', async () => {
+      const { service, usersService } = registerSetup()
+
+      await service.register({
+        name: 'Ada',
+        email: 'a@b.com',
+        password: 'a-valid-password',
+        turnstileToken: 'token',
+      })
+      expect(usersService.create).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('changePassword input validation', () => {
+    it('rejects a too-short new password without saving', async () => {
+      const ctx = build()
+      const stored = {
+        _id: 'user_1',
+        password: bcrypt.hashSync('correct-old', 10),
+        save: jest.fn().mockResolvedValue(undefined),
+      }
+      ctx.usersService.findOneWithPassword.mockResolvedValue(stored)
+
+      await expect(
+        ctx.service.changePassword(
+          { oldPassword: 'correct-old', newPassword: '123' },
+          { _id: 'user_1' } as any,
+        ),
+      ).rejects.toThrow(HttpException)
+      expect(stored.save).not.toHaveBeenCalled()
     })
   })
 
