@@ -19,7 +19,7 @@ const build = () => {
     findOneWithPassword: jest.fn(),
     create: jest.fn(),
   }
-  const passwordResetModel = { findOne: jest.fn() }
+  const passwordResetModel = { findOne: jest.fn(), findOneAndUpdate: jest.fn() }
   const mailService = { sendEmailFromTemplate: jest.fn().mockResolvedValue(undefined) }
   const jwtService = { sign: jest.fn().mockReturnValue('signed-jwt') }
   const turnstileService = { verify: jest.fn().mockResolvedValue(undefined) }
@@ -286,50 +286,105 @@ describe('AuthService', () => {
       return { ...ctx, user }
     }
 
-    it('rejects when there is no valid reset record', async () => {
-      const { service, passwordResetModel, user } = setup()
-      passwordResetModel.findOne.mockResolvedValue(null)
+    const MAX_ATTEMPTS = 5
 
-      await expect(
-        service.resetPassword({ email: 'a@b.com', otp: '1234', newPassword: 'new-password' }),
-      ).rejects.toThrow(HttpException)
-      expect(user.save).not.toHaveBeenCalled()
+    const buildReset = (rawOtp: string, attempts = 0) => ({
+      _id: 'reset_1',
+      otp: bcrypt.hashSync(rawOtp, 10),
+      expiresAt: new Date(Date.now() + 60_000),
+      attempts,
+      save: jest.fn().mockResolvedValue(undefined),
     })
 
-    it('rejects when the OTP does not match', async () => {
-      const { service, passwordResetModel, user } = setup()
-      passwordResetModel.findOne.mockResolvedValue({
-        otp: bcrypt.hashSync('9999', 10),
-        save: jest.fn(),
+    // The service reads the newest record, then claims an attempt against it
+    // with an atomic findOneAndUpdate. This models that server-side guard:
+    // no match once the record is at the cap, otherwise increment and return.
+    const stageReset = (ctx: ReturnType<typeof setup>, reset: any) => {
+      ctx.passwordResetModel.findOne.mockResolvedValue(reset)
+      ctx.passwordResetModel.findOneAndUpdate.mockImplementation(async () => {
+        if (reset.attempts >= MAX_ATTEMPTS) return null
+        reset.attempts += 1
+        return reset
       })
+    }
 
-      await expect(
-        service.resetPassword({ email: 'a@b.com', otp: '1234', newPassword: 'new-password' }),
-      ).rejects.toThrow(HttpException)
-      expect(user.save).not.toHaveBeenCalled()
-    })
-
-    it('updates the password and expires the reset on success', async () => {
-      const { service, passwordResetModel, user } = setup()
-      const reset = {
-        otp: bcrypt.hashSync('1234', 10),
-        expiresAt: new Date(Date.now() + 60_000),
-        save: jest.fn().mockResolvedValue(undefined),
-      }
-      passwordResetModel.findOne.mockResolvedValue(reset)
-
-      const res = await service.resetPassword({
+    const submit = (ctx: ReturnType<typeof setup>, otp: string) =>
+      ctx.service.resetPassword({
         email: 'a@b.com',
-        otp: '1234',
+        otp,
         newPassword: 'new-password',
       })
 
-      expect(user.save).toHaveBeenCalledTimes(1)
-      expect(bcrypt.compareSync('new-password', user.password)).toBe(true)
+    it('rejects when there is no valid reset record', async () => {
+      const ctx = setup()
+      ctx.passwordResetModel.findOne.mockResolvedValue(null)
+
+      await expect(submit(ctx, '1234')).rejects.toThrow(HttpException)
+      expect(ctx.user.save).not.toHaveBeenCalled()
+    })
+
+    it('rejects when the OTP does not match', async () => {
+      const ctx = setup()
+      stageReset(ctx, buildReset('9999'))
+
+      await expect(submit(ctx, '1234')).rejects.toThrow(HttpException)
+      expect(ctx.user.save).not.toHaveBeenCalled()
+    })
+
+    it('updates the password and expires the reset on success', async () => {
+      const ctx = setup()
+      const reset = buildReset('1234')
+      stageReset(ctx, reset)
+
+      const res = await submit(ctx, '1234')
+
+      expect(ctx.user.save).toHaveBeenCalledTimes(1)
+      expect(bcrypt.compareSync('new-password', ctx.user.password)).toBe(true)
       expect(reset.save).toHaveBeenCalledTimes(1)
       // The reset window is closed (expiry moved to now or earlier).
       expect(reset.expiresAt.getTime()).toBeLessThanOrEqual(Date.now())
       expect(res.message).toMatch(/reset/i)
+    })
+
+    it('locks the record out after 5 wrong OTPs, including against the correct one', async () => {
+      const ctx = setup()
+      const reset = buildReset('1234')
+      stageReset(ctx, reset)
+
+      for (let i = 0; i < MAX_ATTEMPTS; i++) {
+        await expect(submit(ctx, '0000')).rejects.toThrow(HttpException)
+      }
+      // The correct OTP must not rescue an exhausted record.
+      await expect(submit(ctx, '1234')).rejects.toThrow(HttpException)
+
+      expect(ctx.user.save).not.toHaveBeenCalled()
+      expect(reset.attempts).toBe(MAX_ATTEMPTS)
+    })
+
+    it('rejects the correct OTP when the record is already at the cap', async () => {
+      const ctx = setup()
+      stageReset(ctx, buildReset('1234', MAX_ATTEMPTS))
+
+      await expect(submit(ctx, '1234')).rejects.toThrow(HttpException)
+      expect(ctx.user.save).not.toHaveBeenCalled()
+    })
+
+    it('claims each attempt atomically so parallel guesses cannot bypass the cap', async () => {
+      const ctx = setup()
+      stageReset(ctx, buildReset('1234'))
+
+      await expect(submit(ctx, '0000')).rejects.toThrow(HttpException)
+
+      // A read-modify-write counter would let concurrent requests all observe
+      // the same count, so the increment has to happen in the query itself.
+      const [filter, update] =
+        ctx.passwordResetModel.findOneAndUpdate.mock.calls[0]
+      expect(update).toEqual({ $inc: { attempts: 1 } })
+      expect(filter._id).toBe('reset_1')
+      expect(filter.$or).toEqual([
+        { attempts: { $lt: MAX_ATTEMPTS } },
+        { attempts: { $exists: false } },
+      ])
     })
   })
 })

@@ -22,6 +22,9 @@ import {
   EmailVerificationDocument,
 } from './schemas/email-verification.schema'
 
+// Failed OTP submissions allowed against a single password reset record.
+const MAX_PASSWORD_RESET_ATTEMPTS = 5
+
 // For register and login, which hold the hash in memory before responding.
 export const withoutPassword = (user: UserDocument) => {
   const { password, ...safe } = user.toObject()
@@ -208,13 +211,33 @@ export class AuthService {
     if (!user) {
       throw new HttpException({ error: 'User not found' }, HttpStatus.NOT_FOUND)
     }
-    const passwordReset = await this.passwordResetModel.findOne(
+    const latestReset = await this.passwordResetModel.findOne(
       {
         user: user._id,
         expiresAt: { $gt: new Date() },
       },
       null,
       { sort: { createdAt: -1 } },
+    )
+
+    if (!latestReset) {
+      throw new HttpException({ error: 'Invalid OTP' }, HttpStatus.BAD_REQUEST)
+    }
+
+    // Claim an attempt atomically so concurrent guesses cannot all read the
+    // same count and slip past the cap. A null result means the record is
+    // already locked out and a fresh reset request is required.
+    const passwordReset = await this.passwordResetModel.findOneAndUpdate(
+      {
+        _id: latestReset._id,
+        // Records predating this counter have no attempts field at all.
+        $or: [
+          { attempts: { $lt: MAX_PASSWORD_RESET_ATTEMPTS } },
+          { attempts: { $exists: false } },
+        ],
+      },
+      { $inc: { attempts: 1 } },
+      { new: true },
     )
 
     if (!passwordReset || !(await bcrypt.compare(otp, passwordReset.otp))) {

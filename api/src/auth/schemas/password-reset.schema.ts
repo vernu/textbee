@@ -16,6 +16,10 @@ export class PasswordReset {
 
   @Prop({ type: Date })
   expiresAt: Date
+
+  // OTP verification attempts, used to lock the record out of brute-forcing.
+  @Prop({ type: Number, default: 0 })
+  attempts: number
 }
 
 export const PasswordResetSchema = SchemaFactory.createForClass(PasswordReset)
