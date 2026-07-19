@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import httpBrowserClient from '@/lib/httpBrowserClient'
 import { ApiEndpoints } from '@/config/api'
+import { queryKeys } from '@/lib/api/query-keys'
 import {
   STEPS,
   computeStepStates,
@@ -23,9 +24,12 @@ export type OnboardingStatus =
   | 'hidden'
   | 'celebrate'
 
-// Data + derived state for the onboarding card. Query keys intentionally match
-// the app-wide keys (['whoAmI'], ['stats'], ['currentSubscription']) so this
-// hook shares caches and invalidations with the other dashboard components.
+// Data + derived state for the onboarding card. Keys come from the shared
+// queryKeys factory so this hook shares caches and invalidations with the
+// other dashboard components. They were previously written out by hand, and
+// the user key was spelled ['whoAmI'] here while the typed useCurrentUser
+// hook used ['currentUser'], so the same endpoint was cached twice and
+// invalidating either one left the other stale.
 export function useOnboarding() {
   const queryClient = useQueryClient()
   const autoCompletedRef = useRef(false)
@@ -38,7 +42,7 @@ export function useOnboarding() {
   const prevCompletedAtRef = useRef<string | Date | null | undefined>(undefined)
 
   const userQuery = useQuery({
-    queryKey: ['whoAmI'],
+    queryKey: queryKeys.currentUser,
     queryFn: () =>
       httpBrowserClient
         .get(ApiEndpoints.auth.whoAmI())
@@ -51,7 +55,7 @@ export function useOnboarding() {
   const userData = userQuery.data
 
   const statsQuery = useQuery({
-    queryKey: ['stats'],
+    queryKey: queryKeys.stats,
     queryFn: () =>
       httpBrowserClient
         .get(ApiEndpoints.gateway.getStats())
@@ -61,7 +65,7 @@ export function useOnboarding() {
   const stats = statsQuery.data
 
   const subQuery = useQuery({
-    queryKey: ['currentSubscription'],
+    queryKey: queryKeys.subscription,
     queryFn: () =>
       httpBrowserClient
         .get(ApiEndpoints.billing.currentSubscription())
@@ -81,9 +85,9 @@ export function useOnboarding() {
         .patch(ApiEndpoints.auth.updateOnboarding(), body)
         .then((r) => r.data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['whoAmI'] })
-      queryClient.invalidateQueries({ queryKey: ['stats'] })
-      queryClient.invalidateQueries({ queryKey: ['currentSubscription'] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.currentUser })
+      queryClient.invalidateQueries({ queryKey: queryKeys.stats })
+      queryClient.invalidateQueries({ queryKey: queryKeys.subscription })
     },
   })
 

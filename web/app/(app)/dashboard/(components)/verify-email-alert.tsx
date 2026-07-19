@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import { ApiEndpoints } from '@/config/api'
 import httpBrowserClient from '@/lib/httpBrowserClient'
 import { useQuery } from '@tanstack/react-query'
+import { queryKeys } from '@/lib/api/query-keys'
 import Link from 'next/link'
 import { useMemo } from 'react'
 import { Mail, ShieldAlert } from 'lucide-react'
@@ -13,7 +14,7 @@ export default function VerifyEmailAlert() {
     isLoading: isLoadingUserData,
     error: userDataError,
   } = useQuery({
-    queryKey: ['whoAmI'],
+    queryKey: queryKeys.currentUser,
     queryFn: () =>
       httpBrowserClient
         .get(ApiEndpoints.auth.whoAmI())

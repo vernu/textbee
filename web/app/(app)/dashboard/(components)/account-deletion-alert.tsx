@@ -2,6 +2,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { ApiEndpoints } from '@/config/api'
 import httpBrowserClient from '@/lib/httpBrowserClient'
 import { useQuery } from '@tanstack/react-query'
+import { queryKeys } from '@/lib/api/query-keys'
 import { AlertTriangle } from 'lucide-react'
 
 export default function AccountDeletionAlert() {
@@ -10,7 +11,7 @@ export default function AccountDeletionAlert() {
     isLoading: isLoadingUserData,
     error: userDataError,
   } = useQuery({
-    queryKey: ['whoAmI'],
+    queryKey: queryKeys.currentUser,
     queryFn: () =>
       httpBrowserClient
         .get(ApiEndpoints.auth.whoAmI())

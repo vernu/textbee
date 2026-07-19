@@ -17,6 +17,7 @@ import { Loader2, CheckCircle, XCircle, Mail, ArrowRight } from 'lucide-react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import httpBrowserClient from '@/lib/httpBrowserClient'
 import { ApiEndpoints } from '@/config/api'
+import { queryKeys } from '@/lib/api/query-keys'
 import { Routes } from '@/config/routes'
 
 // Reusable components
@@ -82,17 +83,22 @@ export default function VerifyEmailPage() {
   const [errorMessage, setErrorMessage] = useState<string>('')
 
   // Check user authentication and email verification status
-  const { 
-    data: whoAmIData, 
+  // Unwrapped to the user here rather than cached as the raw axios response.
+  // Every consumer of this endpoint now shares one key, so they must also
+  // share one cached shape.
+  const {
+    data: user,
     isPending: isCheckingAuth,
-    isError: isAuthError 
+    isError: isAuthError
   } = useQuery({
-    queryKey: ['whoAmI'],
-    queryFn: () => httpBrowserClient.get(ApiEndpoints.auth.whoAmI()),
+    queryKey: queryKeys.currentUser,
+    queryFn: () =>
+      httpBrowserClient
+        .get(ApiEndpoints.auth.whoAmI())
+        .then((res) => res.data?.data),
     retry: 1,
   })
 
-  const user = whoAmIData?.data?.data
   const isEmailVerified = !!user?.emailVerifiedAt
   const isLoggedIn = !isAuthError && !!user
 
