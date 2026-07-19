@@ -141,6 +141,19 @@ describe('AuthService', () => {
       // The revoked-key exclusion is applied on both lookups.
       expect(fallbackArg.$or).toEqual(revokedClause.$or)
     })
+
+    it('does not throw when the key contains regex metacharacters', async () => {
+      const { service, apiKeyModel } = build()
+      apiKeyModel.findOne.mockResolvedValue(null) // no masked hit -> regex fallback
+
+      const raw = '((((' + 'x'.repeat(20)
+      await expect(service.findActiveApiKeyByClientKey(raw)).resolves.toBeNull()
+
+      // The prefix is escaped before it reaches the RegExp, so the parens are
+      // literal and the pattern compiles instead of throwing SyntaxError.
+      const fallbackArg = apiKeyModel.findOne.mock.calls[1][0]
+      expect(fallbackArg.apiKey.$regex.source).toContain('\\(')
+    })
   })
 
   describe('changePassword', () => {

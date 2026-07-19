@@ -24,7 +24,7 @@ import { WebhookEvent } from '../webhook/webhook-event.enum'
 import { WebhookService } from '../webhook/webhook.service'
 import { BillingService } from '../billing/billing.service'
 import { SmsQueueService } from './queue/sms-queue.service'
-import { escapeRegExp } from './escape-regexp'
+import { escapeRegExp } from '../common/escape-regexp'
 
 @Injectable()
 export class GatewayService {

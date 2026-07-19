@@ -14,6 +14,7 @@ import {
 } from './schemas/password-reset.schema'
 import { MailService } from '../mail/mail.service'
 import { TurnstileService } from '../common/turnstile.service'
+import { escapeRegExp } from '../common/escape-regexp'
 import { RequestResetPasswordInputDTO, ResetPasswordInputDTO } from './auth.dto'
 import { AccessLog } from './schemas/access-log.schema'
 import {
@@ -410,7 +411,7 @@ export class AuthService {
     if (byMasked) {
       return byMasked
     }
-    const regex = new RegExp(`^${prefix}`, 'g')
+    const regex = new RegExp(`^${escapeRegExp(prefix)}`, 'g')
     return this.apiKeyModel.findOne({
       apiKey: { $regex: regex },
       ...revokedClause,
