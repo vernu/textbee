@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Routes } from '@/config/routes'
-import GenerateApiKey, { type GenerateApiKeyHandle } from './generate-api-key'
+import GenerateApiKey, { type GenerateApiKeyHandle } from '../api-keys/generate-api-key'
 
 export type AddDeviceHandle = {
   open: () => void

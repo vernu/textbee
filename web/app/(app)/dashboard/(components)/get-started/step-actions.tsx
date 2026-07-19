@@ -9,7 +9,7 @@ import { toast } from '@/hooks/use-toast'
 import httpBrowserClient from '@/lib/httpBrowserClient'
 import { ApiEndpoints } from '@/config/api'
 import { Routes } from '@/config/routes'
-import GenerateApiKey from '../generate-api-key'
+import GenerateApiKey from '../api-keys/generate-api-key'
 import PlanPicker from './plan-picker'
 import InlineRegisterPanel from './inline-register-panel'
 

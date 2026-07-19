@@ -6,8 +6,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import ChangePasswordForm from '../../(components)/change-password-form'
-import DeleteAccountForm from '../../(components)/delete-account-form'
+import ChangePasswordForm from '../../(components)/account/change-password-form'
+import DeleteAccountForm from '../../(components)/account/delete-account-form'
 
 // Security: password management, with account deletion in a clearly separated
 // destructive card so the two actions can never be confused.

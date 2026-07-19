@@ -8,8 +8,8 @@ import { TestProviders } from '@/test/render'
 import { API_BASE_URL, mockUser } from '@/test/fixtures'
 import { ApiEndpoints } from '@/config/api'
 import { queryKeys } from './query-keys'
-import VerifyEmailAlert from '@/app/(app)/dashboard/(components)/verify-email-alert'
-import GenerateApiKey from '@/app/(app)/dashboard/(components)/generate-api-key'
+import VerifyEmailAlert from '@/app/(app)/dashboard/(components)/alerts/verify-email-alert'
+import GenerateApiKey from '@/app/(app)/dashboard/(components)/api-keys/generate-api-key'
 
 const url = (path: string) => `${API_BASE_URL}${path.split('?')[0]}`
 

@@ -3,7 +3,7 @@
 import { Card, CardContent } from '@/components/ui/card'
 import { BarChart3, Smartphone, Key, MessageSquare } from 'lucide-react'
 import GetStartedCard from './get-started'
-import UsageSummary from './usage-summary'
+import UsageSummary from './billing/usage-summary'
 import { useApiKeys, useDevices, useGatewayStats } from '@/lib/api'
 import { Skeleton } from '@/components/ui/skeleton'
 

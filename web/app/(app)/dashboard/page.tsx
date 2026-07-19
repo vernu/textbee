@@ -12,15 +12,15 @@ import {
   Webhook,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import DeviceList from './(components)/device-list'
+import DeviceList from './(components)/devices/device-list'
 import Overview from './(components)/overview'
-import ApiKeys from './(components)/api-keys'
+import ApiKeys from './(components)/api-keys/api-keys'
 import GenerateApiKey, {
   type GenerateApiKeyHandle,
-} from './(components)/generate-api-key'
+} from './(components)/api-keys/generate-api-key'
 import AddDeviceDialog, {
   type AddDeviceHandle,
-} from './(components)/add-device-dialog'
+} from './(components)/devices/add-device-dialog'
 import { useWebhooks } from '@/lib/api'
 
 // Compact path to webhooks: it left the mobile tab bar and its management

@@ -1,6 +1,6 @@
 'use client'
 
-import WebhookDeliveriesTable from '@/app/(app)/dashboard/webhooks/(components)/webhook-table'
+import WebhookDeliveriesTable from './deliveries-table'
 import NumberedPagination from '@/components/shared/numbered-pagination'
 import {
   useDevices,

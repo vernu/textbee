@@ -5,7 +5,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import EditProfileForm from '../../(components)/edit-profile-form'
+import EditProfileForm from '../../(components)/account/edit-profile-form'
 
 export default function ProfilePage() {
   return (

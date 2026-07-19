@@ -5,7 +5,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import SupportForm from '../../(components)/support-form'
+import SupportForm from '../../(components)/account/support-form'
 
 export default function SupportPage() {
   return (

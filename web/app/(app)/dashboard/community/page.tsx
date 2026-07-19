@@ -1,6 +1,6 @@
 import { UsersIcon } from 'lucide-react'
 import PageHeader from '@/components/shared/page-header'
-import CommunityLinks from '../(components)/community-links'
+import CommunityLinks from '../(components)/community/community-links'
 
 export default function CommunityPage() {
   return (

@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/table'
 import React from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
-import { WebhookPayloadModal } from './webhook-payload-modal' // Import your modal
+import { WebhookPayloadModal } from './payload-modal'
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
