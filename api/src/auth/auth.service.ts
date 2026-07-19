@@ -21,6 +21,12 @@ import {
   EmailVerificationDocument,
 } from './schemas/email-verification.schema'
 
+// For register and login, which hold the hash in memory before responding.
+export const withoutPassword = (user: UserDocument) => {
+  const { password, ...safe } = user.toObject()
+  return safe
+}
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -39,7 +45,9 @@ export class AuthService {
   async login(userData: any) {
     await this.turnstileService.verify(userData.turnstileToken)
 
-    const user = await this.usersService.findOne({ email: userData.email })
+    const user = await this.usersService.findOneWithPassword({
+      email: userData.email,
+    })
     if (!user) {
       throw new HttpException(
         { error: 'Invalid credentials' },
@@ -60,7 +68,7 @@ export class AuthService {
     const payload = { email: user.email, sub: user._id }
     return {
       accessToken: this.jwtService.sign(payload),
-      user,
+      user: withoutPassword(user),
     }
   }
 
@@ -101,7 +109,7 @@ export class AuthService {
     const payload = { email: user.email, sub: user._id }
     return {
       accessToken: this.jwtService.sign(payload),
-      user,
+      user: withoutPassword(user),
     }
   }
 
@@ -140,7 +148,7 @@ export class AuthService {
 
     return {
       accessToken: this.jwtService.sign(payload),
-      user,
+      user: withoutPassword(user),
     }
   }
 
@@ -240,7 +248,9 @@ export class AuthService {
     input: { oldPassword: string; newPassword: string },
     user: UserDocument,
   ) {
-    const userToUpdate = await this.usersService.findOne({ _id: user._id })
+    const userToUpdate = await this.usersService.findOneWithPassword({
+      _id: user._id,
+    })
     if (!userToUpdate) {
       throw new HttpException({ error: 'User not found' }, HttpStatus.NOT_FOUND)
     }

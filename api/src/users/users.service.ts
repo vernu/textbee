@@ -18,6 +18,11 @@ export class UsersService {
     return await this.userModel.findOne(params)
   }
 
+  // Only for flows that verify a password. Never return this to a client.
+  async findOneWithPassword(params) {
+    return await this.userModel.findOne(params).select('+password')
+  }
+
   async findAll() {
     return await this.userModel.find()
   }

@@ -23,7 +23,8 @@ export class User {
   @Prop({ type: String, trim: true })
   phone?: string
 
-  @Prop({ type: String })
+  // Never loaded unless a caller asks with .select('+password').
+  @Prop({ type: String, select: false })
   password: string
 
   @Prop({ type: String, default: UserRole.REGULAR })
