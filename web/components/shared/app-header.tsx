@@ -22,7 +22,9 @@ import { Session } from 'next-auth'
 // Deliberately minimal: identity and brand only. Navigation lives in the
 // sidebar (desktop) and the bottom tab bar (mobile), search in the command
 // palette, and the theme control in the sidebar footer.
-export default function AppHeader({ session }: { session: Session }) {
+// Nullable: the root layout renders this for signed-out visitors too, and the
+// body already guards with session?.user throughout.
+export default function AppHeader({ session }: { session: Session | null }) {
   const router = useRouter()
 
   const handleLogout = () => {
@@ -37,19 +39,22 @@ export default function AppHeader({ session }: { session: Session }) {
       <DropdownMenuTrigger asChild>
         <Button variant='ghost' className='relative h-8 gap-2 px-1.5'>
           <Avatar className='h-8 w-8'>
-            <AvatarImage src={session.user?.avatar} alt={session.user?.name} />
-            <AvatarFallback>{session.user?.name?.charAt(0)}</AvatarFallback>
+            <AvatarImage
+              src={session?.user?.avatar ?? undefined}
+              alt={session?.user?.name ?? undefined}
+            />
+            <AvatarFallback>{session?.user?.name?.charAt(0)}</AvatarFallback>
           </Avatar>
           <span className='hidden text-sm font-medium md:block'>
-            {session.user?.name?.split(' ')[0]}
+            {session?.user?.name?.split(' ')[0]}
           </span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className='w-56' align='end' forceMount>
         <DropdownMenuItem className='flex flex-col items-start'>
-          <div className='font-medium'>{session.user?.name}</div>
+          <div className='font-medium'>{session?.user?.name}</div>
           <div className='text-xs text-muted-foreground'>
-            {session.user?.email}
+            {session?.user?.email}
           </div>
         </DropdownMenuItem>
         <DropdownMenuSeparator />

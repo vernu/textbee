@@ -53,6 +53,12 @@ const formSchema = z.object({
   signingSecret: z.string().min(1, { message: 'Signing secret is required' }),
 })
 
+// isActive is `.default(true)`, so zod's input type has it optional while the
+// output type has it guaranteed. The form holds the input shape; the submit
+// handler receives the output shape.
+type WebhookFormInput = z.input<typeof formSchema>
+type WebhookFormValues = z.output<typeof formSchema>
+
 interface CreateWebhookDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -70,7 +76,7 @@ export function CreateWebhookDialog({
   // exactly once and a bare form.reset() restored that same object: every
   // webhook created in one session ended up sharing a single signing secret,
   // which defeats the point of per-endpoint verification.
-  const buildDefaults = (): z.infer<typeof formSchema> => ({
+  const buildDefaults = (): WebhookFormInput => ({
     name: '',
     deliveryUrl: '',
     events: [WEBHOOK_EVENTS.MESSAGE_RECEIVED],
@@ -78,7 +84,7 @@ export function CreateWebhookDialog({
     signingSecret: uuidv4(),
   })
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<WebhookFormInput, unknown, WebhookFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: buildDefaults(),
   })
@@ -91,7 +97,7 @@ export function CreateWebhookDialog({
   }, [open])
 
   const createWebhookMutation = useMutation({
-    mutationFn: (values: z.infer<typeof formSchema>) => {
+    mutationFn: (values: WebhookFormValues) => {
       const payload = {
         ...values,
         name: values.name?.trim() ? values.name.trim() : undefined,
@@ -120,7 +126,7 @@ export function CreateWebhookDialog({
     },
   })
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
+  const onSubmit = (values: WebhookFormValues) => {
     createWebhookMutation.mutate(values)
   }
 

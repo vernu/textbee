@@ -49,6 +49,8 @@ export interface ApiKey {
   status?: 'active' | 'revoked'
   lastUsedAt?: string | null
   createdAt?: string
+  revokedAt?: string
+  usageCount?: number
 }
 
 export interface Plan {
@@ -98,6 +100,26 @@ export interface Subscription {
 }
 
 export type ApiKeyStatusFilter = 'active' | 'revoked' | 'all'
+
+/**
+ * One webhook delivery attempt, as the notifications endpoint returns it.
+ *
+ * Previously typed as `unknown[]` on the envelope, which meant the deliveries
+ * table received `unknown[]` and its own row type went unchecked.
+ */
+export interface WebhookNotification {
+  _id?: string
+  event?: string
+  webhookEvent?: string
+  deliveryUrl?: string
+  webhookSubscription?: { deliveryUrl: string }
+  createdAt?: string
+  status: string
+  computedStatus?: string
+  deviceData?: { brand?: string; model?: string }
+  smsData?: { _id?: string }
+  payload?: unknown
+}
 
 export interface WebhookSubscription {
   _id: string

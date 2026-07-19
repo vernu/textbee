@@ -1,4 +1,4 @@
-import { http, HttpResponse } from 'msw'
+import { http, HttpResponse, type JsonBodyType } from 'msw'
 import { ApiEndpoints } from '@/config/api'
 import {
   API_BASE_URL,
@@ -19,8 +19,8 @@ import {
 const url = (path: string) => `${API_BASE_URL}${path.split('?')[0]}`
 
 // Envelope helpers matching the real API's response shapes.
-const dataEnvelope = (data: unknown) => HttpResponse.json({ data })
-const raw = (body: unknown) => HttpResponse.json(body)
+const dataEnvelope = (data: JsonBodyType) => HttpResponse.json({ data })
+const raw = (body: JsonBodyType) => HttpResponse.json(body)
 
 export const handlers = [
   // --- auth ---

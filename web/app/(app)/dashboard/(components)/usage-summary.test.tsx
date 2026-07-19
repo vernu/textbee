@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { http, HttpResponse } from 'msw'
+import { http, HttpResponse, type JsonBodyType } from 'msw'
 import { renderWithProviders, screen, waitFor } from '@/test/render'
 import { server } from '@/test/msw/server'
 import { API_BASE_URL, mockSubscription } from '@/test/fixtures'
@@ -9,7 +9,7 @@ import UsageSummary from './usage-summary'
 // guard the two ways that can go wrong: inventing a meter for an unlimited
 // plan, and failing to warn when a real limit is nearly spent.
 
-const subscriptionResponding = (subscription: unknown) =>
+const subscriptionResponding = (subscription: JsonBodyType) =>
   server.use(
     http.get(`${API_BASE_URL}/billing/current-subscription`, () =>
       HttpResponse.json(subscription)

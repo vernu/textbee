@@ -15,6 +15,7 @@ import type {
   Plan,
   Subscription,
   User,
+  WebhookNotification,
   WebhookSubscription,
 } from './types'
 
@@ -186,7 +187,7 @@ export type WebhookNotificationFilters = {
 // Raw body: { data: { data: rows[], meta: { totalPages, ... } } }
 export type WebhookNotificationsEnvelope = {
   data?: {
-    data?: unknown[]
+    data?: WebhookNotification[]
     meta?: { totalPages?: number; total?: number }
   }
 }
@@ -223,10 +224,12 @@ export function useWebhookNotifications(filters: WebhookNotificationFilters) {
 
 // ---------- messaging ----------
 
-// Matches the zod-inferred SendSmsFormData shape (fields optional because the
-// project runs without strict mode; validation happens via the schema).
+// Matches the zod-inferred SendSmsFormData shape; validation happens via the
+// schema before the payload reaches here.
 export type SendSmsPayload = {
-  deviceId?: string
+  // Required: it goes into the request path, so an absent one would POST to
+  // /gateway/devices/undefined/send-sms. Both callers validate it first.
+  deviceId: string
   recipients?: string[]
   message?: string
   simSubscriptionId?: number

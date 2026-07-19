@@ -1,6 +1,6 @@
 'use client'
 
-import ProductClient from '@/app/(app)/dashboard/webhooks/(components)/webhook-table'
+import WebhookDeliveriesTable from '@/app/(app)/dashboard/webhooks/(components)/webhook-table'
 import NumberedPagination from '@/components/shared/numbered-pagination'
 import {
   useDevices,
@@ -53,9 +53,9 @@ export default function WebhooksHistory() {
           />
 
           {isLoadingNotifications ? (
-            <ProductClient data={[]} isLoading={true} />
+            <WebhookDeliveriesTable data={[]} isLoading={true} />
           ) : (
-            <ProductClient
+            <WebhookDeliveriesTable
               data={webhookNotifications?.data?.data || []}
               isLoading={false}
               status={status}

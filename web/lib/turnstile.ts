@@ -71,7 +71,8 @@ type UseTurnstileOptions = {
 }
 
 type UseTurnstileResult = {
-  containerRef: RefObject<HTMLDivElement>
+  // Nullable: useRef starts at null and only holds the node once mounted.
+  containerRef: RefObject<HTMLDivElement | null>
   token: string
   error: string | null
   isReady: boolean

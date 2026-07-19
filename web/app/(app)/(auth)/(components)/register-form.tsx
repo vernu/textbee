@@ -36,12 +36,18 @@ const registerSchema = z.object({
     .min(1, { message: 'Please complete the bot verification' }),
 })
 
-type RegisterFormValues = z.infer<typeof registerSchema>
+// marketingOptIn is `.optional().default(true)`, so zod's input and output
+// types differ: optional going in, guaranteed coming out. The form holds the
+// input shape and the submit handler receives the output shape, which is what
+// useForm's third generic is for. Using z.infer (the output) for both made the
+// resolver unassignable.
+type RegisterFormInput = z.input<typeof registerSchema>
+type RegisterFormValues = z.output<typeof registerSchema>
 
 export default function RegisterForm() {
   const router = useRouter()
 
-  const form = useForm<RegisterFormValues>({
+  const form = useForm<RegisterFormInput, unknown, RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
       name: '',

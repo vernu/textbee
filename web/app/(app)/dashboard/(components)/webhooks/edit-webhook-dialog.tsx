@@ -53,6 +53,12 @@ const formSchema = z.object({
   signingSecret: z.string().min(1, { message: 'Signing secret is required' }),
 })
 
+// isActive is `.default(true)`, so zod's input type has it optional while the
+// output type has it guaranteed. The form holds the input shape; the submit
+// handler receives the output shape.
+type WebhookFormInput = z.input<typeof formSchema>
+type WebhookFormValues = z.output<typeof formSchema>
+
 interface EditWebhookDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -67,7 +73,7 @@ export function EditWebhookDialog({
   const queryClient = useQueryClient()
   const { toast } = useToast()
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<WebhookFormInput, unknown, WebhookFormValues>({
     resolver: zodResolver(formSchema),
     values: {
       name: webhook.name ?? '',
@@ -79,7 +85,7 @@ export function EditWebhookDialog({
   })
 
   const { mutate: updateWebhook, isPending } = useMutation({
-    mutationFn: async (values: z.infer<typeof formSchema>) => {
+    mutationFn: async (values: WebhookFormValues) => {
       const payload = {
         ...values,
         name: values.name?.trim() ? values.name.trim() : '',
@@ -108,7 +114,7 @@ export function EditWebhookDialog({
     },
   })
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
+  const onSubmit = (values: WebhookFormValues) => {
     updateWebhook(values)
   }
 

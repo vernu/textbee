@@ -1,5 +1,4 @@
 'use client'
-import { useParams, useRouter } from 'next/navigation'
 
 import { Button } from '@/components/ui/button'
 import { DataTable } from './data-table'
@@ -7,13 +6,21 @@ import type { ColumnDef } from '@tanstack/react-table'
 import { format } from 'date-fns'
 import { Eye } from 'lucide-react'
 
-interface ProductClientProps {
+// This interface was declared but never applied to the component, which
+// destructured its props untyped, so none of it was enforced. isLoading and
+// status were missing from it too.
+interface WebhookDeliveriesTableProps {
   data: ProductColumns[]
+  isLoading?: boolean
+  status?: string
 }
 
 export type ProductColumns = {
   event?: string
-  deviceName?: string
+  // buildDeviceLabel returns two lines (brand/model plus SMS id) when it has
+  // both, and the Device cell already renders that array case. The type said
+  // string, so the shape the code actually produces was never described here.
+  deviceName?: string | string[]
   webhookEvent?: string
   deliveryUrl?: string
   webhookSubscription?: {
@@ -100,10 +107,11 @@ const buildDeviceLabel = (d: any): string | string[] => {
   return 'Unknown device'
 }
 
-const ProductClient = ({ data, isLoading, status = 'delivered' }) => {
-  const { storeId } = useParams()
-  const router = useRouter()
-
+const WebhookDeliveriesTable = ({
+  data,
+  isLoading = false,
+  status = 'delivered',
+}: WebhookDeliveriesTableProps) => {
   const formatted = data.map((d) => ({
     ...d,
     deviceName: buildDeviceLabel(d),
@@ -124,4 +132,4 @@ const ProductClient = ({ data, isLoading, status = 'delivered' }) => {
   )
 }
 
-export default ProductClient
+export default WebhookDeliveriesTable

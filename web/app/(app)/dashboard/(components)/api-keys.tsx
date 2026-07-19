@@ -26,6 +26,7 @@ import {
   useRenameApiKey,
   useRevokeApiKey,
 } from '@/lib/api'
+import type { ApiKey } from '@/lib/api/types'
 import { Skeleton } from '@/components/ui/skeleton'
 import EmptyState from '@/components/shared/empty-state'
 import ErrorState from '@/components/shared/error-state'
@@ -35,15 +36,10 @@ import GenerateApiKey, {
 } from './generate-api-key'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 
-type ApiKeyRow = {
-  _id: string
-  apiKey: string
-  name?: string
-  revokedAt?: string
-  createdAt: string
-  lastUsedAt?: string
-  usageCount?: number
-}
+// Was a local duplicate of the shared ApiKey type, which meant the list
+// callback annotated its rows as one type while the hook returned the other.
+// The two extra fields it carried now live on ApiKey itself.
+type ApiKeyRow = ApiKey
 
 export default function ApiKeys() {
   const addApiKeyRef = useRef<GenerateApiKeyHandle>(null)
@@ -438,7 +434,8 @@ export default function ApiKeys() {
               </Button>
               <Button
                 onClick={() =>
-                  handleRenameApiKey(selectedKey?._id, newKeyName?.trim())
+                  selectedKey &&
+                  handleRenameApiKey(selectedKey._id, newKeyName.trim())
                 }
                 disabled={isRenamingApiKey || !newKeyName?.trim()}
               >

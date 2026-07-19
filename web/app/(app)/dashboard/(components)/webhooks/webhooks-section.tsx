@@ -5,6 +5,7 @@ import { PlusCircle, Webhook } from 'lucide-react'
 import ErrorState from '@/components/shared/error-state'
 import { useState } from 'react'
 import { WebhookData } from '@/lib/types'
+import { queryKeys } from '@/lib/api/query-keys'
 import { WebhookCard } from './webhook-card'
 import { WebhookDocs } from './webhook-docs'
 import { CreateWebhookDialog } from './create-webhook-dialog'
@@ -46,12 +47,16 @@ export default function WebhooksSection() {
     error,
     refetch,
   } = useQuery({
-    queryKey: ['webhooks'],
+    queryKey: queryKeys.webhooks,
     queryFn: () =>
       httpBrowserClient
         .get(ApiEndpoints.gateway.getWebhooks())
-        .then((res) => res.data),
+        .then((res) => res.data as { data: WebhookData[] }),
   })
+
+  // The list was previously read as `webhooks?.data?.length > 0`, which
+  // compares undefined against 0 while the query is still in flight.
+  const webhookList = webhooks?.data ?? []
 
   const handleCreateClick = () => {
     setCreateDialogOpen(true)
@@ -111,14 +116,14 @@ export default function WebhooksSection() {
               icon={Webhook}
               onRetry={() => refetch()}
             />
-          ) : webhooks?.data?.length > 0 ? (
+          ) : webhookList.length > 0 ? (
             <div className='rounded-md border divide-y bg-card overflow-hidden'>
-              {webhooks.data.map((webhook) => (
+              {webhookList.map((webhook) => (
                 <WebhookCard
                   key={webhook._id}
                   webhook={webhook}
                   onEdit={() => handleEditClick(webhook)}
-                  defaultOpen={webhooks.data.length === 1}
+                  defaultOpen={webhookList.length === 1}
                 />
               ))}
             </div>
