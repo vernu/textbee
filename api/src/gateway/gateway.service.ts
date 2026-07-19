@@ -140,7 +140,11 @@ export class GatewayService {
   }
 
   async getDevicesForUser(user: User): Promise<any> {
-    return await this.deviceModel.find({ user: user._id })
+    // Exclude the push credential and hardware serial from the client response.
+    return await this.deviceModel.find(
+      { user: user._id },
+      '-fcmToken -serial',
+    )
   }
 
   async getDeviceById(deviceId: string): Promise<any> {
