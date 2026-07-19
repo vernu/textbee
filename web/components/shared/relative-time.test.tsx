@@ -22,14 +22,20 @@ describe('toRelativeLabel', () => {
   })
 })
 
+// The pure helper takes an explicit `now`, but the component reads the real
+// clock, so its inputs must be relative to the real clock too. Anchoring them
+// to the fixed NOW above made these pass only on that one calendar day: a
+// value 7 days before 2026-07-18 is 8 days before 2026-07-19.
+const realAgo = (ms: number) => new Date(Date.now() - ms)
+
 describe('RelativeTime', () => {
   it('renders a relative label for a past date', () => {
-    render(<RelativeTime value={ago(7 * DAY)} />)
+    render(<RelativeTime value={realAgo(7 * DAY)} />)
     expect(screen.getByText('7 days ago')).toBeInTheDocument()
   })
 
   it('exposes the machine-readable timestamp on a <time> element', () => {
-    const value = ago(2 * DAY)
+    const value = realAgo(2 * DAY)
     const { container } = render(<RelativeTime value={value} />)
     const el = container.querySelector('time')
     expect(el).toBeInTheDocument()
@@ -37,7 +43,7 @@ describe('RelativeTime', () => {
   })
 
   it('is reachable by keyboard so the exact time is not hover-only', () => {
-    const { container } = render(<RelativeTime value={ago(DAY)} />)
+    const { container } = render(<RelativeTime value={realAgo(DAY)} />)
     expect(container.querySelector('time')).toHaveAttribute('tabindex', '0')
   })
 
