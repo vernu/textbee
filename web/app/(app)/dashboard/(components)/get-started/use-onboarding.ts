@@ -1,11 +1,12 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import httpBrowserClient from '@/lib/httpBrowserClient'
-import { ApiEndpoints } from '@/config/api'
-import { useCurrentUser, useGatewayStats, useSubscription } from '@/lib/api'
-import { queryKeys } from '@/lib/api/query-keys'
+import {
+  useCurrentUser,
+  useGatewayStats,
+  useSubscription,
+  useUpdateOnboarding,
+} from '@/lib/api'
 import {
   STEPS,
   computeStepStates,
@@ -32,7 +33,6 @@ export type OnboardingStatus =
 // hook used ['currentUser'], so the same endpoint was cached twice and
 // invalidating either one left the other stale.
 export function useOnboarding() {
-  const queryClient = useQueryClient()
   const autoCompletedRef = useRef(false)
   const legacyAutoCompletedRef = useRef(false)
   const [selectedStepId, setSelectedStepId] = useState<string | null>(null)
@@ -62,21 +62,8 @@ export function useOnboarding() {
   const currentSubscription = subQuery.data
   const subLoading = subQuery.isLoading
 
-  const { mutate: updateOnboarding, isPending: savingOnboarding } = useMutation({
-    mutationFn: (body: {
-      skipStepId?: string
-      complete?: boolean
-      currentStepId?: string
-    }) =>
-      httpBrowserClient
-        .patch(ApiEndpoints.auth.updateOnboarding(), body)
-        .then((r) => r.data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.currentUser })
-      queryClient.invalidateQueries({ queryKey: queryKeys.stats })
-      queryClient.invalidateQueries({ queryKey: queryKeys.subscription })
-    },
-  })
+  const { mutate: updateOnboarding, isPending: savingOnboarding } =
+    useUpdateOnboarding()
 
   // Detect the incomplete -> complete transition for the celebration state.
   useEffect(() => {

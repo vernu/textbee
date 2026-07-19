@@ -7,12 +7,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Spinner } from '@/components/ui/spinner'
-import { ApiEndpoints } from '@/config/api'
 import { Routes } from '@/config/routes'
 import { useToast } from '@/hooks/use-toast'
-import httpBrowserClient from '@/lib/httpBrowserClient'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { queryKeys } from '@/lib/api/query-keys'
+import { useGenerateApiKey } from '@/lib/api'
 import { QrCode, Copy, Smartphone, Download, AlertTriangle } from 'lucide-react'
 import React, { forwardRef, useImperativeHandle, useState } from 'react'
 import QRCode from 'react-qr-code'
@@ -49,36 +46,25 @@ const GenerateApiKey = forwardRef<GenerateApiKeyHandle, GenerateApiKeyProps>(
       open: () => setIsConfirmGenerateKeyModalOpen(true),
     }))
 
-    const queryClient = useQueryClient()
-
     const {
       isPending: isGeneratingApiKey,
-      mutateAsync: generateApiKey,
+      mutateAsync: generateApiKeyMutation,
       data: generatedApiKey,
-    } = useMutation({
-      mutationKey: ['generate-api-key'],
-      onSuccess: () => {
-        setIsConfirmGenerateKeyModalOpen(false)
-        setIsGenerateKeyModalOpen(true)
-        // Three separate caches, so three separate invalidations. This was
-        // written as a single ['apiKeys', 'stats'] key, which react-query
-        // matches by prefix and which no query uses, so it matched neither
-        // the key list (['apiKeys', status]) nor the stats (['stats']):
-        // generating a key refreshed nothing.
-        queryClient.invalidateQueries({ queryKey: queryKeys.apiKeysAll })
-        queryClient.invalidateQueries({ queryKey: queryKeys.stats })
-        queryClient.invalidateQueries({ queryKey: queryKeys.devices })
-      },
-      mutationFn: () =>
-        httpBrowserClient
-          .post(ApiEndpoints.auth.generateApiKey())
-          .then((res) => res.data),
-    })
+    } = useGenerateApiKey()
+
+    const generateApiKey = () =>
+      generateApiKeyMutation(undefined, {
+        onSuccess: () => {
+          setIsConfirmGenerateKeyModalOpen(false)
+          setIsGenerateKeyModalOpen(true)
+        },
+      })
 
     const { toast } = useToast()
 
     const handleCopyKey = () => {
-      navigator.clipboard.writeText(generatedApiKey?.data)
+      if (!generatedApiKey?.data) return
+      navigator.clipboard.writeText(generatedApiKey.data)
       toast({
         title: 'API key copied to clipboard',
       })

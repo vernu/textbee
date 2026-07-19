@@ -10,10 +10,7 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useToast } from '@/hooks/use-toast'
-import { useCurrentUser } from '@/lib/api'
-import httpBrowserClient from '@/lib/httpBrowserClient'
-import { ApiEndpoints } from '@/config/api'
-import { useMutation } from '@tanstack/react-query'
+import { useCurrentUser, useUpdateProfile } from '@/lib/api'
 import { Spinner } from '@/components/ui/spinner'
 import { useSession } from 'next-auth/react'
 
@@ -56,9 +53,7 @@ export default function EditProfileForm() {
     isPending: isUpdatingProfile,
     error: updateProfileError,
     isSuccess: isUpdateProfileSuccess,
-  } = useMutation({
-    mutationFn: (data: UpdateProfileFormData) =>
-      httpBrowserClient.patch(ApiEndpoints.auth.updateProfile(), data),
+  } = useUpdateProfile({
     onSuccess: () => {
       refetchCurrentUser()
       toast({

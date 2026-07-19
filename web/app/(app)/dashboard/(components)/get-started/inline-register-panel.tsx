@@ -2,12 +2,10 @@
 
 import { useState } from 'react'
 import QRCode from 'react-qr-code'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { toast } from '@/hooks/use-toast'
-import httpBrowserClient from '@/lib/httpBrowserClient'
-import { ApiEndpoints } from '@/config/api'
+import { useGenerateApiKey } from '@/lib/api'
 import { Routes } from '@/config/routes'
 import { Copy, QrCode } from 'lucide-react'
 import RegisterHelpDialog from './register-help-dialog'
@@ -17,31 +15,12 @@ import RegisterHelpDialog from './register-help-dialog'
 // step done the moment the device appears.
 export default function InlineRegisterPanel() {
   const [helpOpen, setHelpOpen] = useState(false)
-  const queryClient = useQueryClient()
 
   const {
     mutate: generateApiKey,
     isPending,
     data: generated,
-  } = useMutation({
-    mutationKey: ['generate-api-key'],
-    mutationFn: () =>
-      httpBrowserClient
-        .post(ApiEndpoints.auth.generateApiKey())
-        .then((res) => res.data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['apiKeys'] })
-      queryClient.invalidateQueries({ queryKey: ['stats'] })
-      queryClient.invalidateQueries({ queryKey: ['devices'] })
-    },
-    onError: () => {
-      toast({
-        variant: 'destructive',
-        title: 'Could not generate a key',
-        description: 'Please try again.',
-      })
-    },
-  })
+  } = useGenerateApiKey()
 
   const apiKey: string | undefined = generated?.data
 
@@ -102,7 +81,16 @@ export default function InlineRegisterPanel() {
           ) : (
             <Button
               size='sm'
-              onClick={() => generateApiKey()}
+              onClick={() =>
+                generateApiKey(undefined, {
+                  onError: () =>
+                    toast({
+                      variant: 'destructive',
+                      title: 'Could not generate a key',
+                      description: 'Please try again.',
+                    }),
+                })
+              }
               disabled={isPending}
             >
               {isPending ? (

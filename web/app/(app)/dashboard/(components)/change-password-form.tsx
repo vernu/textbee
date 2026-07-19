@@ -8,9 +8,7 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useToast } from '@/hooks/use-toast'
-import httpBrowserClient from '@/lib/httpBrowserClient'
-import { ApiEndpoints } from '@/config/api'
-import { useMutation } from '@tanstack/react-query'
+import { useChangePassword } from '@/lib/api'
 import Link from 'next/link'
 import { Routes } from '@/config/routes'
 
@@ -50,9 +48,7 @@ export default function ChangePasswordForm() {
     isPending: isChangingPassword,
     error: changePasswordError,
     isSuccess: isChangePasswordSuccess,
-  } = useMutation({
-    mutationFn: (data: ChangePasswordFormData) =>
-      httpBrowserClient.post(ApiEndpoints.auth.changePassword(), data),
+  } = useChangePassword({
     onSuccess: () => {
       toast({
         title: 'Password changed successfully!',

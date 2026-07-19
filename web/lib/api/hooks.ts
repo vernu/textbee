@@ -2,6 +2,7 @@ import {
   useMutation,
   useQuery,
   useQueryClient,
+  type UseMutationOptions,
   type UseQueryOptions,
 } from '@tanstack/react-query'
 import httpBrowserClient from '@/lib/httpBrowserClient'
@@ -36,6 +37,11 @@ type ListQueryOpts<T> = Omit<
   'queryKey' | 'queryFn' | 'select'
 >
 const selectList = <T>(raw: ListEnvelope<T> | undefined): T[] => raw?.data ?? []
+
+type MutationOpts<TData, TVars> = Omit<
+  UseMutationOptions<TData, Error, TVars>,
+  'mutationFn'
+>
 
 // ---------- account ----------
 
@@ -132,7 +138,7 @@ export function useRevokeApiKey() {
     mutationFn: (id: string) =>
       httpBrowserClient.post(ApiEndpoints.auth.revokeApiKey(id)),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['apiKeys'] })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.apiKeysAll })
     },
   })
 }
@@ -143,7 +149,7 @@ export function useDeleteApiKey() {
     mutationFn: (id: string) =>
       httpBrowserClient.delete(ApiEndpoints.auth.deleteApiKey(id)),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['apiKeys'] })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.apiKeysAll })
     },
   })
 }
@@ -154,7 +160,100 @@ export function useRenameApiKey() {
     mutationFn: ({ id, name }: { id: string; name: string }) =>
       httpBrowserClient.patch(ApiEndpoints.auth.renameApiKey(id), { name }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.apiKeys('active') })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.apiKeysAll })
+    },
+  })
+}
+
+// A new key changes the list, the dashboard counts and the device pairing
+// state, so all three refresh together.
+export function useGenerateApiKey() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () =>
+      httpBrowserClient
+        .post(ApiEndpoints.auth.generateApiKey())
+        .then((res) => res.data as { data: string }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.apiKeysAll })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.stats })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.devices })
+    },
+  })
+}
+
+// ---------- account ----------
+
+export type UpdateProfilePayload = { name?: string; phone?: string }
+
+export function useUpdateProfile(
+  options?: MutationOpts<unknown, UpdateProfilePayload>
+) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (data: UpdateProfilePayload) =>
+      httpBrowserClient.patch(ApiEndpoints.auth.updateProfile(), data),
+    ...options,
+    // Composed, not overridden: a caller passing onSuccess must not silently
+    // drop the invalidation this hook exists to guarantee.
+    onSuccess: (...args) => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.currentUser })
+      options?.onSuccess?.(...args)
+    },
+  })
+}
+
+export type ChangePasswordPayload = {
+  oldPassword: string
+  newPassword: string
+  confirmPassword?: string
+}
+
+export function useChangePassword(
+  options?: MutationOpts<unknown, ChangePasswordPayload>
+) {
+  return useMutation({
+    mutationFn: (data: ChangePasswordPayload) =>
+      httpBrowserClient.post(ApiEndpoints.auth.changePassword(), data),
+    ...options,
+  })
+}
+
+export function useSendEmailVerification() {
+  return useMutation({
+    mutationFn: () =>
+      httpBrowserClient.post(ApiEndpoints.auth.sendEmailVerificationEmail()),
+  })
+}
+
+export function useVerifyEmail() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: { userId: string; verificationCode: string }) =>
+      httpBrowserClient.post(ApiEndpoints.auth.verifyEmail(), payload),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.currentUser })
+    },
+  })
+}
+
+export type UpdateOnboardingPayload = {
+  skipStepId?: string
+  complete?: boolean
+  currentStepId?: string
+}
+
+export function useUpdateOnboarding() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: UpdateOnboardingPayload) =>
+      httpBrowserClient
+        .patch(ApiEndpoints.auth.updateOnboarding(), body)
+        .then((r) => r.data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.currentUser })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.stats })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.subscription })
     },
   })
 }
@@ -170,6 +269,46 @@ export function useWebhooks(options?: ListQueryOpts<WebhookSubscription>) {
         .then((r) => r.data as ListEnvelope<WebhookSubscription>),
     select: selectList<WebhookSubscription>,
     ...options,
+  })
+}
+
+export type WebhookInput = {
+  name?: string
+  deliveryUrl: string
+  events: string[]
+  isActive: boolean
+  signingSecret: string
+}
+
+// All four webhook mutations invalidate the same list, so the key lives here
+// once rather than being retyped in each dialog.
+const invalidateWebhooks = (queryClient: ReturnType<typeof useQueryClient>) =>
+  void queryClient.invalidateQueries({ queryKey: queryKeys.webhooks })
+
+export function useCreateWebhook() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (values: WebhookInput) =>
+      httpBrowserClient.post(ApiEndpoints.gateway.createWebhook(), values),
+    onSuccess: () => invalidateWebhooks(queryClient),
+  })
+}
+
+export function useUpdateWebhook(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (values: Partial<WebhookInput>) =>
+      httpBrowserClient.patch(ApiEndpoints.gateway.updateWebhook(id), values),
+    onSuccess: () => invalidateWebhooks(queryClient),
+  })
+}
+
+export function useDeleteWebhook(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () =>
+      httpBrowserClient.delete(ApiEndpoints.gateway.deleteWebhook(id)),
+    onSuccess: () => invalidateWebhooks(queryClient),
   })
 }
 

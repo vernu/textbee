@@ -37,10 +37,9 @@ import * as z from 'zod'
 import { v4 as uuidv4 } from 'uuid'
 import { WebhookData } from '@/lib/types'
 import { WEBHOOK_EVENTS } from '@/lib/constants'
-import httpBrowserClient from '@/lib/httpBrowserClient'
-import { ApiEndpoints } from '@/config/api'
 import { useToast } from '@/hooks/use-toast'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useCreateWebhook } from '@/lib/api'
+import { apiErrorMessage } from '@/lib/utils/errorHandler'
 
 const formSchema = z.object({
   name: z
@@ -69,7 +68,6 @@ export function CreateWebhookDialog({
   onOpenChange,
 }: CreateWebhookDialogProps) {
   const { toast } = useToast()
-  const queryClient = useQueryClient()
 
   // Built fresh on each call rather than inlined into defaultValues. The
   // dialog is mounted for the whole session, so defaultValues was evaluated
@@ -96,38 +94,30 @@ export function CreateWebhookDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
-  const createWebhookMutation = useMutation({
-    mutationFn: (values: WebhookFormValues) => {
-      const payload = {
-        ...values,
-        name: values.name?.trim() ? values.name.trim() : undefined,
-      }
-      return httpBrowserClient.post(
-        ApiEndpoints.gateway.createWebhook(),
-        payload,
-      )
-    },
-    onSuccess: () => {
-      toast({
-        title: 'Success',
-        description: 'Webhook created successfully',
-      })
-      queryClient.invalidateQueries({ queryKey: ['webhooks'] })
-      onOpenChange(false)
-      form.reset(buildDefaults())
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Error',
-        description:
-          error?.response?.data?.message || 'Failed to create webhook',
-        variant: 'destructive',
-      })
-    },
-  })
+  const createWebhookMutation = useCreateWebhook()
 
   const onSubmit = (values: WebhookFormValues) => {
-    createWebhookMutation.mutate(values)
+    const payload = {
+      ...values,
+      name: values.name?.trim() ? values.name.trim() : undefined,
+    }
+    createWebhookMutation.mutate(payload, {
+      onSuccess: () => {
+        toast({
+          title: 'Success',
+          description: 'Webhook created successfully',
+        })
+        onOpenChange(false)
+        form.reset(buildDefaults())
+      },
+      onError: (error) => {
+        toast({
+          title: 'Error',
+          description: apiErrorMessage(error) || 'Failed to create webhook',
+          variant: 'destructive',
+        })
+      },
+    })
   }
 
   const message_events = [

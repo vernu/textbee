@@ -25,10 +25,9 @@ import * as z from 'zod'
 import { v4 as uuidv4 } from 'uuid'
 import { WebhookData } from '@/lib/types'
 import { WEBHOOK_EVENTS } from '@/lib/constants'
-import httpBrowserClient from '@/lib/httpBrowserClient'
-import { ApiEndpoints } from '@/config/api'
 import { useToast } from '@/hooks/use-toast'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useUpdateWebhook } from '@/lib/api'
+import { apiErrorMessage } from '@/lib/utils/errorHandler'
 import {
   Popover,
   PopoverContent,
@@ -70,7 +69,6 @@ export function EditWebhookDialog({
   onOpenChange,
   webhook,
 }: EditWebhookDialogProps) {
-  const queryClient = useQueryClient()
   const { toast } = useToast()
 
   const form = useForm<WebhookFormInput, unknown, WebhookFormValues>({
@@ -84,38 +82,29 @@ export function EditWebhookDialog({
     },
   })
 
-  const { mutate: updateWebhook, isPending } = useMutation({
-    mutationFn: async (values: WebhookFormValues) => {
-      const payload = {
-        ...values,
-        name: values.name?.trim() ? values.name.trim() : '',
-      }
-      return httpBrowserClient.patch(
-        ApiEndpoints.gateway.updateWebhook(webhook._id),
-        payload,
-      )
-    },
-    onSuccess: () => {
-      toast({
-        title: 'Success',
-        description: 'Webhook updated successfully',
-      })
-      // Invalidate and refetch webhooks list
-      queryClient.invalidateQueries({ queryKey: ['webhooks'] })
-      onOpenChange(false)
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Error',
-        description:
-          error?.response?.data?.message || 'Failed to update webhook',
-        variant: 'destructive',
-      })
-    },
-  })
+  const { mutate: updateWebhook, isPending } = useUpdateWebhook(webhook._id)
 
   const onSubmit = (values: WebhookFormValues) => {
-    updateWebhook(values)
+    const payload = {
+      ...values,
+      name: values.name?.trim() ? values.name.trim() : '',
+    }
+    updateWebhook(payload, {
+      onSuccess: () => {
+        toast({
+          title: 'Success',
+          description: 'Webhook updated successfully',
+        })
+        onOpenChange(false)
+      },
+      onError: (error) => {
+        toast({
+          title: 'Error',
+          description: apiErrorMessage(error) || 'Failed to update webhook',
+          variant: 'destructive',
+        })
+      },
+    })
   }
 
   const message_events = [

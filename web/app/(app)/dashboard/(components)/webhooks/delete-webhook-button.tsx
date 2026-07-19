@@ -14,9 +14,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { Trash2 } from 'lucide-react'
 import { useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import httpBrowserClient from '@/lib/httpBrowserClient'
-import { ApiEndpoints } from '@/config/api'
+import { useDeleteWebhook } from '@/lib/api'
+import { apiErrorMessage } from '@/lib/utils/errorHandler'
 import { useToast } from '@/hooks/use-toast'
 
 interface DeleteWebhookButtonProps {
@@ -31,32 +30,30 @@ export function DeleteWebhookButton({
   onDeleted,
 }: DeleteWebhookButtonProps) {
   const [open, setOpen] = useState(false)
-  const queryClient = useQueryClient()
   const { toast } = useToast()
 
-  const { mutate: deleteWebhook, isPending } = useMutation({
-    mutationFn: () =>
-      httpBrowserClient.delete(ApiEndpoints.gateway.deleteWebhook(webhookId)),
-    onSuccess: () => {
-      toast({
-        title: 'Webhook deleted',
-        description: webhookLabel
-          ? `"${webhookLabel}" has been removed.`
-          : 'The webhook has been removed.',
-      })
-      queryClient.invalidateQueries({ queryKey: ['webhooks'] })
-      setOpen(false)
-      onDeleted?.()
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Error',
-        description:
-          error?.response?.data?.message || 'Failed to delete webhook',
-        variant: 'destructive',
-      })
-    },
-  })
+  const { mutate: deleteWebhook, isPending } = useDeleteWebhook(webhookId)
+
+  const confirmDelete = () =>
+    deleteWebhook(undefined, {
+      onSuccess: () => {
+        toast({
+          title: 'Webhook deleted',
+          description: webhookLabel
+            ? `"${webhookLabel}" has been removed.`
+            : 'The webhook has been removed.',
+        })
+        setOpen(false)
+        onDeleted?.()
+      },
+      onError: (error) => {
+        toast({
+          title: 'Error',
+          description: apiErrorMessage(error) || 'Failed to delete webhook',
+          variant: 'destructive',
+        })
+      },
+    })
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
@@ -81,7 +78,7 @@ export function DeleteWebhookButton({
           <AlertDialogAction
             onClick={(e) => {
               e.preventDefault()
-              deleteWebhook()
+              confirmDelete()
             }}
             disabled={isPending}
             className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
