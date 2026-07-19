@@ -22,7 +22,7 @@ export default function LoginPage() {
 
   return (
     <div className='flex items-center justify-center min-h-screen bg-gray-100 dark:bg-muted'>
-      <Card className='w-[400px] shadow-lg'>
+      <Card className='w-full max-w-[400px] shadow-lg'>
         <CardHeader className='space-y-1'>
           <CardTitle className='text-2xl font-bold text-center'>
             Welcome back

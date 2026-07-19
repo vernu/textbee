@@ -77,6 +77,18 @@ export function formatError(error: unknown): FormattedError {
 }
 
 /**
+ * The `message` an API error carried, or undefined if it had none.
+ *
+ * Distinct from formatError, which always substitutes a generic message.
+ * Use this where the caller has its own fallback copy worth preserving, and
+ * needs to know whether the server actually said anything.
+ */
+export function apiErrorMessage(error: unknown): string | undefined {
+  const data = (error as AxiosError<{ message?: string }>)?.response?.data
+  return data?.message
+}
+
+/**
  * Checks if an error is a rate limit (429) error
  */
 export function isRateLimitError(error: unknown): boolean {

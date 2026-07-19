@@ -80,9 +80,11 @@ export default function LoginForm() {
     }
 
     try {
+      // redirect:false so the result is returned here. With redirect:true
+      // next-auth navigates on both success and failure, which reloaded the
+      // page and made the error branch below dead code.
       const result = await signIn('email-password-login', {
-        redirect: true,
-        callbackUrl: Routes.dashboard,
+        redirect: false,
         email: data.email,
         password: data.password,
         turnstileToken: data.turnstileToken,
@@ -93,7 +95,11 @@ export default function LoginForm() {
           type: 'manual',
           message: 'Invalid email or password',
         })
+        return
       }
+
+      router.push(Routes.dashboard)
+      router.refresh()
     } catch (error) {
       console.error('login error:', error)
       form.setError('root', {

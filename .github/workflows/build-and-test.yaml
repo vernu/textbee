@@ -66,11 +66,51 @@ jobs:
           pnpm run build
           pnpm test
       
-      - name: Build web
+      # Web previously ran `build` only, so its unit and e2e suites never
+      # gated a merge. Lint, typecheck and unit tests are fast and
+      # deterministic, so they block.
+      - name: Install web dependencies
         run: |
           cd web
           pnpm install
-          pnpm run build 
+
+      - name: Lint web
+        run: |
+          cd web
+          pnpm lint
+
+      - name: Typecheck web
+        run: |
+          cd web
+          pnpm typecheck
+
+      - name: Unit test web
+        run: |
+          cd web
+          pnpm test
+
+      - name: Build web
+        run: |
+          cd web
+          pnpm run build
+
+      # E2e is fully mocked (e2e/mock-api.ts intercepts every backend call),
+      # but it drives a real browser, so it is reported without blocking until
+      # it has proven stable across a few merges.
+      #
+      # TODO: remove continue-on-error once that is established. It is here to
+      # avoid wedging the merge queue on a browser flake, not because e2e
+      # failures are acceptable.
+      - name: Install Playwright browser
+        run: |
+          cd web
+          pnpm exec playwright install --with-deps chromium
+
+      - name: E2e test web (non-blocking for now)
+        continue-on-error: true
+        run: |
+          cd web
+          pnpm test:e2e
 
   build-and-test-android:
     name: Build and Test Android

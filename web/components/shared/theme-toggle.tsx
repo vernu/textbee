@@ -1,41 +1,54 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { useTheme } from 'next-themes'
-import { Button } from '@/components/ui/button'
 import { Sun, Moon, Laptop } from 'lucide-react'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+import { cn } from '@/lib/utils'
 
+const options = [
+  { value: 'light', label: 'Light', icon: Sun },
+  { value: 'dark', label: 'Dark', icon: Moon },
+  { value: 'system', label: 'System', icon: Laptop },
+] as const
+
+// Three-way segmented control. It lives in the sidebar footer rather than the
+// top bar, where it has room to show all three states at once instead of
+// hiding them behind a dropdown.
 export default function ThemeToggle() {
   const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+
+  // The active theme is unknown during SSR, so selection is only rendered
+  // after mount to avoid a hydration mismatch.
+  useEffect(() => setMounted(true), [])
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant='ghost' size='icon'>
-          <Sun className='h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0' />
-          <Moon className='absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100' />
-          <span className='sr-only'>Toggle theme</span>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align='end'>
-        <DropdownMenuItem onClick={() => setTheme('light')}>
-          <Sun className='mr-2 h-4 w-4' />
-          <span>Light</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme('dark')}>
-          <Moon className='mr-2 h-4 w-4' />
-          <span>Dark</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme('system')}>
-          <Laptop className='mr-2 h-4 w-4' />
-          <span>System</span>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <div
+      className='flex items-center gap-0.5 rounded-lg bg-muted p-0.5'
+      role='group'
+      aria-label='Color theme'
+    >
+      {options.map(({ value, label, icon: Icon }) => {
+        const active = mounted && theme === value
+        return (
+          <button
+            key={value}
+            type='button'
+            onClick={() => setTheme(value)}
+            aria-label={label}
+            aria-pressed={active}
+            title={label}
+            className={cn(
+              'flex flex-1 items-center justify-center rounded-md py-1.5 transition-colors',
+              active
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            <Icon className='h-4 w-4' />
+          </button>
+        )
+      })}
+    </div>
   )
 }

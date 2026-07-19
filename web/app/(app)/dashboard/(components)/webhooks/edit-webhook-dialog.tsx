@@ -25,10 +25,9 @@ import * as z from 'zod'
 import { v4 as uuidv4 } from 'uuid'
 import { WebhookData } from '@/lib/types'
 import { WEBHOOK_EVENTS } from '@/lib/constants'
-import httpBrowserClient from '@/lib/httpBrowserClient'
-import { ApiEndpoints } from '@/config/api'
 import { useToast } from '@/hooks/use-toast'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useUpdateWebhook } from '@/lib/api'
+import { apiErrorMessage } from '@/lib/utils/errorHandler'
 import {
   Popover,
   PopoverContent,
@@ -53,6 +52,12 @@ const formSchema = z.object({
   signingSecret: z.string().min(1, { message: 'Signing secret is required' }),
 })
 
+// isActive is `.default(true)`, so zod's input type has it optional while the
+// output type has it guaranteed. The form holds the input shape; the submit
+// handler receives the output shape.
+type WebhookFormInput = z.input<typeof formSchema>
+type WebhookFormValues = z.output<typeof formSchema>
+
 interface EditWebhookDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -64,10 +69,9 @@ export function EditWebhookDialog({
   onOpenChange,
   webhook,
 }: EditWebhookDialogProps) {
-  const queryClient = useQueryClient()
   const { toast } = useToast()
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<WebhookFormInput, unknown, WebhookFormValues>({
     resolver: zodResolver(formSchema),
     values: {
       name: webhook.name ?? '',
@@ -78,38 +82,29 @@ export function EditWebhookDialog({
     },
   })
 
-  const { mutate: updateWebhook, isPending } = useMutation({
-    mutationFn: async (values: z.infer<typeof formSchema>) => {
-      const payload = {
-        ...values,
-        name: values.name?.trim() ? values.name.trim() : '',
-      }
-      return httpBrowserClient.patch(
-        ApiEndpoints.gateway.updateWebhook(webhook._id),
-        payload,
-      )
-    },
-    onSuccess: () => {
-      toast({
-        title: 'Success',
-        description: 'Webhook updated successfully',
-      })
-      // Invalidate and refetch webhooks list
-      queryClient.invalidateQueries({ queryKey: ['webhooks'] })
-      onOpenChange(false)
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Error',
-        description:
-          error?.response?.data?.message || 'Failed to update webhook',
-        variant: 'destructive',
-      })
-    },
-  })
+  const { mutate: updateWebhook, isPending } = useUpdateWebhook(webhook._id)
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
-    updateWebhook(values)
+  const onSubmit = (values: WebhookFormValues) => {
+    const payload = {
+      ...values,
+      name: values.name?.trim() ? values.name.trim() : '',
+    }
+    updateWebhook(payload, {
+      onSuccess: () => {
+        toast({
+          title: 'Success',
+          description: 'Webhook updated successfully',
+        })
+        onOpenChange(false)
+      },
+      onError: (error) => {
+        toast({
+          title: 'Error',
+          description: apiErrorMessage(error) || 'Failed to update webhook',
+          variant: 'destructive',
+        })
+      },
+    })
   }
 
   const message_events = [

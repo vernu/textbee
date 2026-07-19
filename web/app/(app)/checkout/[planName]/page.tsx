@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import httpBrowserClient from '@/lib/httpBrowserClient'
 import { ApiEndpoints } from '@/config/api'
+import { apiErrorMessage } from '@/lib/utils/errorHandler'
 import { useSession } from 'next-auth/react'
 import { redirect } from 'next/navigation'
 import { Loader, CheckCircle, ArrowRight } from 'lucide-react'
@@ -19,7 +20,11 @@ interface PlanChangePreview {
 const formatPlan = (plan: string, interval: string) =>
   `${plan.charAt(0).toUpperCase() + plan.slice(1)} (${interval})`
 
-export default function CheckoutPage({ params }) {
+export default function CheckoutPage({
+  params,
+}: {
+  params: { planName: string }
+}) {
   const [error, setError] = useState<string | null>(null)
   const [planChange, setPlanChange] = useState<PlanChangePreview | null>(null)
   const [isConfirming, setIsConfirming] = useState(false)
@@ -60,8 +65,12 @@ export default function CheckoutPage({ params }) {
         if (retries > 0) {
           initiateCheckout(retries - 1)
         } else {
-          setError(error.response?.data?.message || 'Failed to create checkout session. Please try again or contact billing@textbee.dev.')
-          console.error(error.response?.data?.message)
+          const serverMessage = apiErrorMessage(error)
+          setError(
+            serverMessage ||
+              'Failed to create checkout session. Please try again or contact billing@textbee.dev.'
+          )
+          console.error(serverMessage)
         }
       }
     },
@@ -79,11 +88,12 @@ export default function CheckoutPage({ params }) {
     } catch (error) {
       // no auto-retry here: the request may have charged the card
       setPlanChange(null)
+      const serverMessage = apiErrorMessage(error)
       setError(
-        error.response?.data?.message ||
+        serverMessage ||
           'Failed to change your plan. Please try again or contact billing@textbee.dev.',
       )
-      console.error(error.response?.data?.message)
+      console.error(serverMessage)
       setIsConfirming(false)
     }
   }

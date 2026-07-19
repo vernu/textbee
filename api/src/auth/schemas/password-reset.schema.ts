@@ -17,8 +17,7 @@ export class PasswordReset {
   @Prop({ type: Date })
   expiresAt: Date
 
-  // Number of failed OTP verification attempts against this record.
-  // Used to lock out brute-force attempts (see auth.service.resetPassword).
+  // OTP verification attempts, used to lock the record out of brute-forcing.
   @Prop({ type: Number, default: 0 })
   attempts: number
 }

@@ -82,7 +82,7 @@ export const JoinCommunityModal = () => {
           <Button
             variant='default'
             onClick={() => {
-              window.open(ExternalLinks.discord, '_blank')
+              window.open(ExternalLinks.discord, '_blank', 'noopener,noreferrer')
               handleJoined()
             }}
             className='gap-2'

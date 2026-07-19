@@ -1,5 +1,7 @@
 export interface WebhookData {
-  _id?: string
+  // Required: it goes into the update and delete request paths, so an absent
+  // one would PATCH /webhooks/undefined. Anything the API returns has one.
+  _id: string
   name?: string
   deliveryUrl: string
   events: string[]

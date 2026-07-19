@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import {
   Dialog,
   DialogContent,
@@ -10,8 +9,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import httpBrowserClient from '@/lib/httpBrowserClient'
-import { ApiEndpoints } from '@/config/api'
+import { useCurrentUser } from '@/lib/api'
 
 const STORAGE_KEYS = {
   LAST_SHOWN: 'survey_modal_last_shown',
@@ -28,13 +26,7 @@ export const SurveyModal = () => {
     data: currentUser,
     isLoading: isLoadingUser,
     error: currentUserError,
-  } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () =>
-      httpBrowserClient
-        .get(ApiEndpoints.auth.whoAmI())
-        .then((res) => res.data?.data),
-  })
+  } = useCurrentUser()
 
   useEffect(() => {
     const checkAndShowModal = () => {

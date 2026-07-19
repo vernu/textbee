@@ -1,9 +1,11 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { Bell, PlusCircle, Webhook } from 'lucide-react'
+import { PlusCircle, Webhook } from 'lucide-react'
+import ErrorState from '@/components/shared/error-state'
 import { useState } from 'react'
 import { WebhookData } from '@/lib/types'
+import { queryKeys } from '@/lib/api/query-keys'
 import { WebhookCard } from './webhook-card'
 import { WebhookDocs } from './webhook-docs'
 import { CreateWebhookDialog } from './create-webhook-dialog'
@@ -12,7 +14,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import httpBrowserClient from '@/lib/httpBrowserClient'
 import { ApiEndpoints } from '@/config/api'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useRouter } from 'next/navigation'
 
 function WebhookRowSkeleton() {
   return (
@@ -35,7 +36,6 @@ const MAX_WEBHOOKS_PER_USER = 5
 export default function WebhooksSection() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
-  const navigator = useRouter()
   const [selectedWebhook, setSelectedWebhook] = useState<WebhookData | null>(
     null,
   )
@@ -45,13 +45,18 @@ export default function WebhooksSection() {
     data: webhooks,
     isLoading,
     error,
+    refetch,
   } = useQuery({
-    queryKey: ['webhooks'],
+    queryKey: queryKeys.webhooks,
     queryFn: () =>
       httpBrowserClient
         .get(ApiEndpoints.gateway.getWebhooks())
-        .then((res) => res.data),
+        .then((res) => res.data as { data: WebhookData[] }),
   })
+
+  // The list was previously read as `webhooks?.data?.length > 0`, which
+  // compares undefined against 0 while the query is still in flight.
+  const webhookList = webhooks?.data ?? []
 
   const handleCreateClick = () => {
     setCreateDialogOpen(true)
@@ -66,47 +71,32 @@ export default function WebhooksSection() {
   const reachedLimit = webhookCount >= MAX_WEBHOOKS_PER_USER
 
   return (
-    <div className='container mx-auto py-4 sm:py-6 px-4 sm:px-6'>
-      <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 sm:mb-6'>
-        <div>
-          <h1 className='text-xl sm:text-2xl font-bold flex flex-wrap items-center gap-2'>
-            <Webhook className='h-5 w-5 sm:h-6 sm:w-6' />
-            Webhooks
-            {!isLoading && webhookCount > 0 && (
-              <span className='text-sm font-normal text-muted-foreground'>
-                ({webhookCount}/{MAX_WEBHOOKS_PER_USER})
-              </span>
-            )}
-          </h1>
-          <p className='text-sm text-muted-foreground mt-1.5'>
-            Manage webhook notifications for your SMS events. You can configure
-            up to {MAX_WEBHOOKS_PER_USER} webhooks.
-          </p>
-        </div>
-        <div className='flex gap-x-4'>
-          <Button
-            onClick={handleCreateClick}
-            disabled={reachedLimit || isLoading}
-            variant='default'
-            className='w-full sm:w-auto'
-            title={
-              reachedLimit
-                ? `You have reached the maximum of ${MAX_WEBHOOKS_PER_USER} webhooks. Delete one to add a new one.`
-                : undefined
-            }
-          >
-            <PlusCircle className='mr-2 h-4 w-4' />
-            Create Webhook
-          </Button>
-          <Button
-            onClick={() => navigator.push('/dashboard/webhooks')}
-            variant='default'
-            className='w-full sm:w-auto'
-          >
-            <Bell className='mr-2 h-4 w-4' />
-            Notification Deliveries
-          </Button>
-        </div>
+    <div>
+      {/* Section title and the Deliveries view are owned by the webhooks
+          layout (route tabs); this header only carries count + actions. */}
+      <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 sm:mb-6'>
+        <p className='text-sm text-muted-foreground'>
+          Receive real-time notifications for SMS events.{' '}
+          {!isLoading && (
+            <span className='font-medium text-foreground'>
+              {webhookCount}/{MAX_WEBHOOKS_PER_USER} configured
+            </span>
+          )}
+        </p>
+        <Button
+          onClick={handleCreateClick}
+          disabled={reachedLimit || isLoading}
+          variant='default'
+          className='w-full sm:w-auto'
+          title={
+            reachedLimit
+              ? `You have reached the maximum of ${MAX_WEBHOOKS_PER_USER} webhooks. Delete one to add a new one.`
+              : undefined
+          }
+        >
+          <PlusCircle className='mr-2 h-4 w-4' />
+          Create Webhook
+        </Button>
       </div>
 
       <div className='grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8'>
@@ -120,17 +110,20 @@ export default function WebhooksSection() {
               <WebhookRowSkeleton />
             </div>
           ) : error ? (
-            <div className='rounded-lg border border-destructive/50 p-4 text-destructive'>
-              Error: {error.message}
-            </div>
-          ) : webhooks?.data?.length > 0 ? (
+            <ErrorState
+              error={error}
+              title="Couldn't load your webhooks"
+              icon={Webhook}
+              onRetry={() => refetch()}
+            />
+          ) : webhookList.length > 0 ? (
             <div className='rounded-md border divide-y bg-card overflow-hidden'>
-              {webhooks.data.map((webhook) => (
+              {webhookList.map((webhook) => (
                 <WebhookCard
                   key={webhook._id}
                   webhook={webhook}
                   onEdit={() => handleEditClick(webhook)}
-                  defaultOpen={webhooks.data.length === 1}
+                  defaultOpen={webhookList.length === 1}
                 />
               ))}
             </div>

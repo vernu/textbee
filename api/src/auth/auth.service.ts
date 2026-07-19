@@ -14,12 +14,22 @@ import {
 } from './schemas/password-reset.schema'
 import { MailService } from '../mail/mail.service'
 import { TurnstileService } from '../common/turnstile.service'
+import { escapeRegExp } from '../common/escape-regexp'
 import { RequestResetPasswordInputDTO, ResetPasswordInputDTO } from './auth.dto'
 import { AccessLog } from './schemas/access-log.schema'
 import {
   EmailVerification,
   EmailVerificationDocument,
 } from './schemas/email-verification.schema'
+
+// Failed OTP submissions allowed against a single password reset record.
+const MAX_PASSWORD_RESET_ATTEMPTS = 5
+
+// For register and login, which hold the hash in memory before responding.
+export const withoutPassword = (user: UserDocument) => {
+  const { password, ...safe } = user.toObject()
+  return safe
+}
 
 @Injectable()
 export class AuthService {
@@ -39,7 +49,9 @@ export class AuthService {
   async login(userData: any) {
     await this.turnstileService.verify(userData.turnstileToken)
 
-    const user = await this.usersService.findOne({ email: userData.email })
+    const user = await this.usersService.findOneWithPassword({
+      email: userData.email,
+    })
     if (!user) {
       throw new HttpException(
         { error: 'Invalid credentials' },
@@ -60,7 +72,7 @@ export class AuthService {
     const payload = { email: user.email, sub: user._id }
     return {
       accessToken: this.jwtService.sign(payload),
-      user,
+      user: withoutPassword(user),
     }
   }
 
@@ -101,7 +113,7 @@ export class AuthService {
     const payload = { email: user.email, sub: user._id }
     return {
       accessToken: this.jwtService.sign(payload),
-      user,
+      user: withoutPassword(user),
     }
   }
 
@@ -118,8 +130,8 @@ export class AuthService {
       )
     }
 
-    this.validateEmail(userData.email)
-    this.validatePassword(userData.password)
+    await this.validateEmail(userData.email)
+    await this.validatePassword(userData.password)
 
     const hashedPassword = await bcrypt.hash(userData.password, 10)
     const { turnstileToken, ...sanitizedUserData } = userData
@@ -140,7 +152,7 @@ export class AuthService {
 
     return {
       accessToken: this.jwtService.sign(payload),
-      user,
+      user: withoutPassword(user),
     }
   }
 
@@ -194,17 +206,12 @@ export class AuthService {
     return { message: 'Password reset email sent' }
   }
 
-  // Reject after this many failed OTP submissions against the same record.
-  // A 6-digit OTP has ~1e6 possibilities and lives for 20 minutes, so we
-  // cap online guessing well below what an attacker would need to succeed.
-  private static readonly MAX_PASSWORD_RESET_ATTEMPTS = 5
-
   async resetPassword({ email, otp, newPassword }: ResetPasswordInputDTO) {
     const user = await this.usersService.findOne({ email })
     if (!user) {
       throw new HttpException({ error: 'User not found' }, HttpStatus.NOT_FOUND)
     }
-    const passwordReset = await this.passwordResetModel.findOne(
+    const latestReset = await this.passwordResetModel.findOne(
       {
         user: user._id,
         expiresAt: { $gt: new Date() },
@@ -213,34 +220,27 @@ export class AuthService {
       { sort: { createdAt: -1 } },
     )
 
-    if (!passwordReset) {
+    if (!latestReset) {
       throw new HttpException({ error: 'Invalid OTP' }, HttpStatus.BAD_REQUEST)
     }
 
-    // Consume the record if the attempt limit has already been hit. This
-    // prevents an attacker from brute-forcing a 6-digit OTP within the
-    // 20-minute window: after MAX_PASSWORD_RESET_ATTEMPTS wrong guesses the
-    // record is invalidated and a fresh reset request is required.
-    if (
-      (passwordReset.attempts ?? 0) >= AuthService.MAX_PASSWORD_RESET_ATTEMPTS
-    ) {
-      passwordReset.expiresAt = new Date(Date.now())
-      await passwordReset.save()
-      throw new HttpException({ error: 'Invalid OTP' }, HttpStatus.BAD_REQUEST)
-    }
+    // Claim an attempt atomically so concurrent guesses cannot all read the
+    // same count and slip past the cap. A null result means the record is
+    // already locked out and a fresh reset request is required.
+    const passwordReset = await this.passwordResetModel.findOneAndUpdate(
+      {
+        _id: latestReset._id,
+        // Records predating this counter have no attempts field at all.
+        $or: [
+          { attempts: { $lt: MAX_PASSWORD_RESET_ATTEMPTS } },
+          { attempts: { $exists: false } },
+        ],
+      },
+      { $inc: { attempts: 1 } },
+      { new: true },
+    )
 
-    if (!(await bcrypt.compare(otp, passwordReset.otp))) {
-      // Track the failed attempt durably so retries across requests count
-      // against the same lockout budget.
-      passwordReset.attempts = (passwordReset.attempts ?? 0) + 1
-      if (
-        passwordReset.attempts >= AuthService.MAX_PASSWORD_RESET_ATTEMPTS
-      ) {
-        // Invalidate the record on the last failed attempt so a subsequent
-        // correct-guess submission cannot succeed.
-        passwordReset.expiresAt = new Date(Date.now())
-      }
-      await passwordReset.save()
+    if (!passwordReset || !(await bcrypt.compare(otp, passwordReset.otp))) {
       throw new HttpException({ error: 'Invalid OTP' }, HttpStatus.BAD_REQUEST)
     }
 
@@ -272,7 +272,9 @@ export class AuthService {
     input: { oldPassword: string; newPassword: string },
     user: UserDocument,
   ) {
-    const userToUpdate = await this.usersService.findOne({ _id: user._id })
+    const userToUpdate = await this.usersService.findOneWithPassword({
+      _id: user._id,
+    })
     if (!userToUpdate) {
       throw new HttpException({ error: 'User not found' }, HttpStatus.NOT_FOUND)
     }
@@ -283,7 +285,7 @@ export class AuthService {
       )
     }
 
-    this.validatePassword(input.newPassword)
+    await this.validatePassword(input.newPassword)
 
     const hashedPassword = await bcrypt.hash(input.newPassword, 10)
     userToUpdate.password = hashedPassword
@@ -432,7 +434,7 @@ export class AuthService {
     if (byMasked) {
       return byMasked
     }
-    const regex = new RegExp(`^${prefix}`, 'g')
+    const regex = new RegExp(`^${escapeRegExp(prefix)}`, 'g')
     return this.apiKeyModel.findOne({
       apiKey: { $regex: regex },
       ...revokedClause,

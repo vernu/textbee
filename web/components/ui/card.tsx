@@ -42,10 +42,12 @@ const CardTitle = React.forwardRef<
 CardTitle.displayName = "CardTitle"
 
 const CardDescription = React.forwardRef<
-  HTMLParagraphElement,
-  React.HTMLAttributes<HTMLParagraphElement>
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
-  <p
+  // A div (not <p>) so descriptions may contain block content without
+  // producing invalid <p> nesting and hydration errors.
+  <div
     ref={ref}
     className={cn("text-sm text-muted-foreground", className)}
     {...props}

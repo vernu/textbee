@@ -9,9 +9,7 @@ import { useState } from 'react'
 import { useToast } from '@/hooks/use-toast'
 import { CopyButton } from '@/components/shared/copy-button'
 import { WebhookData } from '@/lib/types'
-import httpBrowserClient from '@/lib/httpBrowserClient'
-import { ApiEndpoints } from '@/config/api'
-import { useQueryClient } from '@tanstack/react-query'
+import { useUpdateWebhook } from '@/lib/api'
 import {
   Collapsible,
   CollapsibleContent,
@@ -33,39 +31,32 @@ export function WebhookCard({
   defaultOpen = false,
 }: WebhookCardProps) {
   const { toast } = useToast()
-  const [isLoading, setIsLoading] = useState(false)
-  const queryClient = useQueryClient()
   const [showSecret, setShowSecret] = useState(false)
   const [open, setOpen] = useState(defaultOpen)
 
-  const handleToggle = async (checked: boolean) => {
-    setIsLoading(true)
-    try {
-      await httpBrowserClient.patch(
-        ApiEndpoints.gateway.updateWebhook(webhook._id),
-        { isActive: checked },
-      )
+  const { mutate: updateWebhook, isPending: isLoading } = useUpdateWebhook(
+    webhook._id
+  )
 
-      await queryClient.invalidateQueries({
-        queryKey: ['webhooks'],
-      })
-
-      toast({
-        title: `Webhook ${checked ? 'enabled' : 'disabled'}`,
-        description: `Webhook notifications are now ${
-          checked ? 'enabled' : 'disabled'
-        }.`,
-      })
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: `Failed to ${checked ? 'enable' : 'disable'} webhook`,
-        variant: 'destructive',
-      })
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  const handleToggle = (checked: boolean) =>
+    updateWebhook(
+      { isActive: checked },
+      {
+        onSuccess: () =>
+          toast({
+            title: `Webhook ${checked ? 'enabled' : 'disabled'}`,
+            description: `Webhook notifications are now ${
+              checked ? 'enabled' : 'disabled'
+            }.`,
+          }),
+        onError: () =>
+          toast({
+            title: 'Error',
+            description: `Failed to ${checked ? 'enable' : 'disable'} webhook`,
+            variant: 'destructive',
+          }),
+      }
+    )
 
   const maskSecret = (secret: string) => {
     if (!secret) return ''

@@ -2,7 +2,10 @@
 
 import Script from 'next/script'
 
-const Analytics = ({ user }) => {
+// Only the email is read, to tag the Clarity session.
+type AnalyticsProps = { user?: { email?: string | null } | null }
+
+const Analytics = ({ user }: AnalyticsProps) => {
   return (
     <>
       {/* Global Site Tag (gtag.js) - Google Analytics  */}

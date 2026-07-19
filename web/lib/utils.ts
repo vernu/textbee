@@ -11,11 +11,11 @@ export function cn(...inputs: ClassValue[]) {
  * @returns Formatted string like "Brand Model" or "Brand Model (Custom Name)"
  */
 export function formatDeviceName(device: {
-  brand: string
-  model: string
+  brand?: string
+  model?: string
   name?: string | null
 }): string {
-  const baseName = `${device.brand} ${device.model}`
+  const baseName = `${device.brand ?? ''} ${device.model ?? ''}`.trim()
   
   if (device.name && device.name.trim() !== '' && device.name !== baseName) {
     return `${baseName} (${device.name})`
