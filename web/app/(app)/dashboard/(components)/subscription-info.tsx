@@ -1,8 +1,16 @@
 'use client'
 
 import { useEffect } from 'react'
-import { Calendar, Info, Sparkles, type LucideIcon } from 'lucide-react'
+import {
+  ArrowRight,
+  Calendar,
+  ExternalLink,
+  Info,
+  Sparkles,
+  type LucideIcon,
+} from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { useCurrentUser, useSubscription } from '@/lib/api'
 import type { SubscriptionStatus } from '@/lib/api/types'
@@ -19,6 +27,9 @@ import {
   usageMeterColor,
 } from '@/lib/status'
 import { deriveUsage } from '@/lib/usage'
+import { billingPriceLabel, deriveBillingState } from '@/lib/billing'
+import { formatPlanPrice } from '@/lib/plans'
+import { Routes } from '@/config/routes'
 import { polarCustomerPortalRequestUrl } from '@/config/external-links'
 import Link from 'next/link'
 import {
@@ -51,12 +62,31 @@ function StatusPill({
 }) {
   const tone = subscriptionStatusTone(status)
   return (
-    <div className={cn('flex items-center px-2 py-0.5 rounded-full', tone.bg)}>
-      <Icon className={cn('h-3 w-3 mr-1', tone.text)} />
+    <div
+      className={cn(
+        'flex items-center gap-1 rounded-full px-2 py-0.5',
+        tone.bg
+      )}
+    >
+      <Icon className={cn('h-3 w-3', tone.text)} aria-hidden />
       <span className={cn('text-xs font-medium', tone.text)}>
         {/* Never assert "Active" for a payload that carried no status. */}
         {titleCaseStatus(status) || 'Unknown'}
       </span>
+    </div>
+  )
+}
+
+function DateTile({ label, value }: { label: string; value?: string }) {
+  return (
+    <div className='flex items-center gap-2 rounded-md border bg-muted/40 p-2.5'>
+      <Calendar className='h-3.5 w-3.5 flex-none text-primary' aria-hidden />
+      <div className='min-w-0'>
+        <p className='text-[11px] text-muted-foreground'>{label}</p>
+        <p className='truncate text-xs font-medium text-foreground'>
+          {formatDate(value)}
+        </p>
+      </div>
     </div>
   )
 }
@@ -88,10 +118,10 @@ function LimitTile({
   return (
     <div
       className={cn(
-        'p-2 rounded-md',
+        'rounded-md border p-2.5',
         isOverridden
-          ? 'bg-amber-500/5 ring-1 ring-amber-500/30'
-          : 'bg-muted'
+          ? 'border-amber-500/30 bg-amber-500/5'
+          : 'bg-muted/40'
       )}
     >
       <div className='flex items-center justify-between gap-1'>
@@ -100,8 +130,8 @@ function LimitTile({
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <span className='inline-flex items-center gap-0.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400 cursor-default'>
-                  <Sparkles className='h-2.5 w-2.5' />
+                <span className='inline-flex cursor-default items-center gap-0.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400'>
+                  <Sparkles className='h-2.5 w-2.5' aria-hidden />
                   Custom
                 </span>
               </TooltipTrigger>
@@ -134,7 +164,7 @@ function LimitTile({
             <Tooltip>
               <TooltipTrigger asChild>
                 <span className='inline-flex items-center'>
-                  <Info className='h-3.5 w-3.5 text-muted-foreground cursor-pointer' />
+                  <Info className='h-3.5 w-3.5 cursor-pointer text-muted-foreground' />
                 </span>
               </TooltipTrigger>
               <TooltipContent>
@@ -150,14 +180,18 @@ function LimitTile({
           <div className='h-1.5 w-full overflow-hidden rounded-full bg-muted'>
             <div
               className={cn('h-full rounded-full transition-all', meterColor)}
-              style={{ width: `${Math.min(Math.max(meter.percentage, 0), 100)}%` }}
+              style={{
+                width: `${Math.min(Math.max(meter.percentage, 0), 100)}%`,
+              }}
             />
           </div>
-          <div className='mt-1 flex items-center justify-between text-[10px] text-muted-foreground'>
+          <div className='mt-1 flex items-center justify-between gap-2 text-[10px] text-muted-foreground'>
             <span>
               {meter.used.toLocaleString()} {meter.usedLabel}
             </span>
-            <span>{Math.max(meter.remaining, 0).toLocaleString()} left</span>
+            <span className='flex-none'>
+              {Math.max(meter.remaining, 0).toLocaleString()} left
+            </span>
           </div>
         </div>
       )}
@@ -190,6 +224,7 @@ export default function SubscriptionInfo() {
       )
     }
   }, [toast])
+
   const {
     data: currentSubscription,
     isLoading: isLoadingSubscription,
@@ -200,7 +235,7 @@ export default function SubscriptionInfo() {
 
   if (isLoadingSubscription)
     return (
-      <div className='flex justify-center items-center h-full min-h-[200px]'>
+      <div className='flex h-full min-h-[200px] items-center justify-center'>
         <Spinner size='sm' />
       </div>
     )
@@ -214,7 +249,9 @@ export default function SubscriptionInfo() {
 
   const plan = currentSubscription?.plan
   const usage = currentSubscription?.usage
-  const planName = plan?.name || 'Free'
+
+  const billing = deriveBillingState(currentSubscription)
+  const amount = billingPriceLabel(currentSubscription)
 
   // Shared with the dashboard usage cards. This page used to derive the same
   // numbers inline, which is exactly what deriveUsage exists to prevent: the
@@ -236,7 +273,7 @@ export default function SubscriptionInfo() {
         currentSubscription?.customDailyLimit,
         plan?.dailyLimit
       ),
-      planName,
+      planName: billing.planName,
       tooltipUnit: 'per day',
       unlimitedNote: 'Unlimited (within monthly limit)',
       meter: {
@@ -258,7 +295,7 @@ export default function SubscriptionInfo() {
         currentSubscription?.customMonthlyLimit,
         plan?.monthlyLimit
       ),
-      planName,
+      planName: billing.planName,
       tooltipUnit: 'per rolling 30 days',
       unlimitedNote: 'Unlimited (within fair usage)',
       meter: {
@@ -277,7 +314,7 @@ export default function SubscriptionInfo() {
         currentSubscription?.customBulkSendLimit,
         plan?.bulkSendLimit
       ),
-      planName,
+      planName: billing.planName,
       tooltipUnit: 'per bulk send',
       unlimitedNote: 'Unlimited (within monthly limit)',
     },
@@ -289,7 +326,7 @@ export default function SubscriptionInfo() {
         currentSubscription?.customDeviceLimit,
         plan?.deviceLimit
       ),
-      planName,
+      planName: billing.planName,
       tooltipUnit: 'devices',
       unlimitedNote: 'Unlimited devices',
     },
@@ -298,94 +335,143 @@ export default function SubscriptionInfo() {
   const hasCustomLimits = limitTiles.some((tile) => tile.isOverridden)
 
   return (
-    <div className='bg-card border rounded-lg shadow p-4'>
-      <div className='flex items-center justify-between mb-4'>
-        <div>
-          <div className='flex items-center gap-2 flex-wrap'>
-            <h3 className='text-lg font-bold text-foreground'>
-              {plan?.name || 'Free Plan'}
-            </h3>
-            {hasCustomLimits && (
-              <Badge
-                variant='outline'
-                className='gap-1 border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-medium'
-              >
-                <Sparkles className='h-3 w-3' />
-                Custom limits
-              </Badge>
-            )}
-          </div>
-          <div className='flex items-center gap-2'>
-            <p className='text-xs text-muted-foreground'>
-              Current subscription
-            </p>
-            {currentSubscription?.amount > 0 && (
-              <Badge variant='outline' className='text-xs font-medium'>
-                {formatPrice(
-                  currentSubscription?.amount,
-                  currentSubscription?.currency
-                )}
-                {currentSubscription?.recurringInterval && (
-                  <span className='ml-1'>
-                    /{' '}
-                    {getBillingInterval(currentSubscription?.recurringInterval)}
+    <div className='space-y-4'>
+      {/* Plan and billing identity. */}
+      <section className='rounded-lg border bg-card p-4 shadow-sm'>
+        <div className='flex flex-wrap items-start justify-between gap-3'>
+          <div className='min-w-0'>
+            <div className='flex flex-wrap items-center gap-2'>
+              <h3 className='text-lg font-bold text-foreground'>
+                {billing.planName}
+              </h3>
+              {hasCustomLimits && (
+                <Badge
+                  variant='outline'
+                  className='gap-1 border-amber-500/40 bg-amber-500/10 text-[10px] font-medium text-amber-600 dark:text-amber-400'
+                >
+                  <Sparkles className='h-3 w-3' aria-hidden />
+                  Custom limits
+                </Badge>
+              )}
+            </div>
+
+            <p className='mt-0.5 text-xs text-muted-foreground'>
+              {billing.isFree ? (
+                <>
+                  <span className='font-medium text-foreground'>
+                    {formatPlanPrice(0)}
+                  </span>{' '}
+                  / month. No subscription, nothing to pay.
+                </>
+              ) : amount != null ? (
+                <>
+                  <span className='font-medium text-foreground'>
+                    {formatPrice(amount, currentSubscription?.currency)}
                   </span>
-                )}
-              </Badge>
-            )}
-          </div>
-        </div>
-        <StatusPill
-          status={currentSubscription?.status}
-          icon={subscriptionStatusIcon(currentSubscription?.status)}
-        />
-      </div>
-
-      <div className='grid grid-cols-1 gap-2.5 mb-4 sm:grid-cols-2'>
-        <div className='flex items-center space-x-2 bg-card p-2.5 rounded-md shadow-sm'>
-          <Calendar className='h-3.5 w-3.5 text-primary flex-none' />
-          <div>
-            <p className='text-[11px] text-muted-foreground'>
-              Start Date
-            </p>
-            <p className='text-xs font-medium text-foreground'>
-              {formatDate(currentSubscription?.subscriptionStartDate)}
+                  {currentSubscription?.recurringInterval && (
+                    <>
+                      {' '}
+                      /{' '}
+                      {getBillingInterval(
+                        currentSubscription?.recurringInterval
+                      )}
+                    </>
+                  )}
+                </>
+              ) : (
+                'Current subscription'
+              )}
             </p>
           </div>
+
+          {/* A free account has no subscription, so it has no status. Showing
+              a pill here at all was what produced "Unknown" for every free
+              user. A real subscription still shows its true status, including
+              Unknown when the payload genuinely omits one. */}
+          {!billing.isFree && (
+            <StatusPill
+              status={billing.status}
+              icon={subscriptionStatusIcon(billing.status)}
+            />
+          )}
         </div>
 
-        <div className='flex items-center space-x-2 bg-card p-2.5 rounded-md shadow-sm'>
-          <Calendar className='h-3.5 w-3.5 text-primary flex-none' />
-          <div>
-            <p className='text-[11px] text-muted-foreground'>
-              Next Payment
-            </p>
-            <p className='text-xs font-medium text-foreground'>
-              {formatDate(currentSubscription?.currentPeriodEnd)}
-            </p>
+        {billing.hasBillingDates && (
+          <div className='mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-2'>
+            <DateTile
+              label='Start date'
+              value={currentSubscription?.subscriptionStartDate}
+            />
+            <DateTile
+              label='Next payment'
+              value={currentSubscription?.currentPeriodEnd}
+            />
           </div>
-        </div>
-      </div>
+        )}
 
-      <div className='bg-card p-3 rounded-md shadow-sm mb-4'>
-        <div className='flex items-center justify-between mb-2.5'>
+        <div className='mt-4 flex flex-wrap items-center gap-2'>
+          {billing.upgradeTier && (
+            <Button size='sm' asChild>
+              <Link href={`/checkout/${billing.upgradeTier.id}`}>
+                Upgrade to {billing.upgradeTier.name}
+                <ArrowRight className='ml-1 h-3.5 w-3.5' aria-hidden />
+              </Link>
+            </Button>
+          )}
+
+          {billing.canManageBilling && (
+            <Button size='sm' variant='outline' asChild>
+              <Link
+                href={polarCustomerPortalRequestUrl(currentUser?.email)}
+                target='_blank'
+                rel='noopener noreferrer'
+              >
+                Manage subscription
+                <ExternalLink className='ml-1 h-3.5 w-3.5' aria-hidden />
+              </Link>
+            </Button>
+          )}
+
+          {/* Same label as the onboarding plan picker, pointing at the same
+              page, so the two do not read as different destinations. */}
+          <Button
+            size='sm'
+            variant='link'
+            className='h-auto px-0 text-xs text-muted-foreground'
+            asChild
+          >
+            <a
+              href={`${Routes.landingPage}/pricing`}
+              target='_blank'
+              rel='noopener noreferrer'
+            >
+              Compare all plans
+              <ExternalLink className='ml-1 h-3 w-3' aria-hidden />
+            </a>
+          </Button>
+        </div>
+      </section>
+
+      {/* Usage against the plan's limits. */}
+      <section className='rounded-lg border bg-card p-4 shadow-sm'>
+        <div className='mb-3 flex flex-wrap items-center justify-between gap-2'>
           <div className='flex items-center gap-1'>
-            <p className='text-xs text-muted-foreground font-medium'>
-              Usage Limits
-            </p>
+            <h4 className='text-xs font-medium text-muted-foreground'>
+              Usage limits
+            </h4>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span className='inline-flex items-center'>
-                    <Info className='h-3.5 w-3.5 text-muted-foreground cursor-pointer' />
+                    <Info className='h-3.5 w-3.5 cursor-pointer text-muted-foreground' />
                   </span>
                 </TooltipTrigger>
                 <TooltipContent>
                   <p className='max-w-[240px]'>
                     SMS usage is measured on a rolling window, not your billing
                     cycle. Daily usage resets at 00:00 UTC and monthly usage
-                    covers a rolling 30-day window. The Start Date and Next
-                    Payment above are just your subscription start and renewal
+                    covers a rolling 30-day window. The start and next payment
+                    dates above are just your subscription start and renewal
                     dates.
                   </p>
                 </TooltipContent>
@@ -398,46 +484,13 @@ export default function SubscriptionInfo() {
             </p>
           )}
         </div>
+
         <div className='grid grid-cols-1 gap-2.5 sm:grid-cols-2'>
           {limitTiles.map((tile) => (
             <LimitTile key={tile.label} {...tile} />
           ))}
         </div>
-      </div>
-
-      <div className='flex justify-end gap-2 flex-wrap'>
-        {(!currentSubscription?.plan?.name ||
-          currentSubscription?.plan?.name?.toLowerCase() === 'free') ? (
-          <Link
-            href='/checkout/pro'
-            className='text-xs font-medium text-white bg-primary hover:bg-primary/90 px-3 py-1.5 rounded-md transition-colors'
-          >
-            Upgrade to Pro →
-          </Link>
-        ) : currentSubscription?.plan?.name?.toLowerCase() === 'pro' ? (
-          <>
-            <Link
-              href='/checkout/scale'
-              className='text-xs font-medium text-white bg-brand-700 hover:bg-brand-800 px-3 py-1.5 rounded-md transition-colors'
-            >
-              Upgrade to Scale →
-            </Link>
-            <Link
-              href={polarCustomerPortalRequestUrl(currentUser?.email)}
-              className='text-xs font-medium text-white bg-primary hover:bg-primary/90 px-3 py-1.5 rounded-md transition-colors'
-            >
-              Manage Subscription →
-            </Link>
-          </>
-        ) : (
-          <Link
-            href={polarCustomerPortalRequestUrl(currentUser?.email)}
-            className='text-xs font-medium text-white bg-primary hover:bg-primary/90 px-3 py-1.5 rounded-md transition-colors'
-          >
-            Manage Subscription →
-          </Link>
-        )}
-      </div>
+      </section>
     </div>
   )
 }

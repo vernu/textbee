@@ -49,7 +49,9 @@ export const mockSubscription = {
     monthlyUsagePercentage: 18.45,
   },
   status: 'active',
-  amount: 1900,
+  // Cents, and it must match the Pro price on the pricing page. This fixture
+  // previously said 1900, a price we do not charge.
+  amount: 999,
   currency: 'usd',
   recurringInterval: 'month',
   subscriptionStartDate: new Date('2026-06-01T00:00:00.000Z').toISOString(),
@@ -58,6 +60,33 @@ export const mockSubscription = {
   customMonthlyLimit: null,
   customBulkSendLimit: null,
   customDeviceLimit: null,
+}
+
+// What /billing/current-subscription actually returns for a user with no
+// subscription record: billing.service.ts synthesises this from the free plan.
+// There is deliberately no status, no amount and no dates, because there is no
+// subscription for them to belong to.
+export const mockFreeSubscription = {
+  plan: {
+    name: 'free',
+    dailyLimit: 50,
+    monthlyLimit: 300,
+    bulkSendLimit: 50,
+    deviceLimit: 1,
+  },
+  isActive: true,
+  usage: {
+    dailyLimit: 50,
+    monthlyLimit: 300,
+    bulkSendLimit: 50,
+    deviceLimit: 1,
+    processedSmsToday: 4,
+    processedSmsLastMonth: 40,
+    dailyRemaining: 46,
+    monthlyRemaining: 260,
+    dailyUsagePercentage: 8,
+    monthlyUsagePercentage: 13,
+  },
 }
 
 export const mockDevices = [
