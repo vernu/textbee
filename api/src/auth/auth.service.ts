@@ -14,6 +14,7 @@ import {
 } from './schemas/password-reset.schema'
 import { MailService } from '../mail/mail.service'
 import { TurnstileService } from '../common/turnstile.service'
+import { escapeRegExp } from '../common/escape-regexp'
 import { RequestResetPasswordInputDTO, ResetPasswordInputDTO } from './auth.dto'
 import { AccessLog } from './schemas/access-log.schema'
 import {
@@ -126,8 +127,8 @@ export class AuthService {
       )
     }
 
-    this.validateEmail(userData.email)
-    this.validatePassword(userData.password)
+    await this.validateEmail(userData.email)
+    await this.validatePassword(userData.password)
 
     const hashedPassword = await bcrypt.hash(userData.password, 10)
     const { turnstileToken, ...sanitizedUserData } = userData
@@ -261,7 +262,7 @@ export class AuthService {
       )
     }
 
-    this.validatePassword(input.newPassword)
+    await this.validatePassword(input.newPassword)
 
     const hashedPassword = await bcrypt.hash(input.newPassword, 10)
     userToUpdate.password = hashedPassword
@@ -410,7 +411,7 @@ export class AuthService {
     if (byMasked) {
       return byMasked
     }
-    const regex = new RegExp(`^${prefix}`, 'g')
+    const regex = new RegExp(`^${escapeRegExp(prefix)}`, 'g')
     return this.apiKeyModel.findOne({
       apiKey: { $regex: regex },
       ...revokedClause,

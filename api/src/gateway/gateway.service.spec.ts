@@ -279,12 +279,17 @@ describe('GatewayService', () => {
       { _id: 'device2', model: 'iPhone 13' },
     ]
 
-    it('should return all devices for a user', async () => {
+    it('should return a user\'s devices without the push token or serial', async () => {
       mockDeviceModel.find.mockResolvedValue(mockDevices)
 
       const result = await service.getDevicesForUser(mockUser)
 
-      expect(mockDeviceModel.find).toHaveBeenCalledWith({ user: mockUser._id })
+      const [filter, projection] = mockDeviceModel.find.mock.calls[0]
+      expect(filter).toEqual({ user: mockUser._id })
+      // fcmToken is a push credential and serial is a hardware id; neither
+      // should be shipped to the browser in the device list.
+      expect(projection).toContain('-fcmToken')
+      expect(projection).toContain('-serial')
       expect(result).toEqual(mockDevices)
     })
   })
