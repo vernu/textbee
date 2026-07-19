@@ -1,6 +1,5 @@
 import { UserSchema } from './user.schema'
 
-// The hash used to reach the browser via /auth/who-am-i and the login response.
 describe('User schema', () => {
   it('never selects the password hash by default', () => {
     expect(UserSchema.path('password').options.select).toBe(false)
