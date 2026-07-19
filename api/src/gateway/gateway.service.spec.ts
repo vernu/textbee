@@ -802,6 +802,65 @@ describe('GatewayService', () => {
         HttpException,
       )
     })
+
+    it('should search across message body, recipient and sender', async () => {
+      await service.getMessages(mockDeviceId, '', 1, 10, 'alice')
+
+      const expectedQuery = {
+        device: mockDevice._id,
+        $or: [
+          { message: /alice/i },
+          { recipient: /alice/i },
+          { sender: /alice/i },
+        ],
+      }
+
+      expect(mockSmsModel.countDocuments).toHaveBeenCalledWith(expectedQuery)
+      expect(mockSmsModel.find).toHaveBeenCalledWith(
+        expectedQuery,
+        null,
+        expect.any(Object),
+      )
+    })
+
+    it('should combine search with the type filter', async () => {
+      await service.getMessages(mockDeviceId, 'sent', 1, 10, 'alice')
+
+      expect(mockSmsModel.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          device: mockDevice._id,
+          type: SMSType.SENT,
+          $or: expect.any(Array),
+        }),
+        null,
+        expect.any(Object),
+      )
+    })
+
+    it('should ignore an empty or whitespace-only search', async () => {
+      await service.getMessages(mockDeviceId, '', 1, 10, '   ')
+
+      expect(mockSmsModel.find).toHaveBeenCalledWith(
+        { device: mockDevice._id },
+        null,
+        expect.any(Object),
+      )
+    })
+
+    it('should escape regex metacharacters in the search term', async () => {
+      // Unescaped, this throws a SyntaxError and fails the request.
+      await expect(
+        service.getMessages(mockDeviceId, '', 1, 10, '('),
+      ).resolves.toBeDefined()
+
+      // A wildcard must be matched literally, not treated as "any character".
+      await service.getMessages(mockDeviceId, '', 1, 10, '.*')
+
+      const call = mockSmsModel.find.mock.calls.at(-1)
+      const messagePattern = call[0].$or[0].message as RegExp
+      expect(messagePattern.test('anything at all')).toBe(false)
+      expect(messagePattern.test('contains .* literally')).toBe(true)
+    })
   })
 
   describe('getStatsForUser', () => {

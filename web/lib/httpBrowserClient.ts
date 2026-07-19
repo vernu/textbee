@@ -35,4 +35,24 @@ httpBrowserClient.interceptors.request.use(async (config) => {
   return config
 })
 
+// Global session-expiry handling: any 401 from the API means the stored token
+// is no longer valid, so send the user to logout. This replaces the previous
+// per-navigation whoAmI check in the layout wrapper.
+httpBrowserClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (
+      typeof window !== 'undefined' &&
+      error?.response?.status === 401
+    ) {
+      const { pathname } = window.location
+      if (!pathname.includes('/logout') && !pathname.includes('/login')) {
+        sessionCache = null
+        window.location.href = '/logout'
+      }
+    }
+    return Promise.reject(error)
+  }
+)
+
 export default httpBrowserClient

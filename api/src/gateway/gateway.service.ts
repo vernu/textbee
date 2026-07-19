@@ -24,6 +24,7 @@ import { WebhookEvent } from '../webhook/webhook-event.enum'
 import { WebhookService } from '../webhook/webhook.service'
 import { BillingService } from '../billing/billing.service'
 import { SmsQueueService } from './queue/sms-queue.service'
+import { escapeRegExp } from './escape-regexp'
 
 @Injectable()
 export class GatewayService {
@@ -947,6 +948,7 @@ export class GatewayService {
     type = '',
     page = 1,
     limit = 50,
+    search = '',
   ): Promise<{ data: any[]; meta: any }> {
     const device = await this.deviceModel.findById(deviceId)
 
@@ -970,6 +972,19 @@ export class GatewayService {
       query.type = SMSType.SENT
     } else if (type === 'received') {
       query.type = SMSType.RECEIVED
+    }
+
+    // Free-text search across the message body and either party's number.
+    // The input is escaped before it reaches RegExp: an unescaped "(" throws
+    // and fails the request, and a crafted pattern is a ReDoS vector.
+    const trimmedSearch = search?.trim()
+    if (trimmedSearch) {
+      const pattern = new RegExp(escapeRegExp(trimmedSearch), 'i')
+      query.$or = [
+        { message: pattern },
+        { recipient: pattern },
+        { sender: pattern },
+      ]
     }
 
     // Get total count for pagination metadata

@@ -137,10 +137,10 @@ export default function DownloadPage() {
           <div className='inline-flex items-center rounded-full border px-3 py-1 text-sm bg-brand-50 dark:bg-brand-950 border-brand-200 dark:border-brand-800 text-brand-700 dark:text-brand-300 mb-4'>
             <Download className='h-3.5 w-3.5 mr-2' /> Download TextBee
           </div>
-          <h1 className='text-4xl font-bold tracking-tight text-gray-900 dark:text-white'>
+          <h1 className='text-4xl font-bold tracking-tight text-foreground'>
             Download TextBee App
           </h1>
-          <p className='mt-4 text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto'>
+          <p className='mt-4 text-xl text-muted-foreground max-w-2xl mx-auto'>
             Transform your Android device into a powerful SMS gateway with our
             easy-to-use application.
           </p>
@@ -148,7 +148,7 @@ export default function DownloadPage() {
 
         {/* Latest release section */}
         <div className='mb-16'>
-          <div className='bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden'>
+          <div className='bg-card rounded-xl shadow-lg border border-border overflow-hidden'>
             <div className='p-6 sm:p-8'>
               <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6'>
                 <div>
@@ -169,11 +169,11 @@ export default function DownloadPage() {
                   {loading ? (
                     <Skeleton className='h-8 w-48' />
                   ) : error ? (
-                    <h2 className='text-2xl font-bold text-gray-900 dark:text-white'>
+                    <h2 className='text-2xl font-bold text-foreground'>
                       TextBee App
                     </h2>
                   ) : (
-                    <h2 className='text-2xl font-bold text-gray-900 dark:text-white'>
+                    <h2 className='text-2xl font-bold text-foreground'>
                       {latestRelease?.name || 'TextBee App'}
                     </h2>
                   )}
@@ -213,7 +213,7 @@ export default function DownloadPage() {
                 <div className='text-red-500 dark:text-red-400'>{error}</div>
               ) : latestRelease ? (
                 <>
-                  <div className='flex flex-wrap gap-4 mb-6 text-sm text-gray-600 dark:text-gray-400'>
+                  <div className='flex flex-wrap gap-4 mb-6 text-sm text-muted-foreground'>
                     <div className='flex items-center'>
                       <Tag className='h-4 w-4 mr-1' />
                       <span>Version: {latestRelease.tag_name}</span>
@@ -252,7 +252,7 @@ export default function DownloadPage() {
                       return (
                         <>
                           {description && (
-                            <div className='text-gray-700 dark:text-gray-300'>
+                            <div className='text-foreground'>
                               {description.split('\n').map((line, i) => (
                                 <p key={i} className='mb-2'>
                                   {line}
@@ -263,10 +263,10 @@ export default function DownloadPage() {
 
                           {changelog.length > 0 && (
                             <div>
-                              <h3 className='text-lg font-semibold mb-2 text-gray-900 dark:text-white'>
+                              <h3 className='text-lg font-semibold mb-2 text-foreground'>
                                 What's New:
                               </h3>
-                              <ul className='space-y-1 list-disc pl-5 text-gray-600 dark:text-gray-400'>
+                              <ul className='space-y-1 list-disc pl-5 text-muted-foreground'>
                                 {changelog.map((item, i) => (
                                   <li key={i}>{item}</li>
                                 ))}
@@ -278,7 +278,7 @@ export default function DownloadPage() {
                     })()}
                   </div>
 
-                  <div className='mt-6 pt-6 border-t border-gray-200 dark:border-gray-700'>
+                  <div className='mt-6 pt-6 border-t border-border'>
                     <div className='flex flex-col sm:flex-row sm:items-center gap-4'>
                       <Button variant='outline' size='sm' asChild>
                         <Link
@@ -290,14 +290,14 @@ export default function DownloadPage() {
                           View on GitHub
                         </Link>
                       </Button>
-                      <div className='text-sm text-gray-500 dark:text-gray-400'>
+                      <div className='text-sm text-muted-foreground'>
                         Compatible with Android 7.0+ devices.
                       </div>
                     </div>
                   </div>
                 </>
               ) : (
-                <div className='text-gray-600 dark:text-gray-400'>
+                <div className='text-muted-foreground'>
                   No releases available at this time.
                 </div>
               )}
@@ -308,14 +308,14 @@ export default function DownloadPage() {
         {/* All releases section */}
         <div>
           <div className='flex items-center justify-between mb-6'>
-            <h2 className='text-2xl font-bold text-gray-900 dark:text-white'>
+            <h2 className='text-2xl font-bold text-foreground'>
               All Releases
             </h2>
             <Button
               variant='outline'
               size='sm'
               asChild
-              className='text-gray-600 dark:text-gray-400'
+              className='text-muted-foreground'
             >
               <Link
                 href='https://github.com/vernu/textbee/releases'
@@ -333,7 +333,7 @@ export default function DownloadPage() {
               {[1, 2, 3].map((i) => (
                 <div
                   key={i}
-                  className='bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4'
+                  className='bg-card rounded-lg border border-border p-4'
                 >
                   <Skeleton className='h-6 w-48 mb-4' />
                   <Skeleton className='h-4 w-full mb-2' />
@@ -342,16 +342,16 @@ export default function DownloadPage() {
               ))}
             </div>
           ) : error ? (
-            <div className='bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6'>
+            <div className='bg-card rounded-lg border border-border p-6'>
               <div className='text-red-500 dark:text-red-400'>{error}</div>
             </div>
           ) : releases.length === 0 ? (
-            <div className='bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 text-center'>
+            <div className='bg-card rounded-lg border border-border p-6 text-center'>
               <PackageOpen className='h-12 w-12 mx-auto text-gray-400 mb-4' />
-              <h3 className='text-lg font-medium text-gray-900 dark:text-white mb-2'>
+              <h3 className='text-lg font-medium text-foreground mb-2'>
                 No Releases Found
               </h3>
-              <p className='text-gray-600 dark:text-gray-400'>
+              <p className='text-muted-foreground'>
                 There are no releases available at this time.
               </p>
             </div>
@@ -361,12 +361,12 @@ export default function DownloadPage() {
                 <AccordionItem
                   key={release.id}
                   value={release.id.toString()}
-                  className='bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden'
+                  className='bg-card rounded-lg border border-border overflow-hidden'
                 >
                   <AccordionTrigger className='px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors'>
                     <div className='flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-left'>
                       <div className='flex items-center gap-2'>
-                        <h3 className='text-lg font-semibold text-gray-900 dark:text-white'>
+                        <h3 className='text-lg font-semibold text-foreground'>
                           {release.name || release.tag_name}
                         </h3>
                         {release.id === latestRelease?.id && (
@@ -383,7 +383,7 @@ export default function DownloadPage() {
                           </Badge>
                         )}
                       </div>
-                      <div className='text-sm text-gray-500 dark:text-gray-400'>
+                      <div className='text-sm text-muted-foreground'>
                         Released on {formatDate(release.published_at)}
                       </div>
                     </div>
@@ -398,7 +398,7 @@ export default function DownloadPage() {
                         return (
                           <>
                             {description && (
-                              <div className='text-gray-700 dark:text-gray-300'>
+                              <div className='text-foreground'>
                                 {description.split('\n').map((line, i) => (
                                   <p key={i} className='mb-2'>
                                     {line}
@@ -409,10 +409,10 @@ export default function DownloadPage() {
 
                             {changelog.length > 0 && (
                               <div>
-                                <h4 className='text-base font-medium mb-2 text-gray-900 dark:text-white'>
+                                <h4 className='text-base font-medium mb-2 text-foreground'>
                                   Changes:
                                 </h4>
-                                <ul className='space-y-1 list-disc pl-5 text-gray-600 dark:text-gray-400'>
+                                <ul className='space-y-1 list-disc pl-5 text-muted-foreground'>
                                   {changelog.map((item, i) => (
                                     <li key={i}>{item}</li>
                                   ))}
@@ -425,8 +425,8 @@ export default function DownloadPage() {
 
                       {/* Download assets */}
                       {release.assets.length > 0 && (
-                        <div className='mt-4 pt-4 border-t border-gray-200 dark:border-gray-700'>
-                          <h4 className='text-base font-medium mb-3 text-gray-900 dark:text-white'>
+                        <div className='mt-4 pt-4 border-t border-border'>
+                          <h4 className='text-base font-medium mb-3 text-foreground'>
                             Downloads:
                           </h4>
                           <div className='space-y-2'>
@@ -436,16 +436,16 @@ export default function DownloadPage() {
                                 className='flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-gray-50 dark:bg-gray-900 rounded-md'
                               >
                                 <div className='flex items-center'>
-                                  <FileDown className='h-4 w-4 text-gray-500 dark:text-gray-400 mr-2' />
-                                  <span className='text-sm text-gray-700 dark:text-gray-300'>
+                                  <FileDown className='h-4 w-4 text-muted-foreground mr-2' />
+                                  <span className='text-sm text-foreground'>
                                     {asset.name}
                                   </span>
                                 </div>
                                 <div className='flex items-center gap-4'>
-                                  <span className='text-xs text-gray-500 dark:text-gray-400'>
+                                  <span className='text-xs text-muted-foreground'>
                                     {formatFileSize(asset.size)}
                                   </span>
-                                  <span className='text-xs text-gray-500 dark:text-gray-400'>
+                                  <span className='text-xs text-muted-foreground'>
                                     <Download className='inline h-3 w-3 mr-1' />
                                     {asset.download_count.toLocaleString()}
                                   </span>
@@ -475,7 +475,7 @@ export default function DownloadPage() {
                         <Button
                           variant='ghost'
                           size='sm'
-                          className='text-gray-600 dark:text-gray-400'
+                          className='text-muted-foreground'
                           asChild
                         >
                           <Link
@@ -497,14 +497,14 @@ export default function DownloadPage() {
         </div>
 
         {/* Requirements section */}
-        <div className='mt-16 bg-gray-50 dark:bg-gray-900 rounded-xl p-6 sm:p-8 border border-gray-200 dark:border-gray-700'>
+        <div className='mt-16 bg-gray-50 dark:bg-gray-900 rounded-xl p-6 sm:p-8 border border-border'>
           <div className='flex items-start'>
-            <Info className='h-5 w-5 text-brand-600 dark:text-brand-400 mt-0.5 mr-3 flex-shrink-0' />
+            <Info className='h-5 w-5 text-primary mt-0.5 mr-3 flex-shrink-0' />
             <div>
-              <h3 className='text-lg font-semibold text-gray-900 dark:text-white mb-2'>
+              <h3 className='text-lg font-semibold text-foreground mb-2'>
                 System Requirements
               </h3>
-              <ul className='space-y-2 text-gray-600 dark:text-gray-400'>
+              <ul className='space-y-2 text-muted-foreground'>
                 <li className='flex items-start'>
                   <Check className='h-5 w-5 text-green-500 mr-2 mt-0.5 flex-shrink-0' />
                   <span>Android 7.0 (Nougat) or higher</span>

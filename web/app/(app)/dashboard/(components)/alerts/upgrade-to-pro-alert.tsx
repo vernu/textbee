@@ -1,0 +1,206 @@
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
+import { useSubscription } from '@/lib/api'
+import Link from 'next/link'
+import { useMemo } from 'react'
+
+const DISCOUNT_CODE_FALLBACK = null
+const DISCOUNT_PERCENTAGE_FALLBACK = null
+
+const envDiscountCode = process.env.NEXT_PUBLIC_DISCOUNT_CODE?.trim()
+const envDiscountPercentage = process.env.NEXT_PUBLIC_DISCOUNT_PERCENTAGE?.trim()
+
+const discountCode = (envDiscountCode !== undefined && envDiscountCode !== '') 
+  ? envDiscountCode 
+  : DISCOUNT_CODE_FALLBACK
+const discountPercentage = (envDiscountPercentage !== undefined && envDiscountPercentage !== '')
+  ? envDiscountPercentage
+  : DISCOUNT_PERCENTAGE_FALLBACK
+const isDiscountEnabled = discountCode !== null && discountCode !== '' && discountPercentage !== null && discountPercentage !== ''
+
+export default function UpgradeToProAlert() {
+  const {
+    data: currentSubscription,
+    isLoading: isLoadingSubscription,
+    error: subscriptionError,
+  } = useSubscription()
+
+  const monthlyUsagePercentage = currentSubscription?.usage?.monthlyUsagePercentage || 0
+  const monthlyLimit = currentSubscription?.usage?.monthlyLimit || 0
+  const processedSmsLastMonth = currentSubscription?.usage?.processedSmsLastMonth || 0
+
+  const alertConfig = useMemo(() => {
+    if (monthlyUsagePercentage >= 100 ) {
+      return {
+        bgColor: 'bg-linear-to-r from-red-600 to-red-800',
+        message: "⚠️ Monthly limit exceeded! Your requests will be rejected until you upgrade.",
+        subMessage: `You've used ${processedSmsLastMonth} of ${monthlyLimit} SMS this month.`,
+        buttonText: "Upgrade Now!",
+        buttonColor: 'bg-white text-red-600 hover:bg-red-50 hover:text-red-700 border-red-600',
+        urgency: 'critical'
+      }
+    } else if (monthlyUsagePercentage >= 80) {
+      return {
+        bgColor: 'bg-linear-to-r from-orange-500 to-red-500',
+        message: "⚠️ Approaching limit! Upgrade to Pro to avoid service interruption.",
+        subMessage: `You've used ${monthlyUsagePercentage}% of your monthly SMS limit (${processedSmsLastMonth}/${monthlyLimit}).`,
+        buttonText: "Upgrade Before Limit!",
+        buttonColor: 'bg-white text-orange-600 hover:bg-orange-50 hover:text-orange-700 border-orange-600',
+        urgency: 'warning'
+      }
+    } else {
+      const allCtaMessages = [
+        "Upgrade to Pro for exclusive features and benefits!",
+        "Offer: You are eligible for a 30% discount when upgrading to Pro!",
+        "Unlock premium features with our Pro plan today!",
+        "Take your experience to the next level with Pro!",
+        "Pro users get priority support and advanced features!",
+        "Limited time offer: Upgrade to Pro and save 30%!",
+      ]
+      const allButtonTexts = [
+        "Get Pro Now!",
+        "Upgrade Today!",
+        "Go Pro!",
+        "Unlock Pro!",
+        "Claim Your Discount!",
+        "Upgrade & Save!",
+      ]
+      
+      // Filter out discount-related messages if discount is not enabled
+      const ctaMessages = isDiscountEnabled
+        ? allCtaMessages
+        : allCtaMessages.filter(
+            (msg) =>
+              !msg.toLowerCase().includes('discount') &&
+              !msg.toLowerCase().includes('offer') &&
+              !msg.toLowerCase().includes('save') &&
+              !msg.includes('30%')
+          )
+      
+      const buttonTexts = isDiscountEnabled
+        ? allButtonTexts
+        : allButtonTexts.filter(
+            (text) =>
+              !text.toLowerCase().includes('discount') &&
+              !text.toLowerCase().includes('save')
+          )
+      
+      const randomIndex = Math.floor(Math.random() * ctaMessages.length)
+      
+      const subMessage = isDiscountEnabled
+        ? `Use discount code ${discountCode} at checkout for a ${discountPercentage}% discount!`
+        : "Unlock premium features, priority support, and advanced capabilities with Pro!"
+      
+      return {
+        bgColor: 'bg-linear-to-r from-brand-500 to-brand-600',
+        message: ctaMessages[randomIndex],
+        subMessage,
+        buttonText: buttonTexts[randomIndex],
+        buttonColor:
+          'bg-white text-brand-700 hover:bg-brand-50 border-transparent',
+        urgency: 'normal'
+      }
+    }
+  }, [monthlyUsagePercentage, monthlyLimit, processedSmsLastMonth])
+
+  const planName = currentSubscription?.plan?.name
+
+  if (isLoadingSubscription || !currentSubscription || subscriptionError) {
+    return null
+  }
+
+  if (planName === 'scale' || planName?.startsWith('custom')) {
+    return null
+  }
+
+  if (planName === 'pro') {
+    if (monthlyUsagePercentage < 80) return null
+
+    const scaleAlertConfig =
+      monthlyUsagePercentage >= 100
+        ? {
+            bgColor: 'bg-linear-to-r from-red-600 to-red-800',
+            message: '⚠️ Monthly limit exceeded! Upgrade to Scale for 25,000 SMS/mo.',
+            subMessage: `You've used ${processedSmsLastMonth} of ${monthlyLimit} SMS this month.`,
+            buttonText: 'Upgrade to Scale!',
+            buttonColor: 'bg-white text-red-600 hover:bg-red-50 hover:text-red-700 border-red-600',
+          }
+        : {
+            bgColor: 'bg-linear-to-r from-orange-500 to-red-500',
+            message: '⚠️ Approaching Pro limit! Scale up to 25,000 SMS/mo.',
+            subMessage: `You've used ${monthlyUsagePercentage}% of your monthly SMS limit (${processedSmsLastMonth}/${monthlyLimit}).`,
+            buttonText: 'Upgrade to Scale',
+            buttonColor: 'bg-white text-orange-600 hover:bg-orange-50 hover:text-orange-700 border-orange-600',
+          }
+
+    return (
+      <Alert className={`${scaleAlertConfig.bgColor} text-white`}>
+        <AlertDescription className='flex flex-col sm:flex-row flex-wrap items-center gap-2 md:gap-4'>
+          <span className='w-full sm:flex-1 text-center sm:text-left text-sm md:text-base font-medium'>
+            {scaleAlertConfig.message}
+          </span>
+          <span className='w-full sm:flex-1 text-center sm:text-left text-xs md:text-sm'>
+            {scaleAlertConfig.subMessage}
+          </span>
+          <div className='w-full sm:w-auto mt-2 sm:mt-0 flex justify-center sm:justify-end flex-wrap gap-1 md:gap-2'>
+            <Button
+              variant='outline'
+              size='sm'
+              asChild
+              className={`${scaleAlertConfig.buttonColor} text-xs md:text-sm`}
+            >
+              <Link href={'/checkout/scale'}>
+                {scaleAlertConfig.buttonText}
+              </Link>
+            </Button>
+            <Button
+              variant='outline'
+              size='sm'
+              asChild
+              className='bg-brand-600 text-white hover:bg-brand-700 text-xs md:text-sm'
+            >
+              <Link href={'/#pricing'}>Learn More</Link>
+            </Button>
+          </div>
+        </AlertDescription>
+      </Alert>
+    )
+  }
+
+  return (
+    <Alert className={`${alertConfig.bgColor} text-white`}>
+      <AlertDescription className='flex flex-col sm:flex-row flex-wrap items-center gap-2 md:gap-4'>
+        <span className='w-full sm:flex-1 text-center sm:text-left text-sm md:text-base font-medium'>
+          {alertConfig.message}
+        </span>
+        <span className='w-full sm:flex-1 text-center sm:text-left text-xs md:text-sm'>
+          {alertConfig.urgency === 'normal' && isDiscountEnabled ? (
+            <>Use discount code <strong className="text-yellow-200">{discountCode}</strong> at checkout for a {discountPercentage}% discount!</>
+          ) : (
+            alertConfig.subMessage
+          )}
+        </span>
+        <div className='w-full sm:w-auto mt-2 sm:mt-0 flex justify-center sm:justify-end flex-wrap gap-1 md:gap-2'>
+          <Button
+            variant='outline'
+            size='sm'
+            asChild
+            className={`${alertConfig.buttonColor} text-xs md:text-sm`}
+          >
+            <Link href={'/checkout/pro'}>{alertConfig.buttonText}</Link>
+          </Button>
+          {alertConfig.urgency === 'normal' && (
+            <Button
+              variant='outline'
+              size='sm'
+              asChild
+              className='bg-brand-600 text-white hover:bg-brand-700 text-xs md:text-sm'
+            >
+              <Link href={'/#pricing'}>Learn More</Link>
+            </Button>
+          )}
+        </div>
+      </AlertDescription>
+    </Alert>
+  )
+}

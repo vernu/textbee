@@ -25,9 +25,7 @@ import Link from 'next/link'
 import { ExternalLinks } from '@/config/external-links'
 import { CRYPTO_ADDRESSES } from '@/lib/constants'
 import Image from 'next/image'
-import { ApiEndpoints } from '@/config/api'
-import httpBrowserClient from '@/lib/httpBrowserClient'
-import { useQuery } from '@tanstack/react-query'
+import { useCurrentUser, useSubscription } from '@/lib/api'
 
 // Add constants for localStorage and timing
 const STORAGE_KEYS = {
@@ -53,25 +51,13 @@ export function ContributeModal() {
     data: currentSubscription,
     isLoading: isLoadingSubscription,
     error: subscriptionError,
-  } = useQuery({
-    queryKey: ['currentSubscription'],
-    queryFn: () =>
-      httpBrowserClient
-        .get(ApiEndpoints.billing.currentSubscription())
-        .then((res) => res.data),
-  })
+  } = useSubscription()
 
   const {
     data: currentUser,
     isLoading: isLoadingUser,
     error: currentUserError,
-  } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () =>
-      httpBrowserClient
-        .get(ApiEndpoints.auth.whoAmI())
-        .then((res) => res.data?.data),
-  })
+  } = useCurrentUser()
 
   useEffect(() => {
     const checkAndShowModal = () => {

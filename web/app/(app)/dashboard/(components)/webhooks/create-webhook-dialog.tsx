@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -36,10 +37,9 @@ import * as z from 'zod'
 import { v4 as uuidv4 } from 'uuid'
 import { WebhookData } from '@/lib/types'
 import { WEBHOOK_EVENTS } from '@/lib/constants'
-import httpBrowserClient from '@/lib/httpBrowserClient'
-import { ApiEndpoints } from '@/config/api'
 import { useToast } from '@/hooks/use-toast'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useCreateWebhook } from '@/lib/api'
+import { apiErrorMessage } from '@/lib/utils/errorHandler'
 
 const formSchema = z.object({
   name: z
@@ -52,6 +52,12 @@ const formSchema = z.object({
   signingSecret: z.string().min(1, { message: 'Signing secret is required' }),
 })
 
+// isActive is `.default(true)`, so zod's input type has it optional while the
+// output type has it guaranteed. The form holds the input shape; the submit
+// handler receives the output shape.
+type WebhookFormInput = z.input<typeof formSchema>
+type WebhookFormValues = z.output<typeof formSchema>
+
 interface CreateWebhookDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -62,51 +68,56 @@ export function CreateWebhookDialog({
   onOpenChange,
 }: CreateWebhookDialogProps) {
   const { toast } = useToast()
-  const queryClient = useQueryClient()
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  // Built fresh on each call rather than inlined into defaultValues. The
+  // dialog is mounted for the whole session, so defaultValues was evaluated
+  // exactly once and a bare form.reset() restored that same object: every
+  // webhook created in one session ended up sharing a single signing secret,
+  // which defeats the point of per-endpoint verification.
+  const buildDefaults = (): WebhookFormInput => ({
+    name: '',
+    deliveryUrl: '',
+    events: [WEBHOOK_EVENTS.MESSAGE_RECEIVED],
+    isActive: true,
+    signingSecret: uuidv4(),
+  })
+
+  const form = useForm<WebhookFormInput, unknown, WebhookFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: '',
-      deliveryUrl: '',
-      events: [WEBHOOK_EVENTS.MESSAGE_RECEIVED],
-      isActive: true,
-      signingSecret: uuidv4(),
-    },
+    defaultValues: buildDefaults(),
   })
 
-  const createWebhookMutation = useMutation({
-    mutationFn: (values: z.infer<typeof formSchema>) => {
-      const payload = {
-        ...values,
-        name: values.name?.trim() ? values.name.trim() : undefined,
-      }
-      return httpBrowserClient.post(
-        ApiEndpoints.gateway.createWebhook(),
-        payload,
-      )
-    },
-    onSuccess: () => {
-      toast({
-        title: 'Success',
-        description: 'Webhook created successfully',
-      })
-      queryClient.invalidateQueries({ queryKey: ['webhooks'] })
-      onOpenChange(false)
-      form.reset()
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Error',
-        description:
-          error?.response?.data?.message || 'Failed to create webhook',
-        variant: 'destructive',
-      })
-    },
-  })
+  // Reopening the dialog must not reuse the previous secret either, including
+  // after a cancel.
+  useEffect(() => {
+    if (open) form.reset(buildDefaults())
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
-    createWebhookMutation.mutate(values)
+  const createWebhookMutation = useCreateWebhook()
+
+  const onSubmit = (values: WebhookFormValues) => {
+    const payload = {
+      ...values,
+      name: values.name?.trim() ? values.name.trim() : undefined,
+    }
+    createWebhookMutation.mutate(payload, {
+      onSuccess: () => {
+        toast({
+          title: 'Success',
+          description: 'Webhook created successfully',
+        })
+        onOpenChange(false)
+        form.reset(buildDefaults())
+      },
+      onError: (error) => {
+        toast({
+          title: 'Error',
+          description: apiErrorMessage(error) || 'Failed to create webhook',
+          variant: 'destructive',
+        })
+      },
+    })
   }
 
   const message_events = [

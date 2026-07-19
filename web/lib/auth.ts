@@ -1,6 +1,6 @@
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { httpServerClient } from './httpServerClient'
-import { DefaultSession } from 'next-auth'
+import type { DefaultSession, NextAuthOptions } from 'next-auth'
 import { ApiEndpoints } from '@/config/api'
 import { Routes } from '@/config/routes'
 
@@ -17,13 +17,29 @@ declare module 'next-auth' {
   }
 
   interface User {
+    // The backend returns Mongo documents, so the id arrives as _id and is
+    // copied onto the token below.
+    _id?: string
+    role?: string
     phone?: string
     avatar?: string
     accessToken?: string
   }
 }
 
-export const authOptions = {
+// The jwt/session callbacks read and write these, so the token has to declare
+// them or every callback parameter falls back to an implicit any.
+declare module 'next-auth/jwt' {
+  interface JWT {
+    id?: string
+    role?: string
+    phone?: string
+    avatar?: string
+    accessToken?: string
+  }
+}
+
+export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       id: 'email-password-login',
@@ -34,6 +50,10 @@ export const authOptions = {
         turnstileToken: { label: 'Turnstile Token', type: 'text' },
       },
       async authorize(credentials) {
+        // NextAuth can invoke authorize with no credentials at all. There is
+        // nothing to authenticate in that case, so refuse rather than posting
+        // undefined fields to the login endpoint.
+        if (!credentials) return null
         const { email, password, turnstileToken } = credentials
         try {
           const res = await httpServerClient.post(ApiEndpoints.auth.login(), {
@@ -67,6 +87,7 @@ export const authOptions = {
         turnstileToken: { label: 'Turnstile Token', type: 'text' },
       },
       async authorize(credentials) {
+        if (!credentials) return null
         const { email, password, name, phone, turnstileToken } = credentials
         try {
           const res = await httpServerClient.post(
@@ -100,6 +121,7 @@ export const authOptions = {
         idToken: { label: 'idToken', type: 'text' },
       },
       async authorize(credentials) {
+        if (!credentials) return null
         const { idToken } = credentials
         try {
           const res = await httpServerClient.post(
