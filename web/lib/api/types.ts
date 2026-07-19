@@ -16,6 +16,14 @@ export interface User {
   // field on the user schema, and read by the account-deletion banner, but it
   // was missing from this type.
   accountDeletionRequestedAt?: string | null
+  createdAt?: string
+  // Drives the onboarding checklist. Structurally compatible with the
+  // UserShape that get-started/steps.ts takes, so useCurrentUser can feed it.
+  onboarding?: {
+    completedAt?: string | null
+    currentStepId?: string
+    skippedStepIds?: string[]
+  }
 }
 
 export interface GatewayStats {

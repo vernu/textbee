@@ -9,7 +9,7 @@ import { AlertTriangle, Loader2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import httpBrowserClient from '@/lib/httpBrowserClient'
 import { ApiEndpoints } from '@/config/api'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import {
   Dialog,
   DialogContent,
@@ -19,6 +19,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { useTurnstile } from '@/lib/turnstile'
+import { useCurrentUser } from '@/lib/api'
 
 export default function DeleteAccountForm() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
@@ -27,13 +28,7 @@ export default function DeleteAccountForm() {
   const [turnstileError, setTurnstileError] = useState<string | null>(null)
   const { toast } = useToast()
 
-  const { data: currentUser } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () =>
-      httpBrowserClient
-        .get(ApiEndpoints.auth.whoAmI())
-        .then((res) => res.data?.data),
-  })
+  const { data: currentUser } = useCurrentUser()
 
   const {
     containerRef: turnstileRef,

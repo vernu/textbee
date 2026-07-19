@@ -2,29 +2,14 @@
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { ApiEndpoints } from '@/config/api'
-import httpBrowserClient from '@/lib/httpBrowserClient'
 import { polarCustomerPortalRequestUrl } from '@/config/external-links'
-import { useQuery } from '@tanstack/react-query'
+import { useCurrentUser, useSubscription } from '@/lib/api'
 import { CreditCard, AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
 
 export default function PastDueBillingAlert() {
-  const { data: currentSubscription, isLoading: subLoading } = useQuery({
-    queryKey: ['currentSubscription'],
-    queryFn: () =>
-      httpBrowserClient
-        .get(ApiEndpoints.billing.currentSubscription())
-        .then((res) => res.data),
-  })
-
-  const { data: currentUser, isLoading: userLoading } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () =>
-      httpBrowserClient
-        .get(ApiEndpoints.auth.whoAmI())
-        .then((res) => res.data?.data),
-  })
+  const { data: currentSubscription, isLoading: subLoading } = useSubscription()
+  const { data: currentUser, isLoading: userLoading } = useCurrentUser()
 
   if (subLoading || userLoading || !currentSubscription || !currentUser) {
     return null

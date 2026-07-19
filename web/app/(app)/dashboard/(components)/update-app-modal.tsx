@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
-import { useQuery } from '@tanstack/react-query'
+import { useDevices } from '@/lib/api'
 import { Download, Sparkles, Smartphone } from 'lucide-react'
 import {
   Dialog,
@@ -13,9 +13,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { ApiEndpoints } from '@/config/api'
 import { Routes } from '@/config/routes'
-import httpBrowserClient from '@/lib/httpBrowserClient'
 import { formatDeviceName } from '@/lib/utils'
 import {
   DeviceVersionCandidate,
@@ -33,20 +31,11 @@ export default function UpdateAppModal() {
   const ignoreNextOpenChangeRef = useRef(false)
   const { isSnoozed } = useUpdatePromptSnooze()
 
-  const { data: devicesResponse, isLoading, error } = useQuery({
-    queryKey: ['devices'],
-    queryFn: () =>
-      httpBrowserClient
-        .get(ApiEndpoints.gateway.listDevices())
-        .then((res) => res.data),
-  })
+  const { data: devices, isLoading, error } = useDevices()
 
   const outdatedDevices = useMemo(
-    () =>
-      getOutdatedDevices(
-        (devicesResponse?.data ?? []) as DeviceVersionCandidate[]
-      ),
-    [devicesResponse?.data]
+    () => getOutdatedDevices((devices ?? []) as DeviceVersionCandidate[]),
+    [devices]
   )
 
   const primaryOutdatedDevice = outdatedDevices[0]

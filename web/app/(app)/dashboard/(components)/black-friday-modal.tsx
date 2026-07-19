@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
 import {
     Dialog,
@@ -12,9 +11,8 @@ import {
     DialogDescription,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import httpBrowserClient from '@/lib/httpBrowserClient'
-import { ApiEndpoints } from '@/config/api'
 import { Badge } from '@/components/ui/badge'
+import { useSubscription } from '@/lib/api'
 import { Copy, Check } from 'lucide-react'
 
 const STORAGE_KEYS = {
@@ -28,13 +26,7 @@ export default function BlackFridayModal() {
     const [isOpen, setIsOpen] = useState(false)
     const [copiedCode, setCopiedCode] = useState<string | null>(null)
 
-    const { data: currentSubscription, isLoading } = useQuery({
-        queryKey: ['currentSubscription'],
-        queryFn: () =>
-            httpBrowserClient
-                .get(ApiEndpoints.billing.currentSubscription())
-                .then((res) => res.data),
-    })
+    const { data: currentSubscription, isLoading } = useSubscription()
 
     useEffect(() => {
         if (isLoading || !currentSubscription) return

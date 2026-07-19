@@ -10,9 +10,10 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useToast } from '@/hooks/use-toast'
+import { useCurrentUser } from '@/lib/api'
 import httpBrowserClient from '@/lib/httpBrowserClient'
 import { ApiEndpoints } from '@/config/api'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { Spinner } from '@/components/ui/spinner'
 import { useSession } from 'next-auth/react'
 
@@ -35,13 +36,7 @@ export default function EditProfileForm() {
     data: currentUser,
     isLoading: isLoadingUser,
     refetch: refetchCurrentUser,
-  } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: () =>
-      httpBrowserClient
-        .get(ApiEndpoints.auth.whoAmI())
-        .then((res) => res.data?.data),
-  })
+  } = useCurrentUser()
 
   const updateProfileForm = useForm<UpdateProfileFormData>({
     resolver: zodResolver(updateProfileSchema),

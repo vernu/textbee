@@ -2,13 +2,11 @@
 
 import { useMemo } from 'react'
 import Link from 'next/link'
-import { useQuery } from '@tanstack/react-query'
+import { useDevices } from '@/lib/api'
 import { ArrowUpRight, BellRing } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { ApiEndpoints } from '@/config/api'
 import { Routes } from '@/config/routes'
-import httpBrowserClient from '@/lib/httpBrowserClient'
 import { formatDeviceName } from '@/lib/utils'
 import {
   DeviceVersionCandidate,
@@ -18,20 +16,11 @@ import {
 } from './update-app-helpers'
 
 export default function UpdateAppNotificationBar() {
-  const { data: devicesResponse, isLoading, error } = useQuery({
-    queryKey: ['devices'],
-    queryFn: () =>
-      httpBrowserClient
-        .get(ApiEndpoints.gateway.listDevices())
-        .then((res) => res.data),
-  })
+  const { data: devices, isLoading, error } = useDevices()
 
   const outdatedDevices = useMemo(
-    () =>
-      getOutdatedDevices(
-        (devicesResponse?.data ?? []) as DeviceVersionCandidate[]
-      ),
-    [devicesResponse?.data]
+    () => getOutdatedDevices((devices ?? []) as DeviceVersionCandidate[]),
+    [devices]
   )
 
   const primaryOutdatedDevice = outdatedDevices[0]

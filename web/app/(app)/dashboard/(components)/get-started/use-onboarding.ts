@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import httpBrowserClient from '@/lib/httpBrowserClient'
 import { ApiEndpoints } from '@/config/api'
+import { useCurrentUser, useGatewayStats, useSubscription } from '@/lib/api'
 import { queryKeys } from '@/lib/api/query-keys'
 import {
   STEPS,
@@ -41,35 +42,21 @@ export function useOnboarding() {
   const [celebrationDismissed, setCelebrationDismissed] = useState(false)
   const prevCompletedAtRef = useRef<string | Date | null | undefined>(undefined)
 
-  const userQuery = useQuery({
-    queryKey: queryKeys.currentUser,
-    queryFn: () =>
-      httpBrowserClient
-        .get(ApiEndpoints.auth.whoAmI())
-        .then((res) => res.data?.data as UserShape),
-    refetchInterval: (query) => {
-      const u = query.state.data as UserShape | undefined
-      return u?.onboarding?.completedAt ? false : 10_000
-    },
+  // Polls until onboarding is finished, then stops. The three queries are the
+  // shared typed hooks, so the polling here also refreshes what the rest of
+  // the dashboard is reading rather than maintaining a parallel copy.
+  const userQuery = useCurrentUser({
+    refetchInterval: (query) =>
+      query.state.data?.onboarding?.completedAt ? false : 10_000,
   })
   const userData = userQuery.data
 
-  const statsQuery = useQuery({
-    queryKey: queryKeys.stats,
-    queryFn: () =>
-      httpBrowserClient
-        .get(ApiEndpoints.gateway.getStats())
-        .then((res) => res.data?.data as StatsShape),
+  const statsQuery = useGatewayStats({
     refetchInterval: () => (userData?.onboarding?.completedAt ? false : 10_000),
   })
   const stats = statsQuery.data
 
-  const subQuery = useQuery({
-    queryKey: queryKeys.subscription,
-    queryFn: () =>
-      httpBrowserClient
-        .get(ApiEndpoints.billing.currentSubscription())
-        .then((res) => res.data as SubShape),
+  const subQuery = useSubscription({
     refetchInterval: () => (userData?.onboarding?.completedAt ? false : 10_000),
   })
   const currentSubscription = subQuery.data
