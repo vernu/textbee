@@ -70,11 +70,14 @@ export default function ResetPasswordForm({
   })
 
   const onResetPassword = async (data: ResetPasswordFormValues) => {
+    form.clearErrors()
     try {
       await httpBrowserClient.post(ApiEndpoints.auth.resetPassword(), data)
     } catch (error) {
       console.error(error)
-      form.setError('root.serverError', {
+      // 'root', not 'root.serverError': the JSX renders errors.root.message,
+      // and a nested key leaves that undefined so no message showed.
+      form.setError('root', {
         message: 'Failed to reset password',
       })
     }
@@ -174,7 +177,8 @@ export default function ResetPasswordForm({
               </Button>
             </form>
           </Form>
-          {form.formState.isSubmitted && form.formState.isSubmitSuccessful && (
+          {form.formState.isSubmitSuccessful &&
+            !form.formState.errors.root && (
             <Alert className='mt-4' variant='default'>
               {/* <Icons.checkCircle className="h-4 w-4" /> */}
               <AlertTitle>Password reset successful</AlertTitle>
