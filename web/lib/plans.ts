@@ -92,3 +92,36 @@ export function findPlanTier(name: string | undefined | null) {
   const key = name.trim().toLowerCase()
   return PLAN_TIERS.find((tier) => tier.id === key)
 }
+
+/**
+ * What a yearly plan works out to per month, so the saving is legible without
+ * making the reader divide. Derived rather than stored: a hardcoded figure
+ * silently goes wrong the moment a price changes.
+ */
+export function monthlyEquivalent(tier: PlanTier): number | undefined {
+  if (!tier.yearlyPrice) return undefined
+  return tier.yearlyPrice / 12
+}
+
+/** Percentage saved by paying yearly, rounded to a whole number. */
+export function yearlySavingPercent(tier: PlanTier): number | undefined {
+  if (!tier.yearlyPrice || tier.monthlyPrice <= 0) return undefined
+  const yearOfMonthly = tier.monthlyPrice * 12
+  return Math.round(((yearOfMonthly - tier.yearlyPrice) / yearOfMonthly) * 100)
+}
+
+/**
+ * The caption under a headline per-month figure, e.g. "billed yearly at
+ * $99.99, or $9.99 monthly". Assumes the per-month figure is already shown
+ * above it, so it does not repeat it.
+ */
+export function formatPriceCaption(tier: PlanTier): string {
+  const perMonth = monthlyEquivalent(tier)
+  if (perMonth !== undefined && tier.yearlyPrice !== undefined) {
+    return `billed yearly at ${formatPlanPrice(tier.yearlyPrice)}, or ${formatPlanPrice(
+      tier.monthlyPrice,
+    )} monthly`
+  }
+  if (tier.monthlyPrice <= 0) return 'no card required'
+  return `${formatPlanPrice(tier.monthlyPrice)} billed monthly`
+}

@@ -31,11 +31,31 @@ describe('PlanPicker', () => {
     ).toEqual(['Free', 'Pro', 'Scale'])
   })
 
-  it('shows the marketing prices', () => {
+  // The headline figure is the yearly per-month equivalent, so both it and the
+  // month-to-month price are pinned. A customer must never see a price we do
+  // not charge.
+  it('leads with the yearly per-month price', () => {
     renderPicker()
 
-    expect(screen.getByText('$9.99')).toBeInTheDocument()
-    expect(screen.getByText('$29.99')).toBeInTheDocument()
+    expect(screen.getByText('$8.33')).toBeInTheDocument()
+    expect(screen.getByText('$25.00')).toBeInTheDocument()
+  })
+
+  it('still shows what the monthly option costs', () => {
+    renderPicker()
+
+    expect(
+      screen.getByText('billed yearly at $99.99, or $9.99 monthly')
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('billed yearly at $299.99, or $29.99 monthly')
+    ).toBeInTheDocument()
+  })
+
+  it('quotes the yearly saving on each paid tier', () => {
+    renderPicker()
+
+    expect(screen.getAllByText('Save 17% yearly')).toHaveLength(2)
   })
 
   it('links each paid tier at its own checkout route', () => {

@@ -139,3 +139,78 @@ describe('BillingService - cancellation handling', () => {
     })
   })
 })
+
+// Pins apart three failures that used to share one misleading message.
+describe('BillingService - checkout guards', () => {
+  let service: BillingService
+
+  const user = { _id: new Types.ObjectId('507f1f77bcf86cd799439011') }
+  const req = { ip: '127.0.0.1' }
+
+  const mockPlanModel = {
+    findOne: jest.fn(),
+  }
+  const emptyModel = {}
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        BillingService,
+        { provide: getModelToken(Plan.name), useValue: mockPlanModel },
+        { provide: getModelToken(Subscription.name), useValue: emptyModel },
+        { provide: getModelToken(User.name), useValue: emptyModel },
+        { provide: getModelToken(SMS.name), useValue: emptyModel },
+        {
+          provide: getModelToken(PolarWebhookPayload.name),
+          useValue: emptyModel,
+        },
+        { provide: getModelToken(CheckoutSession.name), useValue: emptyModel },
+        { provide: BillingNotificationsService, useValue: {} },
+      ],
+    }).compile()
+
+    service = module.get<BillingService>(BillingService)
+    jest.clearAllMocks()
+  })
+
+  it('names the real problem when the request carries no plan name', async () => {
+    await expect(
+      service.getCheckoutUrl({
+        user,
+        payload: { billingInterval: 'monthly' },
+        req,
+      }),
+    ).rejects.toMatchObject({
+      response: { code: 'PLAN_NAME_REQUIRED' },
+    })
+
+    // the plan is never looked up, so it can never be blamed
+    expect(mockPlanModel.findOne).not.toHaveBeenCalled()
+  })
+
+  it('reports an unknown plan as not found, not as unpurchasable', async () => {
+    mockPlanModel.findOne.mockResolvedValue(null)
+
+    await expect(
+      service.getCheckoutUrl({
+        user,
+        payload: { planName: 'enterprise', billingInterval: 'monthly' },
+        req,
+      }),
+    ).rejects.toMatchObject({
+      response: { code: 'PLAN_NOT_FOUND' },
+    })
+  })
+
+  it('still rejects a real plan that has no Polar products', async () => {
+    mockPlanModel.findOne.mockResolvedValue({ name: 'pro' })
+
+    await expect(
+      service.getCheckoutUrl({
+        user,
+        payload: { planName: 'pro', billingInterval: 'monthly' },
+        req,
+      }),
+    ).rejects.toThrow('Plan cannot be purchased')
+  })
+})
