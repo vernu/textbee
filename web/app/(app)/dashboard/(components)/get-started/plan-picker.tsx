@@ -15,7 +15,14 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Check, ExternalLink } from 'lucide-react'
 import { Routes } from '@/config/routes'
 import { useSubscription } from '@/lib/api'
-import { PLAN_TIERS, formatPlanPrice, type PlanTier } from '@/lib/plans'
+import {
+  PLAN_TIERS,
+  formatPlanPrice,
+  formatPriceCaption,
+  monthlyEquivalent,
+  yearlySavingPercent,
+  type PlanTier,
+} from '@/lib/plans'
 import { cn } from '@/lib/utils'
 
 type PlanPickerProps = {
@@ -38,34 +45,49 @@ function PlanCard({
 }) {
   const free = tier.monthlyPrice <= 0
   const highlight = tier.isPopular && !isCurrent
+  const perMonth = monthlyEquivalent(tier)
+  const saving = yearlySavingPercent(tier)
 
   return (
     <Card
       className={cn(
-        'relative flex flex-col',
+        'flex h-full flex-col',
+        // the accent marks one card only, so it still means something
         highlight
-          ? 'border-2 border-primary shadow-md'
+          ? 'border-primary shadow-md ring-1 ring-primary'
           : 'border-border shadow-none',
-        isCurrent && 'border-2 border-primary/40'
+        isCurrent && 'border-primary/40'
       )}
     >
-      {(highlight || isCurrent) && (
-        <Badge
-          variant={isCurrent ? 'secondary' : 'default'}
-          className='absolute right-3 top-3 text-[10px]'
-        >
-          {isCurrent ? 'Current' : 'Most popular'}
-        </Badge>
-      )}
+      <CardHeader className='pb-3 pt-5'>
+        <div className='flex items-center justify-between gap-2'>
+          <CardTitle className='text-base'>{tier.name}</CardTitle>
+          {(highlight || isCurrent) && (
+            <Badge
+              variant={isCurrent ? 'secondary' : 'default'}
+              className='text-[10px]'
+            >
+              {isCurrent ? 'Current' : 'Most popular'}
+            </Badge>
+          )}
+        </div>
 
-      <CardHeader className='pb-2 pr-24 pt-4'>
-        <CardTitle className='text-base'>{tier.name}</CardTitle>
-        <CardDescription>
-          <span className='text-foreground'>
-            {formatPlanPrice(tier.monthlyPrice)}
-          </span>
-          {' / month'}
-        </CardDescription>
+        <div className='pt-2'>
+          <div className='flex items-baseline gap-1'>
+            <span className='text-3xl font-semibold tabular-nums'>
+              {formatPlanPrice(perMonth ?? tier.monthlyPrice)}
+            </span>
+            <span className='text-sm text-muted-foreground'>/month</span>
+          </div>
+          <CardDescription className='mt-1 tabular-nums'>
+            {formatPriceCaption(tier)}
+          </CardDescription>
+          {saving !== undefined && (
+            <Badge variant='secondary' className='mt-2 text-[10px]'>
+              Save {saving}% yearly
+            </Badge>
+          )}
+        </div>
       </CardHeader>
 
       <CardContent className='flex-1 pb-4'>
@@ -79,10 +101,7 @@ function PlanCard({
               )}
             >
               <Check
-                className={cn(
-                  'mt-0.5 h-4 w-4 shrink-0',
-                  free ? 'text-muted-foreground' : 'text-primary'
-                )}
+                className='mt-0.5 h-4 w-4 shrink-0 text-muted-foreground'
                 aria-hidden
               />
               {feature}
@@ -91,7 +110,7 @@ function PlanCard({
         </ul>
       </CardContent>
 
-      <CardFooter className='pb-4 pt-0'>
+      <CardFooter className='mt-auto flex-col items-stretch gap-2 pb-5 pt-0'>
         {isCurrent ? (
           <Button variant='outline' className='w-full' disabled>
             Your current plan
@@ -106,9 +125,15 @@ function PlanCard({
             Continue with Free
           </Button>
         ) : (
-          <Button className='w-full' asChild>
-            <Link href={`/checkout/${tier.id}`}>Upgrade to {tier.name}</Link>
-          </Button>
+          <>
+            {/* above the button so every card's CTA lands on one baseline */}
+            <p className='text-center text-xs text-muted-foreground'>
+              Cancel anytime, keep access until the end of your billing period.
+            </p>
+            <Button className='w-full' asChild>
+              <Link href={`/checkout/${tier.id}`}>Upgrade to {tier.name}</Link>
+            </Button>
+          </>
         )}
       </CardFooter>
     </Card>

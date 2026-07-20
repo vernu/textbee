@@ -400,12 +400,34 @@ export class BillingService {
     polarSubscription?: any
     targetProductId?: string
   }> {
+    // a missing plan name is a client bug, not an unpurchasable plan
+    if (!planName || typeof planName !== 'string') {
+      console.error(
+        `Checkout requested without a plan name (received: ${JSON.stringify(planName)})`,
+      )
+      throw new BadRequestException({
+        message: 'No plan was selected. Please pick a plan and try again.',
+        code: 'PLAN_NAME_REQUIRED',
+      })
+    }
+
     const selectedPlan = await this.planModel.findOne({ name: planName })
 
+    if (!selectedPlan) {
+      console.error(`Checkout requested for unknown plan "${planName}"`)
+      throw new BadRequestException({
+        message: `Plan "${planName}" was not found.`,
+        code: 'PLAN_NOT_FOUND',
+      })
+    }
+
     if (
-      !selectedPlan?.polarMonthlyProductId &&
-      !selectedPlan?.polarYearlyProductId
+      !selectedPlan.polarMonthlyProductId &&
+      !selectedPlan.polarYearlyProductId
     ) {
+      console.error(
+        `Plan "${planName}" has no Polar product ids and cannot be purchased`,
+      )
       throw new BadRequestException('Plan cannot be purchased')
     }
 
