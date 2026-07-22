@@ -233,6 +233,84 @@ test.describe('message history (mocked API, no real backend)', () => {
     expect(await read()).toBe('665f1c2a9b1e4a0012ab34cd')
   })
 
+  // Support alerts carry a full conversation URL, which has no break
+  // opportunity. That single token used to set a min-content floor on the
+  // dialog's grid track, pushing the message box, the error panel and the
+  // action button hundreds of pixels outside the card.
+  for (const viewport of [
+    { name: 'mobile', width: 375, height: 800 },
+    { name: 'desktop', width: 1280, height: 800 },
+  ]) {
+    test(`a long unbreakable URL stays inside the details dialog on ${viewport.name}`, async ({
+      page,
+      context,
+    }) => {
+      await page.setViewportSize({
+        width: viewport.width,
+        height: viewport.height,
+      })
+      await authenticate(context)
+      await mockApi(page)
+
+      await page.route('**/api/v1/gateway/devices/*/messages*', (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            data: [
+              {
+                _id: 'longurl_1',
+                recipient: '+251912657519',
+                message:
+                  'Support request - textbee support\nUrgency: Urgent\nView conversation:\nhttps://dash.supporthq.app/dashboard/projects/69a591f28bdb2cda5452246b/conversations/69c2a0a058b1a815140a9be5',
+                status: 'failed',
+                type: 'sent',
+                errorCode: '1',
+                errorMessage:
+                  'SMS failed on device. Common causes: no SMS credit on SIM, weak signal, or carrier blocked. Check SIM balance and signal, then try again. (code 0)',
+                device: { _id: 'device_1', brand: 'samsung', model: 'SM-A346E' },
+                requestedAt: new Date().toISOString(),
+                createdAt: new Date().toISOString(),
+              },
+            ],
+            meta: { total: 1, page: 1, limit: 20, totalPages: 1 },
+          }),
+        })
+      )
+
+      await page.goto('/dashboard/messaging/history')
+      await page.getByRole('button', { name: /Support request/ }).click()
+
+      const dialog = page.getByRole('dialog')
+      await expect(dialog).toBeVisible()
+
+      const overflows = await dialog.evaluate(
+        (el) => el.scrollWidth > el.clientWidth + 1
+      )
+      expect(overflows, 'details dialog must not scroll sideways').toBe(false)
+
+      // The visible symptom was the action button rendering outside the card,
+      // which a scrollWidth check alone would miss if a parent clipped it.
+      const dialogBox = await dialog.boundingBox()
+      const buttonBox = await dialog
+        .getByRole('button', { name: 'Follow up' })
+        .boundingBox()
+      expect(dialogBox && buttonBox).toBeTruthy()
+      expect(
+        buttonBox!.x + buttonBox!.width,
+        'the action button must stay inside the dialog'
+      ).toBeLessThanOrEqual(dialogBox!.x + dialogBox!.width + 1)
+
+      // The page must not gain a sideways scrollbar either.
+      const pageOverflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - window.innerWidth
+      )
+      expect(pageOverflow, 'page must not scroll sideways').toBeLessThanOrEqual(
+        0
+      )
+    })
+  }
+
   test('replying from a received message keeps a device selected', async ({
     page,
     context,

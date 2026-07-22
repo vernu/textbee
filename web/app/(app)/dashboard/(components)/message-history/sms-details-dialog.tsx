@@ -54,7 +54,10 @@ export default function SmsDetailsDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className='sm:max-w-[540px]'>
+        {/* The dialog is the only scroll container. Capping the message body
+            instead put a scrollbar inside a scrollbar, which is easy to miss
+            on touch. */}
+        <DialogContent className='max-h-[85vh] overflow-y-auto sm:max-w-[540px]'>
           {/* text-left overrides the primitive's mobile centring, which left
               the title on the left and the date centred under it. */}
           <DialogHeader className='pr-8 text-left'>
@@ -92,7 +95,7 @@ export default function SmsDetailsDialog({
 
           {/* The message body leads: it is the reason this dialog is open. */}
           <div className='relative'>
-            <div className='max-h-56 overflow-y-auto whitespace-pre-wrap break-words rounded-lg bg-muted p-3 pr-11 text-sm'>
+            <div className='whitespace-pre-wrap break-words rounded-lg bg-muted p-3 pr-11 text-sm'>
               {message.message}
             </div>
             <CopyButton
@@ -149,7 +152,7 @@ export default function SmsDetailsDialog({
                 </p>
               )}
               {message.errorMessage && (
-                <p className='max-h-24 overflow-y-auto break-words text-xs text-destructive'>
+                <p className='break-words text-xs text-destructive'>
                   {message.errorMessage}
                 </p>
               )}
