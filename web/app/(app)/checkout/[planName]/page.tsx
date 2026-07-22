@@ -117,7 +117,9 @@ export default function CheckoutPage({
         planName,
         billingInterval: urlInterval ?? selected,
       })
-      window.location.href = '/dashboard/account?plan-change-success=1'
+      // Straight to the billing tab: the /dashboard/account redirect stub
+      // drops query params, which silently ate the success toast.
+      window.location.href = '/dashboard/account/billing?plan-change-success=1'
     } catch (error) {
       // no auto-retry here: the request may have charged the card
       setPlanChange(null)
@@ -175,7 +177,7 @@ export default function CheckoutPage({
               Try again
             </Button>
             <Button variant='ghost' asChild>
-              <Link href='/dashboard/account'>Back to your account</Link>
+              <Link href='/dashboard/account/billing'>Back to your account</Link>
             </Button>
           </div>
         </div>
@@ -233,7 +235,7 @@ export default function CheckoutPage({
             disabled={isConfirming}
             asChild
           >
-            <Link href='/dashboard/account'>Cancel</Link>
+            <Link href='/dashboard/account/billing'>Cancel</Link>
           </Button>
         </div>
       </CheckoutShell>

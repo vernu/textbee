@@ -15,6 +15,16 @@ async function captureSend(page: import('@playwright/test').Page) {
   return payloads
 }
 
+// The section streams behind a loading.tsx boundary, so the form's HTML can
+// paint before React hydrates it; typing that early into the controlled To
+// input is silently wiped when hydration commits. The device name renders
+// only after the client-side devices fetch, so its presence proves the form
+// is hydrated and its handlers are attached.
+async function gotoSendPage(page: import('@playwright/test').Page) {
+  await page.goto('/dashboard/messaging')
+  await expect(page.getByLabel('Send from')).toContainText('Pixel 8')
+}
+
 test.describe('send sms (mocked API, no real backend)', () => {
   test('commits recipients as chips and posts exactly those numbers', async ({
     page,
@@ -24,7 +34,7 @@ test.describe('send sms (mocked API, no real backend)', () => {
     await mockApi(page)
     const payloads = await captureSend(page)
 
-    await page.goto('/dashboard/messaging')
+    await gotoSendPage(page)
 
     const to = page.getByLabel('To', { exact: true })
     await to.fill('+1 (415) 555-0101')
@@ -57,7 +67,7 @@ test.describe('send sms (mocked API, no real backend)', () => {
   }) => {
     await authenticate(context)
     await mockApi(page)
-    await page.goto('/dashboard/messaging')
+    await gotoSendPage(page)
 
     await page
       .getByLabel('To', { exact: true })
@@ -77,7 +87,7 @@ test.describe('send sms (mocked API, no real backend)', () => {
   }) => {
     await authenticate(context)
     await mockApi(page)
-    await page.goto('/dashboard/messaging')
+    await gotoSendPage(page)
 
     // Spaces are formatting inside one number here, not separators.
     const to = page.getByLabel('To', { exact: true })
@@ -94,7 +104,7 @@ test.describe('send sms (mocked API, no real backend)', () => {
   test('rejects a number that cannot be dialled', async ({ page, context }) => {
     await authenticate(context)
     await mockApi(page)
-    await page.goto('/dashboard/messaging')
+    await gotoSendPage(page)
 
     const to = page.getByLabel('To', { exact: true })
     await to.fill('not a number')
@@ -113,7 +123,7 @@ test.describe('send sms (mocked API, no real backend)', () => {
     await mockApi(page)
     const payloads = await captureSend(page)
 
-    await page.goto('/dashboard/messaging')
+    await gotoSendPage(page)
 
     // Type a number then go straight to the message without pressing Enter.
     await page.getByLabel('To', { exact: true }).fill('+14155550101')
@@ -127,7 +137,7 @@ test.describe('send sms (mocked API, no real backend)', () => {
   test('preselects the only enabled device', async ({ page, context }) => {
     await authenticate(context)
     await mockApi(page)
-    await page.goto('/dashboard/messaging')
+    await gotoSendPage(page)
 
     // Fixtures have one enabled device (Pixel 8) and one disabled. The old
     // implementation computed this in defaultValues before devices loaded, so
@@ -138,7 +148,7 @@ test.describe('send sms (mocked API, no real backend)', () => {
   test('counts SMS segments', async ({ page, context }) => {
     await authenticate(context)
     await mockApi(page)
-    await page.goto('/dashboard/messaging')
+    await gotoSendPage(page)
 
     await page.getByLabel('Message').fill('a'.repeat(161))
     await expect(page.getByText(/161 characters, 2 segments/)).toBeVisible()
@@ -149,7 +159,7 @@ test.describe('send sms (mocked API, no real backend)', () => {
     await mockApi(page)
     await captureSend(page)
 
-    await page.goto('/dashboard/messaging')
+    await gotoSendPage(page)
     const to = page.getByLabel('To', { exact: true })
     await to.fill('+14155550101')
     await to.press('Enter')

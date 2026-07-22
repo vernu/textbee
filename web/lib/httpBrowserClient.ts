@@ -5,32 +5,41 @@ const httpBrowserClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || '',
 })
 
-// Cache for session data to reduce API calls
-let sessionCache: any = null
-let cacheTimestamp = 0
-const CACHE_DURATION = 2 * 60 * 1000 // 2 minutes
+// API access token, seeded from the server-fetched session by Providers and
+// kept current by its SessionTokenBridge. Held in module state so the request
+// interceptor attaches it synchronously instead of paying a /api/auth/session
+// round trip per request (Vercel cost and added latency). undefined means not
+// seeded yet; null means known signed out, so auth pages never fetch either.
+let sessionToken: string | null | undefined
 
-const getCachedSession = async () => {
-  const now = Date.now()
-  
-  // Return cached session if it's still valid
-  if (sessionCache && (now - cacheTimestamp) < CACHE_DURATION) {
-    return sessionCache
+export function setSessionToken(token: string | null) {
+  sessionToken = token
+}
+
+// Fallback for the rare request that fires before the token is seeded (deep
+// hard load). One shared promise so a burst of queries costs one session call.
+let sessionFetch: Promise<string | null> | null = null
+
+function fetchSessionToken() {
+  if (!sessionFetch) {
+    sessionFetch = getSession()
+      .then((session) => {
+        sessionToken = session?.user?.accessToken ?? null
+        return sessionToken
+      })
+      .finally(() => {
+        sessionFetch = null
+      })
   }
-  
-  // Fetch fresh session and update cache
-  const session = await getSession()
-  sessionCache = session
-  cacheTimestamp = now
-  
-  return session
+  return sessionFetch
 }
 
 httpBrowserClient.interceptors.request.use(async (config) => {
-  const session = await getCachedSession()
+  const token =
+    sessionToken === undefined ? await fetchSessionToken() : sessionToken
 
-  if (session?.user?.accessToken) {
-    config.headers.Authorization = `Bearer ${session.user.accessToken}`
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
   }
   return config
 })
@@ -47,7 +56,7 @@ httpBrowserClient.interceptors.response.use(
     ) {
       const { pathname } = window.location
       if (!pathname.includes('/logout') && !pathname.includes('/login')) {
-        sessionCache = null
+        setSessionToken(null)
         window.location.href = '/logout'
       }
     }

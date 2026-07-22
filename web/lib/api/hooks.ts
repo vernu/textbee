@@ -358,6 +358,9 @@ export function useWebhookNotifications(filters: WebhookNotificationFilters) {
           `${ApiEndpoints.gateway.getWebhookNotifications()}?eventType=${eventType}&page=${page}&limit=${limit}&status=${status}&start=${start}&end=${end}&deviceId=${deviceId}&webhookSubscriptionId=${webhookSubscriptionId}`
         )
         .then(unwrapBody<WebhookNotificationsEnvelope>),
+    // Deliveries arrive from outside the tab, so stay fresher than the 60s
+    // client-wide default.
+    staleTime: 15_000,
   })
 }
 
@@ -420,6 +423,9 @@ export function useDeviceMessages(
         .get(`${ApiEndpoints.gateway.getMessages(deviceId)}?${query}`)
         .then(unwrapBody<DeviceMessagesEnvelope>)
     },
+    // Inbound messages arrive from outside the tab, so stay fresher than the
+    // 60s client-wide default. Before ...options so callers can override.
+    staleTime: 15_000,
     ...options,
   })
 }
