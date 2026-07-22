@@ -66,7 +66,9 @@ export function MessageRow({ message, device, onSelect }: MessageRowProps) {
           </span>
         </span>
 
-        <span className='mt-0.5 line-clamp-2 block text-sm text-muted-foreground'>
+        {/* break-words so a message that is one long URL fills both clamped
+            lines instead of being cut off partway through the first. */}
+        <span className='mt-0.5 line-clamp-2 block break-words text-sm text-muted-foreground'>
           {message.message}
         </span>
 
