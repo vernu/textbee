@@ -42,23 +42,29 @@ test.describe('app chrome (mocked API, no real backend)', () => {
     await mockApi(page)
     await page.goto('/dashboard')
 
-    // Scroll to the very bottom so the footer is in view.
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
-
     const footer = page.locator('footer')
     await expect(footer).toBeVisible()
+    const tabBar = page.locator('nav.fixed').first()
 
-    const footerBox = await footer.boundingBox()
-    const tabBarBox = await page.locator('nav.fixed').first().boundingBox()
-
-    expect(footerBox, 'footer must have a layout box').not.toBeNull()
-    expect(tabBarBox, 'mobile tab bar must have a layout box').not.toBeNull()
-
-    // The footer's last pixel must sit above the tab bar's first pixel.
-    expect(
-      footerBox!.y + footerBox!.height,
-      'footer bottom must clear the fixed tab bar'
-    ).toBeLessThanOrEqual(tabBarBox!.y + 1)
+    // Scrolled again on every attempt rather than once up front: the page
+    // starts as a short loading skeleton and grows as each card's data lands,
+    // so a single scroll to the bottom can be measured from a document that is
+    // still shorter than it ends up, leaving the footer below the viewport.
+    await expect
+      .poll(
+        async () => {
+          await page.evaluate(() =>
+            window.scrollTo(0, document.body.scrollHeight)
+          )
+          const footerBox = await footer.boundingBox()
+          const tabBarBox = await tabBar.boundingBox()
+          if (!footerBox || !tabBarBox) return Number.POSITIVE_INFINITY
+          // The footer's last pixel must sit above the tab bar's first pixel.
+          return footerBox.y + footerBox.height - (tabBarBox.y + 1)
+        },
+        { message: 'footer bottom must clear the fixed tab bar' }
+      )
+      .toBeLessThanOrEqual(0)
   })
 
   test('mobile: footer links stack vertically', async ({ page, context }) => {

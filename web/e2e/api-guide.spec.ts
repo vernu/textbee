@@ -55,6 +55,33 @@ test.describe('api guide (mocked API, no real backend)', () => {
     await expect(page.getByText('package main').first()).toBeVisible()
   })
 
+  // The guide applies Prism themes, so it must render with the Prism
+  // highlighter. It previously used the package's default export, which is the
+  // highlight.js build: that emits hljs-* classes the Prism theme never styles
+  // (so samples went uncoloured) and compiles in every language it supports.
+  test('samples are highlighted by Prism, in every language', async ({
+    page,
+    context,
+  }) => {
+    await authenticate(context)
+    await mockApi(page)
+    await page.goto('/dashboard/messaging/api-guide')
+
+    for (const language of ['cURL', 'Node.js', 'Python', 'PHP', 'Go']) {
+      await page.getByRole('tab', { name: language, exact: true }).click()
+      await expect(
+        page.locator('pre code .token').first(),
+        `${language} samples must carry Prism token markup`
+      ).toBeVisible()
+    }
+
+    // A registered language yields more than one token type; a missing one
+    // would fall back to a single undifferentiated text run.
+    expect(
+      await page.locator('pre code .token').count()
+    ).toBeGreaterThan(5)
+  })
+
   test('code can be copied', async ({ page, context }) => {
     await authenticate(context)
     await mockApi(page)
@@ -62,6 +89,10 @@ test.describe('api guide (mocked API, no real backend)', () => {
     await page.goto('/dashboard/messaging/api-guide')
 
     await page.getByRole('button', { name: 'Copy code' }).first().click()
+
+    // The button relabels itself only after the async clipboard write resolves,
+    // so this is the signal that there is something to read back.
+    await expect(page.getByRole('button', { name: 'Copied' }).first()).toBeVisible()
 
     const clipboard = await page.evaluate(() =>
       navigator.clipboard.readText()
@@ -74,7 +105,10 @@ test.describe('api guide (mocked API, no real backend)', () => {
     await authenticate(context)
     await mockApi(page)
     await page.goto('/dashboard/messaging/api-guide')
-    await page.waitForLoadState('networkidle')
+    // Not networkidle: link prefetching keeps the network busy, so that state
+    // can go unreached under parallel workers. A rendered sample proves the
+    // code blocks (the thing that would widen the page) are laid out.
+    await expect(page.getByText('curl -X POST').first()).toBeVisible()
 
     // Code blocks are the classic way to widen a mobile page.
     const { scrollWidth, innerWidth } = await page.evaluate(() => ({

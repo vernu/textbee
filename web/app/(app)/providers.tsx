@@ -1,6 +1,5 @@
 'use client'
 
-import { GoogleOAuthProvider } from '@react-oauth/google'
 import { SessionProvider, useSession } from 'next-auth/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useEffect, useState, type PropsWithChildren } from 'react'
@@ -54,13 +53,7 @@ export default function Providers({
   return (
     <SessionProvider session={session} refetchOnWindowFocus={false}>
       <SessionTokenBridge />
-      <QueryClientProvider client={queryClient}>
-        <GoogleOAuthProvider
-          clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? ''}
-        >
-          {children}
-        </GoogleOAuthProvider>
-      </QueryClientProvider>
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     </SessionProvider>
   )
 }
