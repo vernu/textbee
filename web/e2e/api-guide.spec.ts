@@ -87,6 +87,10 @@ test.describe('api guide (mocked API, no real backend)', () => {
     await mockApi(page)
     await context.grantPermissions(['clipboard-read', 'clipboard-write'])
     await page.goto('/dashboard/messaging/api-guide')
+    // navigator.clipboard.writeText rejects when the document is not focused,
+    // which is the state a backgrounded page sits in while workers run in
+    // parallel. Granting permissions alone does not cover it.
+    await page.bringToFront()
 
     await page.getByRole('button', { name: 'Copy code' }).first().click()
 
