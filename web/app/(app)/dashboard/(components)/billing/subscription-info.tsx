@@ -11,7 +11,7 @@ import {
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Spinner } from '@/components/ui/spinner'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useCurrentUser, useSubscription } from '@/lib/api'
 import type { SubscriptionStatus } from '@/lib/api/types'
 import {
@@ -235,8 +235,12 @@ export default function SubscriptionInfo() {
 
   if (isLoadingSubscription)
     return (
-      <div className='flex h-full min-h-[200px] items-center justify-center'>
-        <Spinner size='sm' />
+      // Mirrors the two cards below. The old 16px spinner in an empty column
+      // read as a blank page while the subscription loaded.
+      <div role='status' className='space-y-4'>
+        <span className='sr-only'>Loading subscription</span>
+        <Skeleton className='h-44 w-full rounded-lg' />
+        <Skeleton className='h-56 w-full rounded-lg' />
       </div>
     )
 

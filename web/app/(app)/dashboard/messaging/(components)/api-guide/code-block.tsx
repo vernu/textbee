@@ -3,10 +3,32 @@
 import { useState } from 'react'
 import { useTheme } from 'next-themes'
 import { Check, Copy } from 'lucide-react'
-import SyntaxHighlighter from 'react-syntax-highlighter'
+import { PrismLight as SyntaxHighlighter } from 'react-syntax-highlighter'
+import bash from 'react-syntax-highlighter/dist/esm/languages/prism/bash'
+import go from 'react-syntax-highlighter/dist/esm/languages/prism/go'
+import javascript from 'react-syntax-highlighter/dist/esm/languages/prism/javascript'
+import json from 'react-syntax-highlighter/dist/esm/languages/prism/json'
+import php from 'react-syntax-highlighter/dist/esm/languages/prism/php'
+import python from 'react-syntax-highlighter/dist/esm/languages/prism/python'
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+
+// Prism, registering only the languages the guide uses. The bare
+// react-syntax-highlighter entry is the highlight.js build with every language
+// compiled in, and it emits hljs-* class names that the Prism themes below do
+// not style, so this both shrinks the chunk and makes the theme apply.
+// The languages come from LANGUAGES in snippets.ts plus json for responses.
+for (const [name, definition] of [
+  ['bash', bash],
+  ['go', go],
+  ['javascript', javascript],
+  ['json', json],
+  ['php', php],
+  ['python', python],
+] as const) {
+  SyntaxHighlighter.registerLanguage(name, definition)
+}
 
 // The previous guide hardcoded a dark slate background regardless of theme, so
 // code blocks were the only dark thing on a light page.

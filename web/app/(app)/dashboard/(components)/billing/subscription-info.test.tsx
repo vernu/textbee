@@ -216,6 +216,21 @@ describe('SubscriptionInfo', () => {
     ).toHaveAttribute('href', 'https://textbee.dev/pricing')
   })
 
+  // The loading state used to be a 16px spinner alone in the content column,
+  // which read as a blank tab while the subscription loaded.
+  it('shows a visible loading skeleton while the subscription loads', () => {
+    useSubscription.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      error: null,
+    })
+    render(<SubscriptionInfo />)
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Loading subscription'
+    )
+  })
+
   it('renders an error state rather than an empty card', () => {
     useSubscription.mockReturnValue({
       data: undefined,

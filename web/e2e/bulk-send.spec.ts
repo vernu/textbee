@@ -23,6 +23,20 @@ async function uploadCsv(page: import('@playwright/test').Page, csv: string) {
   })
 }
 
+// The section streams behind a loading.tsx boundary, so the form's HTML can
+// paint before React hydrates it, and a file offered during that gap is
+// silently discarded (react-dropzone binds its change handler on mount).
+// The row cap in the dropzone copy is derived from useSubscription inside this
+// page's own hook, so seeing it proves this component hydrated and has data.
+// Waiting on the devices response would not: the dashboard layout requests the
+// same query key, so it can resolve before this page has hydrated.
+async function gotoBulkPage(page: import('@playwright/test').Page) {
+  await page.goto('/dashboard/messaging/bulk')
+  await expect(
+    page.getByText(/Up to 1 MB and [\d,]+ rows on your plan/)
+  ).toBeVisible()
+}
+
 // Keyboard selection rather than clicking the option: the Radix popper can
 // render outside the viewport on a short page, which made the click flaky.
 async function selectDevice(page: import('@playwright/test').Page) {
@@ -51,7 +65,7 @@ test.describe('bulk send (mocked API, no real backend)', () => {
       })
     })
 
-    await page.goto('/dashboard/messaging/bulk')
+    await gotoBulkPage(page)
 
     await uploadCsv(page, CSV_WITH_PROBLEM_ROWS)
 
@@ -90,7 +104,7 @@ test.describe('bulk send (mocked API, no real backend)', () => {
   test('offers a downloadable sample CSV', async ({ page, context }) => {
     await authenticate(context)
     await mockApi(page)
-    await page.goto('/dashboard/messaging/bulk')
+    await gotoBulkPage(page)
 
     const link = page.getByRole('link', { name: /download a sample csv/i })
     await expect(link).toBeVisible()
@@ -110,7 +124,7 @@ test.describe('bulk send (mocked API, no real backend)', () => {
   }) => {
     await authenticate(context)
     await mockApi(page)
-    await page.goto('/dashboard/messaging/bulk')
+    await gotoBulkPage(page)
 
     // The old copy printed the raw byte count ("max 1048576 bytes").
     await expect(page.getByText('1048576')).toHaveCount(0)
@@ -124,7 +138,7 @@ test.describe('bulk send (mocked API, no real backend)', () => {
     await page.setViewportSize({ width: 375, height: 800 })
     await authenticate(context)
     await mockApi(page)
-    await page.goto('/dashboard/messaging/bulk')
+    await gotoBulkPage(page)
 
     // A wide table is the obvious way to reintroduce the sideways-scroll bug,
     // and it only exists once a file has been parsed.
@@ -144,7 +158,7 @@ test.describe('bulk send (mocked API, no real backend)', () => {
   }) => {
     await authenticate(context)
     await mockApi(page)
-    await page.goto('/dashboard/messaging/bulk')
+    await gotoBulkPage(page)
 
     await uploadCsv(page, CSV_WITH_PROBLEM_ROWS)
     await selectDevice(page)
@@ -165,7 +179,7 @@ test.describe('bulk send (mocked API, no real backend)', () => {
   }) => {
     await authenticate(context)
     await mockApi(page)
-    await page.goto('/dashboard/messaging/bulk')
+    await gotoBulkPage(page)
 
     await uploadCsv(
       page,
@@ -187,7 +201,7 @@ test.describe('bulk send (mocked API, no real backend)', () => {
   test('explains why a non-CSV file was rejected', async ({ page, context }) => {
     await authenticate(context)
     await mockApi(page)
-    await page.goto('/dashboard/messaging/bulk')
+    await gotoBulkPage(page)
 
     // Rejected drops used to return silently, so nothing happened and nothing
     // said why.

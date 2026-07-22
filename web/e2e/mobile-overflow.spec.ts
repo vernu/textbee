@@ -15,7 +15,10 @@ const AUTHED_PAGES = [
   '/dashboard/messaging/api-guide',
   '/dashboard/webhooks',
   '/dashboard/webhooks/deliveries',
-  '/dashboard/account',
+  // The billing tab, not /dashboard/account: that route is a redirect stub
+  // with no layout of its own, and measuring it raced the redirect. The
+  // redirect itself is covered in account.spec.ts.
+  '/dashboard/account/billing',
   '/dashboard/account/profile',
   '/dashboard/account/security',
   '/dashboard/account/support',
@@ -24,13 +27,22 @@ const AUTHED_PAGES = [
   '/dashboard/community',
 ]
 
+// Deterministic replacement for waitForLoadState('networkidle'), which needs a
+// 500ms window with zero connections. Link prefetching keeps issuing and
+// aborting RSC requests, so under parallel workers that window can be missed
+// until the test times out. Waiting for the page's own heading and for its
+// loading placeholders to clear proves the same thing: content is laid out.
+async function waitForContent(page: import('@playwright/test').Page) {
+  await expect(page.locator('main#main-content h2').first()).toBeVisible()
+  await expect(page.locator('main#main-content [role="status"]')).toHaveCount(0)
+}
+
 async function expectNoHorizontalScroll(page: import('@playwright/test').Page) {
-  const { scrollWidth, innerWidth } = await page.evaluate(() => ({
-    scrollWidth: document.documentElement.scrollWidth,
-    innerWidth: window.innerWidth,
-  }))
-  expect(scrollWidth, 'page must not scroll sideways at 375px').toBeLessThanOrEqual(
-    innerWidth
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - window.innerWidth
+  )
+  expect(overflow, 'page must not scroll sideways at 375px').toBeLessThanOrEqual(
+    0
   )
 }
 
@@ -42,7 +54,7 @@ test.describe('no horizontal overflow at 375px (mocked API)', () => {
       await authenticate(context)
       await mockApi(page)
       await page.goto(path)
-      await page.waitForLoadState('networkidle')
+      await waitForContent(page)
       await expectNoHorizontalScroll(page)
     })
   }
@@ -70,7 +82,7 @@ test.describe('no horizontal overflow at 375px (mocked API)', () => {
   test('login page', async ({ page }) => {
     await mockApi(page)
     await page.goto('/login')
-    await page.waitForLoadState('networkidle')
+    await expect(page.getByText('Welcome back')).toBeVisible()
     await expectNoHorizontalScroll(page)
   })
 })

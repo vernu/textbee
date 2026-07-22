@@ -20,7 +20,9 @@ function isTabActive(tab: RouteTab, pathname: string): boolean {
 
 // Link-based segmented control: tabs are real routes, so the active tab
 // survives refresh and deep links are shareable. Mobile: horizontally
-// scrollable pills; the active pill scrolls into view on load.
+// scrollable pills; the active pill scrolls into view on load. Links opt into
+// full prefetch because these routes are dynamic (session cookie in the app
+// layout), which the router's default prefetch skips.
 export default function RouteTabs({
   tabs,
   className,
@@ -54,6 +56,7 @@ export default function RouteTabs({
           <Link
             key={tab.href}
             href={tab.href}
+            prefetch
             ref={active ? activeRef : undefined}
             aria-current={active ? 'page' : undefined}
             className={cn(
