@@ -57,7 +57,7 @@ export default function DashboardLayout({
               <SidebarLink
                 key={item.href}
                 item={item}
-                isActive={isNavItemActive(item.href, pathname)}
+                isActive={isNavItemActive(item, pathname)}
               />
             ))}
           </nav>
@@ -114,7 +114,7 @@ export default function DashboardLayout({
             <MobileNavLink
               key={item.href}
               item={item}
-              isActive={isNavItemActive(item.href, pathname)}
+              isActive={isNavItemActive(item, pathname)}
             />
           ))}
         </div>

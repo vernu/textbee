@@ -65,6 +65,33 @@ test.describe('account settings (mocked API, no real backend)', () => {
     ).toHaveCount(0)
   })
 
+  // The sidebar used to link to /dashboard/account, whose page is a server
+  // redirect stub, so every click paid navigation + redirect + navigation.
+  test('the sidebar Account link goes straight to billing with no redirect hop', async ({
+    page,
+    context,
+  }) => {
+    await authenticate(context)
+    await mockApi(page)
+
+    const stubHits: string[] = []
+    page.on('request', (request) => {
+      if (new URL(request.url()).pathname === '/dashboard/account') {
+        stubHits.push(request.url())
+      }
+    })
+
+    await page.goto('/dashboard')
+    await page
+      .getByRole('navigation', { name: 'Main' })
+      .getByRole('link', { name: 'Account' })
+      .click()
+
+    await expect(page).toHaveURL(/\/dashboard\/account\/billing$/)
+    await expect(page.getByRole('heading', { name: 'Pro' })).toBeVisible()
+    expect(stubHits).toEqual([])
+  })
+
   test('the pricing page is reachable from billing on any plan', async ({
     page,
     context,
