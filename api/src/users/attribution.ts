@@ -144,7 +144,11 @@ export function normalizeSignupSource(
   // utm_source=chatgpt.com. Without this, the same channel lands in two
   // buckets depending on whether the link carried the parameter.
   const source = cleanString(first.source)
-  if (source) return normalizeReferrer(source)
+  if (source) {
+    // Normalisation can empty a value that was not empty, for example a bare
+    // "www.", and an empty source is worse than an unmapped one.
+    return normalizeReferrer(source) || source.toLowerCase()
+  }
 
   const ref = cleanString(first.ref)
   if (ref) return ref.toLowerCase()
@@ -153,7 +157,13 @@ export function normalizeSignupSource(
   if (cleanString(first.fbclid)) return 'meta'
 
   const referrer = cleanString(first.referrer)
-  if (referrer) return normalizeReferrer(referrer)
+  if (referrer) {
+    // Same guard as above, but the conclusion differs: an explicit utm_source
+    // is intentional and worth keeping verbatim, whereas a referrer that
+    // normalises to nothing tells us nothing, so it falls through to direct.
+    const normalized = normalizeReferrer(referrer)
+    if (normalized) return normalized
+  }
 
   return 'direct'
 }
