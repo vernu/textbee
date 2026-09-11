@@ -684,8 +684,15 @@ export class AuthService {
   }
 
   async validateEmail(email: string) {
-    const re = /\S+@\S+\.\S+/
-    if (!re.test(email)) {
+    // Anchored, with character classes that cannot overlap, and bounded by the
+    // RFC length limit. The previous pattern was unanchored \S+@\S+\.\S+,
+    // whose repeated \S+ groups backtrack polynomially on a long run of
+    // non-space characters. Registration is unauthenticated and accepts a large
+    // body, so that was reachable by anyone.
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    const candidate = typeof email === 'string' ? email.trim() : ''
+
+    if (candidate.length > 254 || !re.test(candidate)) {
       throw new HttpException(
         { error: 'Invalid email' },
         HttpStatus.BAD_REQUEST,

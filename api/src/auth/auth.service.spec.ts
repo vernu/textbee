@@ -69,13 +69,35 @@ describe('AuthService', () => {
       await expect(service.validateEmail('a@b.com')).resolves.toBeUndefined()
     })
 
-    it.each(['plainaddress', 'no-at-sign.com', 'missing@dot', '@no-local.com'])(
-      'rejects %s',
-      async (bad) => {
-        const { service } = build()
-        await expect(service.validateEmail(bad)).rejects.toThrow(HttpException)
-      },
-    )
+    it('tolerates surrounding whitespace', async () => {
+      const { service } = build()
+      await expect(service.validateEmail('  a@b.com  ')).resolves.toBeUndefined()
+    })
+
+    it.each([
+      'plainaddress',
+      'no-at-sign.com',
+      'missing@dot',
+      '@no-local.com',
+      // Used to pass: the pattern was unanchored, so any substring matched.
+      'hello a@b.com world',
+      'a b@c.com',
+      undefined as any,
+      null as any,
+    ])('rejects %s', async (bad) => {
+      const { service } = build()
+      await expect(service.validateEmail(bad)).rejects.toThrow(HttpException)
+    })
+
+    it('rejects an over-long address without scanning it', async () => {
+      const { service } = build()
+      const huge = `${'!'.repeat(100000)}@b.com`
+
+      const startedAt = Date.now()
+      await expect(service.validateEmail(huge)).rejects.toThrow(HttpException)
+      // The old unanchored pattern backtracked on input like this.
+      expect(Date.now() - startedAt).toBeLessThan(1000)
+    })
   })
 
   describe('validatePassword', () => {
