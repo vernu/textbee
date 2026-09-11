@@ -139,8 +139,12 @@ export function normalizeSignupSource(
   const first = attribution?.first ?? attribution?.last
   if (!first) return 'direct'
 
+  // Run an explicit utm_source through the same host mapping. Some referrers
+  // set a hostname as the parameter, notably ChatGPT, which appends
+  // utm_source=chatgpt.com. Without this, the same channel lands in two
+  // buckets depending on whether the link carried the parameter.
   const source = cleanString(first.source)
-  if (source) return source.toLowerCase()
+  if (source) return normalizeReferrer(source)
 
   const ref = cleanString(first.ref)
   if (ref) return ref.toLowerCase()
