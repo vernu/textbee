@@ -3,6 +3,7 @@ import { httpServerClient } from './httpServerClient'
 import type { DefaultSession, NextAuthOptions } from 'next-auth'
 import { ApiEndpoints } from '@/config/api'
 import { Routes } from '@/config/routes'
+import { clientContextFromHeaders } from '@/lib/analytics/client-context'
 
 // add custom fields to the session and user interfaces
 declare module 'next-auth' {
@@ -104,7 +105,7 @@ export const authOptions: NextAuthOptions = {
         attribution: { label: 'Attribution', type: 'text' },
         turnstileToken: { label: 'Turnstile Token', type: 'text' },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials) return null
         const { email, password, name, phone, turnstileToken } = credentials
         try {
@@ -118,6 +119,9 @@ export const authOptions: NextAuthOptions = {
               // Arrives as a string, and Boolean('false') is true.
               marketingOptIn: credentials.marketingOptIn === 'true',
               attribution: parseAttribution(credentials.attribution),
+              // Without this the API would record this server's address and
+              // user agent instead of the visitor's.
+              client: clientContextFromHeaders(req?.headers),
               turnstileToken,
             }
           )
@@ -142,7 +146,7 @@ export const authOptions: NextAuthOptions = {
         idToken: { label: 'idToken', type: 'text' },
         attribution: { label: 'Attribution', type: 'text' },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials) return null
         const { idToken } = credentials
         try {
@@ -151,6 +155,7 @@ export const authOptions: NextAuthOptions = {
             {
               idToken,
               attribution: parseAttribution(credentials.attribution),
+              client: clientContextFromHeaders(req?.headers),
             }
           )
 

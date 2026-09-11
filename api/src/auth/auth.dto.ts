@@ -107,6 +107,24 @@ export class AttributionDTO {
   fbp?: string
 }
 
+export class ClientContextDTO {
+  @ApiProperty({
+    type: String,
+    required: false,
+    description:
+      "The visitor's browser user agent. Sent by the dashboard because it proxies this call, so the request itself carries the dashboard server's user agent rather than the visitor's.",
+  })
+  userAgent?: string
+
+  @ApiProperty({
+    type: String,
+    required: false,
+    description:
+      "The visitor's IP address, forwarded for the same reason. Used only to label analytics, never for access control.",
+  })
+  ip?: string
+}
+
 export class RegisterInputDTO {
   @ApiProperty({
     type: String,
@@ -155,6 +173,13 @@ export class RegisterInputDTO {
   attribution?: AttributionDTO
 
   @ApiProperty({
+    type: ClientContextDTO,
+    required: false,
+    description: "The visitor's browser details, when the caller is a proxy.",
+  })
+  client?: ClientContextDTO
+
+  @ApiProperty({
     type: String,
     required: true,
     description: 'Cloudflare Turnstile token from the signup form.',
@@ -198,6 +223,13 @@ export class GoogleLoginInputDTO {
       'Where this signup came from. Recorded only when this call creates the account.',
   })
   attribution?: AttributionDTO
+
+  @ApiProperty({
+    type: ClientContextDTO,
+    required: false,
+    description: "The visitor's browser details, when the caller is a proxy.",
+  })
+  client?: ClientContextDTO
 }
 
 export class RequestResetPasswordInputDTO {
