@@ -40,6 +40,7 @@ import {
 } from './auth.dto'
 import { AuthGuard } from './guards/auth.guard'
 import { AuthService } from './auth.service'
+import { resolveRequestContext } from '../common/request-context'
 import { UsersService } from '../users/users.service'
 import { CanModifyApiKey } from './guards/can-modify-api-key.guard'
 
@@ -106,8 +107,7 @@ export class AuthController {
   async googleLogin(@Body() input: GoogleLoginInputDTO, @Request() req) {
     const data = await this.authService.loginWithGoogle(input.idToken, {
       attribution: input.attribution,
-      ip: req.ip,
-      userAgent: req.headers?.['user-agent'],
+      ...resolveRequestContext(input.client, req),
     })
     return { data }
   }
@@ -128,10 +128,10 @@ export class AuthController {
   })
   @Post('/register')
   async register(@Body() input: RegisterInputDTO, @Request() req) {
-    const data = await this.authService.register(input, {
-      ip: req.ip,
-      userAgent: req.headers?.['user-agent'],
-    })
+    const data = await this.authService.register(
+      input,
+      resolveRequestContext(input.client, req),
+    )
     return { data }
   }
 
