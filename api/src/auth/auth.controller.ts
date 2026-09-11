@@ -103,8 +103,12 @@ export class AuthController {
   })
   @HttpCode(HttpStatus.OK)
   @Post('/google-login')
-  async googleLogin(@Body() input: GoogleLoginInputDTO) {
-    const data = await this.authService.loginWithGoogle(input.idToken)
+  async googleLogin(@Body() input: GoogleLoginInputDTO, @Request() req) {
+    const data = await this.authService.loginWithGoogle(input.idToken, {
+      attribution: input.attribution,
+      ip: req.ip,
+      userAgent: req.headers?.['user-agent'],
+    })
     return { data }
   }
 
@@ -123,8 +127,11 @@ export class AuthController {
     description: 'The email is already in use, or the Turnstile check failed.',
   })
   @Post('/register')
-  async register(@Body() input: RegisterInputDTO) {
-    const data = await this.authService.register(input)
+  async register(@Body() input: RegisterInputDTO, @Request() req) {
+    const data = await this.authService.register(input, {
+      ip: req.ip,
+      userAgent: req.headers?.['user-agent'],
+    })
     return { data }
   }
 

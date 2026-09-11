@@ -13,6 +13,8 @@ import {
 } from './schemas/subscription.schema'
 import { Polar } from '@polar-sh/sdk'
 import { User, UserDocument } from '../users/schemas/user.schema'
+import { UsersService } from '../users/users.service'
+import { AnalyticsService } from '../analytics/analytics.service'
 import { CheckoutResponseDTO, PlanDTO } from './billing.dto'
 import { SMSDocument } from '../gateway/schemas/sms.schema'
 import { SMS } from '../gateway/schemas/sms.schema'
@@ -45,6 +47,8 @@ export class BillingService {
     @InjectModel(CheckoutSession.name)
     private checkoutSessionModel: Model<CheckoutSessionDocument>,
     private readonly billingNotifications: BillingNotificationsService,
+    private readonly usersService: UsersService,
+    private readonly analyticsService: AnalyticsService,
   ) {
     this.polarApi = new Polar({
       accessToken: process.env.POLAR_ACCESS_TOKEN ?? '',
@@ -325,6 +329,10 @@ export class BillingService {
         customerIpAddress: req.ip,
         metadata: {
           userId: user._id?.toString(),
+          ...(user.signupSource && { signupSource: user.signupSource }),
+          ...(user.attribution?.first?.campaign && {
+            utmCampaign: user.attribution.first.campaign,
+          }),
         },
         externalCustomerId: user._id?.toString(),
       }
@@ -344,6 +352,11 @@ export class BillingService {
       }
 
       const checkout = await this.polarApi.checkouts.create(checkoutOptions)
+
+      this.analyticsService.checkoutStarted(user as any, payload.planName, {
+        ip: req.ip,
+        userAgent: req.headers?.['user-agent'],
+      })
 
       this.checkoutSessionModel
         .updateOne(
@@ -855,7 +868,66 @@ export class BillingService {
       `Updated or created subscription: ${updateResult.upsertedCount > 0 ? 'Created' : 'Updated'}`,
     )
 
+    await this.reportFirstPayment({
+      userId,
+      plan: plan.name,
+      status,
+      amount,
+      currency,
+      polarSubscriptionId,
+    })
+
     return { success: true, plan: plan.name }
+  }
+
+  /**
+   * Reports a sale to the ad platforms the first time an account actually pays.
+   * The milestone write is the only gate, which makes renewals, upgrades and
+   * re-subscribes idempotent: whichever webhook arrives first wins, and every
+   * later one is a no-op.
+   *
+   * subscription.created can arrive before payment succeeds, so a status that
+   * is not active is ignored rather than reported as revenue.
+   */
+  private async reportFirstPayment({
+    userId,
+    plan,
+    status,
+    amount,
+    currency,
+    polarSubscriptionId,
+  }: {
+    userId: string
+    plan?: string
+    status?: string
+    amount?: number
+    currency?: string
+    polarSubscriptionId?: string
+  }) {
+    if (status !== 'active') return
+    if (typeof amount !== 'number' || amount <= 0) return
+
+    try {
+      const isFirstPayment = await this.usersService.markMilestone(
+        userId,
+        'firstPaidAt',
+      )
+      if (!isFirstPayment) return
+
+      // Loaded only now, and only once per account, because the conversion
+      // event needs the email to hash for matching.
+      const user = await this.userModel.findById(userId)
+      if (!user) return
+
+      this.analyticsService.purchase(user as any, {
+        amount,
+        currency,
+        plan,
+        subscriptionId: polarSubscriptionId,
+      })
+    } catch (error) {
+      console.error('Failed to report first payment', error)
+    }
   }
 
   async cancelSubscription({

@@ -149,12 +149,12 @@ Carriers apply their own rate limits and anti-spam policies, which vary by count
 </details>
 <details>
 <summary><b>Is it legal to send marketing SMS this way?</b></summary>
-SMS marketing is regulated in most countries (e.g., TCPA in the US, GDPR/ePrivacy in the EU). textbee is a tool — you are responsible for obtaining consent and complying with the laws that apply to you and your recipients.
+SMS marketing is regulated in most countries (e.g., TCPA in the US, GDPR/ePrivacy in the EU). textbee is a tool. You are responsible for obtaining consent and complying with the laws that apply to you and your recipients.
  
 </details>
 <details>
 <summary><b>Does my phone need to stay on?</b></summary>
-Yes — messages are sent through your phone, so it needs to be powered on with the app running and connected to the internet. A spare Android phone plugged into a charger works great as a dedicated gateway.
+Yes. Messages are sent through your phone, so it needs to be powered on with the app running and connected to the internet. A spare Android phone plugged into a charger works great as a dedicated gateway.
  
 </details>
 <details>
@@ -223,6 +223,45 @@ See [textbee.dev](https://textbee.dev) for current plans and limits. You can alw
    ```bash
    pnpm build
    ```
+
+### Analytics and telemetry
+
+**A self-hosted instance reports nothing to anyone by default.** With no
+analytics environment variables set, the web app loads no analytics or
+ad-platform scripts and the API sends no analytics events to any external
+service. Every provider below is opt-in, and one that is listed without its id
+is skipped.
+
+(This is separate from the services the API talks to when you configure them
+yourself: Firebase for push, Cloudflare Turnstile, Polar for billing, and your
+own SMTP server.)
+
+Web (`web/.env`, and the marketing site if you run it):
+
+| Variable | Purpose |
+| --- | --- |
+| `NEXT_PUBLIC_ANALYTICS_PROVIDERS` | Comma separated list of providers to load: `ga`, `clarity`, `meta`. Unset means none. |
+| `NEXT_PUBLIC_GA_MEASUREMENT_ID` | Google Analytics measurement id, required for `ga`. |
+| `NEXT_PUBLIC_CLARITY_PROJECT_ID` | Microsoft Clarity project id, required for `clarity`. |
+| `NEXT_PUBLIC_META_PIXEL_ID` | Meta pixel id, required for `meta`. |
+| `NEXT_PUBLIC_ATTRIBUTION_COOKIE_DOMAIN` | Cookie domain for signup attribution, for example `.example.com`, when the dashboard and the marketing site are on different subdomains. Leave unset for a single domain. |
+
+API (`api/.env`):
+
+| Variable | Purpose |
+| --- | --- |
+| `ANALYTICS_PROVIDERS` | Comma separated list of server-side destinations. Only `meta` today. Unset means no events are sent. |
+| `META_PIXEL_ID` | Same id as the browser pixel. |
+| `META_CAPI_ACCESS_TOKEN` | Conversions API token. Keep it out of version control and out of any `NEXT_PUBLIC_` variable. |
+| `META_CAPI_TEST_EVENT_CODE` | Optional. Routes events to Events Manager's test view instead of live reporting. |
+
+`NEXT_PUBLIC_` values are baked in at build time, so changing them means a
+rebuild, not just a restart. `ANALYTICS_PROVIDERS` on the API is read at
+runtime, so unsetting it and restarting stops all outbound events immediately.
+
+Signup attribution (which channel an account came from) is separate from the
+providers above. It is stored only in your own database, makes no external
+request, and is always on.
 
 ### Hosting on a VPS
 

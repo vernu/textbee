@@ -1,47 +1,79 @@
 'use client'
 
 import Script from 'next/script'
+import { isEnabled, providerId } from '@/lib/analytics/config'
 
-// Only the email is read, to tag the Clarity session.
-type AnalyticsProps = { user?: { email?: string | null } | null }
+// Every block is gated, so a self-hosted instance that configures no providers
+// loads no third-party script and reports to nobody. The Clarity session is
+// labelled separately by <AnalyticsIdentify />, which sits inside the session
+// provider; this component is mounted at the root and has no session.
+const Analytics = () => {
+  const gaId = isEnabled('ga') ? providerId('ga') : undefined
+  const clarityId = isEnabled('clarity') ? providerId('clarity') : undefined
+  const metaPixelId = isEnabled('meta') ? providerId('meta') : undefined
 
-const Analytics = ({ user }: AnalyticsProps) => {
   return (
     <>
-      {/* Global Site Tag (gtag.js) - Google Analytics  */}
-      <Script
-        id='gtag1'
-        strategy='afterInteractive'
-        src={`https://www.googletagmanager.com/gtag/js?id=G-MLD1JPRQZR`}
-      />
-      <Script
-        id='gtag2'
-        strategy='afterInteractive'
-        dangerouslySetInnerHTML={{
-          __html: `
+      {gaId && (
+        <>
+          <Script
+            id='gtag1'
+            strategy='afterInteractive'
+            src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
+          />
+          <Script
+            id='gtag2'
+            strategy='afterInteractive'
+            dangerouslySetInnerHTML={{
+              __html: `
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
-            gtag('config', 'G-MLD1JPRQZR', {
+            gtag('config', ${JSON.stringify(gaId)}, {
                 page_path: window.location.pathname,
             });
      `,
-        }}
-      />
-      <Script
-        id='ms-clarity1'
-        strategy='afterInteractive'
-        dangerouslySetInnerHTML={{
-          __html: `
+            }}
+          />
+        </>
+      )}
+
+      {clarityId && (
+        <Script
+          id='ms-clarity1'
+          strategy='afterInteractive'
+          dangerouslySetInnerHTML={{
+            __html: `
           (function(c,l,a,r,i,t,y){
             c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
             t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
             y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-            clarity('set', 'userId', '${user?.email || ''}');
-        })(window, document, "clarity", "script", "iacr7j4ozh");
+        })(window, document, "clarity", "script", ${JSON.stringify(clarityId)});
      `,
-        }}
-      />
+          }}
+        />
+      )}
+
+      {metaPixelId && (
+        <Script
+          id='meta-pixel'
+          strategy='afterInteractive'
+          dangerouslySetInnerHTML={{
+            __html: `
+          !function(f,b,e,v,n,t,s)
+          {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+          n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+          if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+          n.queue=[];t=b.createElement(e);t.async=!0;
+          t.src=v;s=b.getElementsByTagName(e)[0];
+          s.parentNode.insertBefore(t,s)}(window, document,'script',
+          'https://connect.facebook.net/en_US/fbevents.js');
+          fbq('init', ${JSON.stringify(metaPixelId)});
+          fbq('track', 'PageView');
+     `,
+          }}
+        />
+      )}
     </>
   )
 }

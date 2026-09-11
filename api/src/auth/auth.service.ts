@@ -1,5 +1,7 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common'
 import { UsersService } from '../users/users.service'
+import { sanitizeAttribution } from '../users/attribution'
+import { AnalyticsService } from '../analytics/analytics.service'
 import { JwtService } from '@nestjs/jwt'
 import * as bcrypt from 'bcryptjs'
 import { createHash, randomInt } from 'crypto'
@@ -50,6 +52,7 @@ export class AuthService {
     private emailVerificationModel: Model<EmailVerificationDocument>,
     private readonly mailService: MailService,
     private readonly turnstileService: TurnstileService,
+    private readonly analyticsService: AnalyticsService,
   ) {}
 
   async login(userData: any) {
@@ -114,7 +117,14 @@ export class AuthService {
     }
   }
 
-  async loginWithGoogle(idToken: string) {
+  async loginWithGoogle(
+    idToken: string,
+    signupContext?: {
+      attribution?: unknown
+      ip?: string
+      userAgent?: string
+    },
+  ) {
     const response = await axios.get(
       `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(
         idToken,
@@ -126,10 +136,16 @@ export class AuthService {
     const { sub: googleId, name, email, picture } = response.data
     let user = await this.usersService.findOne({ email })
 
+    // The same button serves sign-in and sign-up, so attribution is sent every
+    // time and applied only when this call is what creates the account.
+    const isNewUser = !user
+
     if (!user) {
       user = await this.usersService.create({
         name,
         email,
+        attribution: sanitizeAttribution(signupContext?.attribution),
+        userAgent: signupContext?.userAgent,
       })
     }
 
@@ -152,14 +168,25 @@ export class AuthService {
     user.lastLoginAt = new Date()
     await user.save()
 
+    if (isNewUser) {
+      this.analyticsService.userRegistered(user as any, {
+        ip: signupContext?.ip,
+        userAgent: signupContext?.userAgent,
+      })
+    }
+
     const payload = { email: user.email, sub: user._id }
     return {
       accessToken: this.jwtService.sign(payload),
       user: withoutPassword(user),
+      isNewUser,
     }
   }
 
-  async register(userData: any) {
+  async register(
+    userData: any,
+    requestContext?: { ip?: string; userAgent?: string },
+  ) {
     await this.turnstileService.verify(userData.turnstileToken)
 
     const existingUser = await this.usersService.findOne({
@@ -176,14 +203,23 @@ export class AuthService {
     await this.validatePassword(userData.password)
 
     const hashedPassword = await bcrypt.hash(userData.password, 10)
-    const { turnstileToken, ...sanitizedUserData } = userData
+    // Named explicitly rather than spread: the request body is attacker
+    // controlled and there is no global ValidationPipe, so spreading it would
+    // let any field reach the document.
     const user = await this.usersService.create({
-      ...sanitizedUserData,
+      name: userData.name,
+      email: userData.email,
+      phone: userData.phone,
       password: hashedPassword,
+      marketingOptIn: userData.marketingOptIn === true,
+      attribution: sanitizeAttribution(userData.attribution),
+      userAgent: requestContext?.userAgent,
     })
 
     user.lastLoginAt = new Date()
     await user.save()
+
+    this.analyticsService.userRegistered(user as any, requestContext)
 
     this.sendEmailVerificationEmail(user).catch((e) => {
       console.log('Failed to send email verification email')
@@ -453,6 +489,12 @@ export class AuthService {
     })
 
     await newApiKey.save()
+
+    // Activation milestone. Fire and forget: a reporting write must not fail
+    // the call that just handed the caller a key they cannot see again.
+    this.usersService
+      .markMilestone(currentUser._id, 'firstApiKeyAt')
+      .catch(() => undefined)
 
     return { apiKey, message: 'Save this key, it wont be shown again ;)' }
   }

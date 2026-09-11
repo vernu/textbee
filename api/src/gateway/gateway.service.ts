@@ -23,6 +23,7 @@ import { BatchResponse, Message } from 'firebase-admin/messaging'
 import { WebhookEvent } from '../webhook/webhook-event.enum'
 import { WebhookService } from '../webhook/webhook.service'
 import { BillingService } from '../billing/billing.service'
+import { UsersService } from '../users/users.service'
 import { SmsQueueService } from './queue/sms-queue.service'
 import { escapeRegExp } from '../common/escape-regexp'
 import { normalizeOsFields } from './os-version'
@@ -38,6 +39,11 @@ import {
 import { DispatchPlan } from './queue/dispatch-pacing'
 import { Job } from 'bull'
 
+// device.user is a ref, so it is an ObjectId unless the query populated it.
+function userIdOf(user: any) {
+  return user?._id ?? user
+}
+
 @Injectable()
 export class GatewayService {
   constructor(
@@ -50,6 +56,7 @@ export class GatewayService {
     private webhookService: WebhookService,
     private billingService: BillingService,
     private smsQueueService: SmsQueueService,
+    private usersService: UsersService,
   ) {}
 
   // Blocks creating or re-enabling a device when the user's plan device limit
@@ -167,7 +174,15 @@ export class GatewayService {
         deviceData.isDefault = true
       }
 
-      return await this.deviceModel.create(deviceData)
+      const createdDevice = await this.deviceModel.create(deviceData)
+
+      // The app re-registers on every launch, so this has to be idempotent.
+      // markMilestone's $exists filter makes it a no-op after the first time.
+      this.usersService
+        .markMilestone(user._id, 'firstDeviceAt')
+        .catch(() => undefined)
+
+      return createdDevice
     }
   }
 
@@ -660,6 +675,14 @@ export class GatewayService {
           console.log(e)
         })
 
+      // sentSMSCount is read before the increment above, so a zero here means
+      // this send is the account's first.
+      if (device.sentSMSCount === 0 && response.successCount > 0) {
+        this.usersService
+          .markMilestone(userIdOf(device.user), 'firstSmsAt')
+          .catch(() => undefined)
+      }
+
       this.smsBatchModel
         .findByIdAndUpdate(smsBatch._id, {
           $set: { status: 'completed' },
@@ -994,6 +1017,10 @@ export class GatewayService {
       )
     }
 
+    // fcmMessagesBatches holds one message per entry, so anything inside this
+    // loop runs once per recipient. The milestone is tracked outside it.
+    let isFirstSmsForAccount = device.sentSMSCount === 0
+
     for (const batch of fcmMessagesBatches) {
       try {
         const response = skipped
@@ -1012,6 +1039,13 @@ export class GatewayService {
             console.log('Failed to update sentSMSCount')
             console.log(e)
           })
+
+        if (isFirstSmsForAccount && response.successCount > 0) {
+          isFirstSmsForAccount = false
+          this.usersService
+            .markMilestone(userIdOf(device.user), 'firstSmsAt')
+            .catch(() => undefined)
+        }
 
         this.smsBatchModel
           .findByIdAndUpdate(smsBatch._id, {

@@ -9,6 +9,8 @@ import { SMS } from '../gateway/schemas/sms.schema'
 import { PolarWebhookPayload } from './schemas/polar-webhook-payload.schema'
 import { CheckoutSession } from './schemas/checkout-session.schema'
 import { BillingNotificationsService } from './billing-notifications.service'
+import { UsersService } from '../users/users.service'
+import { AnalyticsService } from '../analytics/analytics.service'
 
 describe('BillingService - cancellation handling', () => {
   let service: BillingService
@@ -26,6 +28,12 @@ describe('BillingService - cancellation handling', () => {
   }
   const emptyModel = {}
   const mockBillingNotifications = {}
+  const mockUsersService = { markMilestone: jest.fn() }
+  const mockAnalyticsService = {
+    userRegistered: jest.fn(),
+    checkoutStarted: jest.fn(),
+    purchase: jest.fn(),
+  }
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -50,12 +58,15 @@ describe('BillingService - cancellation handling', () => {
           provide: BillingNotificationsService,
           useValue: mockBillingNotifications,
         },
+        { provide: UsersService, useValue: mockUsersService },
+        { provide: AnalyticsService, useValue: mockAnalyticsService },
       ],
     }).compile()
 
     service = module.get<BillingService>(BillingService)
 
     jest.clearAllMocks()
+    mockUsersService.markMilestone.mockResolvedValue(false)
     mockPlanModel.findOne.mockResolvedValue(proPlan)
     mockSubscriptionModel.updateOne.mockResolvedValue({ modifiedCount: 1 })
   })
@@ -166,6 +177,8 @@ describe('BillingService - checkout guards', () => {
         },
         { provide: getModelToken(CheckoutSession.name), useValue: emptyModel },
         { provide: BillingNotificationsService, useValue: {} },
+        { provide: UsersService, useValue: { markMilestone: jest.fn() } },
+        { provide: AnalyticsService, useValue: { purchase: jest.fn(), checkoutStarted: jest.fn() } },
       ],
     }).compile()
 
@@ -240,6 +253,8 @@ describe('BillingService - syncCheckoutSessionStatus', () => {
           useValue: mockCheckoutSessionModel,
         },
         { provide: BillingNotificationsService, useValue: {} },
+        { provide: UsersService, useValue: { markMilestone: jest.fn() } },
+        { provide: AnalyticsService, useValue: { purchase: jest.fn(), checkoutStarted: jest.fn() } },
       ],
     }).compile()
 
@@ -321,5 +336,129 @@ describe('BillingService - syncCheckoutSessionStatus', () => {
         status: 'succeeded',
       }),
     ).resolves.not.toThrow()
+  })
+})
+
+/*
+ * Reporting a sale to an ad platform more than once teaches it to bid on the
+ * wrong thing, so the first-payment event has to survive the shapes Polar
+ * actually sends: created then active for one signup, an upgrade that creates a
+ * second subscription row, a renewal, and a re-subscribe after a revoke.
+ */
+describe('BillingService - first payment reporting', () => {
+  let service: BillingService
+
+  const userId = '507f1f77bcf86cd799439011'
+  const proPlan = { _id: 'plan_pro', name: 'pro' }
+
+  const mockPlanModel = { findOne: jest.fn() }
+  const mockSubscriptionModel = { updateMany: jest.fn(), updateOne: jest.fn() }
+  const mockUserModel = { findById: jest.fn() }
+  const mockUsersService = { markMilestone: jest.fn() }
+  const mockAnalyticsService = { purchase: jest.fn(), checkoutStarted: jest.fn() }
+  const emptyModel = {}
+
+  const activePayment = {
+    userId,
+    newPlanName: 'pro',
+    status: 'active',
+    amount: 1200,
+    currency: 'usd',
+    polarSubscriptionId: 'sub_1',
+  }
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        BillingService,
+        { provide: getModelToken(Plan.name), useValue: mockPlanModel },
+        {
+          provide: getModelToken(Subscription.name),
+          useValue: mockSubscriptionModel,
+        },
+        { provide: getModelToken(User.name), useValue: mockUserModel },
+        { provide: getModelToken(SMS.name), useValue: emptyModel },
+        {
+          provide: getModelToken(PolarWebhookPayload.name),
+          useValue: emptyModel,
+        },
+        { provide: getModelToken(CheckoutSession.name), useValue: emptyModel },
+        { provide: BillingNotificationsService, useValue: {} },
+        { provide: UsersService, useValue: mockUsersService },
+        { provide: AnalyticsService, useValue: mockAnalyticsService },
+      ],
+    }).compile()
+
+    service = module.get<BillingService>(BillingService)
+
+    jest.clearAllMocks()
+    mockPlanModel.findOne.mockResolvedValue(proPlan)
+    mockSubscriptionModel.updateMany.mockResolvedValue({ modifiedCount: 0 })
+    mockSubscriptionModel.updateOne.mockResolvedValue({ upsertedCount: 1 })
+    mockUserModel.findById.mockResolvedValue({
+      _id: userId,
+      email: 'ada@example.com',
+    })
+    mockUsersService.markMilestone.mockResolvedValue(true)
+  })
+
+  it('reports the sale the first time an account pays', async () => {
+    await service.switchPlan(activePayment)
+
+    expect(mockUsersService.markMilestone).toHaveBeenCalledWith(
+      userId,
+      'firstPaidAt',
+    )
+    expect(mockAnalyticsService.purchase).toHaveBeenCalledWith(
+      expect.objectContaining({ email: 'ada@example.com' }),
+      expect.objectContaining({
+        amount: 1200,
+        currency: 'usd',
+        plan: 'pro',
+        subscriptionId: 'sub_1',
+      }),
+    )
+  })
+
+  it('reports nothing on a renewal, an upgrade, or a re-subscribe', async () => {
+    // The milestone is already stamped, so every later payment is a no-op
+    // regardless of whether the subscription row was created or updated.
+    mockUsersService.markMilestone.mockResolvedValue(false)
+
+    mockSubscriptionModel.updateOne.mockResolvedValue({ upsertedCount: 0 })
+    await service.switchPlan(activePayment)
+
+    // An upgrade creates a second {user, plan} row, which upsertedCount would
+    // have treated as a brand new sale.
+    mockSubscriptionModel.updateOne.mockResolvedValue({ upsertedCount: 1 })
+    await service.switchPlan({ ...activePayment, newPlanName: 'scale' })
+
+    expect(mockAnalyticsService.purchase).not.toHaveBeenCalled()
+  })
+
+  it('ignores a subscription that is not active yet', async () => {
+    // subscription.created can arrive before the card is charged.
+    await service.switchPlan({ ...activePayment, status: 'incomplete' })
+    await service.switchPlan({ ...activePayment, status: 'trialing' })
+
+    expect(mockUsersService.markMilestone).not.toHaveBeenCalled()
+    expect(mockAnalyticsService.purchase).not.toHaveBeenCalled()
+  })
+
+  it('ignores an event that carries no money', async () => {
+    await service.switchPlan({ ...activePayment, amount: undefined })
+    await service.switchPlan({ ...activePayment, amount: 0 })
+
+    expect(mockUsersService.markMilestone).not.toHaveBeenCalled()
+    expect(mockAnalyticsService.purchase).not.toHaveBeenCalled()
+  })
+
+  it('still switches the plan when reporting fails', async () => {
+    mockUsersService.markMilestone.mockRejectedValue(new Error('mongo down'))
+
+    await expect(service.switchPlan(activePayment)).resolves.toEqual({
+      success: true,
+      plan: 'pro',
+    })
   })
 })

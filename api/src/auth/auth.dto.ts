@@ -1,5 +1,112 @@
 import { ApiProperty } from '@nestjs/swagger'
 
+export class AttributionTouchDTO {
+  @ApiProperty({
+    type: String,
+    required: false,
+    description: 'utm_source from the link that was followed.',
+    example: 'meta',
+  })
+  source?: string
+
+  @ApiProperty({
+    type: String,
+    required: false,
+    description: 'utm_medium from the link that was followed.',
+    example: 'paid_social',
+  })
+  medium?: string
+
+  @ApiProperty({
+    type: String,
+    required: false,
+    description: 'utm_campaign from the link that was followed.',
+  })
+  campaign?: string
+
+  @ApiProperty({
+    type: String,
+    required: false,
+    description: 'utm_content from the link that was followed.',
+  })
+  content?: string
+
+  @ApiProperty({
+    type: String,
+    required: false,
+    description: 'utm_term from the link that was followed.',
+  })
+  term?: string
+
+  @ApiProperty({
+    type: String,
+    required: false,
+    description: 'Value of a plain ref query parameter, used by short links.',
+  })
+  ref?: string
+
+  @ApiProperty({
+    type: String,
+    required: false,
+    description:
+      'Hostname of the referring site. Same-site referrers are not recorded.',
+    example: 'news.ycombinator.com',
+  })
+  referrer?: string
+
+  @ApiProperty({
+    type: String,
+    required: false,
+    description: 'Path the visitor landed on.',
+    example: '/pricing',
+  })
+  landingPath?: string
+
+  @ApiProperty({
+    type: String,
+    required: false,
+    description: 'Meta advertising click identifier from the address.',
+  })
+  fbclid?: string
+
+  @ApiProperty({
+    type: String,
+    required: false,
+    description: 'Google advertising click identifier from the address.',
+  })
+  gclid?: string
+
+  @ApiProperty({
+    type: String,
+    required: false,
+    description: 'When the visit happened, as an ISO timestamp.',
+  })
+  at?: string
+}
+
+export class AttributionDTO {
+  @ApiProperty({
+    type: AttributionTouchDTO,
+    required: false,
+    description: 'The visit that first brought this person to the site.',
+  })
+  first?: AttributionTouchDTO
+
+  @ApiProperty({
+    type: AttributionTouchDTO,
+    required: false,
+    description: 'The most recent visit that carried a source.',
+  })
+  last?: AttributionTouchDTO
+
+  @ApiProperty({
+    type: String,
+    required: false,
+    description: "Meta's browser cookie value, used to match ad clicks.",
+  })
+  fbp?: string
+}
+
 export class RegisterInputDTO {
   @ApiProperty({
     type: String,
@@ -30,6 +137,22 @@ export class RegisterInputDTO {
     description: 'Password for the new account.',
   })
   password: string
+
+  @ApiProperty({
+    type: Boolean,
+    required: false,
+    description:
+      'Whether the person agreed to receive product and promotional email.',
+  })
+  marketingOptIn?: boolean
+
+  @ApiProperty({
+    type: AttributionDTO,
+    required: false,
+    description:
+      'Where this signup came from, as captured by the site. Unknown fields are discarded.',
+  })
+  attribution?: AttributionDTO
 
   @ApiProperty({
     type: String,
@@ -67,6 +190,14 @@ export class GoogleLoginInputDTO {
       'Google ID token from the browser sign-in flow. It must be issued for the textbee client and carry a verified email.',
   })
   idToken: string
+
+  @ApiProperty({
+    type: AttributionDTO,
+    required: false,
+    description:
+      'Where this signup came from. Recorded only when this call creates the account.',
+  })
+  attribution?: AttributionDTO
 }
 
 export class RequestResetPasswordInputDTO {
@@ -225,6 +356,14 @@ export class AuthSessionDTO {
 
   @ApiProperty({ type: UserDTO, description: 'The signed in account.' })
   user: UserDTO
+
+  @ApiProperty({
+    type: Boolean,
+    required: false,
+    description:
+      'True when this request created the account, as opposed to signing in to an existing one. Only returned by the Google endpoint.',
+  })
+  isNewUser?: boolean
 }
 
 export class AuthSessionResponseDTO {
