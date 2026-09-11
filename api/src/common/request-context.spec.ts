@@ -72,17 +72,23 @@ describe('resolveRequestContext', () => {
       expect(result.userAgent).toBe('Mozilla/5.0[Nest] LOG fake entry')
     })
 
-    it('rejects an address that is not address shaped', () => {
-      for (const bad of [
-        'not-an-ip',
-        '<script>alert(1)</script>',
-        '203.0.113.4; DROP',
-        'x'.repeat(60),
-        '',
-        '   ',
-      ]) {
-        expect(resolveRequestContext({ ip: bad }, undefined).ip).toBeUndefined()
-      }
+    // The last six pass a character allowlist but are not addresses, which is
+    // why the check parses rather than pattern matches.
+    it.each([
+      'not-an-ip',
+      '<script>alert(1)</script>',
+      '203.0.113.4; DROP',
+      'x'.repeat(60),
+      '',
+      '   ',
+      '::::',
+      '203.0.113.999',
+      '1.2.3.4:5',
+      '1.2.3',
+      '1.2.3.4.5',
+      '...',
+    ])('rejects %s, which does not parse as an address', (bad) => {
+      expect(resolveRequestContext({ ip: bad }, undefined).ip).toBeUndefined()
     })
 
     it('accepts ordinary IPv4 and IPv6 forms', () => {

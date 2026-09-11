@@ -7,8 +7,9 @@
 // never for authorisation or rate limiting, and are bounded here so a hostile
 // payload cannot grow a document or forge a log line.
 
+import { isIP } from 'net'
+
 const MAX_USER_AGENT = 512
-const MAX_IP = 45 // longest IPv6 form, including an embedded IPv4 tail
 
 // Control characters, which would otherwise let a forwarded value inject
 // newlines into logs.
@@ -33,10 +34,11 @@ function cleanUserAgent(value: unknown): string | undefined {
 function cleanIp(value: unknown): string | undefined {
   if (typeof value !== 'string') return undefined
   const trimmed = value.trim()
-  if (!trimmed || trimmed.length > MAX_IP) return undefined
-  // A shape check rather than a validity check: enough to keep arbitrary text
-  // out of the field without reimplementing an address parser.
-  return /^[0-9a-fA-F:.]+$/.test(trimmed) ? trimmed : undefined
+  // Parsed, not pattern matched. An allowlist of characters would accept
+  // "::::" and "203.0.113.999", and passing a malformed address to an ad
+  // platform is worse than passing none, which is the whole point of
+  // forwarding the real one.
+  return isIP(trimmed) ? trimmed : undefined
 }
 
 export function resolveRequestContext(
