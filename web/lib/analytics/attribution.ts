@@ -22,7 +22,16 @@ export type Touch = {
   at?: string
 }
 
+// The very first visit, whether or not it carried a source. Kept apart from
+// first-touch so a plain direct visit never claims credit from a later
+// campaign click; it only records where that person first landed.
+export type Entry = {
+  landingPath?: string
+  at?: string
+}
+
 export type Attribution = {
+  entry?: Entry
   first?: Touch
   last?: Touch
   fbp?: string
@@ -120,8 +129,11 @@ export function mergeAttribution(
 ): Attribution | null {
   const counts = touchCounts(touch)
 
+  // The entry is written exactly once, on the first visit this browser has
+  // ever made, and is never revisited afterwards.
   if (!existing) {
-    return counts ? { first: touch, last: touch } : null
+    const entry: Entry = { landingPath: touch.landingPath, at: touch.at }
+    return counts ? { entry, first: touch, last: touch } : { entry }
   }
   if (!counts) return existing
 
@@ -142,17 +154,33 @@ function sanitizeTouch(value: unknown): Touch | undefined {
   return Object.keys(touch).length ? touch : undefined
 }
 
+function sanitizeEntry(value: unknown): Entry | undefined {
+  if (!value || typeof value !== 'object') return undefined
+  const input = value as Record<string, unknown>
+  const entry: Entry = {}
+  const landingPath =
+    typeof input.landingPath === 'string' ? clean(input.landingPath) : undefined
+  const at = typeof input.at === 'string' ? clean(input.at) : undefined
+  if (landingPath) entry.landingPath = landingPath
+  if (at) entry.at = at
+  return Object.keys(entry).length ? entry : undefined
+}
+
 export function parseAttribution(raw: string | null): Attribution | null {
   if (!raw) return null
   try {
     const parsed = JSON.parse(raw) as Record<string, unknown>
     if (!parsed || typeof parsed !== 'object') return null
     const attribution: Attribution = {}
+    const entry = sanitizeEntry(parsed.entry)
     const first = sanitizeTouch(parsed.first)
     const last = sanitizeTouch(parsed.last)
+    if (entry) attribution.entry = entry
     if (first) attribution.first = first
     if (last) attribution.last = last
-    return attribution.first || attribution.last ? attribution : null
+    return attribution.entry || attribution.first || attribution.last
+      ? attribution
+      : null
   } catch {
     return null
   }
@@ -160,16 +188,25 @@ export function parseAttribution(raw: string | null): Attribution | null {
 
 // Browsers drop an oversized cookie silently, which would lose attribution
 // with no error, so shed data until it fits rather than risk the whole value.
+// Last touch goes first, then the entry, and first touch is kept to the end
+// because it is the one that decides credit.
 export function serializeAttribution(attribution: Attribution): string {
-  let candidate: Attribution = attribution
-  let encoded = encodeURIComponent(JSON.stringify(candidate))
-  if (encoded.length <= MAX_COOKIE_LENGTH) return JSON.stringify(candidate)
+  const fits = (candidate: Attribution) =>
+    encodeURIComponent(JSON.stringify(candidate)).length <= MAX_COOKIE_LENGTH
 
-  candidate = { first: attribution.first ?? attribution.last }
-  encoded = encodeURIComponent(JSON.stringify(candidate))
-  if (encoded.length <= MAX_COOKIE_LENGTH) return JSON.stringify(candidate)
+  if (fits(attribution)) return JSON.stringify(attribution)
 
-  const touch = candidate.first ?? {}
+  const first = attribution.first ?? attribution.last
+  const withEntry: Attribution = {
+    ...(attribution.entry && { entry: attribution.entry }),
+    ...(first && { first }),
+  }
+  if (fits(withEntry)) return JSON.stringify(withEntry)
+
+  const firstOnly: Attribution = { ...(first && { first }) }
+  if (fits(firstOnly)) return JSON.stringify(firstOnly)
+
+  const touch = first ?? {}
   const trimmed: Touch = {}
   for (const field of TOUCH_FIELDS) {
     const value = touch[field]

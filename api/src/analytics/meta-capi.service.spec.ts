@@ -95,6 +95,22 @@ describe('MetaCapiService', () => {
     expect(lastBody().data[0].user_data.fbp).toBe('fb.1.1757577600000.99')
   })
 
+  it('never reports a click from the future', async () => {
+    // The click time came from a browser clock, which can run ahead.
+    const before = Date.now()
+    await service.send({
+      name: 'CompleteRegistration',
+      user: {
+        userId: 'user-3',
+        fbclid: 'click-2',
+        fbclidAt: new Date(before + 10 * 60 * 1000),
+      },
+    })
+    const stamp = Number(lastBody().data[0].user_data.fbc.split('.')[2])
+    expect(stamp).toBeGreaterThanOrEqual(before)
+    expect(stamp).toBeLessThanOrEqual(Date.now())
+  })
+
   it('passes browser context only when there is any', async () => {
     await service.send({
       name: 'Purchase',

@@ -49,7 +49,7 @@ describe('UsersService - signup attribution', () => {
     await service.create({ name: 'Ada', email: 'ada@example.com' })
 
     expect(saved[0].signupSource).toBe('direct')
-    expect(saved[0].signupDevice).toBe('other')
+    expect(saved[0].signupDevice).toBe('unknown')
   })
 
   it('defaults the marketing opt in to false', async () => {

@@ -84,7 +84,32 @@ export class AttributionTouchDTO {
   at?: string
 }
 
+export class AttributionEntryDTO {
+  @ApiProperty({
+    type: String,
+    required: false,
+    description: 'Path of the very first page this person opened.',
+    example: '/',
+  })
+  landingPath?: string
+
+  @ApiProperty({
+    type: String,
+    required: false,
+    description: 'When that first visit happened, as an ISO timestamp.',
+  })
+  at?: string
+}
+
 export class AttributionDTO {
+  @ApiProperty({
+    type: AttributionEntryDTO,
+    required: false,
+    description:
+      'The first visit ever, recorded even when it carried no source. Never used for credit.',
+  })
+  entry?: AttributionEntryDTO
+
   @ApiProperty({
     type: AttributionTouchDTO,
     required: false,

@@ -127,8 +127,30 @@ describe('touchCounts', () => {
 })
 
 describe('mergeAttribution', () => {
-  it('stores nothing for a direct visit with no source', () => {
-    expect(mergeAttribution(null, { landingPath: '/' })).toBeNull()
+  it('records only where a direct visit landed, with no touch', () => {
+    const merged = mergeAttribution(null, {
+      landingPath: '/pricing',
+      at: NOW.toISOString(),
+    })
+    expect(merged).toEqual({
+      entry: { landingPath: '/pricing', at: NOW.toISOString() },
+    })
+  })
+
+  it('lets a later campaign click take first touch after a direct entry', () => {
+    // A direct visit must not steal credit from the ad that came after it, so
+    // the entry is kept apart from first-touch rather than folded into it.
+    const direct = mergeAttribution(null, { landingPath: '/', at: '1' })
+    const later = mergeAttribution(direct, { source: 'meta', at: '2' })
+    expect(later?.entry).toEqual({ landingPath: '/', at: '1' })
+    expect(later?.first?.source).toBe('meta')
+    expect(later?.last?.source).toBe('meta')
+  })
+
+  it('never rewrites the entry once set', () => {
+    const first = mergeAttribution(null, { source: 'meta', landingPath: '/a' })
+    const second = mergeAttribution(first, { source: 'reddit', landingPath: '/b' })
+    expect(second?.entry?.landingPath).toBe('/a')
   })
 
   it('sets first and last on the first campaign visit', () => {
@@ -170,17 +192,60 @@ describe('parseAttribution', () => {
     expect(parsed?.first).toEqual({ source: 'meta' })
     expect(parsed?.last).toEqual({ source: 'reddit' })
   })
+
+  it('keeps an entry-only cookie and scrubs junk inside it', () => {
+    const parsed = parseAttribution(
+      JSON.stringify({ entry: { landingPath: '/docs', at: 'x', evil: 1 } })
+    )
+    expect(parsed).toEqual({ entry: { landingPath: '/docs', at: 'x' } })
+  })
 })
 
 describe('serializeAttribution', () => {
   it('round-trips a normal value untouched', () => {
     const attribution: Attribution = {
+      entry: { landingPath: '/', at: NOW.toISOString() },
       first: { source: 'meta', campaign: 'c1' },
       last: { source: 'reddit' },
     }
     expect(parseAttribution(serializeAttribution(attribution))).toEqual(
       attribution
     )
+  })
+
+  it('sheds last touch before the entry, and the entry before first touch', () => {
+    const long = 'x'.repeat(200)
+    const fatTouch = {
+      source: long,
+      medium: long,
+      campaign: long,
+      content: long,
+      term: long,
+      ref: long,
+      referrer: long,
+      landingPath: long,
+      fbclid: long,
+      gclid: long,
+    }
+    const entry = { landingPath: '/', at: NOW.toISOString() }
+
+    // Two fat touches do not fit; one fat touch plus the entry does.
+    const shedLast = parseAttribution(
+      serializeAttribution({ entry, first: fatTouch, last: fatTouch })
+    )
+    expect(shedLast?.last).toBeUndefined()
+    expect(shedLast?.entry).toEqual(entry)
+    expect(shedLast?.first?.source).toBe(long)
+
+    // A single touch so fat that even the tiny entry tips it over.
+    const enormous = { ...fatTouch, source: 'y'.repeat(200) }
+    const stillFat = parseAttribution(
+      serializeAttribution({
+        entry: { landingPath: 'z'.repeat(200), at: NOW.toISOString() },
+        first: enormous,
+      })
+    )
+    expect(stillFat?.first?.source).toBeTruthy()
   })
 
   it('sheds data rather than letting the browser drop an oversized cookie', () => {

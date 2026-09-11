@@ -54,9 +54,11 @@ export class MetaCapiService {
     if (user.fbp) data.fbp = user.fbp
 
     // Meta's documented click-id format: fb.<subdomain index>.<click time in
-    // milliseconds>.<fbclid>.
+    // milliseconds>.<fbclid>. The click time came from a browser clock, so it
+    // is never allowed to sit in the future.
     if (user.fbclid) {
-      const clickedAt = user.fbclidAt?.getTime() ?? Date.now()
+      const now = Date.now()
+      const clickedAt = Math.min(user.fbclidAt?.getTime() ?? now, now)
       data.fbc = `fb.1.${clickedAt}.${user.fbclid}`
     }
 
