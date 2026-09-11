@@ -10,6 +10,7 @@ import { AuthService } from '../auth/auth.service'
 import { WebhookService } from '../webhook/webhook.service'
 import { BillingService } from '../billing/billing.service'
 import { SmsQueueService } from './queue/sms-queue.service'
+import { UsersService } from '../users/users.service'
 import { Model, Types } from 'mongoose'
 import { ConfigModule } from '@nestjs/config'
 import { HttpException, HttpStatus } from '@nestjs/common'
@@ -100,6 +101,10 @@ describe('GatewayService', () => {
     removeJobs: jest.fn(),
   }
 
+  const mockUsersService = {
+    markMilestone: jest.fn().mockResolvedValue(false),
+  }
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -135,6 +140,10 @@ describe('GatewayService', () => {
         {
           provide: SmsQueueService,
           useValue: mockSmsQueueService,
+        },
+        {
+          provide: UsersService,
+          useValue: mockUsersService,
         },
       ],
       imports: [ConfigModule],

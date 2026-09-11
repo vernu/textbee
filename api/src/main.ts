@@ -81,6 +81,10 @@ async function bootstrap() {
     express.raw({ type: 'application/json' }),
   )
   app.useBodyParser('json', { limit: '2mb' });
+  // The app runs behind a reverse proxy, so without this req.ip is the proxy's
+  // loopback address for every request. That makes rate limiting see one client
+  // and gives conversion reporting a single useless IP for everyone.
+  app.set('trust proxy', 1)
   app.enableCors()
   await app.listen(PORT)
 }

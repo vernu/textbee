@@ -33,6 +33,9 @@ const fireLoad = () =>
   scripts().forEach((s) => (s as HTMLScriptElement).onload?.(new Event('load')))
 
 beforeEach(() => {
+  // The widget is gated on this: with no project id it loads nothing, which is
+  // the self-hosted default and is covered in analytics-gating.test.tsx.
+  vi.stubEnv('NEXT_PUBLIC_SUPPORT_HQ_PROJECT_ID', 'test-project')
   init.mockClear()
   destroy.mockClear()
   // @ts-ignore
@@ -40,6 +43,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  vi.unstubAllEnvs()
   document
     .querySelectorAll('script[src*="supporthq-widget.js"]')
     .forEach((s) => s.remove())

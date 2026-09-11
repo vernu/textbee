@@ -13,6 +13,7 @@ declare module 'next-auth' {
       phone?: string
       avatar?: string
       accessToken?: string
+      isNewUser?: boolean
     } & DefaultSession['user']
   }
 
@@ -24,6 +25,7 @@ declare module 'next-auth' {
     phone?: string
     avatar?: string
     accessToken?: string
+    isNewUser?: boolean
   }
 }
 
@@ -36,6 +38,20 @@ declare module 'next-auth/jwt' {
     phone?: string
     avatar?: string
     accessToken?: string
+    isNewUser?: boolean
+  }
+}
+
+
+// Credentials cross the wire as strings, so the attribution blob arrives as
+// JSON. A bad value must not block a signup, so parsing failures are dropped.
+function parseAttribution(raw: unknown) {
+  if (typeof raw !== 'string' || !raw || raw === 'undefined') return undefined
+  try {
+    const parsed = JSON.parse(raw)
+    return parsed && typeof parsed === 'object' ? parsed : undefined
+  } catch {
+    return undefined
   }
 }
 
@@ -84,6 +100,8 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' },
         name: { label: 'Name', type: 'text' },
         phone: { label: 'Phone', type: 'text' },
+        marketingOptIn: { label: 'Marketing Opt In', type: 'text' },
+        attribution: { label: 'Attribution', type: 'text' },
         turnstileToken: { label: 'Turnstile Token', type: 'text' },
       },
       async authorize(credentials) {
@@ -97,6 +115,9 @@ export const authOptions: NextAuthOptions = {
               password,
               name,
               phone,
+              // Arrives as a string, and Boolean('false') is true.
+              marketingOptIn: credentials.marketingOptIn === 'true',
+              attribution: parseAttribution(credentials.attribution),
               turnstileToken,
             }
           )
@@ -119,6 +140,7 @@ export const authOptions: NextAuthOptions = {
       name: 'google-id-token-login',
       credentials: {
         idToken: { label: 'idToken', type: 'text' },
+        attribution: { label: 'Attribution', type: 'text' },
       },
       async authorize(credentials) {
         if (!credentials) return null
@@ -128,6 +150,7 @@ export const authOptions: NextAuthOptions = {
             ApiEndpoints.auth.signInWithGoogle(),
             {
               idToken,
+              attribution: parseAttribution(credentials.attribution),
             }
           )
 
@@ -137,6 +160,7 @@ export const authOptions: NextAuthOptions = {
           return {
             ...user,
             accessToken,
+            isNewUser: res.data.data.isNewUser === true,
           }
         } catch (e) {
           console.log(e)
@@ -170,6 +194,7 @@ export const authOptions: NextAuthOptions = {
         token.accessToken = user.accessToken
         token.avatar = user.avatar
         token.phone = user.phone
+        token.isNewUser = user.isNewUser
       }
       return token
     },
@@ -179,6 +204,7 @@ export const authOptions: NextAuthOptions = {
       session.user.accessToken = token.accessToken
       session.user.avatar = token.avatar
       session.user.phone = token.phone
+      session.user.isNewUser = token.isNewUser
       return session
     },
   },

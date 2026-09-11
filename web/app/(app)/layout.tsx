@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { getServerSession, Session } from 'next-auth'
 import AppHeader from '@/components/shared/app-header'
 import Providers from './providers'
-import Analytics from '@/components/shared/analytics'
+import AnalyticsIdentify from '@/components/shared/analytics-identify'
 import { Toaster } from '@/components/ui/toaster'
 import SupportHQWidget from '@/components/shared/support-hq-widget'
 
@@ -18,7 +18,7 @@ export default async function RootLayout({ children }: PropsWithChildren) {
           full-width footer at this level gets painted over on its left edge.
           Each section renders the footer inside its own content column. */}
       <main className='min-h-[80vh]'>{children}</main>
-      <Analytics user={session?.user} />
+      <AnalyticsIdentify />
       <SupportHQWidget />
       <Toaster />
     </Providers>

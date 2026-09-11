@@ -3,6 +3,8 @@ import '@/styles/main.css'
 import { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import ThemeProvider from './theme-provider'
+import Analytics from '@/components/shared/analytics'
+import AttributionCapture from '@/components/shared/attribution-capture'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -30,6 +32,8 @@ export default async function RootLayout({ children }: PropsWithChildren) {
         >
           {children}
         </ThemeProvider>
+        <Analytics />
+        <AttributionCapture />
       </body>
     </html>
   )

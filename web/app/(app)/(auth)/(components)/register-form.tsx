@@ -20,6 +20,8 @@ import { signIn } from 'next-auth/react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Routes } from '@/config/routes'
 import { useTurnstile } from '@/lib/turnstile'
+import { readAttribution } from '@/lib/analytics/attribution'
+import { track } from '@/lib/analytics/track'
 
 const registerSchema = z.object({
   name: z
@@ -96,6 +98,11 @@ export default function RegisterForm() {
       return
     }
 
+    // Spread conditionally: next-auth serialises these options through
+    // URLSearchParams, so an undefined value would arrive as the string
+    // "undefined" and fail to parse on the other side.
+    const attribution = readAttribution()
+
     try {
       const result = await signIn('email-password-register', {
         redirect: false,
@@ -104,6 +111,7 @@ export default function RegisterForm() {
         name: data.name,
         phone: data.phone,
         marketingOptIn: data.marketingOptIn,
+        ...(attribution && { attribution: JSON.stringify(attribution) }),
         turnstileToken: data.turnstileToken,
       })
 
@@ -114,6 +122,7 @@ export default function RegisterForm() {
           message: 'Failed to create account',
         })
       } else {
+        track('sign_up', { method: 'email' })
         router.push(`${Routes.verifyEmail}?verificationEmailSent=1`)
       }
     } catch (error) {

@@ -6,6 +6,7 @@ import * as firebaseAdmin from 'firebase-admin'
 import { Device } from '../schemas/device.schema'
 import { SMS } from '../schemas/sms.schema'
 import { SMSBatch } from '../schemas/sms-batch.schema'
+import { UsersService } from '../../users/users.service'
 import { WebhookService } from 'src/webhook/webhook.service'
 import { WebhookEvent } from 'src/webhook/webhook-event.enum'
 import { Logger } from '@nestjs/common'
@@ -41,7 +42,7 @@ const FCM_ACTIONABLE_MESSAGE =
 
 function getFcmErrorMessage(error: { code?: string; message?: string } | null | undefined): string {
   const rawPart = `FCM_DELIVERY_FAILED: ${error?.message || 'FCM delivery failed'}`
-  return `${rawPart} — ${FCM_ACTIONABLE_MESSAGE}`
+  return `${rawPart}. ${FCM_ACTIONABLE_MESSAGE}`
 }
 
 // A paced batch is still 'processing' until every wave has been handed to FCM
@@ -68,6 +69,7 @@ export class SmsQueueProcessor {
     @InjectModel(SMS.name) private smsModel: Model<SMS>,
     @InjectModel(SMSBatch.name) private smsBatchModel: Model<SMSBatch>,
     private webhookService: WebhookService,
+    private usersService: UsersService,
   ) {}
 
   @Process({
@@ -211,6 +213,14 @@ export class SmsQueueProcessor {
           $inc: { sentSMSCount: response.successCount },
         })
         .exec()
+
+      // device was loaded before the increment, so zero means this job carried
+      // the account's first message.
+      if (device?.user && device.sentSMSCount === 0 && response.successCount > 0) {
+        this.usersService
+          .markMilestone((device.user as any)?._id ?? device.user, 'firstSmsAt')
+          .catch(() => undefined)
+      }
 
       // Update batch status
       const smsBatch = await this.smsBatchModel.findByIdAndUpdate(

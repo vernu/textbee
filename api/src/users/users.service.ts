@@ -1,12 +1,23 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common'
 import { InjectModel } from '@nestjs/mongoose'
 import { User, UserDocument } from './schemas/user.schema'
-import { Model } from 'mongoose'
+import { Model, Types } from 'mongoose'
 import { UpdateOnboardingDTO } from '../auth/auth.dto'
 import {
   ONBOARDING_OPTIONAL_STEP_IDS,
   ONBOARDING_STEP_ORDER,
 } from './onboarding.constants'
+import {
+  AttributionInput,
+  classifyDevice,
+  normalizeSignupSource,
+} from './attribution'
+
+export type UserMilestoneField =
+  | 'firstDeviceAt'
+  | 'firstApiKeyAt'
+  | 'firstSmsAt'
+  | 'firstPaidAt'
 
 @Injectable()
 export class UsersService {
@@ -32,11 +43,17 @@ export class UsersService {
     email,
     password,
     phone,
+    marketingOptIn,
+    attribution,
+    userAgent,
   }: {
     name: string
     email: string
     password?: string
     phone?: string
+    marketingOptIn?: boolean
+    attribution?: AttributionInput
+    userAgent?: string
   }) {
     if (await this.findOne({ email })) {
       throw new HttpException(
@@ -52,8 +69,30 @@ export class UsersService {
       email,
       password,
       phone,
+      marketingOptIn: marketingOptIn ?? false,
+      attribution,
+      signupSource: normalizeSignupSource(attribution),
+      signupDevice: classifyDevice(userAgent),
     })
     return await newUser.save()
+  }
+
+  /**
+   * Stamps a milestone the first time it happens and never again. The
+   * $exists filter does that in one write, so callers can fire a conversion
+   * event on the returned true without reading the user first, and a repeated
+   * call (every app launch re-registers a device) is a no-op.
+   */
+  async markMilestone(
+    userId: string | Types.ObjectId,
+    field: UserMilestoneField,
+  ): Promise<boolean> {
+    const path = `milestones.${field}`
+    const result = await this.userModel.updateOne(
+      { _id: userId, [path]: { $exists: false } },
+      { $set: { [path]: new Date() } },
+    )
+    return result.modifiedCount === 1
   }
 
   async updateProfile(

@@ -4,6 +4,8 @@ import React, { useEffect } from 'react'
 
 export default function SupportHQWidget() {
   const { data: session } = useSession()
+  // Unset project id means no widget and no request to the widget CDN.
+  const projectId = process.env.NEXT_PUBLIC_SUPPORT_HQ_PROJECT_ID
 
   // Depended on as individual strings rather than as `session`: SessionProvider
   // hands back a new object on every refetch, and comparing that by reference
@@ -16,6 +18,8 @@ export default function SupportHQWidget() {
   const phone = session?.user?.phone ?? ''
 
   useEffect(() => {
+    if (!projectId) return
+
     let cancelled = false
 
     const script = document.createElement('script')
@@ -28,7 +32,7 @@ export default function SupportHQWidget() {
       if (cancelled) return
       // @ts-ignore
       window.SupportHQWidget?.init({
-        projectId: process.env.NEXT_PUBLIC_SUPPORT_HQ_PROJECT_ID,
+        projectId,
         themeColor: process.env.NEXT_PUBLIC_SUPPORT_HQ_THEME_COLOR ?? '#2563eb',
         ...(hasUser && {
           metadata: { userId, name, email, phone },
@@ -45,7 +49,7 @@ export default function SupportHQWidget() {
       // re-run used to add another one for the life of the page.
       script.remove()
     }
-  }, [hasUser, userId, name, email, phone])
+  }, [projectId, hasUser, userId, name, email, phone])
 
   return <></>
 }

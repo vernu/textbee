@@ -20,6 +20,7 @@ import {
   type BillingInterval,
 } from '@/lib/plans'
 import { Routes } from '@/config/routes'
+import { track } from '@/lib/analytics/track'
 import { cn } from '@/lib/utils'
 
 interface PlanChangePreview {
@@ -109,6 +110,10 @@ export default function CheckoutPage({
         )
 
         if (response.data?.redirectUrl) {
+          track('begin_checkout', {
+            plan: planName,
+            billing_interval: billingInterval,
+          })
           window.location.href = response.data?.redirectUrl
         } else if (response.data?.planChange) {
           // user already has a paid subscription: confirm before updating it

@@ -64,6 +64,7 @@ describe('SmsQueueProcessor.handleSendSms', () => {
     findByIdAndUpdate: jest.fn(),
   }
   const mockWebhookService = { deliverNotification: jest.fn() }
+  const mockUsersService = { markMilestone: jest.fn() }
 
   let processor: SmsQueueProcessor
 
@@ -87,12 +88,14 @@ describe('SmsQueueProcessor.handleSendSms', () => {
     })
     mockSmsModel.updateMany.mockResolvedValue({ modifiedCount: 1 })
     mockSmsModel.find.mockResolvedValue([])
+    mockUsersService.markMilestone.mockResolvedValue(false)
 
     processor = new SmsQueueProcessor(
       mockDeviceModel as any,
       mockSmsModel as any,
       mockSmsBatchModel as any,
       mockWebhookService as any,
+      mockUsersService as any,
     )
   })
 
