@@ -13,6 +13,20 @@ describe('normalizeSignupSource', () => {
     expect(normalizeSignupSource({ first: { landingPath: '/' } })).toBe('direct')
   })
 
+  it('folds a hostname utm_source into the same bucket as the referrer', () => {
+    // ChatGPT appends utm_source=chatgpt.com to links it surfaces, so without
+    // this the channel is split across two names.
+    expect(normalizeSignupSource({ first: { source: 'chatgpt.com' } })).toBe('chatgpt')
+    expect(normalizeSignupSource({ first: { referrer: 'chatgpt.com' } })).toBe('chatgpt')
+    expect(normalizeSignupSource({ first: { source: 'www.perplexity.ai' } })).toBe('perplexity')
+  })
+
+  it('leaves a plain utm_source alone', () => {
+    expect(normalizeSignupSource({ first: { source: 'meta' } })).toBe('meta')
+    expect(normalizeSignupSource({ first: { source: 'Newsletter' } })).toBe('newsletter')
+    expect(normalizeSignupSource({ first: { source: 'google' } })).toBe('google')
+  })
+
   it('prefers an explicit utm_source', () => {
     expect(
       normalizeSignupSource({
