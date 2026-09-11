@@ -45,8 +45,25 @@ export class AttributionTouch {
 
 const AttributionTouchSchema = SchemaFactory.createForClass(AttributionTouch)
 
+// The first visit ever, source or not. Kept separate from first-touch so a
+// direct visit records where it landed without claiming credit from a later
+// campaign click.
+@Schema({ _id: false })
+export class AttributionEntry {
+  @Prop({ type: String })
+  landingPath?: string
+
+  @Prop({ type: Date })
+  at?: Date
+}
+
+const AttributionEntrySchema = SchemaFactory.createForClass(AttributionEntry)
+
 @Schema({ _id: false })
 export class Attribution {
+  @Prop({ type: AttributionEntrySchema })
+  entry?: AttributionEntry
+
   @Prop({ type: AttributionTouchSchema })
   first?: AttributionTouch
 

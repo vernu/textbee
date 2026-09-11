@@ -11,6 +11,19 @@ describe('normalizeSignupSource', () => {
     expect(normalizeSignupSource(null)).toBe('direct')
     expect(normalizeSignupSource({})).toBe('direct')
     expect(normalizeSignupSource({ first: { landingPath: '/' } })).toBe('direct')
+    // An entry records where a direct visit landed and must never earn credit.
+    expect(normalizeSignupSource({ entry: { landingPath: '/pricing' } })).toBe(
+      'direct',
+    )
+  })
+
+  it('names the app behind an Android in-app browser referrer', () => {
+    expect(
+      normalizeSignupSource({ first: { referrer: 'org.telegram.messenger' } }),
+    ).toBe('telegram')
+    expect(
+      normalizeSignupSource({ first: { referrer: 'com.instagram.android' } }),
+    ).toBe('meta')
   })
 
   it('folds a hostname utm_source into the same bucket as the referrer', () => {
@@ -97,15 +110,52 @@ describe('normalizeReferrer', () => {
     ['youtu.be', 'youtube'],
     ['news.ycombinator.com', 'hackernews'],
     ['producthunt.com', 'producthunt'],
+    ['search.brave.com', 'brave'],
+    ['startpage.com', 'startpage'],
+    ['kagi.com', 'kagi'],
+    ['search.yahoo.com', 'yahoo'],
+    ['baidu.com', 'baidu'],
+    ['mail.google.com', 'gmail'],
+    ['news.google.com', 'google-news'],
   ]
 
   it.each(cases)('maps %s to %s', (host, expected) => {
     expect(normalizeReferrer(host)).toBe(expected)
   })
 
+  // Android in-app browsers send android-app://<package>/ as the referrer, so
+  // the host that reaches here is a package name, not a domain.
+  const appCases: Array<[string, string]> = [
+    ['com.instagram.android', 'meta'],
+    ['com.facebook.katana', 'meta'],
+    ['com.facebook.lite', 'meta'],
+    ['com.facebook.orca', 'meta'],
+    ['com.twitter.android', 'x'],
+    ['com.reddit.frontpage', 'reddit'],
+    ['com.linkedin.android', 'linkedin'],
+    ['org.telegram.messenger', 'telegram'],
+    ['com.whatsapp', 'whatsapp'],
+    ['com.discord', 'discord'],
+    ['com.Slack', 'slack'],
+    ['com.microsoft.teams', 'teams'],
+    ['com.google.android.gm', 'gmail'],
+    ['com.google.android.googlequicksearchbox', 'google'],
+  ]
+
+  it.each(appCases)('maps the %s app to %s', (pkg, expected) => {
+    expect(normalizeReferrer(pkg)).toBe(expected)
+  })
+
   it('does not let a search engine domain swallow its assistant', () => {
     expect(normalizeReferrer('gemini.google.com')).toBe('gemini')
     expect(normalizeReferrer('www.google.com')).toBe('google')
+  })
+
+  it('does not let Google search swallow Gmail', () => {
+    // Gmail sits on google.com, and the generic google rule would otherwise
+    // count every emailed link as an organic search visit.
+    expect(normalizeReferrer('mail.google.com')).toBe('gmail')
+    expect(normalizeReferrer('google.com')).toBe('google')
   })
 
   it('keeps an unrecognised host so a new channel is still visible', () => {
@@ -135,9 +185,9 @@ describe('classifyDevice', () => {
     )
   })
 
-  it('returns other rather than guessing', () => {
-    expect(classifyDevice(undefined)).toBe('other')
-    expect(classifyDevice('')).toBe('other')
+  it('tells a missing user agent apart from one it cannot place', () => {
+    expect(classifyDevice(undefined)).toBe('unknown')
+    expect(classifyDevice('')).toBe('unknown')
     expect(classifyDevice('curl/8.4.0')).toBe('other')
   })
 })
@@ -203,14 +253,38 @@ describe('sanitizeAttribution', () => {
   })
 
   it('parses a valid timestamp and drops an invalid one', () => {
-    expect(
-      sanitizeAttribution({ first: { at: '2026-09-11T10:00:00.000Z' } })?.first
-        ?.at,
-    ).toEqual(new Date('2026-09-11T10:00:00.000Z'))
+    const recent = new Date(Date.now() - 60_000).toISOString()
+    expect(sanitizeAttribution({ first: { at: recent } })?.first?.at).toEqual(
+      new Date(recent),
+    )
 
     expect(
       sanitizeAttribution({ first: { source: 'meta', at: 'never' } })?.first?.at,
     ).toBeUndefined()
+  })
+
+  it('tolerates ordinary clock skew but not a fictional time', () => {
+    const at = (offsetMs: number) =>
+      sanitizeAttribution({
+        first: { source: 'meta', at: new Date(Date.now() + offsetMs).toISOString() },
+      })?.first?.at
+
+    // A browser clock two minutes fast is normal and worth keeping.
+    expect(at(2 * 60 * 1000)).toBeInstanceOf(Date)
+    // An hour in the future, or older than the cookie could possibly be, is not.
+    expect(at(60 * 60 * 1000)).toBeUndefined()
+    expect(at(-500 * 24 * 60 * 60 * 1000)).toBeUndefined()
+  })
+
+  it('keeps the entry with only its own two fields', () => {
+    const result = sanitizeAttribution({
+      entry: { landingPath: '/pricing', at: 'never', source: 'sneaky' },
+    })
+    expect(result?.entry).toEqual({ landingPath: '/pricing' })
+    expect(result?.first).toBeUndefined()
+
+    expect(sanitizeAttribution({ entry: {} })).toBeUndefined()
+    expect(sanitizeAttribution({ entry: 'meta' })).toBeUndefined()
   })
 
   it('stamps when it was captured', () => {
