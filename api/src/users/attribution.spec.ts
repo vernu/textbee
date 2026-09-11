@@ -21,6 +21,12 @@ describe('normalizeSignupSource', () => {
     expect(normalizeSignupSource({ first: { source: 'www.perplexity.ai' } })).toBe('perplexity')
   })
 
+  it('never returns an empty source, even when normalisation empties it', () => {
+    // "www." survives cleanString but the host mapping strips it to nothing.
+    expect(normalizeSignupSource({ first: { source: 'www.' } })).toBe('www.')
+    expect(normalizeSignupSource({ first: { referrer: 'www.' } })).toBe('direct')
+  })
+
   it('leaves a plain utm_source alone', () => {
     expect(normalizeSignupSource({ first: { source: 'meta' } })).toBe('meta')
     expect(normalizeSignupSource({ first: { source: 'Newsletter' } })).toBe('newsletter')
