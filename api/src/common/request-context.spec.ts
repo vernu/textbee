@@ -1,5 +1,13 @@
 import { resolveRequestContext } from './request-context'
 
+// The suite must leave the environment as it found it, so a value already set
+// when the process started survives.
+const ORIGINAL_ENV = { ...process.env }
+function restoreEnv(key: string) {
+  if (ORIGINAL_ENV[key] === undefined) delete process.env[key]
+  else process.env[key] = ORIGINAL_ENV[key]
+}
+
 /*
  * The dashboard proxies registration, so without forwarding, every account was
  * recorded with the dashboard server's user agent and address. That made
@@ -99,6 +107,50 @@ describe('resolveRequestContext', () => {
       ]) {
         expect(resolveRequestContext({ ip: good }, undefined).ip).toBe(good)
       }
+    })
+  })
+
+  describe('region', () => {
+    const edgeReq = {
+      ip: '10.0.0.1',
+      headers: {
+        'user-agent': 'axios/1.7.2',
+        'cf-connecting-ip': '198.51.100.7',
+        'cf-ipcountry': 'US',
+      },
+    }
+
+    afterEach(() => {
+      restoreEnv('TRUSTED_PROXY')
+    })
+
+    it('prefers the region the browser reported', () => {
+      process.env.TRUSTED_PROXY = 'cloudflare'
+      expect(resolveRequestContext({ country: 'de' }, edgeReq).country).toBe(
+        'DE',
+      )
+    })
+
+    it('falls back to the region the edge placed the caller in', () => {
+      process.env.TRUSTED_PROXY = 'cloudflare'
+      expect(resolveRequestContext(undefined, edgeReq).country).toBe('US')
+    })
+
+    it('drops a forwarded region that is not a region code', () => {
+      expect(
+        resolveRequestContext({ country: 'Germany' }, undefined).country,
+      ).toBeUndefined()
+      expect(
+        resolveRequestContext({ country: 'XX' }, undefined).country,
+      ).toBeUndefined()
+    })
+
+    it('reports no region when no edge is declared', () => {
+      expect(resolveRequestContext(undefined, edgeReq).country).toBeUndefined()
+    })
+
+    it('still takes the address from the proxy request when nothing is forwarded', () => {
+      expect(resolveRequestContext(undefined, edgeReq).ip).toBe('10.0.0.1')
     })
   })
 })

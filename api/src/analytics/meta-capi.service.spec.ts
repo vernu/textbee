@@ -124,6 +124,24 @@ describe('MetaCapiService', () => {
     expect(userData.fbc).toBeUndefined()
   })
 
+  it('hashes the region like every other match key', async () => {
+    await service.send({
+      name: 'CompleteRegistration',
+      user: { userId: 'user-1', country: 'DE' },
+    })
+    const userData = lastBody().data[0].user_data
+
+    // sha256 of the lower cased code, which is the form Meta hashes.
+    expect(userData.country).toBe(
+      createHash('sha256').update('de').digest('hex'),
+    )
+  })
+
+  it('sends no region when none was resolved', async () => {
+    await service.send({ name: 'CompleteRegistration', user: { userId: 'u' } })
+    expect(lastBody().data[0].user_data.country).toBeUndefined()
+  })
+
   it('builds a stable event id so a retry deduplicates', async () => {
     await send()
     expect(lastBody().data[0].event_id).toBe('CompleteRegistration:user-1')

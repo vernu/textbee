@@ -31,6 +31,7 @@ import {
   BillingNotificationsService,
   BillingNotificationType,
 } from './billing-notifications.service'
+import { resolveClientAddress } from '../common/client-address'
 
 @Injectable()
 export class BillingService {
@@ -319,6 +320,10 @@ export class BillingService {
           : [selectedPlan.polarMonthlyProductId, selectedPlan.polarYearlyProductId]
       ).filter(Boolean)
 
+      // Resolved once so the billing provider and the conversion event agree
+      // on who started this checkout.
+      const clientAddress = resolveClientAddress(req)
+
       const checkoutOptions: any = {
         // productId: selectedPlan.polarProductId, // deprecated
         products: orderedProductIds,
@@ -326,7 +331,7 @@ export class BillingService {
         cancelUrl: `${process.env.FRONTEND_URL}/dashboard/account?checkout-cancel=1&checkout_id={CHECKOUT_ID}`,
         customerEmail: user.email,
         customerName: user.name,
-        customerIpAddress: req.ip,
+        customerIpAddress: clientAddress.ip,
         metadata: {
           userId: user._id?.toString(),
           ...(user.signupSource && { signupSource: user.signupSource }),
@@ -354,7 +359,7 @@ export class BillingService {
       const checkout = await this.polarApi.checkouts.create(checkoutOptions)
 
       this.analyticsService.checkoutStarted(user as any, payload.planName, {
-        ip: req.ip,
+        ...clientAddress,
         userAgent: req.headers?.['user-agent'],
       })
 

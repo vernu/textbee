@@ -19,6 +19,7 @@ export type AnalyticsUser = {
 export type RequestContext = {
   ip?: string
   userAgent?: string
+  country?: string
 }
 
 @Injectable()
@@ -53,6 +54,7 @@ export class AnalyticsService {
       email: user.email,
       ip: context?.ip,
       userAgent: context?.userAgent,
+      country: context?.country,
       fbclid: touch?.fbclid,
       fbclidAt: touch?.at,
       fbp: user.attribution?.fbp,

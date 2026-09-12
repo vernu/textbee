@@ -13,8 +13,15 @@ import {
   PasswordReset,
   PasswordResetSchema,
 } from './schemas/password-reset.schema'
-import { AccessLog, AccessLogSchema } from './schemas/access-log.schema'
-import { EmailVerification, EmailVerificationSchema } from './schemas/email-verification.schema'
+import {
+  AccessFootprint,
+  AccessFootprintSchema,
+} from './schemas/access-footprint.schema'
+import { AccessFootprintService } from './access-footprint.service'
+import {
+  EmailVerification,
+  EmailVerificationSchema,
+} from './schemas/email-verification.schema'
 import { AuthGuard } from './guards/auth.guard'
 import { OptionalAuthGuard } from './guards/optional-auth.guard'
 
@@ -30,8 +37,8 @@ import { OptionalAuthGuard } from './guards/optional-auth.guard'
         schema: PasswordResetSchema,
       },
       {
-        name: AccessLog.name,
-        schema: AccessLogSchema,
+        name: AccessFootprint.name,
+        schema: AccessFootprintSchema,
       },
       {
         name: EmailVerification.name,
@@ -42,8 +49,8 @@ import { OptionalAuthGuard } from './guards/optional-auth.guard'
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET,
-      signOptions: { 
-        expiresIn: process.env.JWT_EXPIRATION || '60d' as any 
+      signOptions: {
+        expiresIn: process.env.JWT_EXPIRATION || ('60d' as any),
       },
     }),
     MailModule,
@@ -52,6 +59,7 @@ import { OptionalAuthGuard } from './guards/optional-auth.guard'
   controllers: [AuthController],
   providers: [
     AuthService,
+    AccessFootprintService,
     JwtStrategy,
     AuthGuard,
     OptionalAuthGuard,

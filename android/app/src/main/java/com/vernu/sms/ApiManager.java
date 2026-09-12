@@ -2,6 +2,12 @@ package com.vernu.sms;
 
 import com.vernu.sms.services.GatewayApiService;
 
+import java.io.IOException;
+
+import okhttp3.Interceptor;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
@@ -15,18 +21,28 @@ public class ApiManager {
         return apiService;
     }
 
-    private static GatewayApiService createApiService() {
-//        OkHttpClient.Builder httpClient = new OkHttpClient.Builder();
-//        HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
-//        loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-//        httpClient.addInterceptor(loggingInterceptor);
+    /** Adds the client name to every request. See AppConstants.CLIENT_NAME. */
+    static OkHttpClient createHttpClient() {
+        return new OkHttpClient.Builder()
+                .addInterceptor(new Interceptor() {
+                    @Override
+                    public Response intercept(Chain chain) throws IOException {
+                        Request request = chain.request()
+                                .newBuilder()
+                                .header(AppConstants.CLIENT_HEADER, AppConstants.CLIENT_NAME)
+                                .build();
+                        return chain.proceed(request);
+                    }
+                })
+                .build();
+    }
 
+    private static GatewayApiService createApiService() {
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(AppConstants.API_BASE_URL)
-//                .client(httpClient.build())
+                .client(createHttpClient())
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
-        apiService = retrofit.create(GatewayApiService.class);
 
         return retrofit.create(GatewayApiService.class);
     }

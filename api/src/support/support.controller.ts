@@ -19,6 +19,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard'
 import { Request } from 'express'
 import { AuthGuard } from '../auth/guards/auth.guard'
 import { TurnstileService } from '../common/turnstile.service'
+import { resolveClientAddress } from '../common/client-address'
 
 @ApiTags('support')
 @Controller('support')
@@ -57,7 +58,7 @@ export class SupportController {
   ) {
     await this.turnstileService.verify(createSupportMessageDto.turnstileToken)
 
-    const ip = req.ip || (req.headers['x-forwarded-for'] as string)
+    const ip = resolveClientAddress(req).ip
     const userAgent = req.headers['user-agent'] as string
 
     // Add request metadata
@@ -91,7 +92,7 @@ export class SupportController {
   ) {
     await this.turnstileService.verify(body.turnstileToken)
 
-    const ip = req.ip || (req.headers['x-forwarded-for'] as string)
+    const ip = resolveClientAddress(req).ip
     const userAgent = req.headers['user-agent'] as string
     const user = req.user
 
