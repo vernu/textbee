@@ -148,6 +148,14 @@ export class ClientContextDTO {
       "The visitor's IP address, forwarded for the same reason. Used only to label analytics, never for access control.",
   })
   ip?: string
+
+  @ApiProperty({
+    type: String,
+    required: false,
+    description:
+      "The two-letter region code the edge network reported for the visitor, forwarded for the same reason. Used only to label analytics, never for access control.",
+  })
+  country?: string
 }
 
 export class RegisterInputDTO {

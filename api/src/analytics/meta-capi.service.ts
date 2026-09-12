@@ -14,6 +14,8 @@ export type MetaUserContext = {
   // supply Polar's own address, which would poison match quality.
   ip?: string
   userAgent?: string
+  // Two-letter region code, hashed like every other match key.
+  country?: string
   fbclid?: string
   fbclidAt?: Date
   fbp?: string
@@ -52,6 +54,7 @@ export class MetaCapiService {
     if (user.ip) data.client_ip_address = user.ip
     if (user.userAgent) data.client_user_agent = user.userAgent
     if (user.fbp) data.fbp = user.fbp
+    if (user.country) data.country = sha256(user.country.toLowerCase())
 
     // Meta's documented click-id format: fb.<subdomain index>.<click time in
     // milliseconds>.<fbclid>. The click time came from a browser clock, so it

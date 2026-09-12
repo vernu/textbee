@@ -101,4 +101,44 @@ describe('resolveRequestContext', () => {
       }
     })
   })
+
+  describe('region', () => {
+    const edgeReq = {
+      ip: '10.0.0.1',
+      headers: {
+        'user-agent': 'axios/1.7.2',
+        'cf-connecting-ip': '198.51.100.7',
+        'cf-ipcountry': 'US',
+      },
+    }
+
+    afterEach(() => {
+      delete process.env.TRUSTED_PROXY
+    })
+
+    it('prefers the region the browser reported', () => {
+      process.env.TRUSTED_PROXY = 'cloudflare'
+      expect(resolveRequestContext({ country: 'de' }, edgeReq).country).toBe('DE')
+    })
+
+    it('falls back to the region the edge placed the caller in', () => {
+      process.env.TRUSTED_PROXY = 'cloudflare'
+      expect(resolveRequestContext(undefined, edgeReq).country).toBe('US')
+    })
+
+    it('drops a forwarded region that is not a region code', () => {
+      expect(resolveRequestContext({ country: 'Germany' }, undefined).country)
+        .toBeUndefined()
+      expect(resolveRequestContext({ country: 'XX' }, undefined).country)
+        .toBeUndefined()
+    })
+
+    it('reports no region when no edge is declared', () => {
+      expect(resolveRequestContext(undefined, edgeReq).country).toBeUndefined()
+    })
+
+    it('still takes the address from the proxy request when nothing is forwarded', () => {
+      expect(resolveRequestContext(undefined, edgeReq).ip).toBe('10.0.0.1')
+    })
+  })
 })

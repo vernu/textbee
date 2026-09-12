@@ -8,6 +8,7 @@
 // payload cannot grow a document or forge a log line.
 
 import { isIP } from 'net'
+import { cleanCountry, resolveClientAddress } from './client-address'
 
 const MAX_USER_AGENT = 512
 
@@ -18,11 +19,13 @@ const CONTROL_CHARACTERS = /[\u0000-\u001f\u007f]/g
 export type ClientContextInput = {
   userAgent?: unknown
   ip?: unknown
+  country?: unknown
 }
 
 export type RequestContext = {
   ip?: string
   userAgent?: string
+  country?: string
 }
 
 function cleanUserAgent(value: unknown): string | undefined {
@@ -47,10 +50,17 @@ export function resolveRequestContext(
 ): RequestContext {
   const forwardedUserAgent = cleanUserAgent(client?.userAgent)
   const forwardedIp = cleanIp(client?.ip)
+  const forwardedCountry = cleanCountry(client?.country)
+
+  // The proxy's own request describes the proxy, so its values only fill the
+  // gaps. For a call made straight to the API there is no proxy and the edge
+  // is the only source.
+  const edge = resolveClientAddress(req)
 
   return {
     userAgent:
       forwardedUserAgent ?? cleanUserAgent(req?.headers?.['user-agent']),
-    ip: forwardedIp ?? cleanIp(req?.ip),
+    ip: forwardedIp ?? edge.ip,
+    country: forwardedCountry ?? edge.country,
   }
 }
