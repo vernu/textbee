@@ -46,6 +46,7 @@ export class UsersService {
     marketingOptIn,
     attribution,
     userAgent,
+    country,
   }: {
     name: string
     email: string
@@ -54,6 +55,7 @@ export class UsersService {
     marketingOptIn?: boolean
     attribution?: AttributionInput
     userAgent?: string
+    country?: string
   }) {
     if (await this.findOne({ email })) {
       throw new HttpException(
@@ -73,6 +75,7 @@ export class UsersService {
       attribution,
       signupSource: normalizeSignupSource(attribution),
       signupDevice: classifyDevice(userAgent),
+      signupCountry: country,
     })
     return await newUser.save()
   }

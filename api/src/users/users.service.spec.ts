@@ -45,6 +45,22 @@ describe('UsersService - signup attribution', () => {
     })
   })
 
+  it('records the region the signup came from', async () => {
+    await service.create({
+      name: 'Ada',
+      email: 'ada@example.com',
+      country: 'DE',
+    })
+
+    expect(saved[0].signupCountry).toBe('DE')
+  })
+
+  it('leaves the region unset when the edge did not report one', async () => {
+    await service.create({ name: 'Ada', email: 'ada@example.com' })
+
+    expect(saved[0].signupCountry).toBeUndefined()
+  })
+
   it('falls back to direct rather than leaving the source blank', async () => {
     await service.create({ name: 'Ada', email: 'ada@example.com' })
 

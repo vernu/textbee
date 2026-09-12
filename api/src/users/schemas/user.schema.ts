@@ -100,6 +100,29 @@ export class UserMilestones {
 
 const UserMilestonesSchema = SchemaFactory.createForClass(UserMilestones)
 
+// Lifetime summary of where an account has been used from. The rows behind it
+// live in their own collection, one per distinct origin, and expire; these
+// sets do not, so a report can still say which regions an account has ever
+// been used from after the detail has aged out.
+@Schema({ _id: false })
+export class UserAccess {
+  @Prop({ type: [String], default: [] })
+  countries: string[]
+
+  @Prop({ type: [String], default: [] })
+  channels: string[]
+
+  // Distinct origins ever recorded. Compared against a ceiling before a new
+  // one is written, so one account cannot grow the collection without bound.
+  @Prop({ type: Number, default: 0 })
+  addressesSeen: number
+
+  @Prop({ type: Date })
+  updatedAt?: Date
+}
+
+const UserAccessSchema = SchemaFactory.createForClass(UserAccess)
+
 @Schema({ timestamps: true })
 export class User {
   _id?: Types.ObjectId
@@ -154,6 +177,14 @@ export class User {
   @Prop({ type: String })
   signupDevice?: string
 
+  // Two-letter region code of the request that created the account, when the
+  // edge network reported one.
+  @Prop({ type: String })
+  signupCountry?: string
+
+  @Prop({ type: UserAccessSchema, default: () => ({}) })
+  access?: UserAccess
+
   @Prop({ type: AttributionSchema })
   attribution?: Attribution
 
@@ -182,3 +213,8 @@ export const UserSchema = SchemaFactory.createForClass(User)
 
 // Acquisition reports read by channel over a date window.
 UserSchema.index({ signupSource: 1, createdAt: -1 })
+
+// The same reports read by region, and the users list filters on where an
+// account has been used from.
+UserSchema.index({ signupCountry: 1, createdAt: -1 })
+UserSchema.index({ 'access.countries': 1 })

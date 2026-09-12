@@ -19,7 +19,7 @@ import { MailService } from '../mail/mail.service'
 import { TurnstileService } from '../common/turnstile.service'
 import { escapeRegExp } from '../common/escape-regexp'
 import { RequestResetPasswordInputDTO, ResetPasswordInputDTO } from './auth.dto'
-import { AccessLog } from './schemas/access-log.schema'
+import { AccessFootprintService } from './access-footprint.service'
 import {
   EmailVerification,
   EmailVerificationDocument,
@@ -47,7 +47,7 @@ export class AuthService {
     @InjectModel(ApiKey.name) private apiKeyModel: Model<ApiKeyDocument>,
     @InjectModel(PasswordReset.name)
     private passwordResetModel: Model<PasswordResetDocument>,
-    @InjectModel(AccessLog.name) private accessLogModel: Model<AccessLog>,
+    private accessFootprintService: AccessFootprintService,
     @InjectModel(EmailVerification.name)
     private emailVerificationModel: Model<EmailVerificationDocument>,
     private readonly mailService: MailService,
@@ -103,7 +103,10 @@ export class AuthService {
         'loginWithGoogle: GOOGLE_CLIENT_ID is not set, skipping audience check',
       )
     } else if (!allowedAudiences.includes(tokenInfo.aud)) {
-      throw new HttpException({ error: 'Unauthorized' }, HttpStatus.UNAUTHORIZED)
+      throw new HttpException(
+        { error: 'Unauthorized' },
+        HttpStatus.UNAUTHORIZED,
+      )
     }
 
     if (
@@ -123,6 +126,7 @@ export class AuthService {
       attribution?: unknown
       ip?: string
       userAgent?: string
+      country?: string
     },
   ) {
     const response = await axios.get(
@@ -146,6 +150,7 @@ export class AuthService {
         email,
         attribution: sanitizeAttribution(signupContext?.attribution),
         userAgent: signupContext?.userAgent,
+        country: signupContext?.country,
       })
     }
 
@@ -185,7 +190,7 @@ export class AuthService {
 
   async register(
     userData: any,
-    requestContext?: { ip?: string; userAgent?: string },
+    requestContext?: { ip?: string; userAgent?: string; country?: string },
   ) {
     await this.turnstileService.verify(userData.turnstileToken)
 
@@ -214,6 +219,7 @@ export class AuthService {
       marketingOptIn: userData.marketingOptIn === true,
       attribution: sanitizeAttribution(userData.attribution),
       userAgent: requestContext?.userAgent,
+      country: requestContext?.country,
     })
 
     user.lastLoginAt = new Date()
@@ -260,13 +266,13 @@ export class AuthService {
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
     const resetCount = await this.passwordResetModel.countDocuments({
       user: user._id,
-      createdAt: { $gte: twentyFourHoursAgo }
+      createdAt: { $gte: twentyFourHoursAgo },
     })
 
     if (resetCount >= 5) {
       throw new HttpException(
         { error: 'Too many password reset requests. Please try again later.' },
-        HttpStatus.TOO_MANY_REQUESTS
+        HttpStatus.TOO_MANY_REQUESTS,
       )
     }
 
@@ -395,13 +401,16 @@ export class AuthService {
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
     const verificationCount = await this.emailVerificationModel.countDocuments({
       user: user._id,
-      createdAt: { $gte: twentyFourHoursAgo }
+      createdAt: { $gte: twentyFourHoursAgo },
     })
 
     if (verificationCount >= 5) {
       throw new HttpException(
-        { error: 'Too many email verification requests. Please try again later.' },
-        HttpStatus.TOO_MANY_REQUESTS
+        {
+          error:
+            'Too many email verification requests. Please try again later.',
+        },
+        HttpStatus.TOO_MANY_REQUESTS,
       )
     }
 
@@ -526,10 +535,7 @@ export class AuthService {
     }
 
     this.apiKeyModel
-      .updateOne(
-        { _id: legacyApiKey._id },
-        { $set: { hashedApiKeySha256 } },
-      )
+      .updateOne({ _id: legacyApiKey._id }, { $set: { hashedApiKeySha256 } })
       .exec()
       .catch((e) => {
         console.log('Failed to backfill api key sha256 hash')
@@ -539,10 +545,7 @@ export class AuthService {
     return legacyApiKey
   }
 
-  async getUserApiKeys(
-    currentUser: User,
-    statusParam?: string,
-  ) {
+  async getUserApiKeys(currentUser: User, statusParam?: string) {
     const normalized =
       statusParam === undefined || statusParam === '' ? 'active' : statusParam
     if (!['active', 'revoked', 'all'].includes(normalized)) {
@@ -647,11 +650,16 @@ export class AuthService {
     await apiKey.save()
   }
 
+  /**
+   * Runs on every authenticated request from the guards, never awaited.
+   *
+   * Two things are recorded: how much a key is used, and the distinct origins
+   * the account is reached from. Neither may fail a request.
+   */
   async trackAccessLog({ request }) {
-    const { apiKey, user, method, url, ip, headers } = request
-    const userAgent = headers['user-agent']
+    const { apiKey } = request
 
-    if (request.apiKey) {
+    if (apiKey) {
       this.apiKeyModel
         .findByIdAndUpdate(
           apiKey._id,
@@ -665,22 +673,7 @@ export class AuthService {
         })
     }
 
-    /* this.accessLogModel
-      .create({
-        apiKey,
-        user,
-        method,
-        url: url.split('?')[0],
-        ip:
-          request.headers['x-forwarded-for'] ||
-          request.connection.remoteAddress ||
-          ip,
-        userAgent,
-      })
-      .catch((e) => {
-        console.log('Failed to track access log')
-        console.log(e)
-      }) */
+    this.accessFootprintService.record({ request })
   }
 
   async validateEmail(email: string) {
