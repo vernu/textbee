@@ -154,13 +154,23 @@ export class AccessFootprintService {
       { upsert: !atCeiling },
     )
 
-    if (!result.upsertedCount) return
+    const added = result.upsertedCount > 0
+    if (!added && !result.matchedCount) return
+    if (added) this.counts.forget(`${userId}|${channel}`)
 
-    this.counts.forget(`${userId}|${channel}`)
+    // Runs on a refresh too, not only on an insert. An address can be placed
+    // in a different region later, and the summary would otherwise keep the
+    // region it was first seen in while the row itself moved on. $addToSet
+    // makes the repeat a no-op, and this only runs once an hour per origin.
+    //
+    // The counter is incremented only for a new row. If this update fails
+    // after the row was written the counter runs low, which is the safe
+    // direction: it is a pre-check before an exact count, so a low value
+    // means the ceiling is checked properly rather than applied early.
     await this.userModel.updateOne(
       { _id: userId },
       {
-        $inc: { 'access.addressesSeen': 1 },
+        ...(added && { $inc: { 'access.addressesSeen': 1 } }),
         $addToSet: {
           'access.channels': channel,
           ...(country && { 'access.countries': country }),

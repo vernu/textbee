@@ -4,6 +4,14 @@ import { AccessFootprintService } from './access-footprint.service'
 import { AccessFootprint } from './schemas/access-footprint.schema'
 import { User } from '../users/schemas/user.schema'
 
+// The suite must leave the environment as it found it, so a value already set
+// when the process started survives.
+const ORIGINAL_ENV = { ...process.env }
+function restoreEnv(key: string) {
+  if (ORIGINAL_ENV[key] === undefined) delete process.env[key]
+  else process.env[key] = ORIGINAL_ENV[key]
+}
+
 /*
  * This runs on every authenticated request, so the cost of a repeat matters as
  * much as the correctness of a first sighting. Values reaching the database
@@ -52,8 +60,8 @@ describe('AccessFootprintService', () => {
   })
 
   afterEach(() => {
-    delete process.env.ACCESS_FOOTPRINTS
-    delete process.env.TRUSTED_PROXY
+    restoreEnv('ACCESS_FOOTPRINTS')
+    restoreEnv('TRUSTED_PROXY')
   })
 
   it('records a first sighting and updates the account summary', async () => {
@@ -147,12 +155,74 @@ describe('AccessFootprintService', () => {
     )
   })
 
-  it('does not update the summary when the origin was already there', async () => {
-    footprintModel.updateOne.mockResolvedValue({ upsertedCount: 0 })
+  it('records an IPv6 caller named by the edge, as its network', async () => {
+    process.env.TRUSTED_PROXY = 'cloudflare'
+    service.record({
+      request: buildRequest({
+        ip: '10.0.0.1',
+        headers: {
+          'user-agent': 'curl/8.4.0',
+          'cf-connecting-ip': '2001:db8:1:2:3:4:5:6',
+          'cf-ipcountry': 'ET',
+        },
+      }),
+    })
+    await flush()
+
+    expect(footprintModel.updateOne).toHaveBeenCalledTimes(1)
+    expect(footprintModel.updateOne.mock.calls[0][0].ip).toBe(
+      '2001:db8:1:2::/64',
+    )
+  })
+
+  // An address can be placed in a different region later, and the summary
+  // would otherwise keep the region the origin was first seen in.
+  it('adds a region first seen on an origin it already knows', async () => {
+    footprintModel.updateOne.mockResolvedValue({
+      upsertedCount: 0,
+      matchedCount: 1,
+    })
+    process.env.TRUSTED_PROXY = 'cloudflare'
+    service.record({
+      request: buildRequest({
+        headers: {
+          'user-agent': 'curl/8.4.0',
+          'cf-connecting-ip': '203.0.113.9',
+          'cf-ipcountry': 'FR',
+        },
+      }),
+    })
+    await flush()
+
+    const [, summary] = userModel.updateOne.mock.calls[0]
+    expect(summary.$addToSet).toEqual({
+      'access.channels': 'api',
+      'access.countries': 'FR',
+    })
+    // The count is for new origins only, and this one was already recorded.
+    expect(summary.$inc).toBeUndefined()
+  })
+
+  it('does not count an origin it had already recorded', async () => {
+    footprintModel.updateOne.mockResolvedValue({
+      upsertedCount: 0,
+      matchedCount: 1,
+    })
     service.record({ request: buildRequest() })
     await flush()
 
     expect(footprintModel.updateOne).toHaveBeenCalledTimes(1)
+    expect(userModel.updateOne.mock.calls[0][1].$inc).toBeUndefined()
+  })
+
+  it('leaves the summary alone when nothing was written at all', async () => {
+    footprintModel.updateOne.mockResolvedValue({
+      upsertedCount: 0,
+      matchedCount: 0,
+    })
+    service.record({ request: buildRequest() })
+    await flush()
+
     expect(userModel.updateOne).not.toHaveBeenCalled()
   })
 

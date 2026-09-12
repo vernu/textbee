@@ -146,8 +146,10 @@ export function resolveClientAddress(req?: {
   }
 
   const headers = req?.headers ?? {}
-  const ip =
-    canonicalAddress(headerValue(headers['cf-connecting-ip'])) ?? fallback
+  // Whole, like the fallback. Reducing it here would hand a network to the
+  // conversions API and to the billing provider, and would leave the callers
+  // that do want one value per caller unable to parse it back.
+  const ip = rawAddress(headerValue(headers['cf-connecting-ip'])) ?? fallback
   const country = cleanCountry(headerValue(headers['cf-ipcountry']))
 
   return {

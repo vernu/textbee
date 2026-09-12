@@ -5,6 +5,14 @@ import {
   resolveClientAddress,
 } from './client-address'
 
+// The suite must leave the environment as it found it, so a value already set
+// when the process started survives.
+const ORIGINAL_ENV = { ...process.env }
+function restoreEnv(key: string) {
+  if (ORIGINAL_ENV[key] === undefined) delete process.env[key]
+  else process.env[key] = ORIGINAL_ENV[key]
+}
+
 /*
  * The app sits behind a reverse proxy and, in the hosted deployment, a CDN in
  * front of that. Every request therefore arrives with the edge's address on
@@ -105,7 +113,7 @@ describe('resolveClientAddress', () => {
   }
 
   afterEach(() => {
-    delete process.env.TRUSTED_PROXY
+    restoreEnv('TRUSTED_PROXY')
   })
 
   it('uses the proxy hop and reports no region when no edge is declared', () => {
@@ -150,6 +158,25 @@ describe('resolveClientAddress', () => {
         },
       }),
     ).toEqual({ ip: '203.0.113.9', country: 'DE' })
+  })
+
+  // The address goes to the conversions API and the billing provider as the
+  // caller's own, so it must not be reduced to a network on the way through.
+  // Callers that want one value per caller reduce it themselves.
+  it('keeps an IPv6 caller whole', () => {
+    process.env.TRUSTED_PROXY = 'cloudflare'
+    expect(
+      resolveClientAddress({
+        ip: '10.0.0.1',
+        headers: { 'cf-connecting-ip': '2001:db8:1:2:3:4:5:6' },
+      }),
+    ).toEqual({ ip: '2001:db8:1:2:3:4:5:6' })
+  })
+
+  it('keeps the proxy hop whole too', () => {
+    expect(resolveClientAddress({ ip: '2001:db8:1:2:3:4:5:6' })).toEqual({
+      ip: '2001:db8:1:2:3:4:5:6',
+    })
   })
 
   it('returns nothing rather than a partial value for an empty request', () => {

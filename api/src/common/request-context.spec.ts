@@ -1,5 +1,13 @@
 import { resolveRequestContext } from './request-context'
 
+// The suite must leave the environment as it found it, so a value already set
+// when the process started survives.
+const ORIGINAL_ENV = { ...process.env }
+function restoreEnv(key: string) {
+  if (ORIGINAL_ENV[key] === undefined) delete process.env[key]
+  else process.env[key] = ORIGINAL_ENV[key]
+}
+
 /*
  * The dashboard proxies registration, so without forwarding, every account was
  * recorded with the dashboard server's user agent and address. That made
@@ -113,12 +121,14 @@ describe('resolveRequestContext', () => {
     }
 
     afterEach(() => {
-      delete process.env.TRUSTED_PROXY
+      restoreEnv('TRUSTED_PROXY')
     })
 
     it('prefers the region the browser reported', () => {
       process.env.TRUSTED_PROXY = 'cloudflare'
-      expect(resolveRequestContext({ country: 'de' }, edgeReq).country).toBe('DE')
+      expect(resolveRequestContext({ country: 'de' }, edgeReq).country).toBe(
+        'DE',
+      )
     })
 
     it('falls back to the region the edge placed the caller in', () => {
@@ -127,10 +137,12 @@ describe('resolveRequestContext', () => {
     })
 
     it('drops a forwarded region that is not a region code', () => {
-      expect(resolveRequestContext({ country: 'Germany' }, undefined).country)
-        .toBeUndefined()
-      expect(resolveRequestContext({ country: 'XX' }, undefined).country)
-        .toBeUndefined()
+      expect(
+        resolveRequestContext({ country: 'Germany' }, undefined).country,
+      ).toBeUndefined()
+      expect(
+        resolveRequestContext({ country: 'XX' }, undefined).country,
+      ).toBeUndefined()
     })
 
     it('reports no region when no edge is declared', () => {
