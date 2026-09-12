@@ -4,6 +4,12 @@ import android.Manifest;
 
 public class AppConstants {
     public static final String API_BASE_URL = BuildConfig.API_BASE_URL;
+
+    // Names this app in outgoing requests. The API key is shared with any code
+    // a customer writes, so without this a request from the app and one from
+    // their own server look identical.
+    public static final String CLIENT_HEADER = "x-sdk-client";
+    public static final String CLIENT_NAME = "textbee-android/" + BuildConfig.VERSION_NAME;
     public static final String[] requiredPermissions = new String[]{
             Manifest.permission.SEND_SMS,
             Manifest.permission.RECEIVE_SMS,

@@ -12,6 +12,8 @@ object ApiManagerKt {
         instance ?: synchronized(this) {
             instance ?: Retrofit.Builder()
                 .baseUrl(AppConstants.API_BASE_URL)
+                // Shares the client that names this app in every request.
+                .client(ApiManager.createHttpClient())
                 .addConverterFactory(GsonConverterFactory.create())
                 .build()
                 .create(GatewayApiServiceKt::class.java)
